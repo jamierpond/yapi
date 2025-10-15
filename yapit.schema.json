@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://yapit.dev/schema/v1",
+  "title": "yapit Configuration",
+  "description": "Schema for yapit YAML API testing configuration files",
+  "type": "object",
+  "required": ["url", "method"],
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "Base URL for the API request",
+      "format": "uri",
+      "examples": [
+        "http://localhost:3000",
+        "https://api.example.com"
+      ]
+    },
+    "path": {
+      "type": "string",
+      "description": "Path to append to the base URL",
+      "default": "",
+      "examples": [
+        "/api/users",
+        "/posts/123"
+      ]
+    },
+    "method": {
+      "type": "string",
+      "description": "HTTP method for the request",
+      "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+      "default": "GET"
+    },
+    "content_type": {
+      "type": "string",
+      "description": "Content-Type header for the request (required when body or json is present)",
+      "enum": ["application/json"],
+      "examples": ["application/json"]
+    },
+    "body": {
+      "type": "object",
+      "description": "Request body as YAML structure (converted to JSON). Mutually exclusive with 'json' field.",
+      "additionalProperties": true
+    },
+    "json": {
+      "type": "string",
+      "description": "Raw JSON literal for request body. Mutually exclusive with 'body' field.",
+      "examples": [
+        "{\n  \"id\": 123,\n  \"name\": \"example\"\n}"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "anyOf": [
+          { "required": ["body"] },
+          { "required": ["json"] }
+        ]
+      },
+      "then": {
+        "required": ["content_type"]
+      }
+    }
+  ],
+  "oneOf": [
+    {
+      "required": ["body"],
+      "not": { "required": ["json"] }
+    },
+    {
+      "required": ["json"],
+      "not": { "required": ["body"] }
+    },
+    {
+      "not": {
+        "anyOf": [
+          { "required": ["body"] },
+          { "required": ["json"] }
+        ]
+      }
+    }
+  ],
+  "examples": [
+    {
+      "url": "https://api.example.com",
+      "path": "/users",
+      "method": "GET"
+    },
+    {
+      "url": "https://api.example.com",
+      "path": "/users",
+      "method": "POST",
+      "content_type": "application/json",
+      "body": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    },
+    {
+      "url": "https://api.example.com",
+      "path": "/data",
+      "method": "POST",
+      "content_type": "application/json",
+      "json": "{\n  \"id\": 123,\n  \"status\": \"active\"\n}"
+    }
+  ]
+}
