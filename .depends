@@ -1,0 +1,10 @@
+# yapi dependencies
+# This file lists all dependencies required to run yapi
+
+# Required dependencies
+bash
+curl
+yq
+git
+fzf
+jq
