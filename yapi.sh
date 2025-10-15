@@ -120,6 +120,7 @@ method=$(yq e '.method // "GET"' "$config")
 content_type=$(yq e '.content_type // ""' "$config")
 body_exists=$(yq e 'has("body")' "$config")
 json_exists=$(yq e 'has("json")' "$config")
+query_exists=$(yq e 'has("query")' "$config")
 
 # URL priority: CLI flag > YAML url (required if no CLI flag)
 if [[ -n "$cli_url" ]]; then
@@ -130,8 +131,47 @@ else
   error_exit "URL is required: either provide 'url' in config file or use -u flag"
 fi
 
-# Build full URL
-full_url="${url%/}${path}"
+# Build full URL with encoded path
+if [[ -n "$path" ]]; then
+  # Encode path segments but preserve slashes
+  protected=$(echo "$path" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/___PERCENT___\1/g')
+  protected=$(echo "$protected" | sed 's/\//___SLASH___/g')
+  encoded=$(printf "%s" "$protected" | jq -Rr @uri)
+  encoded_path=$(echo "$encoded" | sed 's/___SLASH___/\//g' | sed 's/___PERCENT___/%/g')
+  full_url="${url%/}${encoded_path}"
+else
+  full_url="$url"
+fi
+
+# Build query string from query field if present
+if [[ "$query_exists" == "true" ]]; then
+  query_string=""
+  first=true
+
+  # Get all query keys
+  keys=$(yq e '.query | keys | .[]' "$config")
+
+  while IFS= read -r key; do
+    if [[ -n "$key" ]]; then
+      # Get the value for this key
+      value=$(yq e ".query[\"$key\"]" "$config")
+
+      # URL encode key and value
+      encoded_key=$(printf "%s" "$key" | jq -Rr @uri)
+      encoded_value=$(printf "%s" "$value" | jq -Rr @uri)
+
+      # Build query string
+      if [[ "$first" == "true" ]]; then
+        query_string="?${encoded_key}=${encoded_value}"
+        first=false
+      else
+        query_string="${query_string}&${encoded_key}=${encoded_value}"
+      fi
+    fi
+  done <<< "$keys"
+
+  full_url="${full_url}${query_string}"
+fi
 # echo "Requesting: $full_url"
 
 # Validate method
@@ -184,7 +224,7 @@ fi
 #echo "Executing $method request to $full_url"
 #echo "Curl command: curl ${curl_args[*]}"
 echo "Executing $method request to $full_url" >&2
-response=$(curl "${curl_args[@]}")
+response=$(curl -L "${curl_args[@]}")
 
 # Try to format as JSON if possible, otherwise print as-is
 if echo "$response" | jq . &>/dev/null; then
