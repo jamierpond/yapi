@@ -1,7 +1,9 @@
-$schema: "https://raw.githubusercontent.com/jamierpond/yapi/refs/heads/main/yapi.schema.json"
+# yaml-language-server: $schema=https://pond.audio/yapi/schema
+
 url: https://httpbin.org
 path: /post
 method: POST
+
 content_type: application/json
 
 body:
