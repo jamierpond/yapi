@@ -101,7 +101,7 @@ if [[ -z "$config" ]]; then
     error_exit "No config file selected"
   fi
 
-  echo "Selected: $config"
+  echo "Selected: $config" >&2
 fi
 
 # Validate config file exists and is valid YAML
