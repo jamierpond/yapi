@@ -96,6 +96,7 @@ path=$(yq e '.path // ""' "$config")
 method=$(yq e '.method // "GET"' "$config")
 content_type=$(yq e '.content_type // ""' "$config")
 body_exists=$(yq e 'has("body")' "$config")
+json_exists=$(yq e 'has("json")' "$config")
 
 # URL priority: CLI flag > YAML url (required if no CLI flag)
 if [[ -n "$cli_url" ]]; then
@@ -122,11 +123,16 @@ curl_args=(
   -s
 )
 
-# Handle body if present
-if [[ "$body_exists" == "true" ]]; then
-  # Require content_type when body is present
+# Validate body and json are mutually exclusive
+if [[ "$body_exists" == "true" ]] && [[ "$json_exists" == "true" ]]; then
+  error_exit "Cannot specify both 'body' and 'json' fields - use only one"
+fi
+
+# Handle request body
+if [[ "$body_exists" == "true" ]] || [[ "$json_exists" == "true" ]]; then
+  # Require content_type when body/json is present
   if [[ -z "$content_type" ]]; then
-    error_exit "content_type is required when body is present"
+    error_exit "content_type is required when body or json is present"
   fi
 
   # Currently only support JSON
@@ -134,14 +140,20 @@ if [[ "$body_exists" == "true" ]]; then
     error_exit "Only 'application/json' content_type is currently supported"
   fi
 
-  # Convert YAML body to JSON
-  body_json=$(yq e '.body' -o=json "$config")
+  # Get the JSON data
+  if [[ "$body_exists" == "true" ]]; then
+    # Convert YAML body to JSON
+    request_json=$(yq e '.body' -o=json "$config")
+  else
+    # Use raw JSON literal
+    request_json=$(yq e '.json' "$config")
+  fi
 
-  # echo "Request Body: $body_json"
+  # echo "Request Body: $request_json"
 
   curl_args+=(
     -H "Content-Type: $content_type"
-    -d "$body_json"
+    -d "$request_json"
   )
 fi
 

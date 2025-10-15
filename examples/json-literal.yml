@@ -1,0 +1,15 @@
+url: https://httpbin.org
+path: /post
+method: POST
+content_type: application/json
+
+# Raw JSON literal - useful when you want exact control over formatting
+# or when copying JSON from other sources
+json: |
+  {
+    "id": 123,
+    "status": "active",
+    "nested": {
+      "foo": "bar"
+    }
+  }
