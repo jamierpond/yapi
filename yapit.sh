@@ -1,6 +1,6 @@
 #!/bin/bash
 # yapit Yaml API Testing
-# requires: bash, curl, yq
+# requires: bash, curl, yq, fzf (optional, for interactive file selection)
 set -e
 
 # Default values
@@ -63,9 +63,22 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Validate required arguments
+# Handle config file selection
 if [[ -z "$config" ]]; then
-  error_exit "Config file is required (use -c or --config)"
+  # Check if fzf is available
+  if ! command -v fzf &>/dev/null; then
+    error_exit "Config file is required (use -c or --config). Install fzf for interactive selection."
+  fi
+
+  # Find YAML files and let user select with fzf
+  config=$(find . -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | fzf --prompt="Select config file: " --height=40% --border)
+
+  # Exit if user cancelled fzf
+  if [[ -z "$config" ]]; then
+    error_exit "No config file selected"
+  fi
+
+  echo "Selected: $config"
 fi
 
 # Validate config file exists and is valid YAML
