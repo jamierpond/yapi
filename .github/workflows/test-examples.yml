@@ -1,0 +1,37 @@
+name: Test Examples
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-examples:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+
+    - name: Make yapi.sh executable
+      run: chmod +x yapi.sh
+
+    - name: Test all examples
+      run: |
+        set -e
+        echo "Testing all example files..."
+        for example in examples/*.yml examples/*.yaml; do
+          if [ -f "$example" ]; then
+            echo "Testing: $example"
+            ./yapi.sh -c "$example" || exit 1
+            echo "✓ $example passed"
+          fi
+        done
+        echo "All examples tested successfully"
