@@ -1,0 +1,21 @@
+url: https://httpbin.org
+path: /post
+method: POST
+content_type: application/json
+
+body:
+  title: "Testing yapit - YAML API Testing Tool"
+  description: "This demo shows nested objects, arrays, and various data types"
+  userId: 123
+  isPublished: true
+  tags:
+    - "testing"
+    - "api"
+    - "yaml"
+  metadata:
+    source: "yapit"
+    version: "1.0"
+    timestamp: "2024-01-15T10:30:00Z"
+  author:
+    name: "Test User"
+    email: "test@example.com"
