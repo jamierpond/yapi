@@ -183,6 +183,7 @@ fi
 # Execute request and capture output
 #echo "Executing $method request to $full_url"
 #echo "Curl command: curl ${curl_args[*]}"
+echo "Executing $method request to $full_url" >&2
 response=$(curl "${curl_args[@]}")
 
 # Try to format as JSON if possible, otherwise print as-is
