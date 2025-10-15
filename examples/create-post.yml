@@ -1,3 +1,4 @@
+$schema: "https://raw.githubusercontent.com/jamierpond/yapi/refs/heads/main/yapi.schema.json"
 url: https://httpbin.org
 path: /post
 method: POST
