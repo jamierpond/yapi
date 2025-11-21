@@ -1,0 +1,69 @@
+{
+  "scopeName": "source.yaml",
+  "fileTypes": ["yml", "yaml"],
+  "name": "YAML",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#property" },
+    { "include": "#directive" },
+    { "include": "#constant" },
+    { "include": "#string" },
+    { "include": "#number" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "(?:^|\\s+)(#.*)$",
+      "captures": {
+        "1": { "name": "comment.line.number-sign.yaml" }
+      }
+    },
+    "property": {
+      "match": "(?:^|\\G)(\\s*)([^:\\s][^:]*?)(:)(?=\\s|$)",
+      "captures": {
+        "2": { "name": "entity.name.tag.yaml" },
+        "3": { "name": "punctuation.separator.key-value.yaml" }
+      }
+    },
+    "directive": {
+      "match": "^(%)[^\\s]+",
+      "captures": {
+        "1": { "name": "punctuation.definition.directive.yaml" }
+      },
+      "name": "keyword.other.directive.yaml"
+    },
+    "constant": {
+      "match": "\\b(true|false|null|True|False|Null|TRUE|FALSE|NULL|~)\\b",
+      "name": "constant.language.yaml"
+    },
+    "string": {
+      "patterns": [
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double.yaml",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.yaml"
+            }
+          ]
+        },
+        {
+          "begin": "'",
+          "end": "'",
+          "name": "string.quoted.single.yaml",
+          "patterns": [
+            {
+              "match": "''",
+              "name": "constant.character.escape.yaml"
+            }
+          ]
+        }
+      ]
+    },
+    "number": {
+      "match": "(?:^|(?<=[\\s,\\[{]))[-+]?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][-+]?\\d+)?(?=$|[\\s,\\]}])",
+      "name": "constant.numeric.yaml"
+    }
+  }
+}

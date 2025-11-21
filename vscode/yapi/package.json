@@ -18,7 +18,15 @@
       {
         "id": "yapi",
         "extensions": [".yapi.yml", ".yapi.yaml"],
-        "aliases": ["yapi", "YAPI"]
+        "aliases": ["yapi", "YAPI"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "yapi",
+        "scopeName": "source.yaml",
+        "path": "./syntaxes/yaml.tmLanguage.json"
       }
     ],
     "commands": [

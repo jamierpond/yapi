@@ -11,4 +11,4 @@ service: hello.HelloService
 rpc: SayHello
 
 body:
-  greeting: "Emily"
+  greeting: "Fish"
