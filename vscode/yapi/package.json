@@ -10,25 +10,11 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:yapi"
+    "workspaceContains:**/*.yapi.yml",
+    "workspaceContains:**/*.yapi.yaml"
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "languages": [
-      {
-        "id": "yapi",
-        "extensions": [".yapi.yml", ".yapi.yaml"],
-        "aliases": ["yapi", "YAPI"],
-        "configuration": "./language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "yapi",
-        "scopeName": "source.yaml",
-        "path": "./syntaxes/yaml.tmLanguage.json"
-      }
-    ],
     "commands": [
       {
         "command": "yapi.runCurrent",
@@ -42,10 +28,16 @@
         {
           "command": "yapi.runCurrent",
           "group": "navigation",
-          "when": "resourceLangId == yapi"
+          "when": "resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
         }
       ]
-    }
+    },
+    "yamlValidation": [
+      {
+        "fileMatch": ["*.yapi.yml", "*.yapi.yaml"],
+        "url": "https://pond.audio/yapi/schema"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
