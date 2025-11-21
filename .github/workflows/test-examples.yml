@@ -67,33 +67,56 @@ jobs:
         done
         echo "All examples tested successfully"
 
-  quickstart-test:
+  quickstart-e2e:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
         sudo chmod +x /usr/local/bin/yq
-
-    - name: Install bats
-      run: |
         git clone https://github.com/bats-core/bats-core.git
         cd bats-core && sudo ./install.sh /usr/local
 
-    - name: Make scripts executable
-      run: chmod +x yapi lib/*.sh quickstart.sh
-
-    - name: Test quickstart with current commit
+    - name: Run quickstart e2e test
       env:
         YAPI_REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
         YAPI_BRANCH: ${{ github.head_ref || github.ref_name }}
       run: |
+        set -e
+        # Use isolated HOME, but do NOT set YAPI_HOME - let quickstart use default
         export TEST_HOME="$(mktemp -d)"
         export HOME="$TEST_HOME"
-        export YAPI_HOME="$TEST_HOME/.config/yapi"
+
+        # Run quickstart - it should install to default $HOME/.config/yapi
+        chmod +x quickstart.sh
         bash quickstart.sh
-        "$YAPI_HOME/yapi" --help
-        bats "$YAPI_HOME/test/yapi_utils.bats" "$YAPI_HOME/test/yapi_config.bats"
+
+        # Verify .bashrc was configured
+        grep -q "YAPI_HOME" "$HOME/.bashrc"
+        grep -q 'alias a="yapi"' "$HOME/.bashrc"
+
+        # Source the shell config (like a real user would)
+        source "$HOME/.bashrc"
+
+        # Verify yapi command is available
+        yapi --help | grep -q "YAML API Testing Tool"
+
+        # Verify the 'a' alias works
+        a --help | grep -q "YAML API Testing Tool"
+
+        # Run examples using yapi command
+        cd "$HOME/.config/yapi"
+        for example in examples/*.yml examples/*.yaml; do
+          if [ -f "$example" ]; then
+            echo "Testing: $example"
+            yapi -c "$example" || exit 1
+          fi
+        done
+
+        # Run unit tests from installed copy
+        bats test/yapi_utils.bats test/yapi_config.bats test/yapi_http.bats
+
+        echo "Quickstart e2e test passed"
