@@ -14,7 +14,7 @@ body:
   tags:
     - "testing"
     - "api"
-    - "yaml"
+    - "gremlin"
   metadata:
     source: "yapi"
     version: "1.0"

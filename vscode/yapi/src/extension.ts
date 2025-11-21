@@ -1,45 +1,194 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 
-let outputDoc: vscode.TextDocument | undefined;
-let outputEditor: vscode.TextEditor | undefined;
+let panel: vscode.WebviewPanel | undefined;
 
-async function getOrCreateOutputPanel(): Promise<vscode.TextEditor> {
-	// Check if output editor still exists and is visible
-	if (outputEditor && vscode.window.visibleTextEditors.includes(outputEditor)) {
-		return outputEditor;
+function getWebviewContent(body: string, stderr: string, isLoading: boolean): string {
+	const stderrSection = stderr ? `
+		<div class="stderr">
+			<div class="stderr-header">Info</div>
+			<pre>${escapeHtml(stderr)}</pre>
+		</div>
+	` : '';
+
+	const bodyContent = isLoading ? '<div class="loading">Running yapi...</div>' : `<pre class="json">${escapeHtml(body)}</pre>`;
+
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>yapi Response</title>
+	<style>
+		body {
+			font-family: var(--vscode-editor-font-family);
+			font-size: var(--vscode-editor-font-size);
+			padding: 16px;
+			color: var(--vscode-editor-foreground);
+			background: var(--vscode-editor-background);
+			margin: 0;
+		}
+		.json {
+			white-space: pre-wrap;
+			word-wrap: break-word;
+			margin: 0;
+			line-height: 1.5;
+		}
+		.loading {
+			color: var(--vscode-descriptionForeground);
+			font-style: italic;
+		}
+		.stderr {
+			margin-top: 24px;
+			padding-top: 16px;
+			border-top: 1px solid var(--vscode-panel-border);
+		}
+		.stderr-header {
+			font-weight: bold;
+			color: var(--vscode-descriptionForeground);
+			margin-bottom: 8px;
+			font-size: 0.9em;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		.stderr pre {
+			color: var(--vscode-descriptionForeground);
+			margin: 0;
+			font-size: 0.9em;
+		}
+		/* JSON syntax highlighting */
+		.string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
+		.number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+		.boolean { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
+		.null { color: var(--vscode-debugTokenExpression-value, #569cd6); }
+		.key { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
+	</style>
+</head>
+<body>
+	${bodyContent}
+	${stderrSection}
+</body>
+</html>`;
+}
+
+function escapeHtml(text: string): string {
+	return text
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+}
+
+function getWebviewContentRaw(bodyHtml: string, stderr: string): string {
+	const stderrSection = stderr ? `
+		<div class="stderr">
+			<div class="stderr-header">Info</div>
+			<pre>${escapeHtml(stderr)}</pre>
+		</div>
+	` : '';
+
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>yapi Response</title>
+	<style>
+		body {
+			font-family: var(--vscode-editor-font-family);
+			font-size: var(--vscode-editor-font-size);
+			padding: 16px;
+			color: var(--vscode-editor-foreground);
+			background: var(--vscode-editor-background);
+			margin: 0;
+		}
+		.json {
+			white-space: pre-wrap;
+			word-wrap: break-word;
+			margin: 0;
+			line-height: 1.5;
+		}
+		.stderr {
+			margin-top: 24px;
+			padding-top: 16px;
+			border-top: 1px solid var(--vscode-panel-border);
+		}
+		.stderr-header {
+			font-weight: bold;
+			color: var(--vscode-descriptionForeground);
+			margin-bottom: 8px;
+			font-size: 0.9em;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		.stderr pre {
+			color: var(--vscode-descriptionForeground);
+			margin: 0;
+			font-size: 0.9em;
+		}
+		.string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
+		.number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+		.boolean { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
+		.null { color: var(--vscode-debugTokenExpression-value, #569cd6); }
+		.key { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
+	</style>
+</head>
+<body>
+	<pre class="json">${bodyHtml}</pre>
+	${stderrSection}
+</body>
+</html>`;
+}
+
+function syntaxHighlightJson(json: string): string {
+	try {
+		const parsed = JSON.parse(json);
+		const pretty = JSON.stringify(parsed, null, 2);
+		return pretty.replace(
+			/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+			(match) => {
+				let cls = 'number';
+				if (/^"/.test(match)) {
+					if (/:$/.test(match)) {
+						cls = 'key';
+						match = match.slice(0, -1); // remove colon, add back after
+						return `<span class="${cls}">${escapeHtml(match)}</span>:`;
+					} else {
+						cls = 'string';
+					}
+				} else if (/true|false/.test(match)) {
+					cls = 'boolean';
+				} else if (/null/.test(match)) {
+					cls = 'null';
+				}
+				return `<span class="${cls}">${escapeHtml(match)}</span>`;
+			}
+		);
+	} catch {
+		return escapeHtml(json);
+	}
+}
+
+function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel {
+	if (panel) {
+		panel.reveal(vscode.ViewColumn.Beside, true);
+		return panel;
 	}
 
-	// Create untitled document for output
-	outputDoc = await vscode.workspace.openTextDocument({
-		content: '',
-		language: 'json'
-	});
-
-	// Open in side-by-side view
-	outputEditor = await vscode.window.showTextDocument(outputDoc, {
-		viewColumn: vscode.ViewColumn.Beside,
-		preserveFocus: true,
-		preview: false
-	});
-
-	return outputEditor;
-}
-
-async function setOutputContent(content: string) {
-	const editor = await getOrCreateOutputPanel();
-	const doc = editor.document;
-
-	const edit = new vscode.WorkspaceEdit();
-	const fullRange = new vscode.Range(
-		doc.positionAt(0),
-		doc.positionAt(doc.getText().length)
+	panel = vscode.window.createWebviewPanel(
+		'yapiResponse',
+		'yapi Response',
+		{ viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+		{ enableScripts: false }
 	);
-	edit.replace(doc.uri, fullRange, content);
-	await vscode.workspace.applyEdit(edit);
+
+	panel.onDidDispose(() => {
+		panel = undefined;
+	}, null, context.subscriptions);
+
+	return panel;
 }
 
-async function runYapi() {
+async function runYapi(context: vscode.ExtensionContext) {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor) {
 		vscode.window.showErrorMessage('No active editor');
@@ -53,34 +202,29 @@ async function runYapi() {
 	}
 
 	await editor.document.save();
-	await setOutputContent('Running yapi...');
+
+	const webview = getOrCreatePanel(context);
+	webview.webview.html = getWebviewContent('', '', true);
 
 	cp.exec(`yapi -c "${filePath}"`, (error, stdout, stderr) => {
-		let output = stdout || '';
-		if (stderr) {
-			output += '\n\n--- stderr ---\n' + stderr;
-		}
+		let body = stdout || '';
 		if (error && !stdout && !stderr) {
-			output = `Error: ${error.message}`;
+			body = `Error: ${error.message}`;
 		}
 
-		// Try to pretty-print JSON
-		try {
-			const parsed = JSON.parse(output.trim());
-			output = JSON.stringify(parsed, null, 2);
-		} catch {
-			// Not JSON, keep as-is
-		}
+		// Syntax highlight if JSON
+		const highlightedBody = syntaxHighlightJson(body.trim());
 
-		setOutputContent(output);
+		if (panel) {
+			panel.webview.html = getWebviewContentRaw(highlightedBody, stderr);
+		}
 	});
 }
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('yapi extension is now active');
 
-	// Register the run command
-	const runCommand = vscode.commands.registerCommand('yapi.runCurrent', runYapi);
+	const runCommand = vscode.commands.registerCommand('yapi.runCurrent', () => runYapi(context));
 	context.subscriptions.push(runCommand);
 
 	// Status bar button
@@ -90,7 +234,6 @@ export function activate(context: vscode.ExtensionContext) {
 	statusBar.tooltip = 'Run yapi on current file';
 	context.subscriptions.push(statusBar);
 
-	// Show status bar only for yapi files
 	const updateStatusBar = () => {
 		const editor = vscode.window.activeTextEditor;
 		if (editor && (editor.document.fileName.endsWith('.yapi.yml') || editor.document.fileName.endsWith('.yapi.yaml'))) {
@@ -106,9 +249,8 @@ export function activate(context: vscode.ExtensionContext) {
 	// Hot reload on save
 	vscode.workspace.onDidSaveTextDocument((doc) => {
 		if (doc.fileName.endsWith('.yapi.yml') || doc.fileName.endsWith('.yapi.yaml')) {
-			// Only auto-run if we already have an output panel open
-			if (outputEditor && vscode.window.visibleTextEditors.includes(outputEditor)) {
-				runYapi();
+			if (panel) {
+				runYapi(context);
 			}
 		}
 	}, null, context.subscriptions);
