@@ -12,6 +12,6 @@ json: |
     "id": "hi emily",
     "status": "active",
     "nested": {
-      "foo": "bar"
+      "foo": "baz"
     }
   }
