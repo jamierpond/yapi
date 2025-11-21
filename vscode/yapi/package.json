@@ -20,7 +20,10 @@
         "command": "yapi.runCurrent",
         "title": "Run yapi",
         "category": "yapi",
-        "icon": "$(play)"
+        "icon": {
+          "light": "media/sheep.svg",
+          "dark": "media/sheep.svg"
+        }
       }
     ],
     "menus": {
