@@ -50,7 +50,7 @@ yapi -c examples/create-post.yapi.yml
 
 1.  **Clone the repo** somewhere permanent, like `~/.config/yapi`.
     ```bash
-    git clone https://github.com/jpond/yapi.git ~/.config/yapi
+    git clone https://github.com/jamierpond/yapi.git ~/.config/yapi
     ```
 
 2.  **Make scripts executable**.
