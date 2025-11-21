@@ -28,10 +28,10 @@ case "$SHELL_NAME" in
   *)    SHELLRC="$HOME/.${SHELL_NAME}rc" ;;
 esac
 
-# Config to add
+# Config to add (uses single quotes so $HOME expands at runtime)
 CONFIG='
 # yapi - YAML API Testing Tool
-YAPI_HOME="$HOME/.config/yapi"
+YAPI_HOME="${YAPI_HOME:-$HOME/.config/yapi}"
 [ -f "$YAPI_HOME/bin/yapi.zsh" ] && source "$YAPI_HOME/bin/yapi.zsh"
 alias a="yapi"'
 
