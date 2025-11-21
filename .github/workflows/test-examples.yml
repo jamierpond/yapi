@@ -66,3 +66,34 @@ jobs:
           fi
         done
         echo "All examples tested successfully"
+
+  quickstart-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+
+    - name: Install bats
+      run: |
+        git clone https://github.com/bats-core/bats-core.git
+        cd bats-core && sudo ./install.sh /usr/local
+
+    - name: Make scripts executable
+      run: chmod +x yapi lib/*.sh quickstart.sh
+
+    - name: Test quickstart with current commit
+      env:
+        YAPI_REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+        YAPI_BRANCH: ${{ github.head_ref || github.ref_name }}
+      run: |
+        export TEST_HOME="$(mktemp -d)"
+        export HOME="$TEST_HOME"
+        export YAPI_HOME="$TEST_HOME/.config/yapi"
+        bash quickstart.sh
+        "$YAPI_HOME/yapi" --help
+        bats "$YAPI_HOME/test/yapi_utils.bats" "$YAPI_HOME/test/yapi_config.bats"
