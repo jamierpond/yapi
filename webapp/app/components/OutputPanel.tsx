@@ -1,7 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { ExecuteResponse } from "../types/api-contract";
 import { isSuccessResponse } from "../types/api-contract";
+
+const JsonViewer = dynamic(() => import("./JsonViewer"), { ssr: false });
 
 interface OutputPanelProps {
   result: ExecuteResponse | null;
@@ -130,24 +133,7 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         {/* Content */}
         {isSuccessResponse(result) ? (
           <div className="flex-1 overflow-hidden bg-yapi-bg">
-            {/* Content area that matches editor padding */}
-            <div className="h-full w-full px-6 py-4">
-              <pre
-                className="
-                  h-full w-full
-                  text-sm text-yapi-fg
-                  whitespace-pre-wrap break-words
-                  font-mono leading-relaxed
-                  rounded-xl
-                  bg-yapi-bg-elevated
-                  border border-yapi-border/40
-                  px-4 py-3
-                  overflow-auto
-                "
-              >
-                {JSON.stringify(result.responseBody, null, 2)}
-              </pre>
-            </div>
+            <JsonViewer value={JSON.stringify(result.responseBody, null, 2)} />
           </div>
         ) : (
           <div className="flex-1 overflow-hidden bg-yapi-bg">
