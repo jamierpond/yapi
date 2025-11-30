@@ -98,47 +98,118 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Code Example */}
-          <div className="mb-20">
+          {/* Quickstart */}
+          <div className="mb-20 space-y-8">
             <h3 className="text-2xl font-bold text-yapi-fg mb-6 text-center font-mono">
-              See it in action
+              Quick Start
             </h3>
-            <div className="bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl p-6">
-              <pre className="text-sm text-yapi-fg font-mono leading-relaxed overflow-x-auto">
-{`protocol: http
-method: POST
-url: https://api.example.com/users
+
+            {/* Step 1: Install */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-yapi-accent/20 border border-yapi-accent/40 flex items-center justify-center text-sm font-bold text-yapi-accent font-mono">
+                  1
+                </div>
+                <h4 className="text-lg font-bold text-yapi-fg font-mono">Install yapi</h4>
+              </div>
+              <div className="ml-11 bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl p-4">
+                <pre className="text-sm text-yapi-fg font-mono overflow-x-auto">
+{`# Clone or install to ~/.config/yapi
+git clone https://github.com/jamierpond/yapi.git ~/.config/yapi
+
+# Add to your shell (zsh example)
+echo 'source ~/.config/yapi/bin/yapi.zsh' >> ~/.zshrc
+source ~/.zshrc`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Step 2: Create YAML */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-yapi-accent/20 border border-yapi-accent/40 flex items-center justify-center text-sm font-bold text-yapi-accent font-mono">
+                  2
+                </div>
+                <h4 className="text-lg font-bold text-yapi-fg font-mono">Create a YAML request file</h4>
+              </div>
+              <div className="ml-11 bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl p-4">
+                <pre className="text-sm text-yapi-fg font-mono leading-relaxed overflow-x-auto">
+{`# request.yaml
+url: https://api.github.com/users/octocat
+method: GET
 headers:
-  Content-Type: application/json
-  Authorization: Bearer \${API_TOKEN}
+  Accept: application/json`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Step 3: Run */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-yapi-accent/20 border border-yapi-accent/40 flex items-center justify-center text-sm font-bold text-yapi-accent font-mono">
+                  3
+                </div>
+                <h4 className="text-lg font-bold text-yapi-fg font-mono">Run it</h4>
+              </div>
+              <div className="ml-11 bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl p-4">
+                <pre className="text-sm text-yapi-fg font-mono overflow-x-auto">
+{`# Run with explicit config file
+yapi -c request.yaml
+
+# Or use interactive file selector (git-tracked files)
+yapi
+
+# Search all YAML files
+yapi --all`}
+                </pre>
+              </div>
+            </div>
+
+            {/* Advanced Example */}
+            <div className="space-y-3 pt-4">
+              <h4 className="text-lg font-bold text-yapi-fg text-center font-mono">
+                More Examples
+              </h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* HTTP POST */}
+                <div className="bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl p-4">
+                  <div className="text-xs text-yapi-fg-muted mb-2 font-mono">HTTP POST</div>
+                  <pre className="text-xs text-yapi-fg font-mono leading-relaxed overflow-x-auto">
+{`url: https://api.example.com/users
+method: POST
+content_type: application/json
 body:
   name: "Jane Doe"
   email: "jane@example.com"`}
-              </pre>
-            </div>
-            <div className="mt-4 text-center">
-              <code className="text-sm text-yapi-fg-muted font-mono">
-                $ yapi run request.yaml
-              </code>
+                  </pre>
+                </div>
+
+                {/* gRPC */}
+                <div className="bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl p-4">
+                  <div className="text-xs text-yapi-fg-muted mb-2 font-mono">gRPC</div>
+                  <pre className="text-xs text-yapi-fg font-mono leading-relaxed overflow-x-auto">
+{`url: grpc://localhost:50051
+service: user.UserService
+method: GetUser
+body:
+  user_id: 123`}
+                  </pre>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Install */}
+          {/* CTA */}
           <div className="text-center space-y-6">
             <h3 className="text-2xl font-bold text-yapi-fg font-mono">
-              Quick Install
+              Ready to try it?
             </h3>
-            <div className="inline-block bg-yapi-bg-elevated border border-yapi-border/50 rounded-xl px-8 py-4">
-              <code className="text-lg text-yapi-accent font-mono">
-                curl -fsSL https://yapi.sh/install | sh
-              </code>
-            </div>
-            <p className="text-sm text-yapi-fg-subtle">
-              or try the{" "}
-              <Link href="/playground" className="text-yapi-accent hover:underline">
+            <p className="text-lg text-yapi-fg-muted">
+              Test it in the{" "}
+              <Link href="/playground" className="text-yapi-accent hover:underline font-semibold">
                 web playground
               </Link>{" "}
-              first
+              or clone the repo to get started locally
             </p>
           </div>
         </div>
