@@ -35,16 +35,6 @@ export async function getOgImage() {
           }}
         />
 
-        {/* Sheep emoji - rendered via next/og's built-in emoji support */}
-        <span
-          style={{
-            fontSize: "100px",
-            marginBottom: "16px",
-          }}
-        >
-          🐑
-        </span>
-
         {/* Main title with accent "a" */}
         <div
           style={{
