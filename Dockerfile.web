@@ -14,8 +14,8 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/te
 
 # Set up a clean directory for yapi artifacts
 WORKDIR /yapi_dist
-COPY yapi .
-COPY lib ./lib
+COPY bash/yapi .
+COPY bash/lib ./lib
 COPY .depends .
 
 # Make scripts executable
@@ -33,12 +33,12 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/te
 WORKDIR /app
 
 # Copy all yapi files needed for testing
-COPY yapi .
-COPY lib ./lib
+COPY bash/yapi .
+COPY bash/lib ./lib
 COPY .depends .
-COPY test ./test
-COPY scripts/run-all-tests.sh ./scripts/run-all-tests.sh
-COPY examples ./examples
+COPY bash/test ./test
+COPY bash/scripts/run-all-tests.sh ./scripts/run-all-tests.sh
+COPY bash/examples ./examples
 
 # Make scripts executable
 RUN chmod +x yapi lib/*.sh scripts/run-all-tests.sh
@@ -62,7 +62,7 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy only the necessary package manager files
-COPY webapp/package.json webapp/bun.lockb* ./
+COPY web/package.json web/bun.lockb* ./
 RUN bun install --no-save --frozen-lockfile
 
 
@@ -73,12 +73,12 @@ WORKDIR /app
 
 # Copy dependencies and source code
 COPY --from=deps /app/node_modules ./node_modules
-COPY webapp/ ./
+COPY web/ ./
 
 # Disable telemetry during build if desired
 # ENV NEXT_TELEMETRY_DISABLED=1
 
-# Run webapp tests
+# Run web tests
 RUN bun run test
 
 RUN bun run build
