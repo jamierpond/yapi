@@ -193,15 +193,6 @@ export default function Playground() {
           <Editor value={yaml} onChange={handleYamlChange} onRun={handleRun} />
         </div>
 
-        {/* Center divider with interaction */}
-        <div className="absolute left-1/2 top-0 bottom-0 -ml-px w-px pointer-events-none">
-          <div className="sticky top-1/2 left-0 w-8 h-8 -ml-4 -mt-4 pointer-events-auto">
-            <div className="w-full h-full rounded-full bg-yapi-bg-elevated border border-yapi-border-strong shadow-lg flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-yapi-accent/30"></div>
-            </div>
-          </div>
-        </div>
-
         {/* Right Panel - Output */}
         <div className="w-1/2 relative">
           <OutputPanel result={result} isLoading={isLoading} />

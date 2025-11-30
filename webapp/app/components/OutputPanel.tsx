@@ -28,17 +28,16 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           </div>
         </div>
 
-        {/* Body skeleton that looks like a code block */}
-        <div className="flex-1 overflow-hidden p-6 bg-yapi-bg-subtle/30">
-          <div className="space-y-3 max-w-full">
-            <div className="h-4 w-11/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-10/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-9/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-8/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-10/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-5/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-7/12 rounded yapi-skeleton"></div>
-            <div className="h-4 w-6/12 rounded yapi-skeleton"></div>
+        {/* Body skeleton that matches new full-bleed layout */}
+        <div className="flex-1 overflow-hidden bg-yapi-bg">
+          <div className="h-full w-full px-6 py-4">
+            <div className="h-full w-full rounded-xl bg-yapi-bg-elevated border border-yapi-border/40 p-4 space-y-3">
+              <div className="h-4 w-10/12 rounded yapi-skeleton" />
+              <div className="h-4 w-9/12 rounded yapi-skeleton" />
+              <div className="h-4 w-8/12 rounded yapi-skeleton" />
+              <div className="h-4 w-7/12 rounded yapi-skeleton" />
+              <div className="h-4 w-5/12 rounded yapi-skeleton" />
+            </div>
           </div>
         </div>
 
@@ -49,17 +48,15 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           }
 
           .yapi-skeleton {
-            position: relative;
-            overflow: hidden;
-            background-color: rgba(38, 38, 38, 1);
             background-image: linear-gradient(
               90deg,
-              rgba(255, 255, 255, 0.02) 0%,
-              rgba(255, 255, 255, 0.08) 20%,
-              rgba(255, 255, 255, 0.02) 40%
+              rgba(255,255,255,0.02) 0%,
+              rgba(255,255,255,0.08) 20%,
+              rgba(255,255,255,0.02) 40%
             );
+            background-color: #262626;
             background-size: 200% 100%;
-            animation: yapi-skeleton-shimmer 1.4s ease-in-out infinite;
+            animation: yapi-skeleton-shimmer 1.2s ease-in-out infinite;
           }
         `}</style>
       </div>
