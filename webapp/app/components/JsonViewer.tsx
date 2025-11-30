@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import * as monaco from "monaco-editor";
+import { monaco } from "../lib/monaco";
 
 interface JsonViewerProps {
   value: string;
