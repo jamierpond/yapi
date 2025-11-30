@@ -1,9 +1,10 @@
 "use client";
 
+import * as Monaco from "monaco-editor";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { monaco } from "../lib/monaco";
 import { configureMonacoYaml } from "monaco-yaml";
-import yaml from "yaml";
+// import yaml from "yaml";
 
 // Simple guard so we only wire YAML services once
 let yamlConfigured = false;
@@ -18,7 +19,7 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
   // Ref to the DOM node Monaco will render into
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Ref to keep the editor instance (avoid double init, allow dispose)
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   // Track validation state
   const [hasErrors, setHasErrors] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
