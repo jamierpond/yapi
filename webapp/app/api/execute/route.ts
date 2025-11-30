@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
     // Parse yapi output
     let responseBody: unknown;
     let statusCode = 200;
-    let responseHeaders: Record<string, string> = {};
 
     try {
       // Try to parse as JSON
@@ -77,15 +76,10 @@ export async function POST(request: NextRequest) {
       responseBody = stdout;
     }
 
-    // Generate curl command equivalent
-    const curlCommand = await generateCurlCommand(yaml);
-
     // Build success response
     const response = ExecuteSuccessResponseSchema.parse({
       success: true,
-      curlCommand,
       responseBody,
-      responseHeaders,
       statusCode,
       timing,
     });
@@ -134,56 +128,5 @@ export async function POST(request: NextRequest) {
         // Ignore cleanup errors
       }
     }
-  }
-}
-
-/**
- * Generate a curl command equivalent from YAML
- * This is a simplified version - you may want to enhance this based on yapi's actual behavior
- */
-async function generateCurlCommand(yaml: string): Promise<string> {
-  try {
-    const lines = yaml.split("\n");
-    let url = "";
-    let method = "GET";
-    const headers: string[] = [];
-    let body = "";
-
-    let inHeaders = false;
-    let inBody = false;
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("url:")) {
-        url = trimmed.substring(4).trim();
-      } else if (trimmed.startsWith("method:")) {
-        method = trimmed.substring(7).trim();
-      } else if (trimmed === "headers:") {
-        inHeaders = true;
-        inBody = false;
-      } else if (trimmed === "body:" || trimmed === "json:") {
-        inBody = true;
-        inHeaders = false;
-      } else if (inHeaders && trimmed && !trimmed.startsWith("#")) {
-        const [key, ...valueParts] = trimmed.split(":");
-        if (key && valueParts.length) {
-          headers.push(`-H "${key.trim()}: ${valueParts.join(":").trim()}"`);
-        }
-      } else if (inBody && trimmed) {
-        body += trimmed + " ";
-      }
-    }
-
-    let curlCmd = `curl -X ${method} "${url}"`;
-    if (headers.length > 0) {
-      curlCmd += " \\\n  " + headers.join(" \\\n  ");
-    }
-    if (body) {
-      curlCmd += ` \\\n  -d '${body.trim()}'`;
-    }
-
-    return curlCmd;
-  } catch {
-    return "# Could not generate curl command";
   }
 }

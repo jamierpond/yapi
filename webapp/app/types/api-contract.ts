@@ -38,7 +38,7 @@ export const ExecuteSuccessResponseSchema = z.object({
   /** HTTP status code */
   statusCode: z.number(),
 
-  /** Request timing in milliseconds */
+  /** Request timing in milliseconds (measured server-side) */
   timing: z.number(),
 
   /** Optional: The parsed YAML config (for debugging) */
