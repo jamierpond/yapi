@@ -1,7 +1,13 @@
 import { ImageResponse } from "next/og";
 import { SITE_TITLE, COLORS, OG_IMAGE_SIZE } from "@/app/lib/constants";
+import fs from "fs/promises";
+import path from "path";
 
 export async function getOgImage() {
+  const fontData = await fs.readFile(
+    path.join(process.cwd(), "public", "fonts", "JetBrains_Mono", "static", "JetBrainsMono-Bold.ttf")
+  );
+
   return new ImageResponse(
     (
       <div
@@ -14,10 +20,10 @@ export async function getOgImage() {
           justifyContent: "center",
           backgroundColor: COLORS.bg,
           position: "relative",
-          fontFamily: "monospace",
+          fontFamily: "JetBrains Mono",
         }}
       >
-        {/* Background gradient accents - matching Landing page */}
+        {/* Left-side radial glow radiating across */}
         <div
           style={{
             position: "absolute",
@@ -25,65 +31,50 @@ export async function getOgImage() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: `linear-gradient(135deg, ${COLORS.accent}1a 0%, transparent 50%)`,
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "25%",
-            right: "25%",
-            width: "400px",
-            height: "400px",
-            background: `radial-gradient(circle, ${COLORS.accent}0d 0%, transparent 70%)`,
-            borderRadius: "50%",
+            background: `radial-gradient(ellipse 80% 100% at 0% 50%, ${COLORS.accent}22 0%, transparent 60%)`,
           }}
         />
 
-        {/* Vignette effect */}
-        <div
-          style={{
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            background:
-              "radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.4) 100%)",
-          }}
-        />
-
-        {/* Sheep emoji */}
-        <div
-          style={{
-            fontSize: "120px",
-            marginBottom: "20px",
-            display: "flex",
-          }}
-        >
-          🐑
-        </div>
-
-        {/* Main title */}
+        {/* Main title with accent "a" */}
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            alignItems: "center",
+            alignItems: "baseline",
             justifyContent: "center",
-            marginBottom: "30px",
+            marginBottom: "40px",
           }}
         >
-          <div
+          <span
             style={{
-              fontSize: "160px",
+              fontSize: "180px",
               fontWeight: "bold",
               color: COLORS.fg,
-              fontFamily: "monospace",
-              letterSpacing: "-4px",
-              display: "flex",
+              letterSpacing: "-6px",
             }}
           >
-            {SITE_TITLE}
-          </div>
+            y
+          </span>
+          <span
+            style={{
+              fontSize: "180px",
+              fontWeight: "bold",
+              color: COLORS.accent,
+              letterSpacing: "-6px",
+            }}
+          >
+            a
+          </span>
+          <span
+            style={{
+              fontSize: "180px",
+              fontWeight: "bold",
+              color: COLORS.fg,
+              letterSpacing: "-6px",
+            }}
+          >
+            pi
+          </span>
         </div>
 
         {/* Tagline */}
@@ -96,7 +87,7 @@ export async function getOgImage() {
             backgroundColor: COLORS.bgElevated,
             border: `1px solid ${COLORS.border}`,
             borderRadius: "9999px",
-            marginBottom: "40px",
+            marginBottom: "50px",
           }}
         >
           <div
@@ -111,7 +102,6 @@ export async function getOgImage() {
           <span
             style={{
               fontSize: "24px",
-              fontFamily: "monospace",
               color: COLORS.fgMuted,
               textTransform: "uppercase",
               letterSpacing: "2px",
@@ -121,41 +111,22 @@ export async function getOgImage() {
           </span>
         </div>
 
-        {/* Subtitle */}
-        <div
-          style={{
-            fontSize: "48px",
-            fontWeight: "bold",
-            color: COLORS.fg,
-            fontFamily: "monospace",
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <span>API testing</span>
-          <span style={{ color: COLORS.accent }}>in YAML</span>
-        </div>
-
         {/* Protocol badges */}
         <div
           style={{
             display: "flex",
             gap: "20px",
-            marginTop: "50px",
           }}
         >
           {["HTTP", "gRPC", "TCP"].map((protocol) => (
             <div
               key={protocol}
               style={{
-                padding: "12px 28px",
+                padding: "14px 32px",
                 backgroundColor: COLORS.bgElevated,
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: "12px",
-                fontSize: "22px",
-                fontFamily: "monospace",
+                fontSize: "24px",
                 color: COLORS.fgMuted,
                 display: "flex",
               }}
@@ -168,6 +139,14 @@ export async function getOgImage() {
     ),
     {
       ...OG_IMAGE_SIZE,
+      fonts: [
+        {
+          name: "JetBrains Mono",
+          data: fontData,
+          style: "normal",
+          weight: 700,
+        },
+      ],
     }
   );
 }
