@@ -3,12 +3,13 @@ import { yapiDecode } from "../../_lib/yapi-encode";
 import type { Metadata } from "next";
 
 type Props = {
-  params: { encoded: string };
+  params: Promise<{ encoded: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const decoded = yapiDecode(params.encoded);
+    const { encoded } = await params;
+    const decoded = yapiDecode(encoded);
     const preview = decoded.length > 200 ? decoded.slice(0, 200) + "..." : decoded;
 
     return {
