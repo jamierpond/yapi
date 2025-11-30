@@ -103,14 +103,18 @@ export default function Playground() {
   return (
     <div className="flex flex-col h-screen bg-yapi-bg">
       {/* Header */}
-      <header className="border-b border-yapi-border bg-yapi-bg-elevated backdrop-blur-xl">
-        <div className="max-w-[1800px] mx-auto px-8 py-5">
+      <header className="relative border-b border-yapi-border-strong bg-gradient-to-r from-yapi-bg-elevated via-yapi-bg-elevated to-yapi-bg-elevated backdrop-blur-xl overflow-hidden">
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-yapi-accent/5 via-orange-500/5 to-yapi-accent/5 opacity-60"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-yapi-bg-elevated/80"></div>
+
+        <div className="relative max-w-[1800px] mx-auto px-8 py-5">
           <div className="flex items-center justify-between">
             {/* Left: Logo & Title */}
             <div className="flex items-center gap-4">
-              <div className="text-4xl">🐑</div>
+              <div className="text-4xl drop-shadow-lg">🐑</div>
               <div>
-                <h1 className="text-xl font-bold text-yapi-fg tracking-tight">
+                <h1 className="text-xl font-bold text-yapi-fg tracking-tight bg-gradient-to-r from-yapi-fg via-white to-yapi-fg bg-clip-text text-transparent">
                   yapi playground
                 </h1>
                 <p className="text-xs text-yapi-fg-subtle mt-0.5">
