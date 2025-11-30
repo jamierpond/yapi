@@ -26,7 +26,7 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         </div>
 
         {/* Content skeleton */}
-        <div className="flex-1 overflow-hidden p-6">
+        <div className="flex-1 overflow-hidden p-6 bg-yapi-bg-subtle/30">
           <div className="space-y-3">
             <div className="h-4 bg-yapi-border/40 rounded animate-shimmer-skeleton"></div>
             <div className="h-4 bg-yapi-border/40 rounded w-5/6 animate-shimmer-skeleton animation-delay-100"></div>
@@ -131,14 +131,14 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6 relative">
+        <div className="flex-1 overflow-auto p-6 relative bg-yapi-bg-subtle/30">
           {/* Subtle top gradient fade */}
-          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-yapi-bg via-yapi-bg/50 to-transparent pointer-events-none z-10"></div>
+          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-yapi-bg-subtle/30 via-yapi-bg-subtle/15 to-transparent pointer-events-none z-10"></div>
 
           <div className="relative">
             {isSuccessResponse(result) ? (
               <div className="group">
-                <pre className="text-sm text-yapi-fg whitespace-pre-wrap break-words font-mono leading-relaxed p-6 bg-yapi-bg-elevated/30 border border-yapi-border/30 rounded-xl backdrop-blur-sm hover:border-yapi-border/50 transition-colors duration-300">
+                <pre className="text-sm text-yapi-fg whitespace-pre-wrap break-words font-mono leading-relaxed p-6 bg-yapi-bg-elevated/40 border border-yapi-border/30 rounded-xl backdrop-blur-sm hover:border-yapi-border/50 transition-colors duration-300">
                   {JSON.stringify(result.responseBody, null, 2)}
                 </pre>
               </div>
