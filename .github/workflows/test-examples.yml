@@ -55,10 +55,10 @@ jobs:
         cd bats-core && sudo ./install.sh /usr/local
 
     - name: Make scripts executable
-      run: chmod +x yapi lib/*.sh
+      run: chmod +x bash/yapi bash/lib/*.sh
 
     - name: Run integration tests
-      run: bats test/integration.bats
+      run: bats bash/test/integration.bats
 
     - name: Test all examples
-      run: ./scripts/run-all-examples.sh
+      run: ./bash/scripts/run-all-examples.sh
