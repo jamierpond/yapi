@@ -30,7 +30,6 @@ func TestTCPExecutor_Execute_Echo(t *testing.T) {
 			return
 		}
 		defer conn.Close()
-		_ = time.Now() // Dummy usage to avoid unused import error
 
 		// Read data from client
 		received, err := io.ReadAll(conn)
