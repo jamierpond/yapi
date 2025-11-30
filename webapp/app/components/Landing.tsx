@@ -57,7 +57,7 @@ export default function Landing() {
               </Link>
 
               <a
-                href="https://github.com/your-repo/yapi"
+                href="https://github.com/jamierpond/yapi"
                 className="px-8 py-4 text-lg font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent/50 text-yapi-fg transition-all duration-300"
               >
                 View on GitHub
