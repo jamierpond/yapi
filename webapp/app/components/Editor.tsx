@@ -86,6 +86,11 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
       padding: { top: 16, bottom: 16 },
       renderLineHighlight: "all",
       cursorBlinking: "smooth",
+      // ensure IntelliSense is on
+      quickSuggestions: { other: true, comments: false, strings: true },
+      suggestOnTriggerCharacters: true,
+      acceptSuggestionOnEnter: "on",
+      tabCompletion: "on",
     });
 
     // Configure YAML validation / completion once per app

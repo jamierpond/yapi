@@ -1,3 +1,4 @@
+import "monaco-editor/min/vs/editor/editor.main.css";
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
