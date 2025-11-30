@@ -31,16 +31,30 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           </div>
         </div>
 
-        {/* Body skeleton that matches new full-bleed layout */}
-        <div className="flex-1 overflow-hidden bg-yapi-bg">
-          <div className="h-full w-full px-6 py-4">
-            <div className="h-full w-full rounded-xl bg-yapi-bg-elevated border border-yapi-border/40 p-4 space-y-3">
-              <div className="h-4 w-10/12 rounded yapi-skeleton" />
-              <div className="h-4 w-9/12 rounded yapi-skeleton" />
-              <div className="h-4 w-8/12 rounded yapi-skeleton" />
-              <div className="h-4 w-7/12 rounded yapi-skeleton" />
-              <div className="h-4 w-5/12 rounded yapi-skeleton" />
-            </div>
+        {/* Body skeleton that matches Monaco editor layout */}
+        <div className="flex-1 overflow-hidden bg-yapi-bg relative">
+          {/* Fake line numbers gutter */}
+          <div className="absolute left-0 top-0 bottom-0 w-14 bg-yapi-bg-elevated border-r border-yapi-border/30 flex flex-col items-center gap-[18px] pt-4 pb-4">
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+            <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
+          </div>
+
+          {/* Fake code content */}
+          <div className="absolute left-14 top-0 right-0 bottom-0 bg-yapi-bg-elevated p-4 space-y-[18px]">
+            <div className="h-3 w-10/12 rounded yapi-skeleton" />
+            <div className="h-3 w-9/12 rounded yapi-skeleton" />
+            <div className="h-3 w-8/12 rounded yapi-skeleton" />
+            <div className="h-3 w-7/12 rounded yapi-skeleton" />
+            <div className="h-3 w-6/12 rounded yapi-skeleton" />
+            <div className="h-3 w-9/12 rounded yapi-skeleton" />
+            <div className="h-3 w-5/12 rounded yapi-skeleton" />
+            <div className="h-3 w-4/12 rounded yapi-skeleton" />
           </div>
         </div>
 
