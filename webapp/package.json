@@ -11,8 +11,7 @@
     "test": "vitest run --config vitest.config.node.mts && vitest run --config vitest.config.browser.mts",
     "test:node": "vitest run --config vitest.config.node.mts",
     "test:browser": "vitest run --config vitest.config.browser.mts",
-    "test:watch": "vitest --config vitest.config.node.mts --config vitest.config.browser.mts",
-    "test:ui": "vitest --ui"
+    "test:watch": "vitest --config vitest.config.node.mts --config vitest.config.browser.mts"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
