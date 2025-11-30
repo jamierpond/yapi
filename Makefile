@@ -5,7 +5,7 @@
 NAME := yapi
 
 build:
-	docker build . -t ${NAME}:latest -f Dockerfile.webapp
+	docker build . -t ${NAME}:latest -f Dockerfile.web
 
 run:
 	-docker stop yapi

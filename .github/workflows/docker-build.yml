@@ -22,7 +22,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        file: ./Dockerfile.webapp
+        file: ./Dockerfile.web
         push: false
         tags: yapi-webapp:test
         cache-from: type=gha
