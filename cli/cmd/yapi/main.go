@@ -36,12 +36,22 @@ allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified
 				cfg.URL = urlOverride
 			}
 
-			// For now, assume HTTP as per the brief's focus
-			if cfg.Method == "" { // Default to GET if not specified
+			var result string
+			switch cfg.Method {
+			case "grpc":
+				grpcExec := executor.NewGRPCExecutor()
+				result, err = grpcExec.Execute(cfg)
+			case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS": // Add other HTTP methods as needed
+				httpExec := executor.NewHTTPExecutor()
+				result, err = httpExec.Execute(cfg)
+			case "": // Default to GET if method is not specified in config
 				cfg.Method = "GET"
+				httpExec := executor.NewHTTPExecutor()
+				result, err = httpExec.Execute(cfg)
+			default:
+				log.Fatalf("Unsupported method: %s", cfg.Method)
 			}
-			httpExec := executor.NewHTTPExecutor()
-			result, err := httpExec.Execute(cfg)
+
 			if err != nil {
 				log.Fatalf("Request failed: %v", err)
 			}
