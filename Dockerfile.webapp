@@ -78,6 +78,9 @@ COPY webapp/ ./
 # Disable telemetry during build if desired
 # ENV NEXT_TELEMETRY_DISABLED=1
 
+# Run webapp tests
+RUN bun run test
+
 RUN bun run build
 
 
