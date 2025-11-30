@@ -103,6 +103,7 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
       minimap: { enabled: false },
       theme: "vs",
       fontSize: 14,
+      fontFamily: "var(--font-jetbrains-mono)",
       lineNumbers: "on",
       scrollBeyondLastLine: false,
       wordWrap: "on",

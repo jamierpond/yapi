@@ -28,6 +28,7 @@ export default function Playground() {
   const [result, setResult] = useState<ExecuteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
 
   // Load YAML from URL on mount
   useEffect(() => {
@@ -89,6 +90,16 @@ export default function Playground() {
     }
   }
 
+  async function handleShare() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopyStatus("copied");
+      setTimeout(() => setCopyStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Failed to copy URL:", error);
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-yapi-bg">
       {/* Header */}
@@ -105,15 +116,27 @@ export default function Playground() {
             </div>
             <div className="flex items-center gap-3">
               <a
-                href="https://github.com/yourusername/yapi"
+                href="https://github.com/jamierpond/yapi"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-yapi-fg/60 hover:text-yapi-fg transition-colors"
+                className="text-yapi-fg/60 hover:text-yapi-fg transition-colors"
+                aria-label="View source on GitHub"
               >
-                docs
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
               </a>
-              <button className="px-4 py-2 text-sm font-medium text-yapi-fg border border-yapi-border-dark rounded hover:bg-yellow-100 transition-colors">
-                share
+              <button
+                onClick={handleShare}
+                className="px-4 py-2 text-sm font-medium text-yapi-fg border border-yapi-border-dark rounded hover:bg-yellow-100 transition-colors"
+              >
+                {copyStatus === "copied" ? "copied!" : "share"}
               </button>
             </div>
           </div>
