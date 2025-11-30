@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SITE_TITLE, COLORS, OG_IMAGE_SIZE } from "@/app/lib/constants";
+import { COLORS, OG_IMAGE_SIZE } from "@/app/lib/constants";
 import fs from "fs/promises";
 import path from "path";
 
@@ -23,7 +23,7 @@ export async function getOgImage() {
           fontFamily: "JetBrains Mono",
         }}
       >
-        {/* Left-side radial glow radiating across */}
+        {/* Top-left radial glow bloom */}
         <div
           style={{
             position: "absolute",
@@ -31,9 +31,19 @@ export async function getOgImage() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: `radial-gradient(ellipse 80% 100% at 0% 50%, ${COLORS.accent}22 0%, transparent 60%)`,
+            background: `radial-gradient(ellipse 120% 100% at 0% 0%, ${COLORS.accent}28 0%, transparent 50%)`,
           }}
         />
+
+        {/* Sheep emoji - rendered via next/og's built-in emoji support */}
+        <span
+          style={{
+            fontSize: "100px",
+            marginBottom: "16px",
+          }}
+        >
+          🐑
+        </span>
 
         {/* Main title with accent "a" */}
         <div
