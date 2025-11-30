@@ -18,30 +18,22 @@ export default function JsonViewer({ value }: JsonViewerProps) {
     // If React re-runs the effect, do not re-create the editor
     if (editorRef.current) return;
 
-    // Configure workers once
-    if (typeof window !== "undefined" && !(window as any).MonacoEnvironment) {
-      (window as any).MonacoEnvironment = {
-        getWorker(_id: string, label: string) {
-          // Fallback to default Monaco editor worker
-          return new Worker(
-            new URL(
-              "monaco-editor/esm/vs/editor/editor.worker",
-              import.meta.url
-            ),
-            { type: "module" }
-          );
-        },
-      };
+    // Detect content type
+    let language = "plaintext";
+    try {
+      JSON.parse(value);
+      language = "json";
+    } catch {
+      // Keep as plaintext for non-JSON
     }
 
-    // Create a JSON model
+    // Create a model with detected language
     const model = monaco.editor.createModel(
       value,
-      "json",
-      monaco.Uri.parse("file:///response.json")
+      language
     );
 
-    // Create the editor instance
+    // Create the editor instance with all language features disabled
     editorRef.current = monaco.editor.create(container, {
       model,
       automaticLayout: true,
@@ -62,6 +54,15 @@ export default function JsonViewer({ value }: JsonViewerProps) {
         vertical: "visible",
         horizontal: "visible",
       },
+      // Disable all language features that require workers
+      quickSuggestions: false,
+      parameterHints: { enabled: false },
+      suggestOnTriggerCharacters: false,
+      acceptSuggestionOnEnter: "off",
+      tabCompletion: "off",
+      wordBasedSuggestions: "off",
+      // Disable validation
+      validate: false,
     });
 
     // Cleanup on unmount
@@ -72,11 +73,26 @@ export default function JsonViewer({ value }: JsonViewerProps) {
     };
   }, []);
 
-  // Update editor content when value prop changes
+  // Update editor content and language when value prop changes
   useEffect(() => {
     if (editorRef.current) {
       const currentValue = editorRef.current.getValue();
       if (currentValue !== value) {
+        // Detect new language
+        let language = "plaintext";
+        try {
+          JSON.parse(value);
+          language = "json";
+        } catch {
+          // Keep as plaintext
+        }
+
+        // Update model language
+        const model = editorRef.current.getModel();
+        if (model) {
+          monaco.editor.setModelLanguage(model, language);
+        }
+
         editorRef.current.setValue(value);
       }
     }
