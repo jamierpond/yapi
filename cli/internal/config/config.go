@@ -24,6 +24,7 @@ type YapiConfig struct {
 	Insecure    bool                   `yaml:"insecure,omitempty"` // For gRPC
 	Plaintext   bool                   `yaml:"plaintext,omitempty"` // For gRPC
 	ReadTimeout int                    `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
+	CloseAfterSend bool                 `yaml:"close_after_send,omitempty"`
 }
 
 func LoadConfig(path string) (*YapiConfig, error) {

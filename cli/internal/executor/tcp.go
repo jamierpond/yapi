@@ -75,6 +75,13 @@ func (e *TCPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to write data to TCP connection: %w", err)
 		}
+		if cfg.CloseAfterSend {
+			// Explicitly close the write half of the connection
+			// This signals to the server that no more data will be sent from client side
+			if tcpConn, ok := conn.(*net.TCPConn); ok {
+				_ = tcpConn.CloseWrite() // Ignore error as we still want to read response
+			}
+		}
 	}
 
 	// Set read deadline
