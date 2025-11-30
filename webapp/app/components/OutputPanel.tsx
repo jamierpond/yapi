@@ -12,43 +12,59 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-yapi-bg-subtle relative overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-yapi-accent/5 via-transparent to-orange-500/5 animate-pulse-slow"></div>
-
-        <div className="relative flex flex-col items-center gap-6">
-          {/* Multi-ring loader */}
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 border-2 border-yapi-accent/30 border-t-yapi-accent rounded-full animate-spin"></div>
-            <div className="absolute inset-2 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin-slow"></div>
-            <div className="absolute inset-0 bg-yapi-accent/10 rounded-full animate-pulse"></div>
+      <div className="h-full flex flex-col bg-yapi-bg-subtle relative">
+        {/* Header skeleton */}
+        <div className="relative flex items-center justify-between px-6 py-4 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-yapi-border animate-pulse"></div>
+            <div className="h-3 w-20 bg-yapi-border rounded animate-shimmer-skeleton"></div>
           </div>
+          <div className="flex items-center gap-4">
+            <div className="h-7 w-16 bg-yapi-border/50 rounded-lg animate-shimmer-skeleton"></div>
+            <div className="h-7 w-20 bg-yapi-border/50 rounded-lg animate-shimmer-skeleton"></div>
+          </div>
+        </div>
 
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-sm font-medium text-yapi-fg animate-pulse">Executing request</p>
-            <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 bg-yapi-accent rounded-full animate-bounce"></div>
-              <div className="w-1.5 h-1.5 bg-yapi-accent rounded-full animate-bounce animation-delay-150"></div>
-              <div className="w-1.5 h-1.5 bg-yapi-accent rounded-full animate-bounce animation-delay-300"></div>
-            </div>
+        {/* Content skeleton */}
+        <div className="flex-1 overflow-hidden p-6">
+          <div className="space-y-3">
+            <div className="h-4 bg-yapi-border/40 rounded animate-shimmer-skeleton"></div>
+            <div className="h-4 bg-yapi-border/40 rounded w-5/6 animate-shimmer-skeleton animation-delay-100"></div>
+            <div className="h-4 bg-yapi-border/40 rounded w-4/6 animate-shimmer-skeleton animation-delay-200"></div>
+            <div className="h-4 bg-yapi-border/40 rounded w-3/4 animate-shimmer-skeleton animation-delay-100"></div>
+            <div className="h-4 bg-yapi-border/40 rounded w-2/3 animate-shimmer-skeleton animation-delay-200"></div>
+            <div className="h-4 bg-yapi-border/40 rounded animate-shimmer-skeleton"></div>
+            <div className="h-4 bg-yapi-border/40 rounded w-4/5 animate-shimmer-skeleton animation-delay-100"></div>
+            <div className="h-4 bg-yapi-border/40 rounded w-3/5 animate-shimmer-skeleton animation-delay-200"></div>
           </div>
         </div>
 
         <style>{`
-          @keyframes spin-slow {
-            to { transform: rotate(-360deg); }
+          @keyframes shimmer-skeleton {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
           }
-          .animate-spin-slow {
-            animation: spin-slow 2s linear infinite;
+          .animate-shimmer-skeleton {
+            animation: shimmer-skeleton 1.5s ease-in-out infinite;
+            background: linear-gradient(
+              90deg,
+              rgba(255, 255, 255, 0.05) 0%,
+              rgba(255, 255, 255, 0.15) 50%,
+              rgba(255, 255, 255, 0.05) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer-skeleton 1.5s ease-in-out infinite;
           }
-          .animate-pulse-slow {
-            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          @keyframes shimmer-skeleton {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
           }
-          .animation-delay-150 {
-            animation-delay: 150ms;
+          .animation-delay-100 {
+            animation-delay: 100ms;
           }
-          .animation-delay-300 {
-            animation-delay: 300ms;
+          .animation-delay-200 {
+            animation-delay: 200ms;
           }
         `}</style>
       </div>
