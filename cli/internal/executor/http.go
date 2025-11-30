@@ -23,13 +23,18 @@ func NewHTTPExecutor() *HTTPExecutor {
 func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 	var reqBody io.Reader
 
-	if cfg.Body != nil {
-		b, err := json.Marshal(cfg.Body)
-		if err != nil {
-			return "", fmt.Errorf("failed to marshal request body: %w", err)
+	if cfg.Body != nil || cfg.JSON != "" {
+		if cfg.Body != nil {
+			b, err := json.Marshal(cfg.Body)
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal request body: %w", err)
+			}
+			reqBody = bytes.NewBuffer(b)
+		} else if cfg.JSON != "" {
+			reqBody = bytes.NewBuffer([]byte(cfg.JSON))
 		}
-		reqBody = bytes.NewBuffer(b)
-		// Default content type to application/json if body is present and not explicitly set
+
+		// Default content type to application/json if body or json is present and not explicitly set
 		if cfg.ContentType == "" {
 			cfg.ContentType = "application/json"
 		}

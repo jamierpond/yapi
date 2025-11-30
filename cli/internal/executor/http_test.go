@@ -1,54 +1,17 @@
 package executor_test
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"testing"
 
 	"cli/internal/config"
 	"cli/internal/executor"
 )
-
-func TestHTTPExecutor_Execute_GETWithQuery(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			t.Errorf("Expected GET method, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/test" {
-			t.Errorf("Expected path /api/test, got %s", r.URL.Path)
-		}
-		query := r.URL.Query()
-		if query.Get("foo") != "bar" {
-			t.Errorf("Expected query param foo=bar, got %s", query.Get("foo"))
-		}
-		if query.Get("baz") != "qux" {
-			t.Errorf("Expected query param baz=qux, got %s", query.Get("baz"))
-		}
-		w.Write([]byte("OK"))
-	}))
-	defer srv.Close()
-
-	cfg := &config.YapiConfig{
-		URL:    srv.URL + "/api/test",
-		Method: "GET",
-		Query: map[string]string{
-			"foo": "bar",
-			"baz": "qux",
-		},
-	}
-
-	exec := executor.NewHTTPExecutor()
-	resp, err := exec.Execute(cfg)
-	if err != nil {
-		t.Fatalf("Execute failed: %v", err)
-	}
-
-	if resp != "OK" {
-		t.Errorf("Expected response OK, got %s", resp)
-	}
-}
 
 func TestHTTPExecutor_URLBuilding(t *testing.T) {
 	tests := []struct {
@@ -146,43 +109,112 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 	}
 }
 
-func TestHTTPExecutor_Execute_POSTWithJSONBody(t *testing.T) {
-	expectedBody := `{"name":"test","value":123}`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			t.Errorf("Expected POST method, got %s", r.Method)
-		}
-		if r.Header.Get("Content-Type") != "application/json" {
-			t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
-		}
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatalf("Failed to read request body: %v", err)
-		}
-		if string(bodyBytes) != expectedBody {
-			t.Errorf("Expected request body %s, got %s", expectedBody, string(bodyBytes))
-		}
-		w.Write([]byte(`{"status":"received"}`))
-	}))
-	defer srv.Close()
-
-	cfg := &config.YapiConfig{
-		URL:    srv.URL,
-		Method: "POST",
-		Body: map[string]interface{}{
-			"name":  "test",
-			"value": 123,
+func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *config.YapiConfig
+		expectedBody   string
+		expectedStatus int
+	}{
+		{
+			name: "POST with simple JSON body",
+			cfg: &config.YapiConfig{
+				URL:    "", // Will be set to mock server URL
+				Method: "POST",
+				Body: map[string]interface{}{
+					"name":  "test",
+					"value": 123,
+				},
+			},
+			expectedBody:   `{"name":"test","value":123}`,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "POST with complex nested JSON body",
+			cfg: &config.YapiConfig{
+				URL:    "", // Will be set to mock server URL
+				Method: "POST",
+				Body: map[string]interface{}{
+					"title":       "Testing yapi - YAML API Testing Tool",
+					"description": "This demo shows nested objects, arrays, and various data types",
+					"userId":      123,
+					"isPublished": true,
+					"tags":        []interface{}{"testing", "api", "yaml"},
+					"metadata": map[string]interface{}{
+						"source":    "yapi",
+						"version":   "1.0",
+						"timestamp": "2024-01-15T10:30:00Z",
+					},
+					"author": map[string]interface{}{
+						"name":  "Test User",
+						"email": "test@example.com",
+					},
+				},
+			},
+			expectedBody:   `{"author":{"email":"test@example.com","name":"Test User"},"description":"This demo shows nested objects, arrays, and various data types","isPublished":true,"metadata":{"source":"yapi","timestamp":"2024-01-15T10:30:00Z","version":"1.0"},"tags":["testing","api","yaml"],"title":"Testing yapi - YAML API Testing Tool","userId":123}`,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "POST with raw JSON string",
+			cfg: &config.YapiConfig{
+				URL:    "", // Will be set to mock server URL
+				Method: "POST",
+				JSON:   `{"status":"active","code":42}`, // Raw JSON directly
+			},
+			expectedBody:   `{"status":"active","code":42}`,
+			expectedStatus: http.StatusOK,
 		},
 	}
 
-	exec := executor.NewHTTPExecutor()
-	resp, err := exec.Execute(cfg)
-	if err != nil {
-		t.Fatalf("Execute failed: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != "POST" {
+					t.Errorf("Expected POST method, got %s", r.Method)
+				}
+				// Content-Type should be application/json by default if body/json is present
+				if r.Header.Get("Content-Type") != "application/json" {
+					t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
+				}
 
-	expectedResponse := `{"status":"received"}`
-	if resp != expectedResponse {
-		t.Errorf("Expected response %s, got %s", expectedResponse, resp)
+				bodyBytes, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatalf("Failed to read request body: %v", err)
+				}
+
+				// Compare JSON bodies robustly by unmarshalling and marshalling again
+				var actual, expected interface{}
+				err = json.Unmarshal(bodyBytes, &actual)
+				if err != nil {
+					t.Fatalf("Failed to unmarshal actual request body: %v, body: %s", err, string(bodyBytes))
+				}
+				err = json.Unmarshal([]byte(tt.expectedBody), &expected)
+				if err != nil {
+					t.Fatalf("Failed to unmarshal expected request body: %v, body: %s", err, tt.expectedBody)
+				}
+
+				if !reflect.DeepEqual(actual, expected) {
+					t.Errorf("Expected request body %v, got %v", expected, actual)
+				}
+
+				w.WriteHeader(tt.expectedStatus)
+				w.Write([]byte(`{"status":"received"}`)) // Generic response
+			}))
+			defer srv.Close()
+
+			tt.cfg.URL = srv.URL // Update config URL to point to mock server
+
+			exec := executor.NewHTTPExecutor()
+			resp, err := exec.Execute(tt.cfg)
+			if err != nil {
+				t.Fatalf("Execute failed: %v", err)
+			}
+
+			// Verify generic response
+			expectedResponse := `{"status":"received"}`
+			if resp != expectedResponse {
+				t.Errorf("Expected response %s, got %s", expectedResponse, resp)
+			}
+		})
 	}
 }
