@@ -32,14 +32,8 @@ export const ExecuteSuccessResponseSchema = z.object({
   /** Whether the execution was successful */
   success: z.literal(true),
 
-  /** The equivalent curl command for display */
-  curlCommand: z.string(),
-
   /** The HTTP response body (parsed JSON or raw string) */
   responseBody: z.unknown(),
-
-  /** Response headers as key-value pairs */
-  responseHeaders: z.record(z.string(), z.string()),
 
   /** HTTP status code */
   statusCode: z.number(),
@@ -70,9 +64,6 @@ export const ExecuteErrorResponseSchema = z.object({
     "TIMEOUT",
     "UNKNOWN"
   ]),
-
-  /** Optional: The curl command if it was generated before failure */
-  curlCommand: z.string().optional(),
 
   /** Optional: Additional error details for debugging */
   details: z.unknown().optional(),

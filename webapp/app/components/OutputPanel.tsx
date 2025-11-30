@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { ExecuteResponse } from "../types/api-contract";
 import { isSuccessResponse } from "../types/api-contract";
 
@@ -10,7 +9,6 @@ interface OutputPanelProps {
 }
 
 export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
-  const [activeTab, setActiveTab] = useState<"response" | "headers">("response");
 
   if (isLoading) {
     return (
@@ -35,28 +33,6 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
   return (
     <div className="h-full flex flex-col bg-yapi-output">
-      {/* Curl Command Section */}
-      <div className="border-b border-yapi-border">
-        <div className="px-4 py-2 bg-yellow-50">
-          <h3 className="text-xs font-semibold text-yapi-fg/60 uppercase tracking-wide mb-2">
-            Equivalent Command
-          </h3>
-          {result.curlCommand ? (
-            <div className="bg-yapi-editor border border-yapi-border rounded p-3 overflow-x-auto">
-              <code className="text-xs font-mono text-yapi-fg whitespace-pre">
-                {result.curlCommand}
-              </code>
-            </div>
-          ) : (
-            <div className="bg-yapi-editor border border-yapi-border rounded p-3">
-              <code className="text-xs font-mono text-yapi-fg/40">
-                No curl command generated
-              </code>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Response Section */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center gap-4 px-4 py-2 border-b border-yapi-border bg-yellow-50">
@@ -83,54 +59,12 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           )}
         </div>
 
-        {/* Tabs */}
-        {isSuccessResponse(result) && (
-          <div className="flex gap-2 px-4 py-2 border-b border-yapi-border bg-yapi-editor">
-            <button
-              onClick={() => setActiveTab("response")}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
-                activeTab === "response"
-                  ? "bg-yapi-accent text-white"
-                  : "text-yapi-fg/60 hover:text-yapi-fg hover:bg-yellow-50"
-              }`}
-            >
-              Body
-            </button>
-            <button
-              onClick={() => setActiveTab("headers")}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
-                activeTab === "headers"
-                  ? "bg-yapi-accent text-white"
-                  : "text-yapi-fg/60 hover:text-yapi-fg hover:bg-yellow-50"
-              }`}
-            >
-              Headers
-            </button>
-          </div>
-        )}
-
         {/* Content */}
         <div className="flex-1 overflow-auto p-4">
           {isSuccessResponse(result) ? (
-            <>
-              {activeTab === "response" && (
-                <pre className="text-sm font-mono text-yapi-fg whitespace-pre-wrap break-words">
-                  {JSON.stringify(result.responseBody, null, 2)}
-                </pre>
-              )}
-              {activeTab === "headers" && (
-                <div className="space-y-1">
-                  {Object.entries(result.responseHeaders).map(([key, value]) => (
-                    <div key={key} className="flex gap-2">
-                      <span className="text-sm font-mono font-semibold text-yapi-accent">
-                        {key}:
-                      </span>
-                      <span className="text-sm font-mono text-yapi-fg">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+            <pre className="text-sm font-mono text-yapi-fg whitespace-pre-wrap break-words">
+              {JSON.stringify(result.responseBody, null, 2)}
+            </pre>
           ) : (
             <div className="bg-red-50 border border-red-200 rounded p-4">
               <div className="flex items-start gap-3">
