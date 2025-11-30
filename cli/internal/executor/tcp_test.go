@@ -6,7 +6,6 @@ import (
 	"net"
 	"sync"
 	"testing"
-	"time"
 
 	"cli/internal/config"
 	"cli/internal/executor"
