@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import OutputPanel from "./OutputPanel";
 import type { ExecuteResponse } from "../types/api-contract";
 import { yapiEncode, yapiDecode } from "../_lib/yapi-encode";
@@ -14,7 +14,6 @@ method: GET
 `;
 
 export default function Playground() {
-  const router = useRouter();
   const pathname = usePathname();
   const [yaml, setYaml] = useState(DEFAULT_YAML);
   const [result, setResult] = useState<ExecuteResponse | null>(null);
@@ -33,23 +32,23 @@ export default function Playground() {
           setYaml(decoded);
         }
       } catch (e) {
-        console.error("Failed to decode URL:", e);
+        console.log("Failed to decode URL:", e);
       }
     }
     setIsInitialized(true);
   }, [pathname]);
 
-  // Update URL when YAML changes
+  // Update URL when YAML changes using History API (no re-renders)
   useEffect(() => {
     if (!isInitialized || typeof window === "undefined") return;
 
     const encoded = yapiEncode(yaml);
     const newPath = `/c/${encoded}`;
 
-    if (pathname !== newPath) {
-      router.replace(newPath, { scroll: false });
+    if (window.location.pathname !== newPath) {
+      window.history.replaceState(null, "", newPath);
     }
-  }, [yaml, isInitialized, pathname, router]);
+  }, [yaml, isInitialized]);
 
   // Clear results when user types
   const handleYamlChange = (newYaml: string) => {
