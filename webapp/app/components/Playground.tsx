@@ -103,23 +103,29 @@ export default function Playground() {
   return (
     <div className="flex flex-col h-screen bg-yapi-bg">
       {/* Header */}
-      <header className="border-b border-yapi-border-dark bg-gradient-to-r from-yapi-header-from to-yapi-header-to">
-        <div className="px-6 py-4">
+      <header className="border-b border-yapi-border bg-yapi-bg-elevated backdrop-blur-xl">
+        <div className="max-w-[1800px] mx-auto px-8 py-5">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold font-mono text-yapi-fg">
-                yapi playground
-              </h1>
-              <p className="text-sm text-yapi-fg/60 mt-1">
-                compiler explorer for APIs
-              </p>
+            {/* Left: Logo & Title */}
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🐑</div>
+              <div>
+                <h1 className="text-xl font-bold text-yapi-fg tracking-tight">
+                  yapi playground
+                </h1>
+                <p className="text-xs text-yapi-fg-subtle mt-0.5">
+                  compiler explorer for APIs
+                </p>
+              </div>
             </div>
+
+            {/* Right: Actions */}
             <div className="flex items-center gap-3">
               <a
                 href="https://github.com/jamierpond/yapi"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-yapi-fg/60 hover:text-yapi-fg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-yapi-fg-muted hover:text-yapi-fg rounded-md hover:bg-yapi-bg-subtle transition-all"
                 aria-label="View source on GitHub"
               >
                 <svg
@@ -133,11 +139,12 @@ export default function Playground() {
                 </svg>
                 <span>source</span>
               </a>
+
               <button
                 onClick={handleShare}
-                className="px-4 py-2 text-sm font-medium text-yapi-fg border border-yapi-border-dark rounded hover:bg-yellow-100 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-yapi-accent text-white rounded-md hover:bg-yapi-accent-hover transition-all shadow-md hover:shadow-glow"
               >
-                {copyStatus === "copied" ? "copied!" : "share"}
+                {copyStatus === "copied" ? "✓ copied" : "share"}
               </button>
             </div>
           </div>
@@ -145,14 +152,14 @@ export default function Playground() {
       </header>
 
       {/* Main Content - Split Pane */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden bg-yapi-bg">
         {/* Left Panel - Editor */}
-        <div className="w-1/2 border-r border-yapi-border-dark">
+        <div className="w-1/2 border-r border-yapi-border">
           <Editor value={yaml} onChange={handleYamlChange} onRun={handleRun} />
         </div>
 
         {/* Right Panel - Output */}
-        <div className="w-1/2">
+        <div className="w-1/2 bg-yapi-bg-subtle">
           <OutputPanel result={result} isLoading={isLoading} />
         </div>
       </div>
