@@ -244,7 +244,7 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
   return (
     <div className="h-full flex flex-col bg-yapi-bg relative">
       {/* Editor Toolbar */}
-      <div className="relative flex items-center justify-between px-6 py-4 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
+      <div className="relative flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
         {/* Subtle gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-r from-yapi-accent/5 via-transparent to-transparent opacity-50"></div>
 
@@ -274,7 +274,7 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
         <button
           onClick={handleRunClick}
           disabled={hasErrors}
-          className={`group relative px-6 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center gap-2.5 overflow-hidden ${
+          className={`group relative px-5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center gap-2.5 overflow-hidden ${
             hasErrors
               ? "bg-yapi-bg-subtle text-yapi-fg-subtle cursor-not-allowed opacity-50"
               : "bg-gradient-to-r from-yapi-accent to-yapi-accent hover:from-yapi-accent hover:to-orange-500 text-white shadow-lg hover:shadow-xl hover:shadow-yapi-accent/30 hover:scale-105 active:scale-95"
@@ -285,7 +285,7 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
           )}
           <span className="relative flex items-center gap-2">
             <span>Run</span>
-            <kbd className="text-[10px] bg-black/30 px-2 py-1 rounded border border-white/10 font-mono">
+            <kbd className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded border border-white/10 font-mono">
               ⌘↵
             </kbd>
           </span>

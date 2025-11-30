@@ -12,9 +12,9 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col bg-yapi-bg-subtle relative">
+      <div className="h-full flex flex-col bg-yapi-bg relative">
         {/* Header skeleton */}
-        <div className="relative flex items-center justify-between px-6 py-4 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
+        <div className="relative flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-yapi-border animate-pulse"></div>
             <div className="h-3 w-20 bg-yapi-border rounded animate-shimmer-skeleton"></div>
@@ -73,9 +73,9 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
   if (!result) {
     return (
-      <div className="h-full flex items-center justify-center bg-yapi-bg-subtle relative overflow-hidden">
+      <div className="h-full flex items-center justify-center bg-yapi-bg relative overflow-hidden">
         {/* Subtle animated background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-yapi-accent/3 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/3 via-transparent to-transparent"></div>
 
         <div className="relative text-center space-y-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yapi-bg-elevated border border-yapi-border shadow-lg">
@@ -93,12 +93,12 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-yapi-bg-subtle relative">
+    <div className="h-full flex flex-col bg-yapi-bg relative">
       {/* Response Section */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="relative flex items-center justify-between px-6 py-4 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
-          {/* Subtle gradient */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yapi-accent/5 to-transparent opacity-50"></div>
+        <div className="relative flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
+          {/* Subtle gradient accent */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent opacity-50"></div>
 
           <div className="relative flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)] animate-pulse"></div>
@@ -133,12 +133,12 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto p-6 relative">
           {/* Subtle top gradient fade */}
-          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-yapi-bg-subtle via-yapi-bg-subtle/50 to-transparent pointer-events-none z-10"></div>
+          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-yapi-bg via-yapi-bg/50 to-transparent pointer-events-none z-10"></div>
 
           <div className="relative">
             {isSuccessResponse(result) ? (
               <div className="group">
-                <pre className="text-sm text-yapi-fg whitespace-pre-wrap break-words font-mono leading-relaxed p-6 bg-yapi-bg/30 border border-yapi-border/30 rounded-xl backdrop-blur-sm hover:border-yapi-border/50 transition-colors duration-300">
+                <pre className="text-sm text-yapi-fg whitespace-pre-wrap break-words font-mono leading-relaxed p-6 bg-yapi-bg-elevated/30 border border-yapi-border/30 rounded-xl backdrop-blur-sm hover:border-yapi-border/50 transition-colors duration-300">
                   {JSON.stringify(result.responseBody, null, 2)}
                 </pre>
               </div>
