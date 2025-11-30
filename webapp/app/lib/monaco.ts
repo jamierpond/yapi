@@ -24,9 +24,10 @@ if (typeof window !== "undefined") {
         );
       }
 
+      // YAML worker used by monaco-yaml
       if (label === "yaml") {
         return new Worker(
-          new URL("monaco-yaml/yaml.worker", import.meta.url),
+          new URL("monaco-yaml/yaml.worker?worker", import.meta.url),
           { type: "module" }
         );
       }

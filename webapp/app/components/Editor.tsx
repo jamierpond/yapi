@@ -1,10 +1,9 @@
 "use client";
 
-import * as Monaco from "monaco-editor";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { monaco } from "../lib/monaco";
+import type * as Monaco from "monaco-editor";      // types only
+import { monaco } from "../lib/monaco";            // runtime API
 import { configureMonacoYaml } from "monaco-yaml";
-// import yaml from "yaml";
 
 // Simple guard so we only wire YAML services once
 let yamlConfigured = false;

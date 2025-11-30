@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type * as Monaco from "monaco-editor";
 import { monaco } from "../lib/monaco";
 
 interface JsonViewerProps {
@@ -9,7 +10,7 @@ interface JsonViewerProps {
 
 export default function JsonViewer({ value }: JsonViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -61,8 +62,6 @@ export default function JsonViewer({ value }: JsonViewerProps) {
       acceptSuggestionOnEnter: "off",
       tabCompletion: "off",
       wordBasedSuggestions: "off",
-      // Disable validation
-      validate: false,
     });
 
     // Cleanup on unmount
