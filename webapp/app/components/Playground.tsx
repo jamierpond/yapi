@@ -50,10 +50,8 @@ export default function Playground() {
     }
   }, [yaml, isInitialized]);
 
-  // Clear results when user types
   const handleYamlChange = (newYaml: string) => {
     setYaml(newYaml);
-    setResult(null); // Clear previous results
   };
 
   async function handleRun() {
