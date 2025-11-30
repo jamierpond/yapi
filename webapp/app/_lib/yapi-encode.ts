@@ -11,8 +11,6 @@ export function yapiEncode(state: string): string {
 
 export function yapiDecode(encodedState: string): string {
   const compressedData = decodeToBuffer(encodedState);
-  const utf8Data = unzip(compressedData);
-  const utf8Decoder = new TextDecoder();
-  const state = utf8Decoder.decode(utf8Data);
+  const state = unzip(compressedData);
   return state;
 }
