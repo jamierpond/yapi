@@ -1,0 +1,9 @@
+cli (coming soon)
+web (webapp)
+extensions (nvim)
+docs (documentation)
+bash (current impl)
+   - tests, etc
+
+
+
