@@ -9,8 +9,17 @@ import { yapiEncode, yapiDecode } from "../_lib/yapi-encode";
 import dynamic from "next/dynamic";
 const Editor = dynamic(() => import("./Editor"), { ssr: false });
 
-const DEFAULT_YAML = `url: https://api.github.com/users/octocat
-method: GET
+const DEFAULT_YAML = `url: https://jsonplaceholder.typicode.com/posts
+method: POST
+content_type: application/json
+query:
+  userId: 1
+  tags: example,demo
+
+body:
+  title: Example Post
+  body: This is a more complex example with query parameters and a JSON body
+  userId: 1
 `;
 
 export default function Playground() {
