@@ -33,8 +33,8 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
         {/* Body skeleton that matches Monaco editor layout */}
         <div className="flex-1 overflow-hidden bg-yapi-bg relative">
-          {/* Fake line numbers gutter */}
-          <div className="absolute left-0 top-0 bottom-0 w-14 bg-yapi-bg-elevated border-r border-yapi-border/30 flex flex-col items-center gap-[18px] pt-4 pb-4">
+          {/* Fake line numbers gutter - matches Monaco vs-dark background #1e1e1e */}
+          <div className="absolute left-0 top-0 bottom-0 w-14 border-r border-yapi-border/30 flex flex-col items-center gap-[18px] pt-4 pb-4" style={{ backgroundColor: '#1e1e1e' }}>
             <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
             <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
             <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
@@ -45,8 +45,8 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
             <div className="w-4 h-3 rounded yapi-skeleton opacity-40" />
           </div>
 
-          {/* Fake code content */}
-          <div className="absolute left-14 top-0 right-0 bottom-0 bg-yapi-bg-elevated p-4 space-y-[18px]">
+          {/* Fake code content - matches Monaco vs-dark background #1e1e1e */}
+          <div className="absolute left-14 top-0 right-0 bottom-0 p-4 space-y-[18px]" style={{ backgroundColor: '#1e1e1e' }}>
             <div className="h-3 w-10/12 rounded yapi-skeleton" />
             <div className="h-3 w-9/12 rounded yapi-skeleton" />
             <div className="h-3 w-8/12 rounded yapi-skeleton" />
@@ -71,7 +71,7 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
               rgba(255,255,255,0.08) 20%,
               rgba(255,255,255,0.02) 40%
             );
-            background-color: #262626;
+            background-color: #1e1e1e;
             background-size: 200% 100%;
             animation: yapi-skeleton-shimmer 1.2s ease-in-out infinite;
           }
