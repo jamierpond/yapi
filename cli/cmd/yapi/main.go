@@ -41,6 +41,9 @@ allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified
 			case "grpc":
 				grpcExec := executor.NewGRPCExecutor()
 				result, err = grpcExec.Execute(cfg)
+			case "tcp":
+				tcpExec := executor.NewTCPExecutor()
+				result, err = tcpExec.Execute(cfg)
 			case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS": // Add other HTTP methods as needed
 				httpExec := executor.NewHTTPExecutor()
 				result, err = httpExec.Execute(cfg)

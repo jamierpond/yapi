@@ -23,6 +23,7 @@ type YapiConfig struct {
 	JQFilter    string                 `yaml:"jq_filter,omitempty"`
 	Insecure    bool                   `yaml:"insecure,omitempty"` // For gRPC
 	Plaintext   bool                   `yaml:"plaintext,omitempty"` // For gRPC
+	ReadTimeout int                    `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
 }
 
 func LoadConfig(path string) (*YapiConfig, error) {
