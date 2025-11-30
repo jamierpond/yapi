@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import OutputPanel from "./OutputPanel";
 import type { ExecuteResponse } from "../types/api-contract";
 import { yapiEncode, yapiDecode } from "../_lib/yapi-encode";
@@ -125,10 +126,10 @@ export default function Playground() {
           <div className="flex items-center justify-between">
             {/* Left: Logo & Title */}
             <div className="flex items-center gap-5">
-              <div className="relative group">
+              <Link href="/" className="relative group cursor-pointer">
                 <div className="absolute inset-0 bg-yapi-accent/20 blur-xl group-hover:blur-2xl transition-all duration-500 rounded-full"></div>
                 <div className="relative text-5xl transform group-hover:scale-110 transition-transform duration-300">🐑</div>
-              </div>
+              </Link>
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold tracking-tight">
                   <span className="bg-gradient-to-r from-white via-yapi-accent to-orange-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-shift">
