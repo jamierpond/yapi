@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"cli/internal/config"
 	"cli/internal/executor"
+	"cli/internal/tui"
 )
 
 var ( // Global flags
@@ -23,8 +24,11 @@ func main() {
 allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified configuration.`, // TODO: Improve long description
 		Run: func(cmd *cobra.Command, args []string) {
 			if configPath == "" {
-				// TODO: Implement fuzzy finder for .yapi.yml files
-				log.Fatal("No config file specified. Fuzzy finder not yet implemented.")
+				selectedPath, err := tui.FindConfigFile()
+				if err != nil {
+					log.Fatalf("Failed to select config file: %v", err)
+				}
+				configPath = selectedPath
 			}
 
 			cfg, err := config.LoadConfig(configPath)
