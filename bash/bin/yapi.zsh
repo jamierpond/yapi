@@ -7,9 +7,9 @@ export PATH="$YAPI_HOME:$PATH"
 alias yapi='yapi_zsh'
 
 function yapi_zsh() {
-  [ -f "$YAPI_HOME/yapi" ] || return 1
+  [ -f "$YAPI_HOME/bash/yapi" ] || return 1
 
-  "$YAPI_HOME/yapi" "$@"
+  "$YAPI_HOME/bash/yapi" "$@"
   success=$?
   [ $success -ne 0 ] && return $success
 
