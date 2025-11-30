@@ -250,7 +250,7 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
 
         <div className="relative flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(139,92,246,0.5)] animate-pulse"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
             <h2 className="text-xs font-semibold text-yapi-fg tracking-wider">
               REQUEST
             </h2>

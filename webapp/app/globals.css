@@ -33,9 +33,18 @@
 }
 
 body {
-  background: theme(colors.yapi-bg);
+  background:
+    radial-gradient(circle at top left, rgba(255, 102, 0, 0.12), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(255, 102, 0, 0.12), transparent 55%),
+    theme(colors.yapi-bg);
   color: theme(colors.yapi-fg);
   font-family: theme(fontFamily.sans);
+}
+
+/* Make selection on brand accent */
+::selection {
+  background: color-mix(in srgb, var(--color-yapi-accent) 40%, transparent);
+  color: var(--color-yapi-fg);
 }
 
 /* Custom scrollbar - dark theme */
