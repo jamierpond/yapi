@@ -14,7 +14,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
-	"google.golang.org/protobuf/proto"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 
 	"cli/internal/config"
 )
@@ -54,7 +56,7 @@ func (e *GRPCExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 	} else {
 		// Use server reflection
 		refClient := grpcreflect.NewClient(ctx, grpc_reflection_v1alpha.NewServerReflectionClient(cc))
-		descSource = grpcurl.NewReflectionDescriptorSource(ctx, refClient)
+		descSource = grpcurl.DescriptorSourceFromServer(ctx, refClient)
 	}
 
 	// Prepare request payload
@@ -68,12 +70,25 @@ func (e *GRPCExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 		reqData = []byte(cfg.JSON)
 	}
 
-	// Setup output buffer for handler
+	// Create a RequestSupplier to feed the request data
+	reqSupplier := func(m proto.Message) error {
+		if len(reqData) == 0 {
+			return io.EOF // No more data
+		}
+		err := (&jsonpb.Unmarshaler{AllowUnknownFields: true}).Unmarshal(bytes.NewReader(reqData), m)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal request data: %w", err)
+		}
+		reqData = nil // Clear data after first use for unary/server-streaming RPCs
+		return nil
+	}// Setup output buffer for handler
 	respBuf := bytes.NewBuffer(nil)
-	handler := grpcurl.NewDefaultEventHandler(respBuf, nil) // nil for now, can add output formatter later // TODO: Handle error output and verbose mode properly
+	// TODO: Handle error output and verbose mode properly
+	formatter := grpcurl.NewJSONFormatter(true, nil)
+	handler := grpcurl.NewDefaultEventHandler(respBuf, descSource, formatter, false)
 
 	// Invoke RPC
-	if err := grpcurl.InvokeRPC(ctx, descSource, cc, cfg.Service+"/"+cfg.RPC, nil, handler, bytes.NewReader(reqData)); err != nil {
+	if err := grpcurl.InvokeRPC(ctx, descSource, cc, cfg.Service+"/"+cfg.RPC, nil, handler, reqSupplier); err != nil {
 		return "", fmt.Errorf("failed to invoke gRPC RPC %s/%s: %w", cfg.Service, cfg.RPC, err)
 	}
 

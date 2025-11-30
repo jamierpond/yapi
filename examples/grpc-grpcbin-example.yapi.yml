@@ -9,6 +9,7 @@ method: grpc
 
 service: hello.HelloService
 rpc: SayHello
+plaintext: true
 
 body:
   greeting: "Emily"
