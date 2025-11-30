@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Font families */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Font families - use JetBrains Mono for everything */
+  --font-sans: var(--font-jetbrains-mono);
+  --font-mono: var(--font-jetbrains-mono);
 
   /* Vibrant Orange/Yellow Theme Colors */
   --color-yapi-bg: #fffbf0;
