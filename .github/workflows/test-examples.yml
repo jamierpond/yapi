@@ -42,7 +42,7 @@ jobs:
         sudo chmod +x /usr/local/bin/yq
 
     - name: Install grpcurl
-      run: sudo snap install --edge grpcurl
+      run: sudo snap install --edge grpcurl socat
 
     - name: Install bats
       run: |
