@@ -1,5 +1,5 @@
-import Playground from "./components/Playground";
+import Landing from "./components/Landing";
 
 export default function Home() {
-  return <Playground />;
+  return <Landing />;
 }
