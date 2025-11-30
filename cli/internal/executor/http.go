@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"yapi/internal/config"
+	"cli/internal/config"
 )
 
 // HTTPExecutor handles HTTP requests.
@@ -35,21 +35,29 @@ func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 		}
 	}
 
-	parsedURL, err := url.Parse(cfg.URL)
+	baseURL, err := url.Parse(cfg.URL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse base URL: %w", err)
+	}
+
+	if cfg.Path != "" {
+		fullURL, err := baseURL.Parse(cfg.Path)
 		if err != nil {
-		return "", fmt.Errorf("failed to parse URL: %w", err)
+			return "", fmt.Errorf("failed to parse path: %w", err)
+		}
+		baseURL = fullURL
 	}
 
 	// Add query parameters
 	if len(cfg.Query) > 0 {
-		query := parsedURL.Query()
+		query := baseURL.Query()
 		for k, v := range cfg.Query {
 			query.Set(k, v)
 		}
-		parsedURL.RawQuery = query.Encode()
+		baseURL.RawQuery = query.Encode()
 	}
 
-	req, err := http.NewRequest(cfg.Method, parsedURL.String(), reqBody)
+	req, err := http.NewRequest(cfg.Method, baseURL.String(), reqBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}

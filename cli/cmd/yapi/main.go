@@ -2,45 +2,59 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
+	"cli/internal/config"
+	"cli/internal/executor"
 )
 
-var (
-	cfgFile string
-	cliURL  string
+var ( // Global flags
+	configPath string
+	urlOverride string
 )
 
 func main() {
-	rootCmd := &cobra.Command{
+	 rootCmd := &cobra.Command{
 		Use:   "yapi",
-		Short: "A YAML API testing tool",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// 1. If no config file, trigger Fuzzy Finder (internal/tui)
-			if cfgFile == "" {
-				// TODO: Implement file picker logic
-				fmt.Println("No config selected. (Interactive mode pending implementation)")
-				return nil
+		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
+		Long: `yapi is a command-line tool designed to simplify interactions with various API types,
+allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified configuration.`, // TODO: Improve long description
+		Run: func(cmd *cobra.Command, args []string) {
+			if configPath == "" {
+				// TODO: Implement fuzzy finder for .yapi.yml files
+				log.Fatal("No config file specified. Fuzzy finder not yet implemented.")
 			}
 
-			// 2. Load and Parse Config (internal/config)
-			fmt.Printf("Loading config: %s\n", cfgFile)
-			// TODO: LoadYAML(cfgFile)
+			cfg, err := config.LoadConfig(configPath)
+			if err != nil {
+				log.Fatalf("Failed to load config: %v", err)
+			}
 
-			// 3. Determine Protocol & Execute (internal/executor)
-			// TODO: switch config.Method { ... }
+			if urlOverride != "" {
+				cfg.URL = urlOverride
+			}
 
-			return nil
+			// For now, assume HTTP as per the brief's focus
+			if cfg.Method == "" { // Default to GET if not specified
+				cfg.Method = "GET"
+			}
+			httpExec := executor.NewHTTPExecutor()
+			result, err := httpExec.Execute(cfg)
+			if err != nil {
+				log.Fatalf("Request failed: %v", err)
+			}
+
+			fmt.Println(result)
 		},
 	}
 
-	// Flags
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "Path to YAML config file")
-	rootCmd.PersistentFlags().StringVarP(&cliURL, "url", "u", "", "Override base URL")
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the yapi config file")
+	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }

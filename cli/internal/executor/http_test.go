@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"yapi/internal/config"
-	"yapi/internal/executor"
+	"cli/internal/config"
+	"cli/internal/executor"
 )
 
 func TestHTTPExecutor_Execute_GETWithQuery(t *testing.T) {
