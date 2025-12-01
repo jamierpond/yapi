@@ -66,14 +66,25 @@ func newRunCmd() *cobra.Command {
 }
 
 func newWatchCmd() *cobra.Command {
+	var pretty bool
+
 	cmd := &cobra.Command{
 		Use:   "watch <file>",
 		Short: "Watch a yapi config file and re-run on changes",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			watchConfigPath(args[0])
+			if pretty {
+				if err := tui.RunWatch(args[0]); err != nil {
+					log.Fatalf("Watch failed: %v", err)
+				}
+			} else {
+				watchConfigPath(args[0])
+			}
 		},
 	}
+
+	cmd.Flags().BoolVarP(&pretty, "pretty", "p", false, "Use pretty TUI mode")
+
 	return cmd
 }
 

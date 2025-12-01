@@ -6,7 +6,7 @@ content_type: application/json
 
 
 body:
-  title: "Testing yapi - YAML API Testing Tool"
+  title: "Testing jamie - YAML API Testing Tool"
   description: "This demo shows nested objects, arrays, and various data types"
   userId: 123
   isPublished: true
@@ -19,5 +19,5 @@ body:
     version: "1.0"
     timestamp: "2024-01-15T10:30:00Z"
   author:
-    name: "Test User"
+    name: "Death User"
     email: "test@example.com"
