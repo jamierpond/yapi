@@ -2,52 +2,28 @@
 # Dockerfile for the Yapi Webapp
 # -----------------------------------------------------------------------------
 
-# 1. Yapi CLI Builder Stage
+# 1. Yapi CLI Builder Stage (Go)
 # -----------------------------------------------------------------------------
-# This stage installs the yapi CLI and its dependencies into a common directory
-# that can be copied into the final runner image.
-FROM alpine:latest AS yapi_builder
+FROM golang:1.24-alpine AS yapi_builder
 
-# Install yapi's core dependencies
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing grpcurl \
-    && apk add --no-cache bash curl jq yq git fzf socat
+WORKDIR /build
 
-# Set up a clean directory for yapi artifacts
-WORKDIR /yapi_dist
-COPY yapi .
-COPY lib ./lib
-COPY .depends .
+# Copy Go module files
+COPY cli/go.mod cli/go.sum ./
+RUN go mod download
 
-# Make scripts executable
-RUN chmod +x /yapi_dist/yapi /yapi_dist/lib/*.sh
+# Copy source code and build
+COPY cli/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o yapi ./cmd/yapi
 
 # 1.5. Yapi Test Stage
 # -----------------------------------------------------------------------------
-# This stage runs the yapi bats tests and provides bats for the final image.
-FROM alpine:latest AS yapi_tester
+FROM yapi_builder AS yapi_tester
 
-# Install dependencies for yapi and for testing
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing grpcurl \
-    && apk add --no-cache bash curl jq yq git fzf socat bats-core
-
-WORKDIR /app
-
-# Copy all yapi files needed for testing
-COPY yapi .
-COPY lib ./lib
-COPY .depends .
-COPY test ./test
-COPY scripts/run-all-tests.sh ./scripts/run-all-tests.sh
-COPY examples ./examples
-
-# Make scripts executable
-RUN chmod +x yapi lib/*.sh scripts/run-all-tests.sh
-
-# Add yapi to path
-ENV PATH="/app:${PATH}"
-
-# Run the tests
-RUN ./scripts/run-all-tests.sh
+WORKDIR /build
+COPY examples /examples
+COPY cli/scripts/test-all-examples.sh ./scripts/test-all-examples.sh
+RUN chmod +x scripts/test-all-examples.sh && ./scripts/test-all-examples.sh
 
 
 # 2. Next.js Base Stage
@@ -104,39 +80,11 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --home /home/nextjs --shell /bin/bash --ingroup nodejs nextjs
 
 # --- Yapi CLI Integration ---
-# Copy the yapi CLI and its dependencies from the builder stage
-COPY --from=yapi_builder /yapi_dist /usr/local/bin/yapi_dist
+# Copy the Go CLI binary
+COPY --from=yapi_builder /build/yapi /usr/local/bin/yapi
 
-# Copy the binaries for yapi's dependencies from the builder stage.
-# This ensures that the versions are consistent and they exist in the final image.
-COPY --from=yapi_builder /usr/bin/yq /usr/bin/yq
-COPY --from=yapi_builder /usr/bin/jq /usr/bin/jq
-COPY --from=yapi_builder /usr/bin/curl /usr/bin/curl
-COPY --from=yapi_builder /usr/bin/git /usr/bin/git
-COPY --from=yapi_builder /usr/bin/fzf /usr/bin/fzf
-COPY --from=yapi_builder /usr/bin/grpcurl /usr/bin/grpcurl
-COPY --from=yapi_builder /usr/bin/socat /usr/bin/socat
-COPY --from=yapi_builder /bin/bash /bin/bash
-
-# Copy bats-core for running tests via the API
-# bats is not just a binary, it's a suite of scripts that need to be copied together
-COPY --from=yapi_tester /usr/bin/bats /usr/bin/bats
-COPY --from=yapi_tester /usr/libexec/bats-core /usr/libexec/bats-core
-
-# Copy test files so they can be executed
-COPY --from=yapi_tester /app/test /usr/local/bin/test
-COPY --from=yapi_tester /app/examples /usr/local/bin/examples
-
-# Also copy shared libraries that these binaries might depend on.
-COPY --from=yapi_builder /lib /lib
-COPY --from=yapi_builder /usr/lib /usr/lib
-
-# Copy SSL certificates for curl to verify HTTPS connections
+# Copy SSL certificates for HTTPS connections
 COPY --from=yapi_builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-
-
-# Add yapi to the PATH
-ENV PATH="/usr/local/bin/yapi_dist:${PATH}"
 # --- End Yapi CLI Integration ---
 
 

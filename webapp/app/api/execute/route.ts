@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     // Execute yapi command with timing
     const startTime = Date.now();
-    const { stdout, stderr } = await execAsync(`yapi -c "${tempFile}"`, {
+    const { stdout, stderr } = await execAsync(`yapi run "${tempFile}"`, {
       timeout: 30000, // 30 second timeout
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer
     });
