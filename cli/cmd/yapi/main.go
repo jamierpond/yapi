@@ -281,4 +281,3 @@ func logHistory(configPath, urlOverride string) {
 	line := fmt.Sprintf("%d | %s\n", time.Now().Unix(), cmd)
 	f.WriteString(line)
 }
-

@@ -98,7 +98,6 @@ func runYapiCmd(path string) tea.Cmd {
 	}
 }
 
-
 func NewWatchModel(path string) watchModel {
 	return watchModel{
 		filepath:    path,
