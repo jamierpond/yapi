@@ -85,8 +85,11 @@ func (e *TCPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 	}
 
 	// Read response with idle timeout
-	// Use a short idle timeout (500ms) to detect end of response when server doesn't close connection
+	// Use a short idle timeout to detect end of response when server doesn't close connection
 	idleTimeout := 500 * time.Millisecond
+	if cfg.IdleTimeout > 0 {
+		idleTimeout = time.Duration(cfg.IdleTimeout) * time.Millisecond
+	}
 	maxTimeout := 5 * time.Second
 	if cfg.ReadTimeout > 0 {
 		maxTimeout = time.Duration(cfg.ReadTimeout) * time.Second

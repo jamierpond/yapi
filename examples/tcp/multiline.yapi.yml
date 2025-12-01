@@ -8,3 +8,4 @@ data: |
 
 encoding: text
 read_timeout: 5
+idle_timeout: 300

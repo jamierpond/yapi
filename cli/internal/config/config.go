@@ -27,7 +27,8 @@ type YapiConfig struct {
 	JQFilter       string                 `yaml:"jq_filter,omitempty"`
 	Insecure       bool                   `yaml:"insecure,omitempty"`     // For gRPC
 	Plaintext      bool                   `yaml:"plaintext,omitempty"`    // For gRPC
-	ReadTimeout    int                    `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
+	ReadTimeout    int                    `yaml:"read_timeout,omitempty"`    // TCP read timeout in seconds
+	IdleTimeout    int                    `yaml:"idle_timeout,omitempty"`    // TCP idle timeout in milliseconds (default 500)
 	CloseAfterSend bool                   `yaml:"close_after_send,omitempty"`
 }
 
