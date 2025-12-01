@@ -35,6 +35,7 @@ func main() {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
 
 	rootCmd.AddCommand(newRunCmd())
+	rootCmd.AddCommand(newWatchCmd())
 	rootCmd.AddCommand(newHistoryCmd())
 	rootCmd.AddCommand(newLSPCmd())
 
@@ -62,6 +63,114 @@ func newRunCmd() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func newWatchCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "watch <file>",
+		Short: "Watch a yapi config file and re-run on changes",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			watchConfigPath(args[0])
+		},
+	}
+	return cmd
+}
+
+func watchConfigPath(path string) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		log.Fatalf("Failed to resolve path: %v", err)
+	}
+
+	// Initial run
+	clearScreen()
+	printWatchHeader(absPath)
+	runConfigPathSafe(absPath)
+
+	// Get initial mod time
+	lastMod := getModTime(absPath)
+
+	// Poll for changes
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		currentMod := getModTime(absPath)
+		if currentMod != lastMod {
+			lastMod = currentMod
+			clearScreen()
+			printWatchHeader(absPath)
+			runConfigPathSafe(absPath)
+		}
+	}
+}
+
+func getModTime(path string) time.Time {
+	info, err := os.Stat(path)
+	if err != nil {
+		return time.Time{}
+	}
+	return info.ModTime()
+}
+
+func clearScreen() {
+	fmt.Print("\033[H\033[2J")
+}
+
+func printWatchHeader(path string) {
+	fmt.Printf("\033[2m[watching %s]\033[0m\n", filepath.Base(path))
+	fmt.Printf("\033[2m[%s]\033[0m\n\n", time.Now().Format("15:04:05"))
+}
+
+func runConfigPathSafe(path string) {
+	cfg, err := config.LoadConfig(path)
+	if err != nil {
+		fmt.Printf("\033[31mError loading config: %v\033[0m\n", err)
+		return
+	}
+
+	issues := validation.ValidateConfig(cfg)
+	hasErrors := false
+	for _, issue := range issues {
+		lvl := "WARN"
+		color := "\033[33m" // yellow
+		if issue.Severity == validation.SeverityError {
+			lvl = "ERROR"
+			color = "\033[31m" // red
+			hasErrors = true
+		}
+		if issue.Field != "" {
+			fmt.Printf("%s[%s] %s: %s\033[0m\n", color, lvl, issue.Field, issue.Message)
+		} else {
+			fmt.Printf("%s[%s] %s\033[0m\n", color, lvl, issue.Message)
+		}
+	}
+	if hasErrors {
+		fmt.Println("\033[31mConfig validation failed\033[0m")
+		return
+	}
+
+	if urlOverride != "" {
+		cfg.URL = urlOverride
+	}
+
+	body, ctype, err := executeConfig(cfg)
+	if err != nil {
+		fmt.Printf("\033[31mRequest failed: %v\033[0m\n", err)
+		return
+	}
+
+	if cfg.JQFilter != "" {
+		body, err = filter.ApplyJQ(body, cfg.JQFilter)
+		if err != nil {
+			fmt.Printf("\033[31mJQ filter failed: %v\033[0m\n", err)
+			return
+		}
+		ctype = "application/json"
+	}
+
+	fmt.Println(output.Highlight(body, ctype, noColor))
 }
 
 func newLSPCmd() *cobra.Command {
