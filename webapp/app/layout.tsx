@@ -51,12 +51,12 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: SITE_TITLE,
     title: `${SITE_TITLE} - YAML API Client`,
-    description: "Go-powered YAML API client for HTTP, gRPC, and TCP",
+    description: "Offline-first YAML API client for HTTP, gRPC, and TCP",
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_TITLE} - YAML API Client`,
-    description: "Go-powered YAML API client for HTTP, gRPC, and TCP",
+    description: "Offline-first YAML API client for HTTP, gRPC, and TCP",
     creator: "@jamierpond",
   },
   alternates: {
