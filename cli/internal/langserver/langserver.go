@@ -1,9 +1,9 @@
 package langserver
 
 import (
+	"strings"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/validation"
-	"strings"
 
 	"github.com/tliron/commonlog"
 	_ "github.com/tliron/commonlog/simple"

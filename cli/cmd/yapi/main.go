@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/filter"
@@ -15,7 +16,6 @@ import (
 	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/tui"
 	"yapi.run/cli/internal/validation"
-	"github.com/spf13/cobra"
 )
 
 var (
