@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"cli/internal/config"
+	"github.com/jamierpond/yapi/cli/internal/config"
 )
 
 // TCPExecutor handles TCP requests.

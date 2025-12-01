@@ -1,4 +1,4 @@
-module cli
+module github.com/jamierpond/yapi/cli
 
 go 1.25.1
 

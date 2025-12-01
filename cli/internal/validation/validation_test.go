@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"cli/internal/config"
+	"github.com/jamierpond/yapi/cli/internal/config"
 )
 
 func TestValidateConfig_MissingURL(t *testing.T) {

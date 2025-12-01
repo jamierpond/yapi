@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"cli/internal/config"
+	"github.com/jamierpond/yapi/cli/internal/config"
 )
 
 // URL scheme constants

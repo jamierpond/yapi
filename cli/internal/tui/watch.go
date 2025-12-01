@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"cli/internal/config"
-	"cli/internal/executor"
-	"cli/internal/filter"
-	"cli/internal/output"
-	"cli/internal/validation"
+	"github.com/jamierpond/yapi/cli/internal/config"
+	"github.com/jamierpond/yapi/cli/internal/executor"
+	"github.com/jamierpond/yapi/cli/internal/filter"
+	"github.com/jamierpond/yapi/cli/internal/output"
+	"github.com/jamierpond/yapi/cli/internal/validation"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"

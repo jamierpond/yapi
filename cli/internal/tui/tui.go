@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"cli/internal/tui/selector"
+	"github.com/jamierpond/yapi/cli/internal/tui/selector"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

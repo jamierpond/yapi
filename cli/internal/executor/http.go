@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"cli/internal/config"
+	"github.com/jamierpond/yapi/cli/internal/config"
 )
 
 // HTTPResponse contains the response from an HTTP request.
