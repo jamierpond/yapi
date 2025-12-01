@@ -113,20 +113,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		const minWidthForHorizontalLayout = 100
 		const leftPanelWidth = 50
 		const leftPanelPadding = 2
+		const maxVisibleFiles = 10
+
+		// Height calculation constants
+		const verticalChromeHeight = 12 // Borders, headers, footers, etc.
+		const horizontalChromeHeight = 10
 
 		if msg.Width < minWidthForHorizontalLayout {
 			m.isVertical = true
-			// Account for app border and padding
 			availableWidth := msg.Width - appStyle.GetHorizontalFrameSize()
 			m.textInput.Width = availableWidth
 			m.viewport.Width = availableWidth - viewportContentStyle.GetHorizontalFrameSize()
-			m.viewport.Height = msg.Height - 15 // Approximate height for file list, input, header, footer
+			m.viewport.Height = msg.Height - verticalChromeHeight - maxVisibleFiles
 		} else {
 			m.isVertical = false
-			// Set text input to a fixed width in horizontal mode
 			m.textInput.Width = leftPanelWidth
 			m.viewport.Width = msg.Width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
-			m.viewport.Height = msg.Height - 12 // Approximate height for header, footer
+			m.viewport.Height = msg.Height - horizontalChromeHeight
 		}
 		return m, nil
 
@@ -209,9 +212,35 @@ func (m *Model) filterFiles() {
 }
 
 func (m Model) View() string {
-	// --- File List ---
+	// --- File List (with virtual scrolling) ---
 	fileList := ""
-	for i, file := range m.filteredFiles {
+	const maxVisibleFiles = 10
+	var visibleFileStartIndex int
+
+	// Determine the slice of files to show
+	if len(m.filteredFiles) > maxVisibleFiles {
+		visibleFileStartIndex = m.cursor - (maxVisibleFiles / 2)
+		if visibleFileStartIndex < 0 {
+			visibleFileStartIndex = 0
+		}
+		endIndex := visibleFileStartIndex + maxVisibleFiles
+		if endIndex > len(m.filteredFiles) {
+			endIndex = len(m.filteredFiles)
+			visibleFileStartIndex = endIndex - maxVisibleFiles
+			if visibleFileStartIndex < 0 {
+				visibleFileStartIndex = 0
+			}
+		}
+	}
+
+	endIndex := visibleFileStartIndex + maxVisibleFiles
+	if endIndex > len(m.filteredFiles) {
+		endIndex = len(m.filteredFiles)
+	}
+
+	// Render only the visible files
+	for i := visibleFileStartIndex; i < endIndex; i++ {
+		file := m.filteredFiles[i]
 		prefix := "  "
 		if _, ok := m.selectedSet[file]; ok {
 			prefix = lipgloss.NewStyle().Foreground(yapiAccent).Render("* ")
