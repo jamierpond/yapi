@@ -101,9 +101,12 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 			tt.cfg.URL = srv.URL // Update config URL to point to mock server
 
 			exec := executor.NewHTTPExecutor()
-			_, err := exec.Execute(tt.cfg)
+			resp, err := exec.Execute(tt.cfg)
 			if err != nil {
 				t.Fatalf("Execute failed: %v", err)
+			}
+			if resp == nil {
+				t.Fatal("Execute returned nil response")
 			}
 		})
 	}
@@ -212,8 +215,8 @@ func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
 
 			// Verify generic response
 			expectedResponse := `{"status":"received"}`
-			if resp != expectedResponse {
-				t.Errorf("Expected response %s, got %s", expectedResponse, resp)
+			if resp.Body != expectedResponse {
+				t.Errorf("Expected response %s, got %s", expectedResponse, resp.Body)
 			}
 		})
 	}

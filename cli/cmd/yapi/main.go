@@ -11,6 +11,7 @@ import (
 	"cli/internal/config"
 	"cli/internal/executor"
 	"cli/internal/filter"
+	"cli/internal/output"
 	"cli/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -18,6 +19,7 @@ import (
 var (
 	configPath  string
 	urlOverride string
+	noColor     bool
 )
 
 func main() {
@@ -28,6 +30,7 @@ func main() {
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
+	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
 
 	rootCmd.AddCommand(newRunCmd())
 	rootCmd.AddCommand(newHistoryCmd())
@@ -55,7 +58,7 @@ func runInteractive(cmd *cobra.Command, args []string) {
 
 	logHistory(selectedPath, urlOverride)
 
-	result, err := executeConfig(cfg)
+	result, contentType, err := executeConfig(cfg)
 	if err != nil {
 		log.Fatalf("Request failed: %v", err)
 	}
@@ -65,9 +68,11 @@ func runInteractive(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatalf("JQ filter failed: %v", err)
 		}
+		// jq output is always JSON
+		contentType = "application/json"
 	}
 
-	fmt.Println(result)
+	fmt.Println(output.Highlight(result, contentType, noColor))
 }
 
 func newRunCmd() *cobra.Command {
@@ -89,7 +94,7 @@ func newRunCmd() *cobra.Command {
 
 			logHistory(configPath, urlOverride)
 
-			result, err := executeConfig(cfg)
+			result, contentType, err := executeConfig(cfg)
 			if err != nil {
 				log.Fatalf("Request failed: %v", err)
 			}
@@ -99,9 +104,11 @@ func newRunCmd() *cobra.Command {
 				if err != nil {
 					log.Fatalf("JQ filter failed: %v", err)
 				}
+				// jq output is always JSON
+				contentType = "application/json"
 			}
 
-			fmt.Println(result)
+			fmt.Println(output.Highlight(result, contentType, noColor))
 		},
 	}
 	return cmd
@@ -188,18 +195,29 @@ func logHistory(configPath, urlOverride string) {
 }
 
 // executeConfig keeps main() clean and testable.
-func executeConfig(cfg *config.YapiConfig) (string, error) {
+// Returns: body, contentType, error
+func executeConfig(cfg *config.YapiConfig) (string, string, error) {
 	switch cfg.Method {
 	case "grpc":
-		return executor.NewGRPCExecutor().Execute(cfg)
+		body, err := executor.NewGRPCExecutor().Execute(cfg)
+		return body, "application/json", err
 	case "tcp":
-		return executor.NewTCPExecutor().Execute(cfg)
+		body, err := executor.NewTCPExecutor().Execute(cfg)
+		return body, "text/plain", err
 	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS":
-		return executor.NewHTTPExecutor().Execute(cfg)
+		resp, err := executor.NewHTTPExecutor().Execute(cfg)
+		if err != nil {
+			return "", "", err
+		}
+		return resp.Body, resp.ContentType, nil
 	case "":
 		cfg.Method = "GET"
-		return executor.NewHTTPExecutor().Execute(cfg)
+		resp, err := executor.NewHTTPExecutor().Execute(cfg)
+		if err != nil {
+			return "", "", err
+		}
+		return resp.Body, resp.ContentType, nil
 	default:
-		return "", fmt.Errorf("unsupported method: %s", cfg.Method)
+		return "", "", fmt.Errorf("unsupported method: %s", cfg.Method)
 	}
 }

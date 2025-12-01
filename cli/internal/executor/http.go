@@ -11,6 +11,13 @@ import (
 	"cli/internal/config"
 )
 
+// HTTPResponse contains the response from an HTTP request.
+type HTTPResponse struct {
+	Body        string
+	ContentType string
+	StatusCode  int
+}
+
 // HTTPExecutor handles HTTP requests.
 type HTTPExecutor struct{}
 
@@ -20,14 +27,14 @@ func NewHTTPExecutor() *HTTPExecutor {
 }
 
 // Execute performs an HTTP request based on the provided YapiConfig.
-func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
+func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (*HTTPResponse, error) {
 	var reqBody io.Reader
 
 	if cfg.Body != nil || cfg.JSON != "" {
 		if cfg.Body != nil {
 			b, err := json.Marshal(cfg.Body)
 			if err != nil {
-				return "", fmt.Errorf("failed to marshal request body: %w", err)
+				return nil, fmt.Errorf("failed to marshal request body: %w", err)
 			}
 			reqBody = bytes.NewBuffer(b)
 		} else if cfg.JSON != "" {
@@ -42,13 +49,13 @@ func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 
 	baseURL, err := url.Parse(cfg.URL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse base URL: %w", err)
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
 
 	if cfg.Path != "" {
 		fullURL, err := baseURL.Parse(cfg.Path)
 		if err != nil {
-			return "", fmt.Errorf("failed to parse path: %w", err)
+			return nil, fmt.Errorf("failed to parse path: %w", err)
 		}
 		baseURL = fullURL
 	}
@@ -64,7 +71,7 @@ func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 
 	req, err := http.NewRequest(cfg.Method, baseURL.String(), reqBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	if cfg.ContentType != "" {
@@ -74,14 +81,18 @@ func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return string(body), nil
+	return &HTTPResponse{
+		Body:        string(body),
+		ContentType: res.Header.Get("Content-Type"),
+		StatusCode:  res.StatusCode,
+	}, nil
 }
