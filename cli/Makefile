@@ -1,6 +1,7 @@
 build:
 	@echo "Building yapi CLI..."
 	@go build -o ./cmd/yapi/yapi ./cmd/yapi/main.go
+	@codesign --sign - --force ./cmd/yapi/yapi 2>/dev/null || true
 
 run:
 	@echo "Running yapi CLI..."
@@ -26,6 +27,7 @@ clean:
 install: build
 	@echo "Installing yapi to $(shell go env GOPATH)/bin..."
 	@cp ./cmd/yapi/yapi $(shell go env GOPATH)/bin/yapi
+	@codesign --sign - --force $(shell go env GOPATH)/bin/yapi 2>/dev/null || true
 	@echo "Done! Ensure $(shell go env GOPATH)/bin is in your PATH."
 
 .PHONY: build run test fmt fmt-check clean install
