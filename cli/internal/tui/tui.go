@@ -82,16 +82,32 @@ func FindConfigFileSingle() (string, error) {
 		return "", err
 	}
 
-	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
-	p := tea.NewProgram(
-		selector.New(files, false),
-		tea.WithOutput(os.Stderr),
-		tea.WithInput(os.Stdin),
-		tea.WithAltScreen(),
-	)
-    m, err := p.Run()
-    if err != nil {
-        return "", fmt.Errorf("failed to run selector: %w", err)
+	// Try to open /dev/tty for robust terminal interaction
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	var p *tea.Program
+	if err != nil {
+		// Fallback to stdin/stderr if /dev/tty is not available
+		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
+		p = tea.NewProgram(
+			selector.New(files, false),
+			tea.WithOutput(os.Stderr),
+			tea.WithInput(os.Stdin),
+			tea.WithAltScreen(),
+		)
+	} else {
+		defer tty.Close()
+		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(tty))
+		p = tea.NewProgram(
+			selector.New(files, false),
+			tea.WithInput(tty),
+			tea.WithOutput(tty),
+			tea.WithAltScreen(),
+		)
+	}
+
+	m, err := p.Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to run selector: %w", err)
     }
 
     model := m.(selector.Model)
@@ -112,16 +128,32 @@ func FindConfigFileMulti(multi bool) ([]string, error) {
 		return nil, err
 	}
 
-	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
-	p := tea.NewProgram(
-		selector.New(files, multi),
-		tea.WithOutput(os.Stderr),
-		tea.WithInput(os.Stdin),
-		tea.WithAltScreen(),
-	)
-    m, err := p.Run()
-    if err != nil {
-        return nil, fmt.Errorf("failed to run selector: %w", err)
+	// Try to open /dev/tty for robust terminal interaction
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	var p *tea.Program
+	if err != nil {
+		// Fallback to stdin/stderr if /dev/tty is not available
+		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
+		p = tea.NewProgram(
+			selector.New(files, multi),
+			tea.WithOutput(os.Stderr),
+			tea.WithInput(os.Stdin),
+			tea.WithAltScreen(),
+		)
+	} else {
+		defer tty.Close()
+		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(tty))
+		p = tea.NewProgram(
+			selector.New(files, multi),
+			tea.WithInput(tty),
+			tea.WithOutput(tty),
+			tea.WithAltScreen(),
+		)
+	}
+
+	m, err := p.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run selector: %w", err)
     }
 
     model := m.(selector.Model)
