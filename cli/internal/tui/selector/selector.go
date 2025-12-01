@@ -3,9 +3,11 @@ package selector
 import (
 	"io/ioutil"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/sahilm/fuzzy"
 )
 
 var (
@@ -28,63 +30,106 @@ var (
 )
 
 type Model struct {
-	files    []string
-	cursor   int
-	selected string
-	viewport viewport.Model
+	files         []string
+	filteredFiles []string
+	cursor        int
+	selected      string
+	viewport      viewport.Model
+	textInput     textinput.Model
 }
 
 func New(files []string) Model {
+	ti := textinput.New()
+	ti.Placeholder = "Search..."
+	ti.Focus()
+
 	vp := viewport.New(80, 20)
-	m := Model{files: files, viewport: vp}
+	m := Model{
+		files:         files,
+		filteredFiles: files,
+		viewport:      vp,
+		textInput:     ti,
+	}
 	m.loadFileContent()
 	return m
 }
 
 func (m *Model) loadFileContent() {
-	if m.cursor >= 0 && m.cursor < len(m.files) {
-		content, err := ioutil.ReadFile(m.files[m.cursor])
+	if m.cursor >= 0 && m.cursor < len(m.filteredFiles) {
+		content, err := ioutil.ReadFile(m.filteredFiles[m.cursor])
 		if err != nil {
 			m.viewport.SetContent("Error reading file")
 		} else {
 			m.viewport.SetContent(string(content))
 		}
+	} else {
+		m.viewport.SetContent("")
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return textinput.Blink
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
 				m.loadFileContent()
 			}
+			return m, nil
 		case "down", "j":
-			if m.cursor < len(m.files)-1 {
+			if m.cursor < len(m.filteredFiles)-1 {
 				m.cursor++
 				m.loadFileContent()
 			}
+			return m, nil
 		case "enter":
-			m.selected = m.files[m.cursor]
+			if len(m.filteredFiles) > 0 && m.cursor < len(m.filteredFiles) {
+				m.selected = m.filteredFiles[m.cursor]
+			}
 			return m, tea.Quit
 		}
 	}
-	var cmd tea.Cmd
-	m.viewport, cmd = m.viewport.Update(msg)
+
+	m.textInput, cmd = m.textInput.Update(msg)
+	m.filterFiles()
+	m.viewport, _ = m.viewport.Update(msg)
 	return m, cmd
+}
+
+func (m *Model) filterFiles() {
+	query := m.textInput.Value()
+	if query == "" {
+		m.filteredFiles = m.files
+	} else {
+		matches := fuzzy.Find(query, m.files)
+		m.filteredFiles = make([]string, len(matches))
+		for i, match := range matches {
+			m.filteredFiles[i] = match.Str
+		}
+	}
+
+	if m.cursor >= len(m.filteredFiles) {
+		if len(m.filteredFiles) > 0 {
+			m.cursor = len(m.filteredFiles) - 1
+		} else {
+			m.cursor = 0
+		}
+	}
+	m.loadFileContent()
 }
 
 func (m Model) View() string {
 	fileList := ""
-	for i, file := range m.files {
+	for i, file := range m.filteredFiles {
 		if m.cursor == i {
 			fileList += selectedItemStyle.Render("> " + file)
 		} else {
@@ -102,6 +147,7 @@ func (m Model) View() string {
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		titleStyle.Render("Select a config file"),
+		m.textInput.View(),
 		mainContent,
 		footerStyle.Render("Use arrow keys to navigate, enter to select, q to quit"),
 	)

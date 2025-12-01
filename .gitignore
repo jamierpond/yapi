@@ -1,4 +1,2 @@
 webapp/.depends
 cli/cmd/yapi/yapi
-cli/reference-cli-repo
-cli/fzf-example-repo-dont-actually-include
