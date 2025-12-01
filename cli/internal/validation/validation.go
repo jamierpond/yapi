@@ -7,6 +7,15 @@ import (
 	"cli/internal/config"
 )
 
+// URL scheme constants
+const (
+	schemeHTTP  = "http://"
+	schemeHTTPS = "https://"
+	schemeGRPC  = "grpc://"
+	schemeGRPCS = "grpcs://"
+	schemeTCP   = "tcp://"
+)
+
 type Severity int
 
 const (
@@ -19,6 +28,42 @@ type Issue struct {
 	Severity Severity
 	Field    string // e.g. "url", "method", "service"
 	Message  string // human-readable
+}
+
+// getURLScheme returns the protocol scheme from a URL
+func getURLScheme(url string) string {
+	urlLower := strings.ToLower(url)
+	switch {
+	case strings.HasPrefix(urlLower, schemeGRPCS):
+		return "grpcs"
+	case strings.HasPrefix(urlLower, schemeGRPC):
+		return "grpc"
+	case strings.HasPrefix(urlLower, schemeTCP):
+		return "tcp"
+	case strings.HasPrefix(urlLower, schemeHTTPS):
+		return "https"
+	case strings.HasPrefix(urlLower, schemeHTTP):
+		return "http"
+	default:
+		return ""
+	}
+}
+
+// isGRPCRequest returns true if this is a gRPC request (by method or URL scheme)
+func isGRPCRequest(cfg *config.YapiConfig) bool {
+	scheme := getURLScheme(cfg.URL)
+	return cfg.Method == "grpc" || scheme == "grpc" || scheme == "grpcs"
+}
+
+// isTCPRequest returns true if this is a TCP request (by method or URL scheme)
+func isTCPRequest(cfg *config.YapiConfig) bool {
+	scheme := getURLScheme(cfg.URL)
+	return cfg.Method == "tcp" || scheme == "tcp"
+}
+
+// isHTTPRequest returns true if this is an HTTP request
+func isHTTPRequest(cfg *config.YapiConfig) bool {
+	return !isGRPCRequest(cfg) && !isTCPRequest(cfg)
 }
 
 // ValidateConfig performs semantic validation on a parsed YapiConfig.
@@ -68,8 +113,8 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 		})
 	}
 
-	// Rule 3: gRPC requires service and rpc
-	if cfg.Method == "grpc" {
+	// Rule 3: gRPC requires service and rpc (by method or URL scheme)
+	if isGRPCRequest(cfg) {
 		if cfg.Service == "" {
 			issues = append(issues, Issue{
 				Severity: SeverityError,
@@ -87,7 +132,7 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 	}
 
 	// Rule 4: TCP encoding validation
-	if cfg.Method == "tcp" && cfg.Encoding != "" {
+	if isTCPRequest(cfg) && cfg.Encoding != "" {
 		validEncodings := map[string]bool{
 			"text":   true,
 			"hex":    true,
@@ -100,6 +145,26 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 				Message:  fmt.Sprintf("unsupported TCP encoding `%s` (allowed: text, hex, base64)", cfg.Encoding),
 			})
 		}
+	}
+
+	// Rule 5: body and json are mutually exclusive
+	hasBody := cfg.Body != nil && len(cfg.Body) > 0
+	hasJSON := cfg.JSON != ""
+	if hasBody && hasJSON {
+		issues = append(issues, Issue{
+			Severity: SeverityError,
+			Field:    "body",
+			Message:  "`body` and `json` are mutually exclusive",
+		})
+	}
+
+	// Rule 6: content_type required when body or json is present (HTTP only)
+	if isHTTPRequest(cfg) && (hasBody || hasJSON) && cfg.ContentType == "" {
+		issues = append(issues, Issue{
+			Severity: SeverityError,
+			Field:    "content_type",
+			Message:  "`content_type` is required when `body` or `json` is present",
+		})
 	}
 
 	return issues
