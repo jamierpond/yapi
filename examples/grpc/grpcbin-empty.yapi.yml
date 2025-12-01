@@ -1,8 +1,0 @@
-# gRPC Empty call example
-url: grpc://grpcb.in:9000
-
-service: grpc.testing.TestService
-rpc: EmptyCall
-plaintext: true
-
-body: {}

@@ -1,8 +1,0 @@
-# yaml-language-server: $schema=https://pond.audio/yapi/schema
-#
-url: https://pond.audio
-path: /
-method: GET
-
-
-
