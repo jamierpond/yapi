@@ -81,7 +81,7 @@ func (e *GRPCExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 		}
 		reqData = nil // Clear data after first use for unary/server-streaming RPCs
 		return nil
-	}// Setup output buffer for handler
+	} // Setup output buffer for handler
 	respBuf := bytes.NewBuffer(nil)
 	// TODO: Handle error output and verbose mode properly
 	formatter := grpcurl.NewJSONFormatter(true, nil)

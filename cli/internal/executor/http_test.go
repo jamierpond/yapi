@@ -15,9 +15,9 @@ import (
 
 func TestHTTPExecutor_URLBuilding(t *testing.T) {
 	tests := []struct {
-		name         string
-		cfg          *config.YapiConfig
-		expectedPath string
+		name          string
+		cfg           *config.YapiConfig
+		expectedPath  string
 		expectedQuery string
 	}{
 		{
@@ -27,7 +27,7 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 				Path:   "/api/test",
 				Method: "GET",
 			},
-			expectedPath: "/api/test",
+			expectedPath:  "/api/test",
 			expectedQuery: "",
 		},
 		{
@@ -36,7 +36,7 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 				URL:    "https://example.com",
 				Method: "GET",
 			},
-			expectedPath: "/", // Root path if no path specified
+			expectedPath:  "/", // Root path if no path specified
 			expectedQuery: "",
 		},
 		{
@@ -50,7 +50,7 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 					"baz": "qux",
 				},
 			},
-			expectedPath: "/api",
+			expectedPath:  "/api",
 			expectedQuery: "baz=qux&foo=bar", // Query params are sorted alphabetically for consistent testing
 		},
 		{
@@ -60,7 +60,7 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 				Path:   "/api/test with spaces",
 				Method: "GET",
 			},
-			expectedPath: "/api/test with spaces",
+			expectedPath:  "/api/test with spaces",
 			expectedQuery: "",
 		},
 		{
@@ -73,7 +73,7 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 					"q": "hello world!",
 				},
 			},
-			expectedPath: "/api",
+			expectedPath:  "/api",
 			expectedQuery: "q=hello+world%21", // url.Values.Encode() uses %21 for '!' and '+' for ' '
 		},
 	}

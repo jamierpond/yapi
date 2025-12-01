@@ -12,12 +12,12 @@ import (
 
 var (
 	// Colors (extracted from webapp/tailwind.config.js)
-	yapiBg        = lipgloss.Color("#1a1b26")
-	yapiBgElevated= lipgloss.Color("#2a2d3b")
-	yapiFg        = lipgloss.Color("#a9b1d6")
-	yapiFgMuted   = lipgloss.Color("#565f89")
-	yapiAccent    = lipgloss.Color("#ff9e64")
-	yapiBorder    = lipgloss.Color("#414868")
+	yapiBg         = lipgloss.Color("#1a1b26")
+	yapiBgElevated = lipgloss.Color("#2a2d3b")
+	yapiFg         = lipgloss.Color("#a9b1d6")
+	yapiFgMuted    = lipgloss.Color("#565f89")
+	yapiAccent     = lipgloss.Color("#ff9e64")
+	yapiBorder     = lipgloss.Color("#414868")
 
 	// Styles
 	appStyle = lipgloss.NewStyle().
@@ -328,4 +328,3 @@ func (m Model) SelectedList() []string {
 	}
 	return out
 }
-

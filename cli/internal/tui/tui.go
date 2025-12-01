@@ -86,7 +86,6 @@ func findFiles() ([]string, error) {
 	return configFiles, nil
 }
 
-
 func FindConfigFileSingle() (string, error) {
 	files, err := findFiles()
 	if err != nil {
@@ -111,7 +110,6 @@ func FindConfigFileSingle() (string, error) {
 		// No TTY at all (CI, cron, etc) -> non-interactive fallback
 		return files[0], nil
 	}
-
 
 	os.Setenv("CLICOLOR_FORCE", "1")
 	// Render TUI to the chosen terminal, not to stdout.
@@ -188,4 +186,3 @@ func FindConfigFileMulti(multi bool) ([]string, error) {
 
 	return selected, nil
 }
-

@@ -50,11 +50,11 @@ func TestTCPExecutor_Execute_Echo(t *testing.T) {
 
 	// Client configuration
 	cfg := &config.YapiConfig{
-		URL:       fmt.Sprintf("tcp://%s", l.Addr().String()),
-		Method:    "tcp",
-		Data:      expected,
-		Encoding:  "text",
-		ReadTimeout: 1, // Short timeout for testing
+		URL:            fmt.Sprintf("tcp://%s", l.Addr().String()),
+		Method:         "tcp",
+		Data:           expected,
+		Encoding:       "text",
+		ReadTimeout:    1,    // Short timeout for testing
 		CloseAfterSend: true, // Should close write half
 	}
 
@@ -105,11 +105,11 @@ func TestTCPExecutor_Execute_HexEncoding(t *testing.T) {
 	}()
 
 	cfg := &config.YapiConfig{
-		URL:       fmt.Sprintf("tcp://%s", l.Addr().String()),
-		Method:    "tcp",
-		Data:      hexData,
-		Encoding:  "hex",
-		ReadTimeout: 1,
+		URL:            fmt.Sprintf("tcp://%s", l.Addr().String()),
+		Method:         "tcp",
+		Data:           hexData,
+		Encoding:       "hex",
+		ReadTimeout:    1,
 		CloseAfterSend: true,
 	}
 
@@ -160,11 +160,11 @@ func TestTCPExecutor_Execute_Base64Encoding(t *testing.T) {
 	}()
 
 	cfg := &config.YapiConfig{
-		URL:       fmt.Sprintf("tcp://%s", l.Addr().String()),
-		Method:    "tcp",
-		Data:      base64Data,
-		Encoding:  "base64",
-		ReadTimeout: 1,
+		URL:            fmt.Sprintf("tcp://%s", l.Addr().String()),
+		Method:         "tcp",
+		Data:           base64Data,
+		Encoding:       "base64",
+		ReadTimeout:    1,
 		CloseAfterSend: true,
 	}
 
