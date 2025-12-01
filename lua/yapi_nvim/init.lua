@@ -66,13 +66,11 @@ local function start_watch(filepath)
   vim.api.nvim_win_set_buf(win, term_buf)
 
   -- Start terminal with yapi watch (pretty mode if configured)
-  -- Run through user's default shell to inherit their env vars
-  local shell = os.getenv("SHELL") or "/bin/sh"
-  local yapi_cmd = "yapi watch " .. vim.fn.shellescape(filepath)
+  local cmd = { "yapi", "watch", filepath }
   if M._opts.pretty then
-    yapi_cmd = yapi_cmd .. " --pretty"
+    table.insert(cmd, "--pretty")
   end
-  vim.fn.termopen({ shell, "-l", "-c", yapi_cmd }, {
+  vim.fn.termopen(cmd, {
     on_exit = function()
       vim.schedule(function()
         close_term()
