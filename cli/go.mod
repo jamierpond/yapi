@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/fullstorydev/grpcurl v1.9.3
 	github.com/golang/protobuf v1.5.4
+	github.com/itchyny/gojq v0.12.17
 	github.com/jhump/protoreflect v1.17.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/sahilm/fuzzy v0.1.1
@@ -30,7 +31,6 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/itchyny/gojq v0.12.17 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
@@ -47,7 +47,6 @@ require (
 	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
