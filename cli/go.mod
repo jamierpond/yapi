@@ -3,6 +3,7 @@ module cli
 go 1.24.3
 
 require (
+	codeberg.org/derat/htmlpretty v0.0.0-20241226124600-6358d6878bd9
 	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -15,12 +16,12 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/spf13/cobra v1.10.1
+	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82
 	google.golang.org/grpc v1.77.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	codeberg.org/derat/htmlpretty v0.0.0-20241226124600-6358d6878bd9 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
@@ -63,7 +64,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/crypto v0.43.0 // indirect
-	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
