@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/executor"
-	"yapi.run/cli/internal/filter"
-	"yapi.run/cli/internal/output"
-	"yapi.run/cli/internal/validation"
+	"yapi.run/cli/internal/runner"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -92,63 +88,16 @@ func runYapiCmd(path string) tea.Cmd {
 			return runResultMsg{err: fmt.Errorf("config error: %w", err)}
 		}
 
-		issues := validation.ValidateConfig(cfg)
-		var warnings []string
-		for _, issue := range issues {
-			if issue.Severity == validation.SeverityError {
-				return runResultMsg{err: fmt.Errorf("%s: %s", issue.Field, issue.Message)}
-			}
-			if issue.Severity == validation.SeverityWarning {
-				warnings = append(warnings, fmt.Sprintf("[WARN] %s: %s", issue.Field, issue.Message))
-			}
-		}
-
-		// Substitute environment variables
-		cfg.SubstituteEnvVars()
-
-		body, ctype, err := executeConfig(cfg)
+		opts := runner.Options{NoColor: false}
+		output, err := runner.RunAndFormat(cfg, opts)
 		if err != nil {
-			return runResultMsg{err: fmt.Errorf("request failed: %w", err)}
+			return runResultMsg{err: err}
 		}
 
-		if cfg.JQFilter != "" {
-			body, err = filter.ApplyJQ(body, cfg.JQFilter)
-			if err != nil {
-				return runResultMsg{err: fmt.Errorf("jq filter failed: %w", err)}
-			}
-			ctype = "application/json"
-		}
-
-		result := output.Highlight(body, ctype, false)
-		if len(warnings) > 0 {
-			result = strings.Join(warnings, "\n") + "\n\n" + result
-		}
-
-		return runResultMsg{content: result}
+		return runResultMsg{content: output}
 	}
 }
 
-func executeConfig(cfg *config.YapiConfig) (string, string, error) {
-	switch cfg.Method {
-	case "grpc":
-		body, err := executor.NewGRPCExecutor().Execute(cfg)
-		return body, "application/json", err
-	case "tcp":
-		body, err := executor.NewTCPExecutor().Execute(cfg)
-		return body, "text/plain", err
-	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "":
-		if cfg.Method == "" {
-			cfg.Method = "GET"
-		}
-		resp, err := executor.NewHTTPExecutor().Execute(cfg)
-		if err != nil {
-			return "", "", err
-		}
-		return resp.Body, resp.ContentType, nil
-	default:
-		return "", "", fmt.Errorf("unsupported method: %s", cfg.Method)
-	}
-}
 
 func NewWatchModel(path string) watchModel {
 	return watchModel{

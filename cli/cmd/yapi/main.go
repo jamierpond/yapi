@@ -5,17 +5,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/executor"
-	"yapi.run/cli/internal/filter"
 	"yapi.run/cli/internal/langserver"
-	"yapi.run/cli/internal/output"
+	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/tui"
-	"yapi.run/cli/internal/validation"
 )
 
 var (
@@ -160,50 +156,18 @@ func runConfigPathSafe(path string) {
 		return
 	}
 
-	issues := validation.ValidateConfig(cfg)
-	hasErrors := false
-	for _, issue := range issues {
-		lvl := "WARN"
-		color := "\033[33m" // yellow
-		if issue.Severity == validation.SeverityError {
-			lvl = "ERROR"
-			color = "\033[31m" // red
-			hasErrors = true
-		}
-		if issue.Field != "" {
-			fmt.Printf("%s[%s] %s: %s\033[0m\n", color, lvl, issue.Field, issue.Message)
-		} else {
-			fmt.Printf("%s[%s] %s\033[0m\n", color, lvl, issue.Message)
-		}
-	}
-	if hasErrors {
-		fmt.Println("\033[31mConfig validation failed\033[0m")
-		return
+	opts := runner.Options{
+		URLOverride: urlOverride,
+		NoColor:     noColor,
 	}
 
-	if urlOverride != "" {
-		cfg.URL = urlOverride
-	}
-
-	// Substitute environment variables
-	cfg.SubstituteEnvVars()
-
-	body, ctype, err := executeConfig(cfg)
+	output, err := runner.RunAndFormat(cfg, opts)
 	if err != nil {
-		fmt.Printf("\033[31mRequest failed: %v\033[0m\n", err)
+		fmt.Printf("\033[31m%v\033[0m\n", err)
 		return
 	}
 
-	if cfg.JQFilter != "" {
-		body, err = filter.ApplyJQ(body, cfg.JQFilter)
-		if err != nil {
-			fmt.Printf("\033[31mJQ filter failed: %v\033[0m\n", err)
-			return
-		}
-		ctype = "application/json"
-	}
-
-	fmt.Println(output.Highlight(body, ctype, noColor))
+	fmt.Println(output)
 }
 
 func newLSPCmd() *cobra.Command {
@@ -222,49 +186,19 @@ func runConfigPath(path string) {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	issues := validation.ValidateConfig(cfg)
-	hasErrors := false
-	for _, issue := range issues {
-		lvl := "WARN"
-		if issue.Severity == validation.SeverityError {
-			lvl = "ERROR"
-		}
-		if issue.Field != "" {
-			log.Printf("[%s] %s: %s", lvl, issue.Field, issue.Message)
-		} else {
-			log.Printf("[%s] %s", lvl, issue.Message)
-		}
-		if issue.Severity == validation.SeverityError {
-			hasErrors = true
-		}
-	}
-	if hasErrors {
-		log.Fatal("Config validation failed")
-	}
-
-	if urlOverride != "" {
-		cfg.URL = urlOverride
-	}
-
-	// Substitute environment variables
-	cfg.SubstituteEnvVars()
-
 	logHistory(path, urlOverride)
 
-	body, ctype, err := executeConfig(cfg)
+	opts := runner.Options{
+		URLOverride: urlOverride,
+		NoColor:     noColor,
+	}
+
+	output, err := runner.RunAndFormat(cfg, opts)
 	if err != nil {
-		log.Fatalf("Request failed: %v", err)
+		log.Fatalf("%v", err)
 	}
 
-	if cfg.JQFilter != "" {
-		body, err = filter.ApplyJQ(body, cfg.JQFilter)
-		if err != nil {
-			log.Fatalf("JQ filter failed: %v", err)
-		}
-		ctype = "application/json"
-	}
-
-	fmt.Println(output.Highlight(body, ctype, noColor))
+	fmt.Println(output)
 }
 
 func newHistoryCmd() *cobra.Command {
@@ -347,63 +281,3 @@ func logHistory(configPath, urlOverride string) {
 	f.WriteString(line)
 }
 
-// executeConfig keeps main() clean and testable.
-// Returns: body, contentType, error
-func executeConfig(cfg *config.YapiConfig) (string, string, error) {
-	// Detect transport from URL scheme
-	transport := detectTransport(cfg)
-
-	switch transport {
-	case "graphql":
-		resp, err := executor.NewGraphQLExecutor().Execute(cfg)
-		if err != nil {
-			return "", "", err
-		}
-		return resp.Body, resp.ContentType, nil
-	case "grpc":
-		body, err := executor.NewGRPCExecutor().Execute(cfg)
-		return body, "application/json", err
-	case "tcp":
-		body, err := executor.NewTCPExecutor().Execute(cfg)
-		return body, "text/plain", err
-	case "http":
-		if cfg.Method == "" {
-			cfg.Method = "GET"
-		}
-		resp, err := executor.NewHTTPExecutor().Execute(cfg)
-		if err != nil {
-			return "", "", err
-		}
-		return resp.Body, resp.ContentType, nil
-	default:
-		return "", "", fmt.Errorf("unsupported transport: %s", transport)
-	}
-}
-
-// detectTransport determines the transport type from URL scheme or method field
-func detectTransport(cfg *config.YapiConfig) string {
-	urlLower := strings.ToLower(cfg.URL)
-
-	// Check URL scheme first
-	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
-		return "grpc"
-	}
-	if strings.HasPrefix(urlLower, "tcp://") {
-		return "tcp"
-	}
-
-	// Check if graphql field is populated
-	if cfg.Graphql != "" {
-		return "graphql"
-	}
-
-	// Fall back to method field (deprecated but still supported)
-	switch cfg.Method {
-	case "grpc":
-		return "grpc"
-	case "tcp":
-		return "tcp"
-	default:
-		return "http"
-	}
-}
