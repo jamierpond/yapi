@@ -1,0 +1,5 @@
+# Using jq to filter response data
+url: https://jsonplaceholder.typicode.com/users
+
+# Extract just names and emails
+jq_filter: "[.[] | {name, email}]"

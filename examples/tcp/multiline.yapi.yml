@@ -1,0 +1,10 @@
+# TCP with multiline data
+url: tcp://tcpbin.com:4242
+
+data: |
+  GET / HTTP/1.1
+  Host: example.com
+  Connection: close
+
+encoding: text
+read_timeout: 5

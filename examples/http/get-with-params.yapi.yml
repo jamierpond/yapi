@@ -1,0 +1,5 @@
+# GET request with query parameters
+url: https://jsonplaceholder.typicode.com/posts
+params:
+  userId: 1
+  _limit: 3

@@ -1,0 +1,7 @@
+# PATCH request for partial update
+url: https://jsonplaceholder.typicode.com/posts/1
+method: PATCH
+content_type: application/json
+
+body:
+  title: "Only updating the title"

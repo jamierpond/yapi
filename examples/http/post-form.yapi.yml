@@ -1,0 +1,9 @@
+# POST request with form data
+url: https://httpbin.org/post
+method: POST
+content_type: application/x-www-form-urlencoded
+
+body:
+  username: testuser
+  email: test@example.com
+  subscribe: "true"

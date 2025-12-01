@@ -1,0 +1,17 @@
+# Using raw JSON literal instead of YAML body
+# Useful when copying JSON from other sources
+url: https://httpbin.org/post
+method: POST
+content_type: application/json
+
+json: |
+  {
+    "id": 12345,
+    "status": "active",
+    "nested": {
+      "foo": "bar",
+      "items": [1, 2, 3]
+    }
+  }
+
+jq_filter: .json

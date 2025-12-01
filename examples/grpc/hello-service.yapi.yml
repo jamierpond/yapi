@@ -1,0 +1,10 @@
+# gRPC Hello Service example
+# Uses grpcb.in test service with server reflection
+url: grpc://grpcb.in:9000
+
+service: hello.HelloService
+rpc: SayHello
+plaintext: true
+
+body:
+  greeting: "World"

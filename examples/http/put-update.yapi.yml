@@ -1,0 +1,10 @@
+# PUT request to update a resource
+url: https://jsonplaceholder.typicode.com/posts/1
+method: PUT
+content_type: application/json
+
+body:
+  id: 1
+  title: "Updated title"
+  body: "Updated content"
+  userId: 1

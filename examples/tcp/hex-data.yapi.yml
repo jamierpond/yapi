@@ -1,0 +1,7 @@
+# TCP with hex-encoded data
+url: tcp://tcpbin.com:4242
+
+# Send raw bytes as hex
+data: "48656c6c6f0a"
+encoding: hex
+read_timeout: 5

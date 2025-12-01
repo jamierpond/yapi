@@ -1,0 +1,13 @@
+# gRPC request with metadata headers
+url: grpc://grpcb.in:9000
+
+service: hello.HelloService
+rpc: SayHello
+plaintext: true
+
+headers:
+  x-custom-header: my-value
+  x-request-id: "12345"
+
+body:
+  greeting: "yapi user"

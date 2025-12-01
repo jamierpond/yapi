@@ -1,0 +1,6 @@
+# Bearer token authentication
+url: https://httpbin.org/bearer
+method: GET
+
+headers:
+  Authorization: Bearer ${API_TOKEN}

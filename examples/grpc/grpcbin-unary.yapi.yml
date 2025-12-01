@@ -1,0 +1,10 @@
+# gRPC Unary call with payload
+url: grpc://grpcb.in:9000
+
+service: grpc.testing.TestService
+rpc: UnaryCall
+plaintext: true
+
+body:
+  payload:
+    body: "SGVsbG8gV29ybGQ="

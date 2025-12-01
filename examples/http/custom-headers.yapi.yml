@@ -1,0 +1,9 @@
+# Request with custom headers
+url: https://httpbin.org/headers
+method: GET
+
+headers:
+  X-Custom-Header: my-custom-value
+  X-Request-ID: "12345"
+  Accept: application/json
+  User-Agent: yapi/1.0
