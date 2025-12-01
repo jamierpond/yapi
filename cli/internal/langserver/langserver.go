@@ -5,6 +5,8 @@ import (
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/validation"
 
+	"github.com/graphql-go/graphql/language/parser"
+	"github.com/graphql-go/graphql/language/source"
 	"github.com/tliron/commonlog"
 	_ "github.com/tliron/commonlog/simple"
 	"github.com/tliron/glsp"
@@ -165,6 +167,12 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 				Message:  issue.Message,
 			})
 		}
+
+		// GraphQL syntax validation
+		if cfg.Graphql != "" {
+			gqlDiags := validateGraphQLSyntax(text, cfg.Graphql)
+			diagnostics = append(diagnostics, gqlDiags...)
+		}
 	}
 
 	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
@@ -184,6 +192,37 @@ func findFieldLine(text string, field string) protocol.UInteger {
 		}
 	}
 	return 0
+}
+
+func validateGraphQLSyntax(fullYamlText string, gqlQuery string) []protocol.Diagnostic {
+	src := source.NewSource(&source.Source{
+		Body: []byte(gqlQuery),
+		Name: "GraphQL Query",
+	})
+
+	_, err := parser.Parse(parser.ParseParams{Source: src})
+	if err == nil {
+		return nil
+	}
+
+	// Find where the "graphql:" block starts in the YAML file
+	blockStartLine := findFieldLine(fullYamlText, "graphql")
+
+	// The query content starts on the line after "graphql: |"
+	// so we add 1 to get to the actual query content
+	targetLine := blockStartLine + 1
+
+	return []protocol.Diagnostic{
+		{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: targetLine, Character: 0},
+				End:   protocol.Position{Line: targetLine + 1, Character: 0},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  "GraphQL syntax error: " + err.Error(),
+		},
+	}
 }
 
 func ptr[T any](v T) *T {
@@ -228,10 +267,13 @@ var topLevelKeys = []struct {
 	{"url", "The target URL (required)"},
 	{"path", "URL path to append"},
 	{"method", "HTTP method or protocol (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, grpc, tcp)"},
+	{"headers", "HTTP headers as key-value pairs"},
 	{"content_type", "Content-Type header value"},
 	{"body", "Request body as key-value pairs"},
 	{"json", "Raw JSON string for request body"},
 	{"query", "Query parameters as key-value pairs"},
+	{"graphql", "GraphQL query or mutation (multiline string)"},
+	{"variables", "GraphQL variables as key-value pairs"},
 	{"service", "gRPC service name"},
 	{"rpc", "gRPC method name"},
 	{"proto", "Path to .proto file"},

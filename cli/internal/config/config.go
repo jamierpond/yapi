@@ -11,12 +11,15 @@ type YapiConfig struct {
 	Path           string                 `yaml:"path,omitempty"`
 	Method         string                 `yaml:"method,omitempty"` // GET, POST, grpc, tcp
 	ContentType    string                 `yaml:"content_type,omitempty"`
+	Headers        map[string]string      `yaml:"headers,omitempty"`
 	Body           map[string]interface{} `yaml:"body,omitempty"`
 	JSON           string                 `yaml:"json,omitempty"` // Raw JSON override
 	Query          map[string]string      `yaml:"query,omitempty"`
-	Service        string                 `yaml:"service,omitempty"` // gRPC
-	RPC            string                 `yaml:"rpc,omitempty"`     // gRPC
-	Proto          string                 `yaml:"proto,omitempty"`   // gRPC
+	Graphql        string                 `yaml:"graphql,omitempty"`   // GraphQL query/mutation
+	Variables      map[string]interface{} `yaml:"variables,omitempty"` // GraphQL variables
+	Service        string                 `yaml:"service,omitempty"`   // gRPC
+	RPC            string                 `yaml:"rpc,omitempty"`       // gRPC
+	Proto          string                 `yaml:"proto,omitempty"`     // gRPC
 	ProtoPath      string                 `yaml:"proto_path,omitempty"`
 	Data           string                 `yaml:"data,omitempty"`     // TCP raw data
 	Encoding       string                 `yaml:"encoding,omitempty"` // text, hex, base64

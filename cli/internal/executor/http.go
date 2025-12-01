@@ -74,6 +74,12 @@ func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (*HTTPResponse, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Set custom headers
+	for k, v := range cfg.Headers {
+		req.Header.Set(k, v)
+	}
+
+	// Set Content-Type (can be overridden by headers map)
 	if cfg.ContentType != "" {
 		req.Header.Set("Content-Type", cfg.ContentType)
 	}
