@@ -231,6 +231,37 @@ func validateGraphQLSyntax(fullYamlText string, gqlQuery string) []protocol.Diag
 	}
 }
 
+func validateEnvVars(text string) []protocol.Diagnostic {
+	var diagnostics []protocol.Diagnostic
+	lines := strings.Split(text, "\n")
+
+	for lineNum, line := range lines {
+		refs := envsubst.FindAllWithPositions(line)
+		for _, ref := range refs {
+			missing := envsubst.FindMissing(line[ref.Start:ref.End])
+			if len(missing) > 0 {
+				diagnostics = append(diagnostics, protocol.Diagnostic{
+					Range: protocol.Range{
+						Start: protocol.Position{
+							Line:      protocol.UInteger(lineNum),
+							Character: protocol.UInteger(ref.Start),
+						},
+						End: protocol.Position{
+							Line:      protocol.UInteger(lineNum),
+							Character: protocol.UInteger(ref.End),
+						},
+					},
+					Severity: ptr(protocol.DiagnosticSeverityWarning),
+					Source:   ptr("yapi"),
+					Message:  fmt.Sprintf("environment variable %q is not set", ref.Name),
+				})
+			}
+		}
+	}
+
+	return diagnostics
+}
+
 func ptr[T any](v T) *T {
 	return &v
 }

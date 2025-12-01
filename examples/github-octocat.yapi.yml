@@ -1,6 +1,6 @@
 url: https://api.github.com/graphql
 headers:
-  Authorization: Bearer ${GITHUB_TOKEN}
+  Authorization: Bearer ${GH_TOKEN}
 graphql: |
   query getUser($login: String!) {
     user(login: $login) {
