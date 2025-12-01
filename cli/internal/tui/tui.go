@@ -66,101 +66,104 @@ func findFiles() ([]string, error) {
 
 
 func FindConfigFileSingle() (string, error) {
-	if !isatty.IsTerminal(os.Stdin.Fd()) {
-		files, err := findFiles()
-		if err != nil {
-			return "", err
-		}
-		if len(files) == 0 {
-			return "", fmt.Errorf("no .yapi.yml files found")
-		}
-		return files[0], nil
-	}
-
 	files, err := findFiles()
 	if err != nil {
 		return "", err
 	}
-
-	// Try to open /dev/tty for robust terminal interaction
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	var p *tea.Program
-	if err != nil {
-		// Fallback to stdin/stderr if /dev/tty is not available
-		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
-		p = tea.NewProgram(
-			selector.New(files, false),
-			tea.WithOutput(os.Stderr),
-			tea.WithInput(os.Stdin),
-			tea.WithAltScreen(),
-		)
-	} else {
-		defer tty.Close()
-		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(tty))
-		p = tea.NewProgram(
-			selector.New(files, false),
-			tea.WithInput(tty),
-			tea.WithOutput(tty),
-			tea.WithAltScreen(),
-		)
+	if len(files) == 0 {
+		return "", fmt.Errorf("no .yapi.yml files found")
 	}
+
+	var in, out *os.File
+	// Prefer /dev/tty for interactive TUI so it still works when stdout is piped.
+	// Example: yapi pick | jq
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err == nil {
+		in = tty
+		out = tty
+		defer tty.Close()
+	} else if isatty.IsTerminal(os.Stdout.Fd()) {
+		in = os.Stdin
+		out = os.Stdout
+	} else {
+		// No TTY at all (CI, cron, etc) -> non-interactive fallback
+		return files[0], nil
+	}
+
+
+	os.Setenv("CLICOLOR_FORCE", "1")
+	// Render TUI to the chosen terminal, not to stdout.
+	renderer := lipgloss.NewRenderer(out)
+	lipgloss.SetDefaultRenderer(renderer)
+
+	p := tea.NewProgram(
+		selector.New(files, false),
+		tea.WithInput(in),
+		tea.WithOutput(out),
+		tea.WithAltScreen(),
+	)
 
 	m, err := p.Run()
 	if err != nil {
 		return "", fmt.Errorf("failed to run selector: %w", err)
-    }
+	}
 
-    model := m.(selector.Model)
-    selected := model.SelectedList()
-    if len(selected) == 0 {
-        return "", fmt.Errorf("no config file selected")
-    }
-    return selected[0], nil
+	model := m.(selector.Model)
+	selected := model.SelectedList()
+	if len(selected) == 0 {
+		return "", fmt.Errorf("no config file selected")
+	}
+
+	// The caller still prints the final path(s) to stdout,
+	// which can safely be piped to jq, xargs, etc.
+	return selected[0], nil
 }
 
 func FindConfigFileMulti(multi bool) ([]string, error) {
-	if !isatty.IsTerminal(os.Stdin.Fd()) {
-		return findFiles()
-	}
-
 	files, err := findFiles()
 	if err != nil {
 		return nil, err
 	}
-
-	// Try to open /dev/tty for robust terminal interaction
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	var p *tea.Program
-	if err != nil {
-		// Fallback to stdin/stderr if /dev/tty is not available
-		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
-		p = tea.NewProgram(
-			selector.New(files, multi),
-			tea.WithOutput(os.Stderr),
-			tea.WithInput(os.Stdin),
-			tea.WithAltScreen(),
-		)
-	} else {
-		defer tty.Close()
-		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(tty))
-		p = tea.NewProgram(
-			selector.New(files, multi),
-			tea.WithInput(tty),
-			tea.WithOutput(tty),
-			tea.WithAltScreen(),
-		)
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no .yapi.yml files found")
 	}
+
+	var in, out *os.File
+	// Same TTY detection strategy as FindConfigFileSingle.
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err == nil {
+		in = tty
+		out = tty
+		defer tty.Close()
+	} else if isatty.IsTerminal(os.Stdout.Fd()) {
+		in = os.Stdin
+		out = os.Stdout
+	} else {
+		// No TTY -> just return the list for non-interactive use
+		return files, nil
+	}
+
+	os.Setenv("CLICOLOR_FORCE", "1")
+	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(out))
+
+	p := tea.NewProgram(
+		selector.New(files, multi),
+		tea.WithInput(in),
+		tea.WithOutput(out),
+		tea.WithAltScreen(),
+	)
 
 	m, err := p.Run()
 	if err != nil {
 		return nil, fmt.Errorf("failed to run selector: %w", err)
-    }
+	}
 
-    model := m.(selector.Model)
-    selected := model.SelectedList()
-    if len(selected) == 0 {
-        return nil, fmt.Errorf("no config file selected")
-    }
-    return selected, nil
+	model := m.(selector.Model)
+	selected := model.SelectedList()
+	if len(selected) == 0 {
+		return nil, fmt.Errorf("no config file selected")
+	}
+
+	return selected, nil
 }
 
