@@ -150,6 +150,8 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 	// Rule 5: body and json are mutually exclusive
 	hasBody := cfg.Body != nil && len(cfg.Body) > 0
 	hasJSON := cfg.JSON != ""
+	hasGraphql := cfg.Graphql != ""
+
 	if hasBody && hasJSON {
 		issues = append(issues, Issue{
 			Severity: SeverityError,
@@ -158,8 +160,17 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 		})
 	}
 
-	// Rule 6: content_type required when body or json is present (HTTP only)
-	if isHTTPRequest(cfg) && (hasBody || hasJSON) && cfg.ContentType == "" {
+	// Rule 6: graphql is mutually exclusive with body and json
+	if hasGraphql && (hasBody || hasJSON) {
+		issues = append(issues, Issue{
+			Severity: SeverityError,
+			Field:    "graphql",
+			Message:  "`graphql` cannot be used with `body` or `json`",
+		})
+	}
+
+	// Rule 7: content_type required when body or json is present (HTTP only, not GraphQL)
+	if isHTTPRequest(cfg) && !hasGraphql && (hasBody || hasJSON) && cfg.ContentType == "" {
 		issues = append(issues, Issue{
 			Severity: SeverityError,
 			Field:    "content_type",
