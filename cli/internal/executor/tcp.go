@@ -84,20 +84,49 @@ func (e *TCPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 		}
 	}
 
-	// Set read deadline
+	// Read response with idle timeout
+	// Use a short idle timeout (500ms) to detect end of response when server doesn't close connection
+	idleTimeout := 500 * time.Millisecond
+	maxTimeout := 5 * time.Second
 	if cfg.ReadTimeout > 0 {
-		_ = conn.SetReadDeadline(time.Now().Add(time.Duration(cfg.ReadTimeout) * time.Second))
+		maxTimeout = time.Duration(cfg.ReadTimeout) * time.Second
 	}
 
-	// Read response
 	respBuf := bytes.NewBuffer(nil)
-	_, err = io.Copy(respBuf, conn)
-	// io.Copy reads until EOF or error, which naturally handles server closing connection or timeout
-	// We don't need to explicitly handle close_after_send if io.Copy completes correctly.
-	// If server keeps connection open indefinitely, read_timeout will eventually kick in.
+	buf := make([]byte, 4096)
+	deadline := time.Now().Add(maxTimeout)
 
-	if err != nil && !strings.Contains(err.Error(), "timeout") && err != io.EOF {
-		return "", fmt.Errorf("failed to read from TCP connection: %w", err)
+	for {
+		// Set a short read deadline to detect idle connection
+		readDeadline := time.Now().Add(idleTimeout)
+		if readDeadline.After(deadline) {
+			readDeadline = deadline
+		}
+		_ = conn.SetReadDeadline(readDeadline)
+
+		n, err := conn.Read(buf)
+		if n > 0 {
+			respBuf.Write(buf[:n])
+		}
+
+		if err != nil {
+			if err == io.EOF {
+				break // Server closed connection
+			}
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				if respBuf.Len() > 0 {
+					// We have data and hit idle timeout - assume response is complete
+					break
+				}
+				if time.Now().After(deadline) {
+					// Hit max timeout with no data
+					break
+				}
+				// No data yet, keep waiting until max timeout
+				continue
+			}
+			return "", fmt.Errorf("failed to read from TCP connection: %w", err)
+		}
 	}
 
 	return respBuf.String(), nil
