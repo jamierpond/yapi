@@ -219,3 +219,148 @@ func severityToMessageType(s validation.Severity) protocol.MessageType {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
+// Schema definitions for completions
+var topLevelKeys = []struct {
+	key  string
+	desc string
+}{
+	{"url", "The target URL (required)"},
+	{"path", "URL path to append"},
+	{"method", "HTTP method or protocol (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, grpc, tcp)"},
+	{"content_type", "Content-Type header value"},
+	{"body", "Request body as key-value pairs"},
+	{"json", "Raw JSON string for request body"},
+	{"query", "Query parameters as key-value pairs"},
+	{"service", "gRPC service name"},
+	{"rpc", "gRPC method name"},
+	{"proto", "Path to .proto file"},
+	{"proto_path", "Import path for proto files"},
+	{"data", "Raw data for TCP requests"},
+	{"encoding", "Data encoding (text, hex, base64)"},
+	{"jq_filter", "JQ filter to apply to response"},
+	{"insecure", "Skip TLS verification (boolean)"},
+	{"plaintext", "Use plaintext gRPC (boolean)"},
+	{"read_timeout", "TCP read timeout in seconds"},
+	{"close_after_send", "Close TCP connection after sending (boolean)"},
+}
+
+var methodValues = []struct {
+	val  string
+	desc string
+}{
+	{"GET", "HTTP GET request"},
+	{"POST", "HTTP POST request"},
+	{"PUT", "HTTP PUT request"},
+	{"DELETE", "HTTP DELETE request"},
+	{"PATCH", "HTTP PATCH request"},
+	{"HEAD", "HTTP HEAD request"},
+	{"OPTIONS", "HTTP OPTIONS request"},
+	{"grpc", "gRPC request (deprecated)"},
+	{"tcp", "Raw TCP request (deprecated)"},
+}
+
+var encodingValues = []struct {
+	val  string
+	desc string
+}{
+	{"text", "Plain text encoding"},
+	{"hex", "Hexadecimal encoding"},
+	{"base64", "Base64 encoding"},
+}
+
+func textDocumentCompletion(ctx *glsp.Context, params *protocol.CompletionParams) (any, error) {
+	uri := params.TextDocument.URI
+	doc, ok := docs[uri]
+	if !ok {
+		return nil, nil
+	}
+
+	line := params.Position.Line
+	char := params.Position.Character
+
+	lines := strings.Split(doc.Text, "\n")
+	if int(line) >= len(lines) {
+		return nil, nil
+	}
+
+	currentLine := lines[line]
+	textBeforeCursor := ""
+	if int(char) <= len(currentLine) {
+		textBeforeCursor = currentLine[:char]
+	}
+
+	var items []protocol.CompletionItem
+
+	// Check if we're completing a value (after a colon)
+	if colonIdx := strings.Index(textBeforeCursor, ":"); colonIdx != -1 {
+		key := strings.TrimSpace(textBeforeCursor[:colonIdx])
+
+		switch key {
+		case "method":
+			for _, m := range methodValues {
+				items = append(items, protocol.CompletionItem{
+					Label:         m.val,
+					Kind:          ptr(protocol.CompletionItemKindValue),
+					Detail:        ptr(m.desc),
+					InsertText:    ptr(m.val),
+					Documentation: m.desc,
+				})
+			}
+		case "encoding":
+			for _, e := range encodingValues {
+				items = append(items, protocol.CompletionItem{
+					Label:         e.val,
+					Kind:          ptr(protocol.CompletionItemKindValue),
+					Detail:        ptr(e.desc),
+					InsertText:    ptr(e.val),
+					Documentation: e.desc,
+				})
+			}
+		case "insecure", "plaintext", "close_after_send":
+			items = append(items,
+				protocol.CompletionItem{
+					Label:      "true",
+					Kind:       ptr(protocol.CompletionItemKindValue),
+					InsertText: ptr("true"),
+				},
+				protocol.CompletionItem{
+					Label:      "false",
+					Kind:       ptr(protocol.CompletionItemKindValue),
+					InsertText: ptr("false"),
+				},
+			)
+		}
+	} else {
+		// Completing a key at the start of a line
+		trimmed := strings.TrimSpace(textBeforeCursor)
+
+		// Find which keys are already used
+		usedKeys := make(map[string]bool)
+		for _, l := range lines {
+			if colonIdx := strings.Index(l, ":"); colonIdx != -1 {
+				k := strings.TrimSpace(l[:colonIdx])
+				usedKeys[k] = true
+			}
+		}
+
+		for _, k := range topLevelKeys {
+			if usedKeys[k.key] {
+				continue
+			}
+			// Filter by what user has typed
+			if trimmed != "" && !strings.HasPrefix(k.key, trimmed) {
+				continue
+			}
+			items = append(items, protocol.CompletionItem{
+				Label:         k.key,
+				Kind:          ptr(protocol.CompletionItemKindField),
+				Detail:        ptr(k.desc),
+				InsertText:    ptr(k.key + ": "),
+				Documentation: k.desc,
+			})
+		}
+	}
+
+	return items, nil
+}
