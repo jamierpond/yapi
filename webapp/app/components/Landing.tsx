@@ -6,7 +6,7 @@ export default function Landing() {
   const [copied, setCopied] = useState(false);
 
   const copyInstall = () => {
-    navigator.clipboard.writeText("go install github.com/jpond/yapi/cli/cmd/yapi@latest");
+    navigator.clipboard.writeText("go install github.com/jamierpond/yapi/cli/cmd/yapi@latest");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

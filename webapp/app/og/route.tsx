@@ -107,7 +107,7 @@ export async function getOgImage() {
               letterSpacing: "3px",
             }}
           >
-            Bash-powered YAML API workbench
+            Go-powered YAML API client
           </span>
         </div>
 

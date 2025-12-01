@@ -1,5 +1,5 @@
 export const SITE_TITLE = "yapi";
-export const SITE_DESCRIPTION = "A small, Bash-powered YAML API client that speaks HTTP, gRPC, and raw TCP. Write clean YAML configs, version control your requests, execute from CLI or web playground.";
+export const SITE_DESCRIPTION = "A Go-powered, offline-first YAML API client for HTTP, gRPC, and TCP. Write clean YAML configs, version control your requests, execute from CLI or web playground.";
 export const SITE_URL = "https://yapi.run";
 
 export const COLORS = {
