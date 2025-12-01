@@ -1,0 +1,21 @@
+# GraphQL - Rick and Morty API
+url: https://rickandmortyapi.com/graphql
+
+graphql: |
+  query {
+    characters(page: 1, filter: { name: "Rick" }) {
+      results {
+        name
+        status
+        species
+        origin {
+          name
+        }
+        episode {
+          name
+        }
+      }
+    }
+  }
+
+jq_filter: ".data.characters.results[:3]"

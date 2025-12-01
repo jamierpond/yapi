@@ -1,0 +1,17 @@
+# GraphQL - SpaceX launches
+url: https://spacex-production.up.railway.app/
+
+graphql: |
+  query {
+    launchesPast(limit: 5) {
+      mission_name
+      launch_date_local
+      launch_site {
+        site_name
+      }
+      rocket {
+        rocket_name
+      }
+      launch_success
+    }
+  }

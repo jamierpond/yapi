@@ -1,0 +1,15 @@
+# GraphQL - List all countries
+# Using the free Countries GraphQL API
+url: https://countries.trevorblades.com/graphql
+
+graphql: |
+  query {
+    countries {
+      code
+      name
+      capital
+      currency
+    }
+  }
+
+jq_filter: ".data.countries[:5]"

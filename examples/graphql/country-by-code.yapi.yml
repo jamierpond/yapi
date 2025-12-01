@@ -1,0 +1,21 @@
+# GraphQL - Get country by code with variables
+url: https://countries.trevorblades.com/graphql
+
+graphql: |
+  query getCountry($code: ID!) {
+    country(code: $code) {
+      name
+      native
+      capital
+      currency
+      languages {
+        name
+      }
+      continent {
+        name
+      }
+    }
+  }
+
+variables:
+  code: "GB"

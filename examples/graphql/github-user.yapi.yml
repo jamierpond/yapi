@@ -1,0 +1,28 @@
+# GraphQL - GitHub user query (requires GH_TOKEN)
+url: https://api.github.com/graphql
+
+headers:
+  Authorization: Bearer ${GH_TOKEN}
+
+graphql: |
+  query getUser($login: String!) {
+    user(login: $login) {
+      name
+      company
+      bio
+      location
+      followers {
+        totalCount
+      }
+      repositories(first: 5, orderBy: {field: STARGAZERS, direction: DESC}) {
+        nodes {
+          name
+          stargazerCount
+          description
+        }
+      }
+    }
+  }
+
+variables:
+  login: "octocat"

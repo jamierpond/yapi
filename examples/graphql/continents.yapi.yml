@@ -1,0 +1,16 @@
+# GraphQL - List continents with their countries
+url: https://countries.trevorblades.com/graphql
+
+graphql: |
+  query {
+    continents {
+      code
+      name
+      countries {
+        name
+        capital
+      }
+    }
+  }
+
+jq_filter: ".data.continents | map({name, country_count: (.countries | length)})"
