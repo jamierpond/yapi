@@ -66,11 +66,13 @@ local function start_watch(filepath)
   vim.api.nvim_win_set_buf(win, term_buf)
 
   -- Start terminal with yapi watch (pretty mode if configured)
-  local cmd = { "yapi", "watch", filepath }
+  -- Run through user's default shell to inherit their env vars
+  local shell = os.getenv("SHELL") or "/bin/sh"
+  local yapi_cmd = "yapi watch " .. vim.fn.shellescape(filepath)
   if M._opts.pretty then
-    table.insert(cmd, "--pretty")
+    yapi_cmd = yapi_cmd .. " --pretty"
   end
-  vim.fn.termopen(cmd, {
+  vim.fn.termopen({ shell, "-ic", yapi_cmd }, {
     on_exit = function()
       vim.schedule(function()
         close_term()
@@ -108,7 +110,10 @@ local function run_once(filepath)
   term_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_win_set_buf(win, term_buf)
 
-  vim.fn.termopen({ "yapi", "run", filepath }, {
+  -- Run through user's default shell to inherit their env vars
+  local shell = os.getenv("SHELL") or "/bin/sh"
+  local yapi_cmd = "yapi run " .. vim.fn.shellescape(filepath)
+  vim.fn.termopen({ shell, "-ic", yapi_cmd }, {
     on_exit = function()
       -- Keep the buffer open to show results
     end,
