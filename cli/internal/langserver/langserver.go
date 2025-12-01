@@ -269,6 +269,13 @@ var encodingValues = []struct {
 	{"base64", "Base64 encoding"},
 }
 
+var contentTypeValues = []struct {
+	val  string
+	desc string
+}{
+	{"application/json", "JSON content type"},
+}
+
 func textDocumentCompletion(ctx *glsp.Context, params *protocol.CompletionParams) (any, error) {
 	uri := params.TextDocument.URI
 	doc, ok := docs[uri]
@@ -315,6 +322,16 @@ func textDocumentCompletion(ctx *glsp.Context, params *protocol.CompletionParams
 					Detail:        ptr(e.desc),
 					InsertText:    ptr(e.val),
 					Documentation: e.desc,
+				})
+			}
+		case "content_type":
+			for _, ct := range contentTypeValues {
+				items = append(items, protocol.CompletionItem{
+					Label:         ct.val,
+					Kind:          ptr(protocol.CompletionItemKindValue),
+					Detail:        ptr(ct.desc),
+					InsertText:    ptr(ct.val),
+					Documentation: ct.desc,
 				})
 			}
 		case "insecure", "plaintext", "close_after_send":
