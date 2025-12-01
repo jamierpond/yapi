@@ -141,7 +141,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case "ctrl+c", "esc":
 			return m, tea.Quit
 
 		case "up", "ctrl+k":
@@ -315,7 +315,7 @@ func (m Model) View() string {
 			lipgloss.Left,
 			header,
 			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
-			footerStyle.Render("↑/↓ move | type to filter | space select | enter accept | q quit"),
+			footerStyle.Render("↑/↓ move | type to filter | space select | enter accept | esc quit"),
 		)
 	}
 	return appStyle.Render(content)
