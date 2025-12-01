@@ -51,14 +51,15 @@ var (
 )
 
 type Model struct {
-	files         []string
-	filteredFiles []string
-	cursor        int
-	selectedSet   map[string]struct{} // multi-select
-	viewport      viewport.Model
-	textInput     textinput.Model
-	multi         bool
-	isVertical    bool
+	files           []string
+	filteredFiles   []string
+	cursor          int
+	selectedSet     map[string]struct{} // multi-select
+	viewport        viewport.Model
+	textInput       textinput.Model
+	multi           bool
+	isVertical      bool
+	maxVisibleFiles int
 }
 
 func New(files []string, multi bool) Model {
@@ -77,12 +78,13 @@ func New(files []string, multi bool) Model {
 		Background(yapiBgElevated)
 
 	m := Model{
-		files:         files,
-		filteredFiles: files,
-		selectedSet:   make(map[string]struct{}),
-		viewport:      vp,
-		textInput:     ti,
-		multi:         multi,
+		files:           files,
+		filteredFiles:   files,
+		selectedSet:     make(map[string]struct{}),
+		viewport:        vp,
+		textInput:       ti,
+		multi:           multi,
+		maxVisibleFiles: 10,
 	}
 	m.loadFileContent()
 	return m
@@ -111,27 +113,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		const minWidthForHorizontalLayout = 100
-		const minHeightForHorizontalLayout = 19 // Min height for left panel (12) + chrome (7)
+		const minHeightForHorizontalLayout = 19
 		const leftPanelWidth = 50
 		const leftPanelPadding = 2
-		const maxVisibleFiles = 10
 
-		// Height calculation constants
-		const verticalChromeHeight = 12 // Borders, headers, footers, etc.
 		// Chrome heights: appStyle border(2) + padding(2) + header(1) + margin(1) + footer(2) + viewportBorder(2) + viewportPadding(2)
-		const horizontalChromeHeight = 12
+		const chromeHeight = 12
 
 		if msg.Width < minWidthForHorizontalLayout || msg.Height < minHeightForHorizontalLayout {
 			m.isVertical = true
 			availableWidth := msg.Width - appStyle.GetHorizontalFrameSize()
 			m.textInput.Width = availableWidth
 			m.viewport.Width = availableWidth - viewportContentStyle.GetHorizontalFrameSize()
-			m.viewport.Height = msg.Height - verticalChromeHeight - maxVisibleFiles
+			// In vertical mode, split remaining height between file list and preview
+			availableForContent := msg.Height - chromeHeight
+			// Give file list ~1/3, preview ~2/3, with minimums
+			m.maxVisibleFiles = max(3, availableForContent/3)
+			m.viewport.Height = max(5, availableForContent-m.maxVisibleFiles-2) // -2 for preview title + margin
 		} else {
 			m.isVertical = false
+			m.maxVisibleFiles = 10
 			m.textInput.Width = leftPanelWidth
 			m.viewport.Width = msg.Width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
-			m.viewport.Height = msg.Height - horizontalChromeHeight
+			m.viewport.Height = msg.Height - chromeHeight
 		}
 		return m, nil
 
@@ -216,26 +220,29 @@ func (m *Model) filterFiles() {
 func (m Model) View() string {
 	// --- File List (with virtual scrolling) ---
 	fileList := ""
-	const maxVisibleFiles = 10
+	maxVisible := m.maxVisibleFiles
+	if maxVisible < 1 {
+		maxVisible = 10
+	}
 	var visibleFileStartIndex int
 
 	// Determine the slice of files to show
-	if len(m.filteredFiles) > maxVisibleFiles {
-		visibleFileStartIndex = m.cursor - (maxVisibleFiles / 2)
+	if len(m.filteredFiles) > maxVisible {
+		visibleFileStartIndex = m.cursor - (maxVisible / 2)
 		if visibleFileStartIndex < 0 {
 			visibleFileStartIndex = 0
 		}
-		endIndex := visibleFileStartIndex + maxVisibleFiles
+		endIndex := visibleFileStartIndex + maxVisible
 		if endIndex > len(m.filteredFiles) {
 			endIndex = len(m.filteredFiles)
-			visibleFileStartIndex = endIndex - maxVisibleFiles
+			visibleFileStartIndex = endIndex - maxVisible
 			if visibleFileStartIndex < 0 {
 				visibleFileStartIndex = 0
 			}
 		}
 	}
 
-	endIndex := visibleFileStartIndex + maxVisibleFiles
+	endIndex := visibleFileStartIndex + maxVisible
 	if endIndex > len(m.filteredFiles) {
 		endIndex = len(m.filteredFiles)
 	}
