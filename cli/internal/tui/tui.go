@@ -4,60 +4,82 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 
-	"github.com/charmbracelet/bubbletea"
 	"cli/internal/tui/selector"
+
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/go-git/go-git/v5"
 	"github.com/mattn/go-isatty"
 )
 
+// yapiFilePattern matches *.yapi.yaml or *.yapi.yml in subdirectories only
+var yapiFilePattern = regexp.MustCompile(`^.+/.+\.yapi\.ya?ml$`)
+
 func findFiles() ([]string, error) {
-	var configFiles []string
-	currentDir, err := os.Getwd()
+	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	dir := currentDir
-	for i := 0; i < 5; i++ { // Limit search to current + 4 parent directories
-		files, err := filepath.Glob(filepath.Join(dir, "*.yapi.yml"))
-		if err != nil {
-			return nil, fmt.Errorf("failed to glob for config files in %s: %w", dir, err)
+	// Open the git repository (searches up for .git)
+	repo, err := git.PlainOpenWithOptions(cwd, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("not in a git repository: %w", err)
+	}
+
+	// Get worktree to find repo root
+	wt, err := repo.Worktree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get worktree: %w", err)
+	}
+	repoRoot := wt.Filesystem.Root()
+
+	// Read the git index (staged files = tracked files)
+	idx, err := repo.Storer.Index()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read git index: %w", err)
+	}
+
+	// Calculate relative path from repo root to cwd
+	relCwd, err := filepath.Rel(repoRoot, cwd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate relative path: %w", err)
+	}
+	if relCwd == "." {
+		relCwd = ""
+	}
+
+	var configFiles []string
+	for _, entry := range idx.Entries {
+		path := entry.Name
+
+		// Skip if not under current directory
+		if relCwd != "" && !strings.HasPrefix(path, relCwd+"/") {
+			continue
 		}
-		for _, file := range files {
-			// Store relative path to CWD
-			relPath, err := filepath.Rel(currentDir, file)
-			if err != nil {
-				relPath = file // Fallback to absolute path if relative fails
-			}
+
+		// Get path relative to cwd
+		var relPath string
+		if relCwd != "" {
+			relPath = strings.TrimPrefix(path, relCwd+"/")
+		} else {
+			relPath = path
+		}
+
+		// Must be in a subdirectory and match .yapi.y[a]ml
+		if yapiFilePattern.MatchString(relPath) {
 			configFiles = append(configFiles, relPath)
 		}
-
-		// Also search for config files in the adjacent 'examples' directory
-		if dir == currentDir { // Only search 'examples' relative to the initial CWD
-			exampleFiles, err := filepath.Glob(filepath.Join(filepath.Dir(currentDir), "examples", "*.yapi.yml"))
-			if err != nil {
-				return nil, fmt.Errorf("failed to glob for example config files: %w", err)
-			}
-			for _, file := range exampleFiles {
-				relPath, err := filepath.Rel(currentDir, file)
-				if err != nil {
-					relPath = file
-				}
-				configFiles = append(configFiles, relPath)
-			}
-		}
-
-		parentDir := filepath.Dir(dir)
-		if parentDir == dir { // Reached root or unable to go up
-			break
-		}
-		dir = parentDir
 	}
 
 	if len(configFiles) == 0 {
-		return nil, fmt.Errorf("no .yapi.yml files found in current or parent directories")
+		return nil, fmt.Errorf("no .yapi.yaml/.yapi.yml files found in subdirectories")
 	}
 
 	sort.Strings(configFiles)
