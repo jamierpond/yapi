@@ -103,6 +103,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "pgdown", "f":
 			m.viewport.LineDown(5)
+			return m, nil
 
 		case " ":
 			// toggle selection
@@ -114,6 +115,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.selectedSet[p] = struct{}{}
 				}
 			}
+			return m, nil
 
 		case "enter":
 			// In single-select mode, ensure current cursor is selected
