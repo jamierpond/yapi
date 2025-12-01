@@ -1,8 +1,10 @@
 package langserver
 
 import (
+	"fmt"
 	"strings"
 	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/envsubst"
 	"yapi.run/cli/internal/validation"
 
 	"github.com/graphql-go/graphql/language/parser"
@@ -173,6 +175,10 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 			gqlDiags := validateGraphQLSyntax(text, cfg.Graphql)
 			diagnostics = append(diagnostics, gqlDiags...)
 		}
+
+		// Environment variable validation
+		envDiags := validateEnvVars(text)
+		diagnostics = append(diagnostics, envDiags...)
 	}
 
 	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{

@@ -185,6 +185,9 @@ func runConfigPathSafe(path string) {
 		cfg.URL = urlOverride
 	}
 
+	// Substitute environment variables
+	cfg.SubstituteEnvVars()
+
 	body, ctype, err := executeConfig(cfg)
 	if err != nil {
 		fmt.Printf("\033[31mRequest failed: %v\033[0m\n", err)
@@ -242,6 +245,9 @@ func runConfigPath(path string) {
 	if urlOverride != "" {
 		cfg.URL = urlOverride
 	}
+
+	// Substitute environment variables
+	cfg.SubstituteEnvVars()
 
 	logHistory(path, urlOverride)
 
