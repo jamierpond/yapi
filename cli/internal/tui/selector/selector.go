@@ -8,25 +8,42 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sahilm/fuzzy"
+	"golang.org/x/term"
 )
 
 var (
+	// Colors (extracted from webapp/tailwind.config.js)
+	yapiBg        = lipgloss.Color("#1a1b26")
+	yapiBgElevated= lipgloss.Color("#2a2d3b")
+	yapiFg        = lipgloss.Color("#a9b1d6")
+	yapiFgMuted   = lipgloss.Color("#565f89")
+	yapiAccent    = lipgloss.Color("#ff9e64")
+	yapiBorder    = lipgloss.Color("#414868")
+
+	// Styles
+	appStyle = lipgloss.NewStyle().
+			Padding(1, 2).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(yapiBorder)
+
 	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#6151E2")).
-			Padding(0, 1)
+			Foreground(yapiBg).
+			Background(yapiAccent).
+			Padding(0, 1).
+			Bold(true)
 
 	itemStyle = lipgloss.NewStyle().
 			PaddingLeft(2)
 
 	selectedItemStyle = lipgloss.NewStyle().
 				PaddingLeft(2).
-				Foreground(lipgloss.Color("#6151E2"))
+				Foreground(yapiAccent).
+				Bold(true)
 
 	footerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#3C3C3C")).
-			Padding(0, 1)
+			Foreground(yapiFgMuted).
+			Padding(0, 1).
+			MarginTop(1)
 )
 
 type Model struct {
@@ -43,8 +60,17 @@ func New(files []string, multi bool) Model {
 	ti := textinput.New()
 	ti.Placeholder = "Type to filter..."
 	ti.Focus()
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(yapiAccent)
+	ti.TextStyle = lipgloss.NewStyle().Foreground(yapiFg)
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(yapiFgMuted)
+	ti.Cursor.Style = lipgloss.NewStyle().Foreground(yapiAccent)
 
 	vp := viewport.New(80, 20)
+	vp.Style = lipgloss.NewStyle().
+		Padding(0, 1).
+		Foreground(yapiFg).
+		Background(yapiBgElevated)
+
 	m := Model{
 		files:         files,
 		filteredFiles: files,
@@ -78,6 +104,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// This message is sent when the terminal is resized.
+		// We can use it to recalculate layouts.
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
@@ -157,32 +188,89 @@ func (m *Model) filterFiles() {
 }
 
 func (m Model) View() string {
+	// --- Get Terminal Size ---
+	width, height, _ := term.GetSize(int(os.Stdout.Fd()))
+
+	// --- Constants ---
+	const minWidthForHorizontalLayout = 100
+	const leftPanelWidth = 50
+	const leftPanelPadding = 2
+
+	// --- File List ---
 	fileList := ""
 	for i, file := range m.filteredFiles {
 		prefix := "  "
 		if _, ok := m.selectedSet[file]; ok {
-			prefix = "* " // like fzf's multi select
+			prefix = lipgloss.NewStyle().Foreground(yapiAccent).Render("* ")
 		}
-		if m.cursor == i {
-			fileList += selectedItemStyle.Render("> " + prefix + file)
-		} else {
-			fileList += itemStyle.Render("  " + prefix + file)
-		}
-		fileList += "\n"
-	}
 
-	mainContent := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		lipgloss.NewStyle().Width(40).Render(fileList),
-		lipgloss.NewStyle().Width(80).Render(m.viewport.View()),
+		style := itemStyle
+		if m.cursor == i {
+			style = selectedItemStyle
+		}
+
+		renderedLine := style.Render("> " + prefix + file)
+		if m.cursor != i {
+			renderedLine = style.Render("  " + prefix + file)
+		}
+		fileList += renderedLine + "\n"
+	}
+	fileList = lipgloss.NewStyle().
+		Padding(1, 0, 0, 0).
+		Render(fileList)
+
+	// --- Viewport ---
+	viewportTitle := titleStyle.Render("Preview")
+	viewportContentStyle := lipgloss.NewStyle().
+		Padding(1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(yapiBorder)
+
+	// --- Left Panel (input + file list) ---
+	leftPanel := lipgloss.JoinVertical(
+		lipgloss.Left,
+		m.textInput.View(),
+		fileList,
 	)
 
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		titleStyle.Render("Select a config file"),
-		m.textInput.View(),
-		mainContent,
-		footerStyle.Render("↑/↓ move • type to filter • space select • enter accept • q quit"),
+	// --- Decide Layout ---
+	var mainContent string
+	if width < minWidthForHorizontalLayout {
+		// --- VERTICAL LAYOUT (for small screens) ---
+		m.viewport.Width = width - appStyle.GetHorizontalFrameSize() - viewportContentStyle.GetHorizontalFrameSize()
+		m.viewport.Height = height - 15 // Adjust height dynamically
+
+		viewportContent := viewportContentStyle.Render(m.viewport.View())
+		viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
+
+		mainContent = lipgloss.JoinVertical(
+			lipgloss.Left,
+			leftPanel,
+			lipgloss.NewStyle().MarginTop(1).Render(viewportFull),
+		)
+	} else {
+		// --- HORIZONTAL LAYOUT (for large screens) ---
+		m.viewport.Width = width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
+		m.viewport.Height = height - 12 // Adjust height dynamically
+
+		viewportContent := viewportContentStyle.Render(m.viewport.View())
+		viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
+
+		mainContent = lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			lipgloss.NewStyle().Width(leftPanelWidth).PaddingRight(leftPanelPadding).Render(leftPanel),
+			lipgloss.NewStyle().Render(viewportFull),
+		)
+	}
+
+	// --- Final Layout ---
+	return appStyle.Render(
+		lipgloss.JoinVertical(
+			lipgloss.Left,
+			titleStyle.Render("🐑 yapi"),
+			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
+			footerStyle.Render("↑/↓ move • type to filter • space select • enter accept • q quit"),
+		),
 	)
 }
 
