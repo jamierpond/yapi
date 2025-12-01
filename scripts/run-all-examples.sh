@@ -8,6 +8,6 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo "Testing all example files..."
 find "$ROOT_DIR/examples" -type f \( -name "*.yml" -o -name "*.yaml" \) | sort | while read -r example; do
   echo "Testing: $example"
-  "$ROOT_DIR/yapi" -c "$example" || exit 1
+  yapi run "$example" || exit 1
 done
 echo "All examples tested successfully"
