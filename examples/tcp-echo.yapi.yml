@@ -6,7 +6,7 @@ url: tcp://tcpbin.com:4242
 method: tcp
 
 # Data to send over TCP connection
-data: "Hello from yapi!\n"
+data: "Hello from jamie!\n"
 
 # Encoding: text (default), hex, or base64
 encoding: text

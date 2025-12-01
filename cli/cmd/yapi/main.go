@@ -66,6 +66,7 @@ func newRunCmd() *cobra.Command {
 }
 
 func newWatchCmd() *cobra.Command {
+	var pretty bool
 	var noPretty bool
 
 	cmd := &cobra.Command{
@@ -86,8 +87,9 @@ func newWatchCmd() *cobra.Command {
 				path = args[0]
 			}
 
-			// Default to pretty in interactive mode, unless --no-pretty is set
-			usePretty := interactive && !noPretty
+			// --pretty forces pretty mode, --no-pretty disables it
+			// Default: pretty in interactive mode, simple when file is passed
+			usePretty := pretty || (interactive && !noPretty)
 
 			if usePretty {
 				if err := tui.RunWatch(path); err != nil {
@@ -99,6 +101,7 @@ func newWatchCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVarP(&pretty, "pretty", "p", false, "Enable pretty TUI mode")
 	cmd.Flags().BoolVar(&noPretty, "no-pretty", false, "Disable pretty TUI mode")
 
 	return cmd

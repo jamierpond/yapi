@@ -65,8 +65,12 @@ local function start_watch(filepath)
   term_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_win_set_buf(win, term_buf)
 
-  -- Start terminal with yapi watch
-  vim.fn.termopen({ "yapi", "watch", filepath, "--no-pretty" }, {
+  -- Start terminal with yapi watch (pretty mode if configured)
+  local cmd = { "yapi", "watch", filepath }
+  if M._opts.pretty then
+    table.insert(cmd, "--pretty")
+  end
+  vim.fn.termopen(cmd, {
     on_exit = function()
       vim.schedule(function()
         close_term()
@@ -127,7 +131,10 @@ end
 
 function M.setup(opts)
   opts = opts or {}
-  local enable_lsp = opts.lsp ~= false
+  M._opts = {
+    lsp = opts.lsp ~= false,
+    pretty = opts.pretty == true,  -- default false
+  }
 
   -- Commands
   vim.api.nvim_create_user_command("YapiWatch", function()
@@ -143,7 +150,7 @@ function M.setup(opts)
   end, { desc = "Close yapi terminal" })
 
   -- Setup LSP for yapi files
-  if enable_lsp then
+  if M._opts.lsp then
     vim.lsp.config.yapi = {
       cmd = { "yapi", "lsp" },
       filetypes = { "yaml.yapi" },
