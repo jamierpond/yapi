@@ -304,14 +304,23 @@ func (m Model) View() string {
 	header := titleStyle.Render("🐑 yapi")
 
 	// --- Final Layout ---
-	return appStyle.Render(
-		lipgloss.JoinVertical(
+	var content string
+	if m.isVertical {
+		// Skip footer in vertical/small mode to save space
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			header,
+			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
+		)
+	} else {
+		content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			header,
 			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
 			footerStyle.Render("up/down move | type to filter | space select | enter accept | q quit"),
-		),
-	)
+		)
+	}
+	return appStyle.Render(content)
 }
 
 func (m Model) SelectedList() []string {
