@@ -70,7 +70,7 @@ func FindConfigFile() (string, error) {
 		return "", err
 	}
 
-	p := tea.NewProgram(selector.New(files))
+	p := tea.NewProgram(selector.New(files), tea.WithOutput(os.Stderr))
 	m, err := p.Run()
 	if err != nil {
 		return "", fmt.Errorf("failed to run selector: %w", err)

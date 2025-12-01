@@ -14,6 +14,7 @@ import (
 var ( // Global flags
 	configPath string
 	urlOverride string
+	filePicker bool
 )
 
 func main() {
@@ -23,6 +24,16 @@ func main() {
 		Long: `yapi is a command-line tool designed to simplify interactions with various API types,
 allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified configuration.`, // TODO: Improve long description
 		Run: func(cmd *cobra.Command, args []string) {
+			if filePicker {
+				selectedPath, err := tui.FindConfigFile()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error selecting file: %v\n", err)
+					os.Exit(1)
+				}
+				fmt.Println(selectedPath)
+				os.Exit(0)
+			}
+
 			if configPath == "" {
 				selectedPath, err := tui.FindConfigFile()
 				if err != nil {
@@ -69,6 +80,7 @@ allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified
 
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the yapi config file")
 	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
+	rootCmd.PersistentFlags().BoolVar(&filePicker, "file-picker", false, "Run only the file picker and print the selected file path to stdout")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
