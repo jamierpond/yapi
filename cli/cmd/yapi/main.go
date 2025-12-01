@@ -177,7 +177,7 @@ func logHistory(configPath, urlOverride string) {
 	}
 
 	// Build the command string
-	cmd := fmt.Sprintf("yapi \"%s\"", absPath)
+	cmd := fmt.Sprintf("yapi run \"%s\"", absPath)
 	if urlOverride != "" {
 		cmd += fmt.Sprintf(" -u \"%s\"", urlOverride)
 	}
