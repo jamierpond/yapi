@@ -72,7 +72,7 @@ local function start_watch(filepath)
   if M._opts.pretty then
     yapi_cmd = yapi_cmd .. " --pretty"
   end
-  vim.fn.termopen({ shell, "-ic", yapi_cmd }, {
+  vim.fn.termopen({ shell, "-l", "-c", yapi_cmd }, {
     on_exit = function()
       vim.schedule(function()
         close_term()
@@ -113,7 +113,7 @@ local function run_once(filepath)
   -- Run through user's default shell to inherit their env vars
   local shell = os.getenv("SHELL") or "/bin/sh"
   local yapi_cmd = "yapi run " .. vim.fn.shellescape(filepath)
-  vim.fn.termopen({ shell, "-ic", yapi_cmd }, {
+  vim.fn.termopen({ shell, "-l", "-c", yapi_cmd }, {
     on_exit = function()
       -- Keep the buffer open to show results
     end,
