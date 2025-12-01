@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 	"cli/internal/tui/selector"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 )
 
@@ -81,7 +82,8 @@ func FindConfigFileSingle() (string, error) {
 		return "", err
 	}
 
-    p := tea.NewProgram(
+	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
+	p := tea.NewProgram(
 		selector.New(files, false),
 		tea.WithOutput(os.Stderr),
 		tea.WithInput(os.Stdin),
@@ -110,7 +112,8 @@ func FindConfigFileMulti(multi bool) ([]string, error) {
 		return nil, err
 	}
 
-    p := tea.NewProgram(
+	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stderr))
+	p := tea.NewProgram(
 		selector.New(files, multi),
 		tea.WithOutput(os.Stderr),
 		tea.WithInput(os.Stdin),

@@ -8,7 +8,6 @@ import (
 	"cli/internal/config"
 	"cli/internal/executor"
 	"cli/internal/tui"
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -112,8 +111,4 @@ func executeConfig(cfg *config.YapiConfig) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported method: %s", cfg.Method)
 	}
-}
-
-func isTerminal(fd uintptr) bool {
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
