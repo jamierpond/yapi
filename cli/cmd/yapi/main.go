@@ -7,6 +7,7 @@ import (
 
 	"cli/internal/config"
 	"cli/internal/executor"
+	"cli/internal/filter"
 	"cli/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -86,6 +87,14 @@ func newRunCmd() *cobra.Command {
 			result, err := executeConfig(cfg)
 			if err != nil {
 				log.Fatalf("Request failed: %v", err)
+			}
+
+			// Apply jq filter if specified
+			if cfg.JQFilter != "" {
+				result, err = filter.ApplyJQ(result, cfg.JQFilter)
+				if err != nil {
+					log.Fatalf("JQ filter failed: %v", err)
+				}
 			}
 
 			// Pure response on stdout, no extra text
