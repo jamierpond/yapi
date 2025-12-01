@@ -266,14 +266,8 @@ func (m Model) View() string {
 		}
 		fileList += renderedLine + "\n"
 	}
-	fileList = lipgloss.NewStyle().
-		Padding(1, 0, 0, 0).
-		Render(fileList)
-
 	// --- Viewport ---
-	viewportTitle := titleStyle.Render("Preview")
 	viewportContent := viewportContentStyle.Render(m.viewport.View())
-	viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
 
 	// --- Left Panel (input + file list) ---
 	leftPanel := lipgloss.JoinVertical(
@@ -285,14 +279,17 @@ func (m Model) View() string {
 	// --- Assemble Layout ---
 	var mainContent string
 	if m.isVertical {
+		// In vertical mode, skip Preview title to save space
 		mainContent = lipgloss.JoinVertical(
 			lipgloss.Left,
 			leftPanel,
-			lipgloss.NewStyle().MarginTop(1).Render(viewportFull),
+			viewportContent,
 		)
 	} else {
 		const leftPanelWidth = 50
 		const leftPanelPadding = 2
+		viewportTitle := titleStyle.Render("Preview")
+		viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
 		mainContent = lipgloss.JoinHorizontal(
 			lipgloss.Top,
 			lipgloss.NewStyle().Width(leftPanelWidth).PaddingRight(leftPanelPadding).Render(leftPanel),
@@ -306,11 +303,11 @@ func (m Model) View() string {
 	// --- Final Layout ---
 	var content string
 	if m.isVertical {
-		// Skip footer in vertical/small mode to save space
+		// Compact layout: no margins, no footer
 		content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			header,
-			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
+			mainContent,
 		)
 	} else {
 		content = lipgloss.JoinVertical(
