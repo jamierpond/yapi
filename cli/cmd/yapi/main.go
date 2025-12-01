@@ -5,41 +5,77 @@ import (
 	"log"
 	"os"
 
-	"github.com/spf13/cobra"
 	"cli/internal/config"
 	"cli/internal/executor"
 	"cli/internal/tui"
+	"github.com/mattn/go-isatty"
+	"github.com/spf13/cobra"
 )
 
-var ( // Global flags
-	configPath string
+var (
+	configPath  string
 	urlOverride string
-	filePicker bool
 )
 
 func main() {
-	 rootCmd := &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:   "yapi",
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
-		Long: `yapi is a command-line tool designed to simplify interactions with various API types,
-allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified configuration.`, // TODO: Improve long description
-		Run: func(cmd *cobra.Command, args []string) {
-			if filePicker {
-				selectedPath, err := tui.FindConfigFile()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error selecting file: %v\n", err)
-					os.Exit(1)
-				}
-				fmt.Println(selectedPath)
-				os.Exit(0)
-			}
+	}
 
-			if configPath == "" {
-				selectedPath, err := tui.FindConfigFile()
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the yapi config file")
+	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
+
+	// yapi pick  -> just print selected path(s)
+	rootCmd.AddCommand(newPickCmd())
+	// yapi run   -> actually execute the request
+	rootCmd.AddCommand(newRunCmd())
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
+}
+
+func newPickCmd() *cobra.Command {
+	var multi bool
+
+	cmd := &cobra.Command{
+		Use:   "pick",
+		Short: "Interactively pick a .yapi.yml config file",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			files, err := tui.FindConfigFileMulti(multi)
+			if err != nil {
+				return err
+			}
+			// Print only the chosen path(s), no decoration
+			for _, f := range files {
+				fmt.Println(f)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().BoolVarP(&multi, "multi", "m", false, "Allow picking multiple files")
+	return cmd
+}
+
+func newRunCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run",
+		Short: "Run a request defined in a yapi config file",
+		Run: func(cmd *cobra.Command, args []string) {
+			// If no config path and we're in a TTY, use picker.
+			if configPath == "" && isTerminal(os.Stdin.Fd()) && isTerminal(os.Stdout.Fd()) {
+				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
 					log.Fatalf("Failed to select config file: %v", err)
 				}
 				configPath = selectedPath
+			} else if configPath == "" {
+				// Non-interactive context: fail fast instead of popping a TUI
+				fmt.Fprintln(os.Stderr, "Error: --config required in non-interactive mode")
+				os.Exit(1)
 			}
 
 			cfg, err := config.LoadConfig(configPath)
@@ -51,39 +87,36 @@ allowing users to send requests to HTTP, gRPC, and TCP endpoints using a unified
 				cfg.URL = urlOverride
 			}
 
-			var result string
-			switch cfg.Method {
-			case "grpc":
-				grpcExec := executor.NewGRPCExecutor()
-				result, err = grpcExec.Execute(cfg)
-			case "tcp":
-				tcpExec := executor.NewTCPExecutor()
-				result, err = tcpExec.Execute(cfg)
-			case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS": // Add other HTTP methods as needed
-				httpExec := executor.NewHTTPExecutor()
-				result, err = httpExec.Execute(cfg)
-			case "": // Default to GET if method is not specified in config
-				cfg.Method = "GET"
-				httpExec := executor.NewHTTPExecutor()
-				result, err = httpExec.Execute(cfg)
-			default:
-				log.Fatalf("Unsupported method: %s", cfg.Method)
-			}
-
+			result, err := executeConfig(cfg)
 			if err != nil {
 				log.Fatalf("Request failed: %v", err)
 			}
 
+			// Pure response on stdout, no extra text
 			fmt.Println(result)
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the yapi config file")
-	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
-	rootCmd.PersistentFlags().BoolVar(&filePicker, "file-picker", false, "Run only the file picker and print the selected file path to stdout")
+	return cmd
+}
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+// executeConfig keeps main() clean and testable.
+func executeConfig(cfg *config.YapiConfig) (string, error) {
+	switch cfg.Method {
+	case "grpc":
+		return executor.NewGRPCExecutor().Execute(cfg)
+	case "tcp":
+		return executor.NewTCPExecutor().Execute(cfg)
+	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS":
+		return executor.NewHTTPExecutor().Execute(cfg)
+	case "":
+		cfg.Method = "GET"
+		return executor.NewHTTPExecutor().Execute(cfg)
+	default:
+		return "", fmt.Errorf("unsupported method: %s", cfg.Method)
 	}
+}
+
+func isTerminal(fd uintptr) bool {
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }

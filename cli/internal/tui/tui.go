@@ -62,27 +62,44 @@ func findFiles() ([]string, error) {
 	return configFiles, nil
 }
 
-// FindConfigFile searches for .yapi.yml files and lets the user select one.
-// It starts searching from the current directory and goes up to 5 parent directories.
-func FindConfigFile() (string, error) {
-	files, err := findFiles()
-	if err != nil {
-		return "", err
-	}
 
-	p := tea.NewProgram(selector.New(files), tea.WithOutput(os.Stderr))
-	m, err := p.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run selector: %w", err)
-	}
+func FindConfigFileSingle() (string, error) {
+    files, err := findFiles()
+    if err != nil {
+        return "", err
+    }
 
-	model := m.(selector.Model)
-	selected := model.Selected()
+    p := tea.NewProgram(selector.New(files, false), tea.WithOutput(os.Stderr))
+    m, err := p.Run()
+    if err != nil {
+        return "", fmt.Errorf("failed to run selector: %w", err)
+    }
 
-	if selected == "" {
-		return "", fmt.Errorf("no config file selected")
-	}
+    model := m.(selector.Model)
+    selected := model.SelectedList()
+    if len(selected) == 0 {
+        return "", fmt.Errorf("no config file selected")
+    }
+    return selected[0], nil
+}
 
-	return selected, nil
+func FindConfigFileMulti(multi bool) ([]string, error) {
+    files, err := findFiles()
+    if err != nil {
+        return nil, err
+    }
+
+    p := tea.NewProgram(selector.New(files, multi), tea.WithOutput(os.Stderr))
+    m, err := p.Run()
+    if err != nil {
+        return nil, fmt.Errorf("failed to run selector: %w", err)
+    }
+
+    model := m.(selector.Model)
+    selected := model.SelectedList()
+    if len(selected) == 0 {
+        return nil, fmt.Errorf("no config file selected")
+    }
+    return selected, nil
 }
 

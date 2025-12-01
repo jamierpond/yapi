@@ -1,11 +1,11 @@
 package selector
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sahilm/fuzzy"
 )
@@ -33,22 +33,25 @@ type Model struct {
 	files         []string
 	filteredFiles []string
 	cursor        int
-	selected      string
+	selectedSet   map[string]struct{} // multi-select
 	viewport      viewport.Model
 	textInput     textinput.Model
+	multi         bool
 }
 
-func New(files []string) Model {
+func New(files []string, multi bool) Model {
 	ti := textinput.New()
-	ti.Placeholder = "Search..."
+	ti.Placeholder = "Type to filter..."
 	ti.Focus()
 
 	vp := viewport.New(80, 20)
 	m := Model{
 		files:         files,
 		filteredFiles: files,
+		selectedSet:   make(map[string]struct{}),
 		viewport:      vp,
 		textInput:     ti,
+		multi:         multi,
 	}
 	m.loadFileContent()
 	return m
@@ -56,15 +59,15 @@ func New(files []string) Model {
 
 func (m *Model) loadFileContent() {
 	if m.cursor >= 0 && m.cursor < len(m.filteredFiles) {
-		content, err := ioutil.ReadFile(m.filteredFiles[m.cursor])
+		content, err := os.ReadFile(m.filteredFiles[m.cursor])
 		if err != nil {
 			m.viewport.SetContent("Error reading file")
-		} else {
-			m.viewport.SetContent(string(content))
+			return
 		}
-	} else {
-		m.viewport.SetContent("")
+		m.viewport.SetContent(string(content))
+		return
 	}
+	m.viewport.SetContent("")
 }
 
 func (m Model) Init() tea.Cmd {
@@ -79,21 +82,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
+
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
 				m.loadFileContent()
 			}
 			return m, nil
+
 		case "down", "j":
 			if m.cursor < len(m.filteredFiles)-1 {
 				m.cursor++
 				m.loadFileContent()
 			}
 			return m, nil
+
+		case "pgup", "b":
+			m.viewport.LineUp(5)
+			return m, nil
+
+		case "pgdown", "f":
+			m.viewport.LineDown(5)
+			return m, nil
+
+		case " ":
+			// toggle selection
+			if m.multi && len(m.filteredFiles) > 0 {
+				p := m.filteredFiles[m.cursor]
+				if _, ok := m.selectedSet[p]; ok {
+					delete(m.selectedSet, p)
+				} else {
+					m.selectedSet[p] = struct{}{}
+				}
+			}
+			return m, nil
+
 		case "enter":
-			if len(m.filteredFiles) > 0 && m.cursor < len(m.filteredFiles) {
-				m.selected = m.filteredFiles[m.cursor]
+			// In single-select mode, ensure current cursor is selected
+			if !m.multi && len(m.filteredFiles) > 0 && m.cursor < len(m.filteredFiles) {
+				m.selectedSet = map[string]struct{}{
+					m.filteredFiles[m.cursor]: {},
+				}
 			}
 			return m, tea.Quit
 		}
@@ -130,10 +159,14 @@ func (m *Model) filterFiles() {
 func (m Model) View() string {
 	fileList := ""
 	for i, file := range m.filteredFiles {
+		prefix := "  "
+		if _, ok := m.selectedSet[file]; ok {
+			prefix = "* " // like fzf's multi select
+		}
 		if m.cursor == i {
-			fileList += selectedItemStyle.Render("> " + file)
+			fileList += selectedItemStyle.Render("> " + prefix + file)
 		} else {
-			fileList += itemStyle.Render("  " + file)
+			fileList += itemStyle.Render("  " + prefix + file)
 		}
 		fileList += "\n"
 	}
@@ -149,11 +182,15 @@ func (m Model) View() string {
 		titleStyle.Render("Select a config file"),
 		m.textInput.View(),
 		mainContent,
-		footerStyle.Render("Use arrow keys to navigate, enter to select, q to quit"),
+		footerStyle.Render("↑/↓ move • type to filter • space select • enter accept • q quit"),
 	)
 }
 
-func (m Model) Selected() string {
-	return m.selected
+func (m Model) SelectedList() []string {
+	out := make([]string, 0, len(m.selectedSet))
+	for f := range m.selectedSet {
+		out = append(out, f)
+	}
+	return out
 }
 
