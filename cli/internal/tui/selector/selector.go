@@ -144,14 +144,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 
-		case "up", "k":
+		case "up", "ctrl+k":
 			if m.cursor > 0 {
 				m.cursor--
 				m.loadFileContent()
 			}
 			return m, nil
 
-		case "down", "j":
+		case "down", "ctrl+j":
 			if m.cursor < len(m.filteredFiles)-1 {
 				m.cursor++
 				m.loadFileContent()
@@ -315,7 +315,7 @@ func (m Model) View() string {
 			lipgloss.Left,
 			header,
 			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
-			footerStyle.Render("up/down move | type to filter | space select | enter accept | q quit"),
+			footerStyle.Render("↑/↓ move | type to filter | space select | enter accept | q quit"),
 		)
 	}
 	return appStyle.Render(content)
