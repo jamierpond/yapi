@@ -31,6 +31,14 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
+    - name: Check formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "The following files are not formatted correctly:"
+          gofmt -l .
+          exit 1
+        fi
+
     - name: Build
       run: make build
 
