@@ -118,8 +118,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Height calculation constants
 		const verticalChromeHeight = 12 // Borders, headers, footers, etc.
-		// Chrome heights account for: appStyle border/padding, header, margins, footer
-		const horizontalChromeHeight = 10
+		// Chrome heights: appStyle border(2) + padding(2) + header(1) + margin(1) + footer(2) + viewportBorder(2) + viewportPadding(2)
+		const horizontalChromeHeight = 12
 
 		if msg.Width < minWidthForHorizontalLayout || msg.Height < minHeightForHorizontalLayout {
 			m.isVertical = true
@@ -131,7 +131,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.isVertical = false
 			m.textInput.Width = leftPanelWidth
 			m.viewport.Width = msg.Width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
-			// Account for header row + margin + footer + appStyle chrome
 			m.viewport.Height = msg.Height - horizontalChromeHeight
 		}
 		return m, nil
@@ -295,7 +294,7 @@ func (m Model) View() string {
 	}
 
 	// --- Header ---
-	header := titleStyle.Render("yapi")
+	header := titleStyle.Render(" yapi")
 
 	// --- Final Layout ---
 	return appStyle.Render(
@@ -303,7 +302,7 @@ func (m Model) View() string {
 			lipgloss.Left,
 			header,
 			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
-			footerStyle.Render("up/down move - type to filter - space select - enter accept - q quit"),
+			footerStyle.Render("up/down move | type to filter | space select | enter accept | q quit"),
 		),
 	)
 }
