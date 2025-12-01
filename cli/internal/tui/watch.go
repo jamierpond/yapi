@@ -103,6 +103,9 @@ func runYapiCmd(path string) tea.Cmd {
 			}
 		}
 
+		// Substitute environment variables
+		cfg.SubstituteEnvVars()
+
 		body, ctype, err := executeConfig(cfg)
 		if err != nil {
 			return runResultMsg{err: fmt.Errorf("request failed: %w", err)}

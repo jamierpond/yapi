@@ -108,10 +108,7 @@ local function run_once(filepath)
   term_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_win_set_buf(win, term_buf)
 
-  -- Run through user's default shell to inherit their env vars
-  local shell = os.getenv("SHELL") or "/bin/sh"
-  local yapi_cmd = "yapi run " .. vim.fn.shellescape(filepath)
-  vim.fn.termopen({ shell, "-l", "-c", yapi_cmd }, {
+  vim.fn.termopen({ "yapi", "run", filepath }, {
     on_exit = function()
       -- Keep the buffer open to show results
     end,
