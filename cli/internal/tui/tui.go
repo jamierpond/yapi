@@ -65,7 +65,7 @@ func findFiles() ([]string, error) {
 
 
 func FindConfigFileSingle() (string, error) {
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		files, err := findFiles()
 		if err != nil {
 			return "", err
@@ -101,7 +101,7 @@ func FindConfigFileSingle() (string, error) {
 }
 
 func FindConfigFileMulti(multi bool) ([]string, error) {
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		return findFiles()
 	}
 

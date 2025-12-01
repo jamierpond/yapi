@@ -65,17 +65,14 @@ func newRunCmd() *cobra.Command {
 		Use:   "run",
 		Short: "Run a request defined in a yapi config file",
 		Run: func(cmd *cobra.Command, args []string) {
-			// If no config path and we're in a TTY, use picker.
-			if configPath == "" && isTerminal(os.Stdin.Fd()) {
+			// If no config path is provided, try to find one.
+			// The find function will pop a TUI if it's an interactive session.
+			if configPath == "" {
 				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
 					log.Fatalf("Failed to select config file: %v", err)
 				}
 				configPath = selectedPath
-			} else if configPath == "" {
-				// Non-interactive context: fail fast instead of popping a TUI
-				fmt.Fprintln(os.Stderr, "Error: --config required in non-interactive mode")
-				os.Exit(1)
 			}
 
 			cfg, err := config.LoadConfig(configPath)
