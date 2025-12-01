@@ -67,7 +67,7 @@ local function run_yapi_for_current()
   vim.api.nvim_buf_set_option(buf, "modifiable", true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Running yapi..." })
 
-  local cmd = { "yapi", "-c", filepath }
+  local cmd = { "yapi", "run", filepath }
 
   vim.fn.jobstart(cmd, {
     stdout_buffered = true,
