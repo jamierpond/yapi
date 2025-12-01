@@ -54,6 +54,51 @@ func ApplyJQ(input string, filterExpr string) (string, error) {
 	return strings.Join(results, "\n"), nil
 }
 
+// parseJSONPreserveNumbers parses JSON input while preserving large integer precision.
+// It converts json.Number to appropriate Go types that gojq can handle.
+func parseJSONPreserveNumbers(input string) (any, error) {
+	dec := json.NewDecoder(strings.NewReader(input))
+	dec.UseNumber()
+
+	var data any
+	if err := dec.Decode(&data); err != nil {
+		return nil, err
+	}
+
+	return convertNumbers(data), nil
+}
+
+// convertNumbers recursively converts json.Number to *big.Int or float64 as appropriate.
+// gojq supports *big.Int for arbitrary-precision integers.
+func convertNumbers(v any) any {
+	switch val := v.(type) {
+	case json.Number:
+		// Try to parse as big.Int first for arbitrary precision
+		if i, ok := new(big.Int).SetString(string(val), 10); ok {
+			// Check if it fits in int (gojq prefers int for small numbers)
+			if i.IsInt64() {
+				return int(i.Int64())
+			}
+			return i
+		}
+		// Fall back to float64
+		f, _ := val.Float64()
+		return f
+	case map[string]any:
+		for k, v := range val {
+			val[k] = convertNumbers(v)
+		}
+		return val
+	case []any:
+		for i, v := range val {
+			val[i] = convertNumbers(v)
+		}
+		return val
+	default:
+		return val
+	}
+}
+
 // formatOutput converts a value to its JSON string representation.
 // Strings are returned without quotes for cleaner output.
 func formatOutput(v any) (string, error) {
@@ -65,8 +110,17 @@ func formatOutput(v any) (string, error) {
 	case string:
 		// Return strings without quotes for cleaner output
 		return val, nil
-	case bool, int, int64, float64:
+	case bool:
 		return fmt.Sprintf("%v", val), nil
+	case int:
+		return fmt.Sprintf("%d", val), nil
+	case int64:
+		return fmt.Sprintf("%d", val), nil
+	case float64:
+		// Use %v for cleaner output (no trailing zeros for whole numbers)
+		return fmt.Sprintf("%v", val), nil
+	case *big.Int:
+		return val.String(), nil
 	default:
 		// For complex types (objects, arrays), use JSON encoding
 		b, err := json.MarshalIndent(v, "", "  ")
