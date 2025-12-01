@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sahilm/fuzzy"
-	"golang.org/x/term"
 )
 
 var (
@@ -44,6 +43,11 @@ var (
 			Foreground(yapiFgMuted).
 			Padding(0, 1).
 			MarginTop(1)
+
+	viewportContentStyle = lipgloss.NewStyle().
+				Padding(1).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(yapiBorder)
 )
 
 type Model struct {
@@ -54,6 +58,7 @@ type Model struct {
 	viewport      viewport.Model
 	textInput     textinput.Model
 	multi         bool
+	isVertical    bool
 }
 
 func New(files []string, multi bool) Model {
@@ -105,8 +110,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		// This message is sent when the terminal is resized.
-		// We can use it to recalculate layouts.
+		const minWidthForHorizontalLayout = 100
+		const leftPanelWidth = 50
+		const leftPanelPadding = 2
+
+		if msg.Width < minWidthForHorizontalLayout {
+			m.isVertical = true
+			// Account for app border and padding
+			availableWidth := msg.Width - appStyle.GetHorizontalFrameSize()
+			m.textInput.Width = availableWidth
+			m.viewport.Width = availableWidth - viewportContentStyle.GetHorizontalFrameSize()
+			m.viewport.Height = msg.Height - 15 // Approximate height for file list, input, header, footer
+		} else {
+			m.isVertical = false
+			// Set text input to a fixed width in horizontal mode
+			m.textInput.Width = leftPanelWidth
+			m.viewport.Width = msg.Width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
+			m.viewport.Height = msg.Height - 12 // Approximate height for header, footer
+		}
 		return m, nil
 
 	case tea.KeyMsg:
@@ -188,14 +209,6 @@ func (m *Model) filterFiles() {
 }
 
 func (m Model) View() string {
-	// --- Get Terminal Size ---
-	width, height, _ := term.GetSize(int(os.Stdout.Fd()))
-
-	// --- Constants ---
-	const minWidthForHorizontalLayout = 100
-	const leftPanelWidth = 50
-	const leftPanelPadding = 2
-
 	// --- File List ---
 	fileList := ""
 	for i, file := range m.filteredFiles {
@@ -221,10 +234,8 @@ func (m Model) View() string {
 
 	// --- Viewport ---
 	viewportTitle := titleStyle.Render("Preview")
-	viewportContentStyle := lipgloss.NewStyle().
-		Padding(1).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(yapiBorder)
+	viewportContent := viewportContentStyle.Render(m.viewport.View())
+	viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
 
 	// --- Left Panel (input + file list) ---
 	leftPanel := lipgloss.JoinVertical(
@@ -233,29 +244,17 @@ func (m Model) View() string {
 		fileList,
 	)
 
-	// --- Decide Layout ---
+	// --- Assemble Layout ---
 	var mainContent string
-	if width < minWidthForHorizontalLayout {
-		// --- VERTICAL LAYOUT (for small screens) ---
-		m.viewport.Width = width - appStyle.GetHorizontalFrameSize() - viewportContentStyle.GetHorizontalFrameSize()
-		m.viewport.Height = height - 15 // Adjust height dynamically
-
-		viewportContent := viewportContentStyle.Render(m.viewport.View())
-		viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
-
+	if m.isVertical {
 		mainContent = lipgloss.JoinVertical(
 			lipgloss.Left,
 			leftPanel,
 			lipgloss.NewStyle().MarginTop(1).Render(viewportFull),
 		)
 	} else {
-		// --- HORIZONTAL LAYOUT (for large screens) ---
-		m.viewport.Width = width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
-		m.viewport.Height = height - 12 // Adjust height dynamically
-
-		viewportContent := viewportContentStyle.Render(m.viewport.View())
-		viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
-
+		const leftPanelWidth = 50
+		const leftPanelPadding = 2
 		mainContent = lipgloss.JoinHorizontal(
 			lipgloss.Top,
 			lipgloss.NewStyle().Width(leftPanelWidth).PaddingRight(leftPanelPadding).Render(leftPanel),
