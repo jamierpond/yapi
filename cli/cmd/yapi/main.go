@@ -66,24 +66,40 @@ func newRunCmd() *cobra.Command {
 }
 
 func newWatchCmd() *cobra.Command {
-	var pretty bool
+	var noPretty bool
 
 	cmd := &cobra.Command{
-		Use:   "watch <file>",
+		Use:   "watch [file]",
 		Short: "Watch a yapi config file and re-run on changes",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if pretty {
-				if err := tui.RunWatch(args[0]); err != nil {
+			var path string
+			interactive := len(args) == 0
+
+			if interactive {
+				selectedPath, err := tui.FindConfigFileSingle()
+				if err != nil {
+					log.Fatalf("Failed to select config file: %v", err)
+				}
+				path = selectedPath
+			} else {
+				path = args[0]
+			}
+
+			// Default to pretty in interactive mode, unless --no-pretty is set
+			usePretty := interactive && !noPretty
+
+			if usePretty {
+				if err := tui.RunWatch(path); err != nil {
 					log.Fatalf("Watch failed: %v", err)
 				}
 			} else {
-				watchConfigPath(args[0])
+				watchConfigPath(path)
 			}
 		},
 	}
 
-	cmd.Flags().BoolVarP(&pretty, "pretty", "p", false, "Use pretty TUI mode")
+	cmd.Flags().BoolVar(&noPretty, "no-pretty", false, "Disable pretty TUI mode")
 
 	return cmd
 }

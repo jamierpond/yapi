@@ -1,90 +1,41 @@
 -- lua/yapi_nvim/init.lua
 --
 -- yapi Neovim integration:
--- - :YapiWatch starts watch mode in a side panel
--- - :YapiRun runs a single request
--- - :YapiStop stops watch mode
+-- - :YapiWatch opens pretty TUI watch mode in a terminal
+-- - :YapiRun runs a single request in a split
 -- - LSP support for completions and diagnostics
 
 local M = {}
 
-local RESULT_BUF_NAME = "yapi://result"
-local watch_job_id = nil
-local watch_filepath = nil
+local term_buf = nil
+local term_win = nil
 
-local function get_result_buf()
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(buf) then
-      local name = vim.api.nvim_buf_get_name(buf)
-      if name:match(RESULT_BUF_NAME .. "$") then
-        return buf
-      end
-    end
+local function open_term_window()
+  -- Check if window still exists and is valid
+  if term_win and vim.api.nvim_win_is_valid(term_win) then
+    vim.api.nvim_set_current_win(term_win)
+    return term_win
   end
 
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(buf, RESULT_BUF_NAME)
-  vim.bo[buf].bufhidden = "hide"
-  vim.bo[buf].buftype = "nofile"
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = "yapiresult"
-  return buf
-end
-
-local function open_result_window()
-  local buf = get_result_buf()
-
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
-      return win, buf
-    end
-  end
-
+  -- Create a vertical split on the right
   vim.cmd("rightbelow vsplit")
-  local win = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_buf(win, buf)
-  vim.wo[win].wrap = false
-  vim.wo[win].number = false
-  vim.wo[win].relativenumber = false
-  vim.wo[win].signcolumn = "no"
-  vim.wo[win].foldcolumn = "0"
-  vim.wo[win].statusline = "%#Comment# yapi %*"
-  return win, buf
+  term_win = vim.api.nvim_get_current_win()
+
+  -- Window options
+  vim.wo[term_win].number = false
+  vim.wo[term_win].relativenumber = false
+  vim.wo[term_win].signcolumn = "no"
+  vim.wo[term_win].foldcolumn = "0"
+
+  return term_win
 end
 
-local function close_result_window()
-  local buf = nil
-  for _, b in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(b) then
-      local name = vim.api.nvim_buf_get_name(b)
-      if name:match(RESULT_BUF_NAME .. "$") then
-        buf = b
-        break
-      end
-    end
+local function close_term()
+  if term_win and vim.api.nvim_win_is_valid(term_win) then
+    vim.api.nvim_win_close(term_win, true)
   end
-
-  if buf then
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      if vim.api.nvim_win_get_buf(win) == buf then
-        vim.api.nvim_win_close(win, true)
-        return
-      end
-    end
-  end
-end
-
-local function stop_watch()
-  if watch_job_id then
-    vim.fn.jobstop(watch_job_id)
-    watch_job_id = nil
-    watch_filepath = nil
-  end
-end
-
-local function strip_ansi(str)
-  if not str then return "" end
-  return str:gsub("\027%[[%d;]*m", "")
+  term_win = nil
+  term_buf = nil
 end
 
 local function start_watch(filepath)
@@ -101,79 +52,30 @@ local function start_watch(filepath)
     return
   end
 
-  -- Stop existing watch if any
-  stop_watch()
-
   -- Save if modified
   if vim.bo.modified then
     vim.cmd("write")
   end
 
-  watch_filepath = filepath
-  local _, buf = open_result_window()
-  vim.bo[buf].modifiable = true
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Starting watch..." })
+  -- Close existing term if any
+  close_term()
 
-  local output_lines = {}
+  -- Open window and launch terminal with yapi watch --pretty
+  local win = open_term_window()
+  term_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(win, term_buf)
 
-  watch_job_id = vim.fn.jobstart({ "yapi", "watch", filepath }, {
-    stdout_buffered = false,
-    stderr_buffered = false,
-
-    on_stdout = function(_, data)
-      if not data then return end
+  -- Start terminal with yapi watch
+  vim.fn.termopen({ "yapi", "watch", filepath, "--no-pretty" }, {
+    on_exit = function()
       vim.schedule(function()
-        if not vim.api.nvim_buf_is_valid(buf) then return end
-
-        for _, line in ipairs(data) do
-          -- Clear screen escape sequence detection
-          if line:match("\027%[H\027%[2J") or line:match("\027%[2J") then
-            output_lines = {}
-          else
-            local clean = strip_ansi(line)
-            if clean ~= "" or #output_lines > 0 then
-              table.insert(output_lines, clean)
-            end
-          end
-        end
-
-        vim.bo[buf].modifiable = true
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, output_lines)
-        vim.bo[buf].modifiable = false
-      end)
-    end,
-
-    on_stderr = function(_, data)
-      if not data then return end
-      vim.schedule(function()
-        if not vim.api.nvim_buf_is_valid(buf) then return end
-        for _, line in ipairs(data) do
-          local clean = strip_ansi(line)
-          if clean ~= "" then
-            table.insert(output_lines, clean)
-          end
-        end
-        vim.bo[buf].modifiable = true
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, output_lines)
-        vim.bo[buf].modifiable = false
-      end)
-    end,
-
-    on_exit = function(_, code)
-      vim.schedule(function()
-        watch_job_id = nil
-        watch_filepath = nil
-        if code ~= 0 and code ~= 143 then -- 143 = SIGTERM (normal stop)
-          vim.notify("[yapi] watch exited with code " .. code, vim.log.levels.WARN)
-        end
+        close_term()
       end)
     end,
   })
 
-  if watch_job_id <= 0 then
-    vim.notify("[yapi] Failed to start watch", vim.log.levels.ERROR)
-    watch_job_id = nil
-  end
+  -- Stay in normal mode, don't enter insert mode in terminal
+  vim.cmd("stopinsert")
 end
 
 local function run_once(filepath)
@@ -194,53 +96,21 @@ local function run_once(filepath)
     vim.cmd("write")
   end
 
-  local _, buf = open_result_window()
-  vim.bo[buf].modifiable = true
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Running..." })
+  -- Close existing term if any
+  close_term()
 
-  vim.fn.jobstart({ "yapi", "run", filepath }, {
-    stdout_buffered = true,
-    stderr_buffered = true,
+  -- Open window and run yapi
+  local win = open_term_window()
+  term_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(win, term_buf)
 
-    on_stdout = function(_, data)
-      if not data then return end
-      vim.schedule(function()
-        if not vim.api.nvim_buf_is_valid(buf) then return end
-        local lines = {}
-        for _, line in ipairs(data) do
-          table.insert(lines, strip_ansi(line))
-        end
-        vim.bo[buf].modifiable = true
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-        vim.bo[buf].modifiable = false
-      end)
-    end,
-
-    on_stderr = function(_, data)
-      if not data then return end
-      vim.schedule(function()
-        if not vim.api.nvim_buf_is_valid(buf) then return end
-        vim.bo[buf].modifiable = true
-        local existing = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-        for _, line in ipairs(data) do
-          local clean = strip_ansi(line)
-          if clean ~= "" then
-            table.insert(existing, clean)
-          end
-        end
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, existing)
-        vim.bo[buf].modifiable = false
-      end)
-    end,
-
-    on_exit = function(_, code)
-      vim.schedule(function()
-        if code ~= 0 then
-          vim.notify("[yapi] exited with code " .. code, vim.log.levels.ERROR)
-        end
-      end)
+  vim.fn.termopen({ "yapi", "run", filepath }, {
+    on_exit = function()
+      -- Keep the buffer open to show results
     end,
   })
+
+  vim.cmd("stopinsert")
 end
 
 function M.watch()
@@ -252,12 +122,7 @@ function M.run()
 end
 
 function M.stop()
-  stop_watch()
-  close_result_window()
-end
-
-function M.is_watching()
-  return watch_job_id ~= nil
+  close_term()
 end
 
 function M.setup(opts)
@@ -267,15 +132,15 @@ function M.setup(opts)
   -- Commands
   vim.api.nvim_create_user_command("YapiWatch", function()
     M.watch()
-  end, { desc = "Start yapi watch mode for current file" })
+  end, { desc = "Start yapi watch mode in terminal" })
 
   vim.api.nvim_create_user_command("YapiRun", function()
     M.run()
-  end, { desc = "Run yapi once for current file" })
+  end, { desc = "Run yapi once in terminal" })
 
   vim.api.nvim_create_user_command("YapiStop", function()
     M.stop()
-  end, { desc = "Stop yapi watch mode" })
+  end, { desc = "Close yapi terminal" })
 
   -- Setup LSP for yapi files
   if enable_lsp then
@@ -296,13 +161,12 @@ function M.setup(opts)
     })
   end
 
-  -- Clean up watch on vim exit
+  -- Clean up on vim exit
   vim.api.nvim_create_autocmd("VimLeavePre", {
     callback = function()
-      stop_watch()
+      close_term()
     end,
   })
 end
 
 return M
-
