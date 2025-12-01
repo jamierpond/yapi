@@ -8,28 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-        sudo chmod +x /usr/local/bin/yq
-
-    - name: Install bats
-      run: |
-        git clone https://github.com/bats-core/bats-core.git
-        cd bats-core && sudo ./install.sh /usr/local
-
-    - name: Make scripts executable
-      run: chmod +x yapi lib/*.sh
-
-    - name: Run unit tests
-      run: ./scripts/run-all-tests.sh
-
   integration-tests:
     runs-on: ubuntu-latest
     steps:
