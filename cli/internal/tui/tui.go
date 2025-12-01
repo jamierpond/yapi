@@ -6,24 +6,22 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/ktr0731/go-fuzzyfinder"
+	"github.com/charmbracelet/bubbletea"
+	"cli/internal/tui/selector"
 )
 
-// FindConfigFile searches for .yapi.yml files and lets the user select one.
-// It starts searching from the current directory and goes up to 5 parent directories.
-func FindConfigFile() (string, error) {
+func findFiles() ([]string, error) {
 	var configFiles []string
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	// Search for .yapi.yml files in current and parent directories
 	dir := currentDir
 	for i := 0; i < 5; i++ { // Limit search to current + 4 parent directories
 		files, err := filepath.Glob(filepath.Join(dir, "*.yapi.yml"))
 		if err != nil {
-			return "", fmt.Errorf("failed to glob for config files in %s: %w", dir, err)
+			return nil, fmt.Errorf("failed to glob for config files in %s: %w", dir, err)
 		}
 		for _, file := range files {
 			// Store relative path to CWD
@@ -38,7 +36,7 @@ func FindConfigFile() (string, error) {
 		if dir == currentDir { // Only search 'examples' relative to the initial CWD
 			exampleFiles, err := filepath.Glob(filepath.Join(filepath.Dir(currentDir), "examples", "*.yapi.yml"))
 			if err != nil {
-				return "", fmt.Errorf("failed to glob for example config files: %w", err)
+				return nil, fmt.Errorf("failed to glob for example config files: %w", err)
 			}
 			for _, file := range exampleFiles {
 				relPath, err := filepath.Rel(currentDir, file)
@@ -57,21 +55,34 @@ func FindConfigFile() (string, error) {
 	}
 
 	if len(configFiles) == 0 {
-		return "", fmt.Errorf("no .yapi.yml files found in current or parent directories")
+		return nil, fmt.Errorf("no .yapi.yml files found in current or parent directories")
 	}
 
 	sort.Strings(configFiles)
+	return configFiles, nil
+}
 
-	idx, err := fuzzyfinder.Find(
-		configFiles,
-		func(i int) string { return configFiles[i] },
-	)
+// FindConfigFile searches for .yapi.yml files and lets the user select one.
+// It starts searching from the current directory and goes up to 5 parent directories.
+func FindConfigFile() (string, error) {
+	files, err := findFiles()
 	if err != nil {
-		if err == fuzzyfinder.ErrAbort { // User cancelled
-			return "", fmt.Errorf("configuration selection aborted by user")
-		}
-		return "", fmt.Errorf("failed to find config file interactively: %w", err)
+		return "", err
 	}
 
-	return configFiles[idx], nil
+	p := tea.NewProgram(selector.New(files))
+	m, err := p.Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to run selector: %w", err)
+	}
+
+	model := m.(selector.Model)
+	selected := model.Selected()
+
+	if selected == "" {
+		return "", fmt.Errorf("no config file selected")
+	}
+
+	return selected, nil
 }
+
