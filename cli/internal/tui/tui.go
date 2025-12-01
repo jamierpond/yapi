@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 	"cli/internal/tui/selector"
+	"github.com/mattn/go-isatty"
 )
 
 func findFiles() ([]string, error) {
@@ -64,12 +65,28 @@ func findFiles() ([]string, error) {
 
 
 func FindConfigFileSingle() (string, error) {
-    files, err := findFiles()
-    if err != nil {
-        return "", err
-    }
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		files, err := findFiles()
+		if err != nil {
+			return "", err
+		}
+		if len(files) == 0 {
+			return "", fmt.Errorf("no .yapi.yml files found")
+		}
+		return files[0], nil
+	}
 
-    p := tea.NewProgram(selector.New(files, false), tea.WithOutput(os.Stderr))
+	files, err := findFiles()
+	if err != nil {
+		return "", err
+	}
+
+    p := tea.NewProgram(
+		selector.New(files, false),
+		tea.WithOutput(os.Stderr),
+		tea.WithInput(os.Stdin),
+		tea.WithAltScreen(),
+	)
     m, err := p.Run()
     if err != nil {
         return "", fmt.Errorf("failed to run selector: %w", err)
@@ -84,12 +101,21 @@ func FindConfigFileSingle() (string, error) {
 }
 
 func FindConfigFileMulti(multi bool) ([]string, error) {
-    files, err := findFiles()
-    if err != nil {
-        return nil, err
-    }
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		return findFiles()
+	}
 
-    p := tea.NewProgram(selector.New(files, multi), tea.WithOutput(os.Stderr))
+	files, err := findFiles()
+	if err != nil {
+		return nil, err
+	}
+
+    p := tea.NewProgram(
+		selector.New(files, multi),
+		tea.WithOutput(os.Stderr),
+		tea.WithInput(os.Stdin),
+		tea.WithAltScreen(),
+	)
     m, err := p.Run()
     if err != nil {
         return nil, fmt.Errorf("failed to run selector: %w", err)

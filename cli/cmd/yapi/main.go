@@ -66,7 +66,7 @@ func newRunCmd() *cobra.Command {
 		Short: "Run a request defined in a yapi config file",
 		Run: func(cmd *cobra.Command, args []string) {
 			// If no config path and we're in a TTY, use picker.
-			if configPath == "" && isTerminal(os.Stdin.Fd()) && isTerminal(os.Stdout.Fd()) {
+			if configPath == "" && isTerminal(os.Stdin.Fd()) {
 				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
 					log.Fatalf("Failed to select config file: %v", err)
