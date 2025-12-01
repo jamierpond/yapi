@@ -9,11 +9,12 @@ FROM golang:1.25.1-alpine AS yapi_builder
 WORKDIR /build
 
 # Copy Go module files
-COPY cli/go.mod cli/go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code and build
-COPY cli/ ./
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 RUN CGO_ENABLED=0 GOOS=linux go build -o yapi ./cmd/yapi
 
 # 1.5. Yapi Test Stage
@@ -22,7 +23,7 @@ FROM yapi_builder AS yapi_tester
 
 WORKDIR /build
 COPY examples /examples
-COPY cli/scripts/test-all-examples.sh ./scripts/test-all-examples.sh
+COPY scripts/test-all-examples.sh ./scripts/test-all-examples.sh
 RUN chmod +x scripts/test-all-examples.sh && ./scripts/test-all-examples.sh
 
 

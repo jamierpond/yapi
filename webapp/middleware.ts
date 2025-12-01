@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
  * When Go fetches a URL with ?go-get=1, it expects a meta tag
  * that tells it where the actual repo is.
  *
- * This allows: go install yapi.run/cli/cmd/yapi@latest
+ * This allows: go install yapi.run/cmd/yapi@latest
  */
 export function middleware(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -16,11 +16,11 @@ export function middleware(request: NextRequest) {
     const html = `<!DOCTYPE html>
 <html>
 <head>
-  <meta name="go-import" content="yapi.run/cli git https://github.com/jamierpond/yapi">
-  <meta name="go-source" content="yapi.run/cli https://github.com/jamierpond/yapi https://github.com/jamierpond/yapi/tree/main/cli{/dir} https://github.com/jamierpond/yapi/blob/main/cli{/dir}/{file}#L{line}">
+  <meta name="go-import" content="yapi.run git https://github.com/jamierpond/yapi">
+  <meta name="go-source" content="yapi.run https://github.com/jamierpond/yapi https://github.com/jamierpond/yapi/tree/main{/dir} https://github.com/jamierpond/yapi/blob/main{/dir}/{file}#L{line}">
 </head>
 <body>
-  go get yapi.run/cli
+  go get yapi.run
 </body>
 </html>`;
 
@@ -36,8 +36,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths that might be go module paths
-    "/cli/:path*",
-    "/cli",
+    // Match root and all subpaths for go module paths
+    "/",
+    "/cmd/:path*",
+    "/internal/:path*",
   ],
 };
