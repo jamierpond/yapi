@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/jamierpond/yapi/cli/internal/config"
-	"github.com/jamierpond/yapi/cli/internal/executor"
+	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/executor"
 )
 
 func TestTCPExecutor_Execute_Echo(t *testing.T) {

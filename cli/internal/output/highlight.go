@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jamierpond/yapi/cli/internal/filter"
+	"yapi.run/cli/internal/filter"
 
 	"codeberg.org/derat/htmlpretty"
 	"github.com/alecthomas/chroma/v2"

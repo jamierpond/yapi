@@ -18,7 +18,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/jamierpond/yapi/cli/internal/config"
+	"yapi.run/cli/internal/config"
 )
 
 // GRPCExecutor handles gRPC requests.

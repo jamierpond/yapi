@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jamierpond/yapi/cli/internal/config"
-	"github.com/jamierpond/yapi/cli/internal/executor"
-	"github.com/jamierpond/yapi/cli/internal/filter"
-	"github.com/jamierpond/yapi/cli/internal/langserver"
-	"github.com/jamierpond/yapi/cli/internal/output"
-	"github.com/jamierpond/yapi/cli/internal/tui"
-	"github.com/jamierpond/yapi/cli/internal/validation"
+	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/executor"
+	"yapi.run/cli/internal/filter"
+	"yapi.run/cli/internal/langserver"
+	"yapi.run/cli/internal/output"
+	"yapi.run/cli/internal/tui"
+	"yapi.run/cli/internal/validation"
 	"github.com/spf13/cobra"
 )
 

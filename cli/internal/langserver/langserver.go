@@ -1,8 +1,8 @@
 package langserver
 
 import (
-	"github.com/jamierpond/yapi/cli/internal/config"
-	"github.com/jamierpond/yapi/cli/internal/validation"
+	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/validation"
 	"strings"
 
 	"github.com/tliron/commonlog"

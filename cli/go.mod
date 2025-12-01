@@ -1,4 +1,4 @@
-module github.com/jamierpond/yapi/cli
+module yapi.run/cli
 
 go 1.25.1
 
