@@ -3,6 +3,7 @@ package filter
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/itchyny/gojq"
@@ -23,9 +24,9 @@ func ApplyJQ(input string, filterExpr string) (string, error) {
 		return "", fmt.Errorf("failed to parse jq filter %q: %w", filterExpr, err)
 	}
 
-	// Parse the input JSON
-	var inputData any
-	if err := json.Unmarshal([]byte(input), &inputData); err != nil {
+	// Parse the input JSON, preserving number precision
+	inputData, err := parseJSONPreserveNumbers(input)
+	if err != nil {
 		return "", fmt.Errorf("failed to parse input as JSON: %w", err)
 	}
 
