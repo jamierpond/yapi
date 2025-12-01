@@ -348,6 +348,12 @@ func executeConfig(cfg *config.YapiConfig) (string, string, error) {
 	transport := detectTransport(cfg)
 
 	switch transport {
+	case "graphql":
+		resp, err := executor.NewGraphQLExecutor().Execute(cfg)
+		if err != nil {
+			return "", "", err
+		}
+		return resp.Body, resp.ContentType, nil
 	case "grpc":
 		body, err := executor.NewGRPCExecutor().Execute(cfg)
 		return body, "application/json", err
@@ -378,6 +384,11 @@ func detectTransport(cfg *config.YapiConfig) string {
 	}
 	if strings.HasPrefix(urlLower, "tcp://") {
 		return "tcp"
+	}
+
+	// Check if graphql field is populated
+	if cfg.Graphql != "" {
+		return "graphql"
 	}
 
 	// Fall back to method field (deprecated but still supported)
