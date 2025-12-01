@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"cli/internal/config"
@@ -23,6 +24,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "yapi",
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
+		Run:   runInteractive,
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
@@ -36,23 +38,45 @@ func main() {
 	}
 }
 
+func runInteractive(cmd *cobra.Command, args []string) {
+	selectedPath, err := tui.FindConfigFileSingle()
+	if err != nil {
+		log.Fatalf("Failed to select config file: %v", err)
+	}
+
+	cfg, err := config.LoadConfig(selectedPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	if urlOverride != "" {
+		cfg.URL = urlOverride
+	}
+
+	logHistory(selectedPath, urlOverride)
+
+	result, err := executeConfig(cfg)
+	if err != nil {
+		log.Fatalf("Request failed: %v", err)
+	}
+
+	if cfg.JQFilter != "" {
+		result, err = filter.ApplyJQ(result, cfg.JQFilter)
+		if err != nil {
+			log.Fatalf("JQ filter failed: %v", err)
+		}
+	}
+
+	fmt.Println(result)
+}
+
 func newRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [file]",
+		Use:   "run <file>",
 		Short: "Run a request defined in a yapi config file",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			// If a path is provided, use it directly
-			if len(args) == 1 {
-				configPath = args[0]
-			} else {
-				// Interactive mode: pop TUI to select a config file
-				selectedPath, err := tui.FindConfigFileSingle()
-				if err != nil {
-					log.Fatalf("Failed to select config file: %v", err)
-				}
-				configPath = selectedPath
-			}
+			configPath = args[0]
 
 			cfg, err := config.LoadConfig(configPath)
 			if err != nil {
@@ -63,7 +87,6 @@ func newRunCmd() *cobra.Command {
 				cfg.URL = urlOverride
 			}
 
-			// Log to history for shell integration
 			logHistory(configPath, urlOverride)
 
 			result, err := executeConfig(cfg)
@@ -71,7 +94,6 @@ func newRunCmd() *cobra.Command {
 				log.Fatalf("Request failed: %v", err)
 			}
 
-			// Apply jq filter if specified
 			if cfg.JQFilter != "" {
 				result, err = filter.ApplyJQ(result, cfg.JQFilter)
 				if err != nil {
@@ -79,7 +101,6 @@ func newRunCmd() *cobra.Command {
 				}
 			}
 
-			// Pure response on stdout, no extra text
 			fmt.Println(result)
 		},
 	}
@@ -88,9 +109,18 @@ func newRunCmd() *cobra.Command {
 
 func newHistoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "history",
-		Short: "Show yapi command history",
+		Use:   "history [count]",
+		Short: "Show yapi command history (default: last 10)",
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			count := 10
+			if len(args) == 1 {
+				n, err := fmt.Sscanf(args[0], "%d", &count)
+				if err != nil || n != 1 || count < 1 {
+					log.Fatalf("Invalid count: %s", args[0])
+				}
+			}
+
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
 				log.Fatalf("Failed to get home directory: %v", err)
@@ -106,7 +136,21 @@ func newHistoryCmd() *cobra.Command {
 				log.Fatalf("Failed to read history: %v", err)
 			}
 
-			fmt.Print(string(data))
+			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+			if len(lines) == 0 || (len(lines) == 1 && lines[0] == "") {
+				fmt.Println("No history yet")
+				return
+			}
+
+			// Get last N lines
+			start := len(lines) - count
+			if start < 0 {
+				start = 0
+			}
+
+			for _, line := range lines[start:] {
+				fmt.Println(line)
+			}
 		},
 	}
 	return cmd
