@@ -3,7 +3,7 @@
 # TCP example - connect to an echo server
 url: tcp://tcpbin.com:4242
 
-method: tcp
+transport: tcp
 
 # Data to send over TCP connection
 data: "Hello from yapi!\n"

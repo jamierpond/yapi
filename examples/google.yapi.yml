@@ -1,5 +1,4 @@
-# yaml-language-server: $schema=https://pond.audio/yapi/schema
-#
+
 url: https://www.google.com
 path: /
 method: GET

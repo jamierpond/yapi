@@ -3,6 +3,7 @@ package langserver
 import (
 	"cli/internal/config"
 	"cli/internal/validation"
+	"strings"
 
 	"github.com/tliron/commonlog"
 	_ "github.com/tliron/commonlog/simple"
@@ -37,6 +38,7 @@ func Run() {
 		TextDocumentDidChange:  textDocumentDidChange,
 		TextDocumentDidClose:   textDocumentDidClose,
 		TextDocumentDidSave:    textDocumentDidSave,
+		TextDocumentCompletion: textDocumentCompletion,
 	}
 
 	srv := server.NewServer(&handler, lsName, false)
@@ -53,6 +55,10 @@ func initialize(ctx *glsp.Context, params *protocol.InitializeParams) (any, erro
 		Save: &protocol.SaveOptions{
 			IncludeText: boolPtr(true),
 		},
+	}
+
+	capabilities.CompletionProvider = &protocol.CompletionOptions{
+		TriggerCharacters: []string{":", " ", "\n"},
 	}
 
 	return protocol.InitializeResult{
@@ -131,22 +137,69 @@ func textDocumentDidSave(ctx *glsp.Context, params *protocol.DidSaveTextDocument
 }
 
 func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string) {
+	diagnostics := []protocol.Diagnostic{}
+
 	var cfg config.YapiConfig
 	if err := yaml.Unmarshal([]byte(text), &cfg); err != nil {
-		ctx.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-			Type:    protocol.MessageTypeError,
-			Message: "yapi: invalid YAML: " + err.Error(),
+		// YAML parse error - show at line 0
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 1},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  "invalid YAML: " + err.Error(),
 		})
-		return
+	} else {
+		issues := validation.ValidateConfig(&cfg)
+		for _, issue := range issues {
+			line := findFieldLine(text, issue.Field)
+			diagnostics = append(diagnostics, protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: line, Character: 0},
+					End:   protocol.Position{Line: line, Character: 100},
+				},
+				Severity: ptr(severityToProtocol(issue.Severity)),
+				Source:   ptr("yapi"),
+				Message:  issue.Message,
+			})
+		}
 	}
 
-	issues := validation.ValidateConfig(&cfg)
-	for _, issue := range issues {
-		msgType := severityToMessageType(issue.Severity)
-		ctx.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-			Type:    msgType,
-			Message: "yapi: " + issue.Message,
-		})
+	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+		URI:         uri,
+		Diagnostics: diagnostics,
+	})
+}
+
+func findFieldLine(text string, field string) protocol.UInteger {
+	if field == "" {
+		return 0
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), field+":") {
+			return protocol.UInteger(i)
+		}
+	}
+	return 0
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func severityToProtocol(s validation.Severity) protocol.DiagnosticSeverity {
+	switch s {
+	case validation.SeverityError:
+		return protocol.DiagnosticSeverityError
+	case validation.SeverityWarning:
+		return protocol.DiagnosticSeverityWarning
+	case validation.SeverityInfo:
+		return protocol.DiagnosticSeverityInformation
+	default:
+		return protocol.DiagnosticSeverityInformation
 	}
 }
 

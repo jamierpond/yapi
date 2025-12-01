@@ -1,5 +1,3 @@
-# yaml-language-server: $schema=https://pond.audio/yapi/schema
-
 url: https://httpbin.org
 path: /post
 method: POST

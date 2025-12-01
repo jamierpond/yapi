@@ -114,6 +114,7 @@ end
 function M.setup(opts)
   opts = opts or {}
   local hot_reload = opts.hot_reload ~= false
+  local enable_lsp = opts.lsp ~= false
 
   vim.api.nvim_create_user_command("YapiRun", function()
     run_yapi_for_current()
@@ -128,6 +129,25 @@ function M.setup(opts)
         run_yapi_for_current()
       end,
       desc = "Auto-run yapi on save",
+    })
+  end
+
+  -- Setup LSP for yapi files
+  if enable_lsp then
+    vim.lsp.config.yapi = {
+      cmd = { "yapi", "lsp" },
+      filetypes = { "yaml.yapi" },
+      root_markers = { ".git" },
+    }
+    vim.lsp.enable("yapi")
+
+    -- Set filetype to yaml.yapi for yapi config files
+    vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
+      pattern = { "*.yapi.yml", "*.yapi.yaml" },
+      callback = function()
+        vim.bo.filetype = "yaml.yapi"
+      end,
+      desc = "Set filetype for yapi config files",
     })
   end
 end
