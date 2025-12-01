@@ -36,46 +36,80 @@ func main() {
 	}
 }
 
-func runYapi(cmd *cobra.Command, args []string) {
-	// If a path is provided, use it directly
-	if len(args) == 1 {
-		configPath = args[0]
-	} else {
-		// Interactive mode: pop TUI to select a config file
-		selectedPath, err := tui.FindConfigFileSingle()
-		if err != nil {
-			log.Fatalf("Failed to select config file: %v", err)
-		}
-		configPath = selectedPath
+func newRunCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run [file]",
+		Short: "Run a request defined in a yapi config file",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			// If a path is provided, use it directly
+			if len(args) == 1 {
+				configPath = args[0]
+			} else {
+				// Interactive mode: pop TUI to select a config file
+				selectedPath, err := tui.FindConfigFileSingle()
+				if err != nil {
+					log.Fatalf("Failed to select config file: %v", err)
+				}
+				configPath = selectedPath
+			}
+
+			cfg, err := config.LoadConfig(configPath)
+			if err != nil {
+				log.Fatalf("Failed to load config: %v", err)
+			}
+
+			if urlOverride != "" {
+				cfg.URL = urlOverride
+			}
+
+			// Log to history for shell integration
+			logHistory(configPath, urlOverride)
+
+			result, err := executeConfig(cfg)
+			if err != nil {
+				log.Fatalf("Request failed: %v", err)
+			}
+
+			// Apply jq filter if specified
+			if cfg.JQFilter != "" {
+				result, err = filter.ApplyJQ(result, cfg.JQFilter)
+				if err != nil {
+					log.Fatalf("JQ filter failed: %v", err)
+				}
+			}
+
+			// Pure response on stdout, no extra text
+			fmt.Println(result)
+		},
 	}
+	return cmd
+}
 
-	cfg, err := config.LoadConfig(configPath)
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+func newHistoryCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "history",
+		Short: "Show yapi command history",
+		Run: func(cmd *cobra.Command, args []string) {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalf("Failed to get home directory: %v", err)
+			}
+
+			historyFile := filepath.Join(homeDir, ".yapi_history")
+			data, err := os.ReadFile(historyFile)
+			if err != nil {
+				if os.IsNotExist(err) {
+					fmt.Println("No history yet")
+					return
+				}
+				log.Fatalf("Failed to read history: %v", err)
+			}
+
+			fmt.Print(string(data))
+		},
 	}
-
-	if urlOverride != "" {
-		cfg.URL = urlOverride
-	}
-
-	// Log to history for shell integration
-	logHistory(configPath, urlOverride)
-
-	result, err := executeConfig(cfg)
-	if err != nil {
-		log.Fatalf("Request failed: %v", err)
-	}
-
-	// Apply jq filter if specified
-	if cfg.JQFilter != "" {
-		result, err = filter.ApplyJQ(result, cfg.JQFilter)
-		if err != nil {
-			log.Fatalf("JQ filter failed: %v", err)
-		}
-	}
-
-	// Pure response on stdout, no extra text
-	fmt.Println(result)
+	return cmd
 }
 
 // logHistory writes the executed command to ~/.yapi_history for shell integration
