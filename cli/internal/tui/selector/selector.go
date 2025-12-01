@@ -303,10 +303,11 @@ func (m Model) View() string {
 	// --- Final Layout ---
 	var content string
 	if m.isVertical {
-		// Compact layout: no margins, no footer
+		// Compact layout: small margin after header, no footer
 		content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			header,
+			"",
 			mainContent,
 		)
 	} else {
