@@ -111,15 +111,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		const minWidthForHorizontalLayout = 100
+		const minHeightForHorizontalLayout = 18 // Min height for left panel (12) + chrome (6)
 		const leftPanelWidth = 50
 		const leftPanelPadding = 2
 		const maxVisibleFiles = 10
 
 		// Height calculation constants
 		const verticalChromeHeight = 12 // Borders, headers, footers, etc.
-		const horizontalChromeHeight = 10
+		const horizontalChromeHeight = 9  // Total chrome minus main content area
 
-		if msg.Width < minWidthForHorizontalLayout {
+		if msg.Width < minWidthForHorizontalLayout || msg.Height < minHeightForHorizontalLayout {
 			m.isVertical = true
 			availableWidth := msg.Width - appStyle.GetHorizontalFrameSize()
 			m.textInput.Width = availableWidth
