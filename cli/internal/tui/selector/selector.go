@@ -294,7 +294,7 @@ func (m Model) View() string {
 	}
 
 	// --- Header ---
-	header := titleStyle.Render(" yapi")
+	header := titleStyle.Render("🐑 yapi")
 
 	// --- Final Layout ---
 	return appStyle.Render(
