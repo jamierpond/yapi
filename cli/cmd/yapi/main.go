@@ -344,27 +344,49 @@ func logHistory(configPath, urlOverride string) {
 // executeConfig keeps main() clean and testable.
 // Returns: body, contentType, error
 func executeConfig(cfg *config.YapiConfig) (string, string, error) {
-	switch cfg.Method {
+	// Detect transport from URL scheme
+	transport := detectTransport(cfg)
+
+	switch transport {
 	case "grpc":
 		body, err := executor.NewGRPCExecutor().Execute(cfg)
 		return body, "application/json", err
 	case "tcp":
 		body, err := executor.NewTCPExecutor().Execute(cfg)
 		return body, "text/plain", err
-	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS":
-		resp, err := executor.NewHTTPExecutor().Execute(cfg)
-		if err != nil {
-			return "", "", err
+	case "http":
+		if cfg.Method == "" {
+			cfg.Method = "GET"
 		}
-		return resp.Body, resp.ContentType, nil
-	case "":
-		cfg.Method = "GET"
 		resp, err := executor.NewHTTPExecutor().Execute(cfg)
 		if err != nil {
 			return "", "", err
 		}
 		return resp.Body, resp.ContentType, nil
 	default:
-		return "", "", fmt.Errorf("unsupported method: %s", cfg.Method)
+		return "", "", fmt.Errorf("unsupported transport: %s", transport)
+	}
+}
+
+// detectTransport determines the transport type from URL scheme or method field
+func detectTransport(cfg *config.YapiConfig) string {
+	urlLower := strings.ToLower(cfg.URL)
+
+	// Check URL scheme first
+	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
+		return "grpc"
+	}
+	if strings.HasPrefix(urlLower, "tcp://") {
+		return "tcp"
+	}
+
+	// Fall back to method field (deprecated but still supported)
+	switch cfg.Method {
+	case "grpc":
+		return "grpc"
+	case "tcp":
+		return "tcp"
+	default:
+		return "http"
 	}
 }

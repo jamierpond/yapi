@@ -3,8 +3,6 @@
 # TCP example - connect to an echo server
 url: tcp://tcpbin.com:4242
 
-method: tcp
-
 # Data to send over TCP connection
 data: "Hello from jamie!\n"
 

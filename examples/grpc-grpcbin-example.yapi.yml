@@ -5,8 +5,6 @@
 
 url: grpc://grpcb.in:9000
 
-method: grpc
-
 service: hello.HelloService
 rpc: SayHello
 plaintext: true
