@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"time"
 
 	"cli/internal/config"
 	"cli/internal/executor"
@@ -19,13 +21,14 @@ var (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "yapi [file]",
+		Use:   "yapi",
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
-		Args:  cobra.MaximumNArgs(1),
-		Run:   runYapi,
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
+
+	rootCmd.AddCommand(newRunCmd())
+	rootCmd.AddCommand(newHistoryCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
@@ -55,6 +58,9 @@ func runYapi(cmd *cobra.Command, args []string) {
 		cfg.URL = urlOverride
 	}
 
+	// Log to history for shell integration
+	logHistory(configPath, urlOverride)
+
 	result, err := executeConfig(cfg)
 	if err != nil {
 		log.Fatalf("Request failed: %v", err)
@@ -70,6 +76,37 @@ func runYapi(cmd *cobra.Command, args []string) {
 
 	// Pure response on stdout, no extra text
 	fmt.Println(result)
+}
+
+// logHistory writes the executed command to ~/.yapi_history for shell integration
+func logHistory(configPath, urlOverride string) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	historyFile := filepath.Join(homeDir, ".yapi_history")
+	f, err := os.OpenFile(historyFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	// Get absolute path for the config
+	absPath, err := filepath.Abs(configPath)
+	if err != nil {
+		absPath = configPath
+	}
+
+	// Build the command string
+	cmd := fmt.Sprintf("yapi \"%s\"", absPath)
+	if urlOverride != "" {
+		cmd += fmt.Sprintf(" -u \"%s\"", urlOverride)
+	}
+
+	// Write in format: <timestamp> | <command>
+	line := fmt.Sprintf("%d | %s\n", time.Now().Unix(), cmd)
+	f.WriteString(line)
 }
 
 // executeConfig keeps main() clean and testable.
