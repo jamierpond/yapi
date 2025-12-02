@@ -43,9 +43,6 @@ clean:
 web:
 	docker build . -t ${NAME}:latest -f Dockerfile.webapp
 
-rp-main:
-	rp cmd internal -e test.go # just the core app
-
 
 web-run:
 	-docker stop yapi
