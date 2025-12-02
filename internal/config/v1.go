@@ -59,7 +59,11 @@ func (c *ConfigV1) ToInternal() (*Config, error) {
 		CloseAfterSend: c.CloseAfterSend,
 	}
 
-	// Example: V1 handles mutually exclusive body/json here
+	if c.JSON != "" && c.Body != nil && len(c.Body) > 0 {
+		return nil, fmt.Errorf("`body` and `json` are mutually exclusive")
+	}
+
+	// V1 handles mutually exclusive body/json here
 	// so the Runner receives a unified Body
 	if c.JSON != "" {
 		var bodyData interface{}
