@@ -49,14 +49,18 @@ func TestTCPExecutor_Execute_Echo(t *testing.T) {
 	}()
 
 	// Client configuration
-	cfg := &config.YapiConfig{
-		URL:            fmt.Sprintf("tcp://%s", l.Addr().String()),
-		Method:         "tcp",
-		Data:           expected,
-		Encoding:       "text",
-		ReadTimeout:    1,    // Short timeout for testing
-		CloseAfterSend: true, // Should close write half
+	yaml := fmt.Sprintf(`
+yapi: v1
+url: tcp://%s
+method: tcp
+data: "%s"
+read_timeout: 1
+close_after_send: true`, l.Addr().String(), expected)
+	res, err := config.LoadFromString(yaml)
+	if err != nil {
+		t.Fatalf("LoadFromString failed: %v", err)
 	}
+	cfg := res.Config
 
 	exec := executor.NewTCPExecutor()
 	result, err := exec.Execute(cfg)
@@ -104,14 +108,19 @@ func TestTCPExecutor_Execute_HexEncoding(t *testing.T) {
 		}
 	}()
 
-	cfg := &config.YapiConfig{
-		URL:            fmt.Sprintf("tcp://%s", l.Addr().String()),
-		Method:         "tcp",
-		Data:           hexData,
-		Encoding:       "hex",
-		ReadTimeout:    1,
-		CloseAfterSend: true,
+	yaml := fmt.Sprintf(`
+yapi: v1
+url: tcp://%s
+method: tcp
+data: "%s"
+encoding: hex
+read_timeout: 1
+close_after_send: true`, l.Addr().String(), hexData)
+	res, err := config.LoadFromString(yaml)
+	if err != nil {
+		t.Fatalf("LoadFromString failed: %v", err)
 	}
+	cfg := res.Config
 
 	exec := executor.NewTCPExecutor()
 	result, err := exec.Execute(cfg)
@@ -159,14 +168,19 @@ func TestTCPExecutor_Execute_Base64Encoding(t *testing.T) {
 		}
 	}()
 
-	cfg := &config.YapiConfig{
-		URL:            fmt.Sprintf("tcp://%s", l.Addr().String()),
-		Method:         "tcp",
-		Data:           base64Data,
-		Encoding:       "base64",
-		ReadTimeout:    1,
-		CloseAfterSend: true,
+	yaml := fmt.Sprintf(`
+yapi: v1
+url: tcp://%s
+method: tcp
+data: "%s"
+encoding: base64
+read_timeout: 1
+close_after_send: true`, l.Addr().String(), base64Data)
+	res, err := config.LoadFromString(yaml)
+	if err != nil {
+		t.Fatalf("LoadFromString failed: %v", err)
 	}
+	cfg := res.Config
 
 	exec := executor.NewTCPExecutor()
 	result, err := exec.Execute(cfg)

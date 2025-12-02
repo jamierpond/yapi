@@ -15,7 +15,6 @@ import (
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
-	"gopkg.in/yaml.v3"
 )
 
 const lsName = "yapi language server"
@@ -144,8 +143,8 @@ func textDocumentDidSave(ctx *glsp.Context, params *protocol.DidSaveTextDocument
 func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string) {
 	diagnostics := []protocol.Diagnostic{}
 
-	var cfg config.YapiConfig
-	if err := yaml.Unmarshal([]byte(text), &cfg); err != nil {
+	res, err := config.LoadFromString(text)
+	if err != nil {
 		// YAML parse error - show at line 0
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
@@ -157,7 +156,19 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 			Message:  "invalid YAML: " + err.Error(),
 		})
 	} else {
-		issues := validation.ValidateConfig(&cfg)
+		cfg := res.Config
+		for _, w := range res.Warnings {
+			diagnostics = append(diagnostics, protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 0, Character: 0},
+					End:   protocol.Position{Line: 0, Character: 100},
+				},
+				Severity: ptr(protocol.DiagnosticSeverityWarning),
+				Source:   ptr("yapi"),
+				Message:  w,
+			})
+		}
+		issues := validation.ValidateConfig(cfg)
 		for _, issue := range issues {
 			line := findFieldLine(text, issue.Field)
 			diagnostics = append(diagnostics, protocol.Diagnostic{

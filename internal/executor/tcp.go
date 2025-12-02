@@ -23,7 +23,7 @@ func NewTCPExecutor() *TCPExecutor {
 }
 
 // Execute performs a TCP request based on the provided YapiConfig.
-func (e *TCPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
+func (e *TCPExecutor) Execute(cfg *config.Config) (string, error) {
 	// Extract host and port from URL
 	target := strings.TrimPrefix(cfg.URL, "tcp://")
 	if !strings.Contains(target, ":") {
@@ -32,14 +32,14 @@ func (e *TCPExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 
 	// Prepare data to send
 	var sendData []byte
+	var err error
 	if cfg.Data != "" {
 		sendData = []byte(cfg.Data)
 	} else if cfg.Body != nil {
-		b, err := json.Marshal(cfg.Body)
+		sendData, err = json.Marshal(cfg.Body)
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal request body for TCP: %w", err)
 		}
-		sendData = b
 	}
 
 	// Handle encoding

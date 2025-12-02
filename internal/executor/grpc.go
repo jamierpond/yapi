@@ -30,7 +30,7 @@ func NewGRPCExecutor() *GRPCExecutor {
 }
 
 // Execute performs a gRPC request based on the provided YapiConfig.
-func (e *GRPCExecutor) Execute(cfg *config.YapiConfig) (string, error) {
+func (e *GRPCExecutor) Execute(cfg *config.Config) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // TODO: Make timeout configurable
 	defer cancel()
 
@@ -67,8 +67,6 @@ func (e *GRPCExecutor) Execute(cfg *config.YapiConfig) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal gRPC request body: %w", err)
 		}
-	} else if cfg.JSON != "" {
-		reqData = []byte(cfg.JSON)
 	}
 
 	// Create a RequestSupplier to feed the request data

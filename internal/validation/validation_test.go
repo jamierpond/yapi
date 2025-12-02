@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -8,8 +9,11 @@ import (
 )
 
 func TestValidateConfig_MissingURL(t *testing.T) {
-	cfg := &config.YapiConfig{}
-	issues := ValidateConfig(cfg)
+	res, err := config.LoadFromString(`yapi: v1`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateConfig(res.Config)
 
 	if len(issues) == 0 {
 		t.Fatal("expected at least one issue for missing URL")
@@ -33,11 +37,14 @@ func TestValidateConfig_ValidHTTPMethods(t *testing.T) {
 	validMethods := []string{"", "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
 	for _, method := range validMethods {
-		cfg := &config.YapiConfig{
-			URL:    "http://example.com",
-			Method: method,
+		yaml := fmt.Sprintf(`yapi: v1
+url: http://example.com
+method: %s`, method)
+		res, err := config.LoadFromString(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error loading config for method %s: %v", method, err)
 		}
-		issues := ValidateConfig(cfg)
+		issues := ValidateConfig(res.Config)
 
 		for _, issue := range issues {
 			if issue.Field == "method" {
@@ -48,11 +55,13 @@ func TestValidateConfig_ValidHTTPMethods(t *testing.T) {
 }
 
 func TestValidateConfig_UnknownHTTPMethod(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "http://example.com",
-		Method: "FOOBAR",
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com
+method: FOOBAR`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -69,13 +78,15 @@ func TestValidateConfig_UnknownHTTPMethod(t *testing.T) {
 }
 
 func TestValidateConfig_GRPCDeprecated(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:     "localhost:50051",
-		Method:  "grpc",
-		Service: "example.Service",
-		RPC:     "GetData",
+	res, err := config.LoadFromString(`yapi: v1
+url: localhost:50051
+method: grpc
+service: example.Service
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	foundDeprecation := false
 	for _, issue := range issues {
@@ -92,12 +103,14 @@ func TestValidateConfig_GRPCDeprecated(t *testing.T) {
 }
 
 func TestValidateConfig_GRPCMissingService(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "localhost:50051",
-		Method: "grpc",
-		RPC:    "GetData",
+	res, err := config.LoadFromString(`yapi: v1
+url: localhost:50051
+method: grpc
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -114,12 +127,14 @@ func TestValidateConfig_GRPCMissingService(t *testing.T) {
 }
 
 func TestValidateConfig_GRPCMissingRPC(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:     "localhost:50051",
-		Method:  "grpc",
-		Service: "example.Service",
+	res, err := config.LoadFromString(`yapi: v1
+url: localhost:50051
+method: grpc
+service: example.Service`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -136,12 +151,14 @@ func TestValidateConfig_GRPCMissingRPC(t *testing.T) {
 }
 
 func TestValidateConfig_TCPDeprecated(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "localhost:9000",
-		Method: "tcp",
-		Data:   "hello",
+	res, err := config.LoadFromString(`yapi: v1
+url: localhost:9000
+method: tcp
+data: hello`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	foundDeprecation := false
 	for _, issue := range issues {
@@ -161,13 +178,16 @@ func TestValidateConfig_TCPValidEncodings(t *testing.T) {
 	validEncodings := []string{"text", "hex", "base64"}
 
 	for _, enc := range validEncodings {
-		cfg := &config.YapiConfig{
-			URL:      "localhost:9000",
-			Method:   "tcp",
-			Data:     "hello",
-			Encoding: enc,
+		yaml := fmt.Sprintf(`yapi: v1
+url: localhost:9000
+method: tcp
+data: hello
+encoding: %s`, enc)
+		res, err := config.LoadFromString(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error loading config for encoding %s: %v", enc, err)
 		}
-		issues := ValidateConfig(cfg)
+		issues := ValidateConfig(res.Config)
 
 		for _, issue := range issues {
 			if issue.Field == "encoding" {
@@ -178,13 +198,15 @@ func TestValidateConfig_TCPValidEncodings(t *testing.T) {
 }
 
 func TestValidateConfig_TCPInvalidEncoding(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:      "localhost:9000",
-		Method:   "tcp",
-		Data:     "hello",
-		Encoding: "invalid",
+	res, err := config.LoadFromString(`yapi: v1
+url: localhost:9000
+method: tcp
+data: hello
+encoding: invalid`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -201,13 +223,16 @@ func TestValidateConfig_TCPInvalidEncoding(t *testing.T) {
 }
 
 func TestValidateConfig_ValidConfig(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:         "http://example.com/api",
-		Method:      "POST",
-		ContentType: "application/json",
-		Body:        map[string]interface{}{"key": "value"},
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/api
+method: POST
+content_type: application/json
+body:
+  key: value`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	if len(issues) != 0 {
 		t.Errorf("expected no issues for valid config, got %d: %+v", len(issues), issues)
@@ -215,36 +240,30 @@ func TestValidateConfig_ValidConfig(t *testing.T) {
 }
 
 func TestValidateConfig_BodyAndJSONMutuallyExclusive(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:         "http://example.com/api",
-		Method:      "POST",
-		ContentType: "application/json",
-		Body:        map[string]interface{}{"key": "value"},
-		JSON:        `{"key": "value"}`,
-	}
-	issues := ValidateConfig(cfg)
-
-	found := false
-	for _, issue := range issues {
-		if issue.Field == "body" && issue.Severity == SeverityError {
-			found = true
-			if !strings.Contains(issue.Message, "mutually exclusive") {
-				t.Errorf("expected mutually exclusive message, got: %s", issue.Message)
-			}
-		}
-	}
-	if !found {
-		t.Error("expected error for body and json both present")
+	// This test is no longer relevant as the parser handles mutual exclusion.
+	// We can test that both are not set in the final config.
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/api
+method: POST
+content_type: application/json
+body:
+  key: value
+json: '{"key": "value"}'`)
+	if err == nil {
+		t.Fatal("expected error for body and json both present")
 	}
 }
 
 func TestValidateConfig_ContentTypeRequiredWithBody(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "http://example.com/api",
-		Method: "POST",
-		Body:   map[string]interface{}{"key": "value"},
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/api
+method: POST
+body:
+  key: value`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -261,12 +280,14 @@ func TestValidateConfig_ContentTypeRequiredWithBody(t *testing.T) {
 }
 
 func TestValidateConfig_ContentTypeRequiredWithJSON(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "http://example.com/api",
-		Method: "POST",
-		JSON:   `{"key": "value"}`,
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/api
+method: POST
+json: '{"key": "value"}'`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -280,13 +301,16 @@ func TestValidateConfig_ContentTypeRequiredWithJSON(t *testing.T) {
 }
 
 func TestValidateConfig_ContentTypeNotRequiredForGRPC(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:     "grpc://localhost:50051",
-		Service: "example.Service",
-		RPC:     "GetData",
-		Body:    map[string]interface{}{"key": "value"},
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+service: example.Service
+rpc: GetData
+body:
+  key: value`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	for _, issue := range issues {
 		if issue.Field == "content_type" {
@@ -296,11 +320,14 @@ func TestValidateConfig_ContentTypeNotRequiredForGRPC(t *testing.T) {
 }
 
 func TestValidateConfig_ContentTypeNotRequiredForTCP(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:  "tcp://localhost:9000",
-		Body: map[string]interface{}{"key": "value"},
+	res, err := config.LoadFromString(`yapi: v1
+url: tcp://localhost:9000
+body:
+  key: value`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	for _, issue := range issues {
 		if issue.Field == "content_type" {
@@ -320,10 +347,13 @@ func TestValidateConfig_GRPCByURLScheme(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &config.YapiConfig{
-				URL: tt.url,
+			yaml := fmt.Sprintf(`yapi: v1
+url: %s`, tt.url)
+			res, err := config.LoadFromString(yaml)
+			if err != nil {
+				t.Fatalf("unexpected error loading config: %v", err)
 			}
-			issues := ValidateConfig(cfg)
+			issues := ValidateConfig(res.Config)
 
 			foundService := false
 			foundRPC := false
@@ -346,12 +376,14 @@ func TestValidateConfig_GRPCByURLScheme(t *testing.T) {
 }
 
 func TestValidateConfig_GRPCByURLSchemeValid(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:     "grpc://localhost:50051",
-		Service: "example.Service",
-		RPC:     "GetData",
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+service: example.Service
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	for _, issue := range issues {
 		if issue.Field == "service" || issue.Field == "rpc" {
@@ -361,11 +393,13 @@ func TestValidateConfig_GRPCByURLSchemeValid(t *testing.T) {
 }
 
 func TestValidateConfig_TCPByURLScheme(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:      "tcp://localhost:9000",
-		Encoding: "invalid",
+	res, err := config.LoadFromString(`yapi: v1
+url: tcp://localhost:9000
+encoding: invalid`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	found := false
 	for _, issue := range issues {
@@ -379,11 +413,13 @@ func TestValidateConfig_TCPByURLScheme(t *testing.T) {
 }
 
 func TestValidateConfig_TCPByURLSchemeValidEncoding(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:      "tcp://localhost:9000",
-		Encoding: "hex",
+	res, err := config.LoadFromString(`yapi: v1
+url: tcp://localhost:9000
+encoding: hex`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	for _, issue := range issues {
 		if issue.Field == "encoding" {
@@ -396,11 +432,14 @@ func TestValidateConfig_LowercaseHTTPMethods(t *testing.T) {
 	methods := []string{"get", "post", "put", "delete", "patch", "head", "options"}
 
 	for _, method := range methods {
-		cfg := &config.YapiConfig{
-			URL:    "http://example.com",
-			Method: method,
+		yaml := fmt.Sprintf(`yapi: v1
+url: http://example.com
+method: %s`, method)
+		res, err := config.LoadFromString(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error loading config for method %s: %v", method, err)
 		}
-		issues := ValidateConfig(cfg)
+		issues := ValidateConfig(res.Config)
 
 		for _, issue := range issues {
 			if issue.Field == "method" {
@@ -411,12 +450,14 @@ func TestValidateConfig_LowercaseHTTPMethods(t *testing.T) {
 }
 
 func TestValidateConfig_EmptyBodyNotTriggersContentTypeRule(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "http://example.com",
-		Method: "GET",
-		Body:   map[string]interface{}{},
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com
+method: GET
+body: {}`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	for _, issue := range issues {
 		if issue.Field == "content_type" {
@@ -426,11 +467,13 @@ func TestValidateConfig_EmptyBodyNotTriggersContentTypeRule(t *testing.T) {
 }
 
 func TestValidateConfig_NoIssuesForMinimalValidHTTP(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:    "http://example.com",
-		Method: "GET",
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com
+method: GET`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	if len(issues) != 0 {
 		t.Errorf("expected no issues for minimal valid HTTP config, got %d: %+v", len(issues), issues)
@@ -438,12 +481,14 @@ func TestValidateConfig_NoIssuesForMinimalValidHTTP(t *testing.T) {
 }
 
 func TestValidateConfig_NoIssuesForMinimalValidGRPC(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:     "grpc://localhost:50051",
-		Service: "example.Service",
-		RPC:     "GetData",
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+service: example.Service
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	if len(issues) != 0 {
 		t.Errorf("expected no issues for minimal valid gRPC config, got %d: %+v", len(issues), issues)
@@ -451,11 +496,13 @@ func TestValidateConfig_NoIssuesForMinimalValidGRPC(t *testing.T) {
 }
 
 func TestValidateConfig_NoIssuesForMinimalValidTCP(t *testing.T) {
-	cfg := &config.YapiConfig{
-		URL:  "tcp://localhost:9000",
-		Data: "hello",
+	res, err := config.LoadFromString(`yapi: v1
+url: tcp://localhost:9000
+data: hello`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
 	}
-	issues := ValidateConfig(cfg)
+	issues := ValidateConfig(res.Config)
 
 	if len(issues) != 0 {
 		t.Errorf("expected no issues for minimal valid TCP config, got %d: %+v", len(issues), issues)

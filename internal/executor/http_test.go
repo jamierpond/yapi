@@ -2,6 +2,7 @@ package executor_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,92 +17,94 @@ import (
 func TestHTTPExecutor_URLBuilding(t *testing.T) {
 	tests := []struct {
 		name          string
-		cfg           *config.YapiConfig
+		yaml          string
 		expectedPath  string
-		expectedQuery string
+		expectedQuery url.Values
 	}{
 		{
 			name: "basic URL with path",
-			cfg: &config.YapiConfig{
-				URL:    "https://example.com",
-				Path:   "/api/test",
-				Method: "GET",
-			},
+			yaml: `
+yapi: v1
+url: https://example.com
+path: /api/test
+method: GET`,
 			expectedPath:  "/api/test",
-			expectedQuery: "",
+			expectedQuery: url.Values{},
 		},
 		{
 			name: "URL without path",
-			cfg: &config.YapiConfig{
-				URL:    "https://example.com",
-				Method: "GET",
-			},
-			expectedPath:  "/", // Root path if no path specified
-			expectedQuery: "",
+			yaml: `
+yapi: v1
+url: https://example.com
+method: GET`,
+			expectedPath:  "/",
+			expectedQuery: url.Values{},
 		},
 		{
 			name: "URL with query string",
-			cfg: &config.YapiConfig{
-				URL:    "https://example.com",
-				Path:   "/api",
-				Method: "GET",
-				Query: map[string]string{
-					"foo": "bar",
-					"baz": "qux",
-				},
+			yaml: `
+yapi: v1
+url: https://example.com
+path: /api
+method: GET
+query:
+  foo: bar
+  baz: qux`,
+			expectedPath: "/api",
+			expectedQuery: url.Values{
+				"foo": {"bar"},
+				"baz": {"qux"},
 			},
-			expectedPath:  "/api",
-			expectedQuery: "baz=qux&foo=bar", // Query params are sorted alphabetically for consistent testing
 		},
 		{
 			name: "URL encodes special characters in path",
-			cfg: &config.YapiConfig{
-				URL:    "https://example.com",
-				Path:   "/api/test with spaces",
-				Method: "GET",
-			},
+			yaml: `
+yapi: v1
+url: https://example.com
+path: "/api/test with spaces"
+method: GET`,
 			expectedPath:  "/api/test with spaces",
-			expectedQuery: "",
+			expectedQuery: url.Values{},
 		},
 		{
 			name: "URL encodes special characters in query",
-			cfg: &config.YapiConfig{
-				URL:    "https://example.com",
-				Path:   "/api",
-				Method: "GET",
-				Query: map[string]string{
-					"q": "hello world!",
-				},
+			yaml: `
+yapi: v1
+url: https://example.com
+path: /api
+method: GET
+query:
+  q: "hello world!"`,
+			expectedPath: "/api",
+			expectedQuery: url.Values{
+				"q": {"hello world!"},
 			},
-			expectedPath:  "/api",
-			expectedQuery: "q=hello+world%21", // url.Values.Encode() uses %21 for '!' and '+' for ' '
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			res, err := config.LoadFromString(tt.yaml)
+			if err != nil {
+				t.Fatalf("LoadFromString failed: %v", err)
+			}
+			cfg := res.Config
+
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != tt.expectedPath {
 					t.Errorf("Expected path %q, got %q", tt.expectedPath, r.URL.Path)
 				}
-
-				// For query, construct expected query string using url.Values.Encode() for consistent comparison
-				expectedQueryValues := make(url.Values)
-				for k, v := range tt.cfg.Query {
-					expectedQueryValues.Add(k, v)
-				}
-				actualQuery := r.URL.Query().Encode()
-				if actualQuery != expectedQueryValues.Encode() {
-					t.Errorf("Expected query %q, got %q", expectedQueryValues.Encode(), actualQuery)
+				if r.URL.Query().Encode() != tt.expectedQuery.Encode() {
+					t.Errorf("Expected query %q, got %q", tt.expectedQuery.Encode(), r.URL.Query().Encode())
 				}
 				w.WriteHeader(http.StatusOK)
 			}))
 			defer srv.Close()
 
-			tt.cfg.URL = srv.URL // Update config URL to point to mock server
+			cfg.URL = srv.URL
 
 			exec := executor.NewHTTPExecutor()
-			resp, err := exec.Execute(tt.cfg)
+			resp, err := exec.Execute(cfg)
 			if err != nil {
 				t.Fatalf("Execute failed: %v", err)
 			}
@@ -115,55 +118,54 @@ func TestHTTPExecutor_URLBuilding(t *testing.T) {
 func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
 	tests := []struct {
 		name           string
-		cfg            *config.YapiConfig
+		yaml           string
 		expectedBody   string
 		expectedStatus int
 	}{
 		{
 			name: "POST with simple JSON body",
-			cfg: &config.YapiConfig{
-				URL:    "", // Will be set to mock server URL
-				Method: "POST",
-				Body: map[string]interface{}{
-					"name":  "test",
-					"value": 123,
-				},
-			},
+			yaml: `
+yapi: v1
+url: ""
+method: POST
+body:
+  name: test
+  value: 123`,
 			expectedBody:   `{"name":"test","value":123}`,
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "POST with complex nested JSON body",
-			cfg: &config.YapiConfig{
-				URL:    "", // Will be set to mock server URL
-				Method: "POST",
-				Body: map[string]interface{}{
-					"title":       "Testing yapi - YAML API Testing Tool",
-					"description": "This demo shows nested objects, arrays, and various data types",
-					"userId":      123,
-					"isPublished": true,
-					"tags":        []interface{}{"testing", "api", "yaml"},
-					"metadata": map[string]interface{}{
-						"source":    "yapi",
-						"version":   "1.0",
-						"timestamp": "2024-01-15T10:30:00Z",
-					},
-					"author": map[string]interface{}{
-						"name":  "Test User",
-						"email": "test@example.com",
-					},
-				},
-			},
+			yaml: `
+yapi: v1
+url: ""
+method: POST
+body:
+  title: "Testing yapi - YAML API Testing Tool"
+  description: "This demo shows nested objects, arrays, and various data types"
+  userId: 123
+  isPublished: true
+  tags:
+    - testing
+    - api
+    - yaml
+  metadata:
+    source: yapi
+    version: "1.0"
+    timestamp: "2024-01-15T10:30:00Z"
+  author:
+    name: "Test User"
+    email: "test@example.com"`,
 			expectedBody:   `{"author":{"email":"test@example.com","name":"Test User"},"description":"This demo shows nested objects, arrays, and various data types","isPublished":true,"metadata":{"source":"yapi","timestamp":"2024-01-15T10:30:00Z","version":"1.0"},"tags":["testing","api","yaml"],"title":"Testing yapi - YAML API Testing Tool","userId":123}`,
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "POST with raw JSON string",
-			cfg: &config.YapiConfig{
-				URL:    "", // Will be set to mock server URL
-				Method: "POST",
-				JSON:   `{"status":"active","code":42}`, // Raw JSON directly
-			},
+			yaml: `
+yapi: v1
+url: ""
+method: POST
+json: '{"status":"active","code":42}'`,
 			expectedBody:   `{"status":"active","code":42}`,
 			expectedStatus: http.StatusOK,
 		},
@@ -171,11 +173,16 @@ func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			res, err := config.LoadFromString(tt.yaml)
+			if err != nil {
+				t.Fatalf("LoadFromString failed: %v", err)
+			}
+			cfg := res.Config
+
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != "POST" {
 					t.Errorf("Expected POST method, got %s", r.Method)
 				}
-				// Content-Type should be application/json by default if body/json is present
 				if r.Header.Get("Content-Type") != "application/json" {
 					t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
 				}
@@ -185,14 +192,11 @@ func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
 					t.Fatalf("Failed to read request body: %v", err)
 				}
 
-				// Compare JSON bodies robustly by unmarshalling and marshalling again
 				var actual, expected interface{}
-				err = json.Unmarshal(bodyBytes, &actual)
-				if err != nil {
+				if err := json.Unmarshal(bodyBytes, &actual); err != nil {
 					t.Fatalf("Failed to unmarshal actual request body: %v, body: %s", err, string(bodyBytes))
 				}
-				err = json.Unmarshal([]byte(tt.expectedBody), &expected)
-				if err != nil {
+				if err := json.Unmarshal([]byte(tt.expectedBody), &expected); err != nil {
 					t.Fatalf("Failed to unmarshal expected request body: %v, body: %s", err, tt.expectedBody)
 				}
 
@@ -201,19 +205,18 @@ func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.expectedStatus)
-				w.Write([]byte(`{"status":"received"}`)) // Generic response
+				w.Write([]byte(`{"status":"received"}`))
 			}))
 			defer srv.Close()
 
-			tt.cfg.URL = srv.URL // Update config URL to point to mock server
+			cfg.URL = srv.URL
 
 			exec := executor.NewHTTPExecutor()
-			resp, err := exec.Execute(tt.cfg)
+			resp, err := exec.Execute(cfg)
 			if err != nil {
 				t.Fatalf("Execute failed: %v", err)
 			}
 
-			// Verify generic response
 			expectedResponse := `{"status":"received"}`
 			if resp.Body != expectedResponse {
 				t.Errorf("Expected response %s, got %s", expectedResponse, resp.Body)

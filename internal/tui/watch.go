@@ -85,21 +85,21 @@ func checkFileCmd(path string, lastMod time.Time) tea.Cmd {
 
 func runYapiCmd(path string) tea.Cmd {
 	return func() tea.Msg {
-		cfg, warnings, err := config.LoadConfig(path)
+		res, err := config.Load(path)
 		if err != nil {
 			return runResultMsg{err: fmt.Errorf("config error: %w", err)}
 		}
 
 		var warningText string
-		if len(warnings) > 0 {
-			for _, w := range warnings {
+		if len(res.Warnings) > 0 {
+			for _, w := range res.Warnings {
 				warningText += warnStyle.Render("[WARN] "+w) + "\n"
 			}
 			warningText += "\n"
 		}
 
 		opts := runner.Options{NoColor: false}
-		output, result, err := runner.RunAndFormat(cfg, opts)
+		output, result, err := runner.RunAndFormat(res.Config, opts)
 		if err != nil {
 			return runResultMsg{err: err}
 		}

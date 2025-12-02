@@ -26,7 +26,7 @@ func NewGraphQLExecutor() *GraphQLExecutor {
 }
 
 // Execute performs a GraphQL request
-func (e *GraphQLExecutor) Execute(cfg *config.YapiConfig) (*HTTPResponse, error) {
+func (e *GraphQLExecutor) Execute(cfg *config.Config) (*HTTPResponse, error) {
 	// Construct the GraphQL payload
 	payload := graphqlPayload{
 		Query:     cfg.Graphql,
@@ -42,7 +42,7 @@ func (e *GraphQLExecutor) Execute(cfg *config.YapiConfig) (*HTTPResponse, error)
 	// Create a copy of the config for HTTP execution
 	httpCfg := *cfg
 	httpCfg.Method = "POST"
-	httpCfg.JSON = string(jsonBytes)
+	httpCfg.Body = string(jsonBytes)
 	httpCfg.ContentType = "application/json"
 	// Clear GraphQL fields to avoid confusion
 	httpCfg.Graphql = ""

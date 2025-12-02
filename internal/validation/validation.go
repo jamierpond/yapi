@@ -50,25 +50,25 @@ func getURLScheme(url string) string {
 }
 
 // isGRPCRequest returns true if this is a gRPC request (by method or URL scheme)
-func isGRPCRequest(cfg *config.YapiConfig) bool {
+func isGRPCRequest(cfg *config.Config) bool {
 	scheme := getURLScheme(cfg.URL)
 	return cfg.Method == "grpc" || scheme == "grpc" || scheme == "grpcs"
 }
 
 // isTCPRequest returns true if this is a TCP request (by method or URL scheme)
-func isTCPRequest(cfg *config.YapiConfig) bool {
+func isTCPRequest(cfg *config.Config) bool {
 	scheme := getURLScheme(cfg.URL)
 	return cfg.Method == "tcp" || scheme == "tcp"
 }
 
 // isHTTPRequest returns true if this is an HTTP request
-func isHTTPRequest(cfg *config.YapiConfig) bool {
+func isHTTPRequest(cfg *config.Config) bool {
 	return !isGRPCRequest(cfg) && !isTCPRequest(cfg)
 }
 
 // ValidateConfig performs semantic validation on a parsed YapiConfig.
 // It must not read files, print, or talk to LSP/CLI. Pure logic only.
-func ValidateConfig(cfg *config.YapiConfig) []Issue {
+func ValidateConfig(cfg *config.Config) []Issue {
 	var issues []Issue
 
 	// Rule 1: url is required
@@ -147,21 +147,13 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 		}
 	}
 
-	// Rule 5: body and json are mutually exclusive
-	hasBody := cfg.Body != nil && len(cfg.Body) > 0
-	hasJSON := cfg.JSON != ""
+	// Rule 5: body and json are mutually exclusive is handled by the parser.
+	// We just need to check if body is not nil.
+	hasBody := cfg.Body != nil
 	hasGraphql := cfg.Graphql != ""
 
-	if hasBody && hasJSON {
-		issues = append(issues, Issue{
-			Severity: SeverityError,
-			Field:    "body",
-			Message:  "`body` and `json` are mutually exclusive",
-		})
-	}
-
-	// Rule 6: graphql is mutually exclusive with body and json
-	if hasGraphql && (hasBody || hasJSON) {
+	// Rule 6: graphql is mutually exclusive with body
+	if hasGraphql && hasBody {
 		issues = append(issues, Issue{
 			Severity: SeverityError,
 			Field:    "graphql",
@@ -170,7 +162,7 @@ func ValidateConfig(cfg *config.YapiConfig) []Issue {
 	}
 
 	// Rule 7: content_type required when body or json is present (HTTP only, not GraphQL)
-	if isHTTPRequest(cfg) && !hasGraphql && (hasBody || hasJSON) && cfg.ContentType == "" {
+	if isHTTPRequest(cfg) && !hasGraphql && hasBody && cfg.ContentType == "" {
 		issues = append(issues, Issue{
 			Severity: SeverityError,
 			Field:    "content_type",

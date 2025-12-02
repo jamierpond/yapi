@@ -151,14 +151,14 @@ func printWatchHeader(path string) {
 }
 
 func runConfigPathSafe(path string) {
-	cfg, warnings, err := config.LoadConfig(path) // Updated signature
+	res, err := config.Load(path) // Updated signature
 	if err != nil {
 		fmt.Printf("\033[31mError loading config: %v\033[0m\n", err)
 		return
 	}
 
 	// Print Warnings
-	for _, w := range warnings {
+	for _, w := range res.Warnings {
 		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
@@ -167,7 +167,7 @@ func runConfigPathSafe(path string) {
 		NoColor:     noColor,
 	}
 
-	output, result, err := runner.RunAndFormat(cfg, opts)
+	output, result, err := runner.RunAndFormat(res.Config, opts)
 	if err != nil {
 		fmt.Printf("\033[31m%v\033[0m\n", err)
 		return
@@ -188,12 +188,12 @@ func newLSPCmd() *cobra.Command {
 }
 
 func runConfigPath(path string) {
-	cfg, warnings, err := config.LoadConfig(path)
+	res, err := config.Load(path)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	for _, w := range warnings {
+	for _, w := range res.Warnings {
 		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
@@ -204,7 +204,7 @@ func runConfigPath(path string) {
 		NoColor:     noColor,
 	}
 
-	output, result, err := runner.RunAndFormat(cfg, opts)
+	output, result, err := runner.RunAndFormat(res.Config, opts)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

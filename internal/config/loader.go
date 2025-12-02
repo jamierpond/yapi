@@ -22,20 +22,23 @@ func Load(path string) (*ParseResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	return LoadFromString(string(data))
+}
 
+func LoadFromString(data string) (*ParseResult, error) {
 	// 1. Peek at version
 	var env Envelope
-	if err := yaml.Unmarshal(data, &env); err != nil {
+	if err := yaml.Unmarshal([]byte(data), &env); err != nil {
 		return nil, fmt.Errorf("invalid yaml: %w", err)
 	}
 
 	// 2. Dispatch based on version
 	switch env.Yapi {
 	case "v1":
-		return parseV1(data)
+		return parseV1([]byte(data))
 	case "":
 		// Legacy support: Parse as V1 but warn
-		res, err := parseV1(data)
+		res, err := parseV1([]byte(data))
 		if err == nil {
 			res.Warnings = append(res.Warnings, "Missing 'yapi: v1' version tag. Defaulting to v1.")
 		}

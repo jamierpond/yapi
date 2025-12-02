@@ -28,18 +28,21 @@ func NewHTTPExecutor() *HTTPExecutor {
 }
 
 // Execute performs an HTTP request based on the provided YapiConfig.
-func (e *HTTPExecutor) Execute(cfg *config.YapiConfig) (*HTTPResponse, error) {
+func (e *HTTPExecutor) Execute(cfg *config.Config) (*HTTPResponse, error) {
 	var reqBody io.Reader
 
-	if cfg.Body != nil || cfg.JSON != "" {
-		if cfg.Body != nil {
+	if cfg.Body != nil {
+		switch body := cfg.Body.(type) {
+		case string:
+			reqBody = bytes.NewBufferString(body)
+		case []byte:
+			reqBody = bytes.NewBuffer(body)
+		default:
 			b, err := json.Marshal(cfg.Body)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal request body: %w", err)
 			}
 			reqBody = bytes.NewBuffer(b)
-		} else if cfg.JSON != "" {
-			reqBody = bytes.NewBuffer([]byte(cfg.JSON))
 		}
 
 		// Default content type to application/json if body or json is present and not explicitly set
