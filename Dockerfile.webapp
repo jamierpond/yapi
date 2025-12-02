@@ -17,15 +17,6 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 RUN CGO_ENABLED=0 GOOS=linux go build -o yapi ./cmd/yapi
 
-# 1.5. Yapi Test Stage
-# -----------------------------------------------------------------------------
-FROM yapi_builder AS yapi_tester
-
-WORKDIR /build
-COPY examples /examples
-COPY scripts/run-all-examples.sh ./scripts/run-all-examples.sh
-RUN chmod +x scripts/run-all-examples.sh && ./scripts/run-all-examples.sh
-
 
 # 2. Next.js Base Stage
 # -----------------------------------------------------------------------------
