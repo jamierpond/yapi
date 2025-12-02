@@ -48,87 +48,59 @@ func isHTTPRequest(req *domain.Request) bool {
 // ValidateRequest performs semantic validation on a domain.Request.
 func ValidateRequest(req *domain.Request) []Issue {
 	var issues []Issue
+	add := func(sev Severity, field, msg string) {
+		issues = append(issues, Issue{Severity: sev, Field: field, Message: msg})
+	}
 
-	// Rule 1: url is required
 	if req.URL == "" {
-		issues = append(issues, Issue{
-			Severity: SeverityError,
-			Field:    "url",
-			Message:  "missing required field `url`",
-		})
+		add(SeverityError, "url", "missing required field `url`")
 	}
 
-	// Rule 2: method validation
 	method := strings.ToUpper(req.Method)
-	validHTTPMethods := map[string]bool{
-		"":        true, // empty is allowed, defaults to GET
-		"GET":     true,
-		"POST":    true,
-		"PUT":     true,
-		"DELETE":  true,
-		"PATCH":   true,
-		"HEAD":    true,
-		"OPTIONS": true,
+	if isHTTPRequest(req) && !validHTTPMethod(method) {
+		add(SeverityWarning, "method", fmt.Sprintf("unknown HTTP method `%s`", req.Method))
 	}
 
-	if !validHTTPMethods[method] && isHTTPRequest(req) {
-		issues = append(issues, Issue{
-			Severity: SeverityWarning,
-			Field:    "method",
-			Message:  fmt.Sprintf("unknown HTTP method `%s`", req.Method),
-		})
-	}
-
-	// Rule 3: gRPC requires service and rpc
 	if isGRPCRequest(req) {
 		if req.Metadata["service"] == "" {
-			issues = append(issues, Issue{
-				Severity: SeverityError,
-				Field:    "service",
-				Message:  "gRPC config requires `service`",
-			})
+			add(SeverityError, "service", "gRPC config requires `service`")
 		}
 		if req.Metadata["rpc"] == "" {
-			issues = append(issues, Issue{
-				Severity: SeverityError,
-				Field:    "rpc",
-				Message:  "gRPC config requires `rpc`",
-			})
+			add(SeverityError, "rpc", "gRPC config requires `rpc`")
 		}
 	}
 
-	// Rule 4: TCP encoding validation
-	if isTCPRequest(req) && req.Metadata["encoding"] != "" {
-		validEncodings := map[string]bool{
-			"text":   true,
-			"hex":    true,
-			"base64": true,
-		}
-		if !validEncodings[req.Metadata["encoding"]] {
-			issues = append(issues, Issue{
-				Severity: SeverityError,
-				Field:    "encoding",
-				Message:  fmt.Sprintf("unsupported TCP encoding `%s` (allowed: text, hex, base64)", req.Metadata["encoding"]),
-			})
-		}
+	if isTCPRequest(req) && req.Metadata["encoding"] != "" && !validEncoding(req.Metadata["encoding"]) {
+		add(SeverityError, "encoding",
+			fmt.Sprintf("unsupported TCP encoding `%s` (allowed: text, hex, base64)", req.Metadata["encoding"]))
 	}
 
 	hasBody := req.Body != nil
-	hasJSON := req.Metadata["body_source"] == "json"
-	hasGraphql := req.Metadata["graphql_query"] != ""
-
-	// Rule 6: graphql is mutually exclusive with body/json
-	if hasGraphql && hasBody {
+	if req.Metadata["graphql_query"] != "" && hasBody {
 		field := "body"
-		if hasJSON {
+		if req.Metadata["body_source"] == "json" {
 			field = "json"
 		}
-		issues = append(issues, Issue{
-			Severity: SeverityError,
-			Field:    field,
-			Message:  "`graphql` cannot be used with `body` or `json`",
-		})
+		add(SeverityError, field, "`graphql` cannot be used with `body` or `json`")
 	}
 
 	return issues
+}
+
+func validHTTPMethod(m string) bool {
+	switch m {
+	case "", "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS":
+		return true
+	default:
+		return false
+	}
+}
+
+func validEncoding(enc string) bool {
+	switch enc {
+	case "text", "hex", "base64":
+		return true
+	default:
+		return false
+	}
 }

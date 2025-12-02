@@ -6,16 +6,21 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"yapi.run/cli/internal/executor"
+	"yapi.run/cli/internal/core"
+	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/tui/theme"
 	"yapi.run/cli/internal/validation"
 )
+
+var httpClient = &http.Client{Timeout: 30 * time.Second}
+var engine = core.NewEngine(httpClient)
 
 type watchModel struct {
 	filepath    string
@@ -61,61 +66,51 @@ func checkFileCmd(path string, lastMod time.Time) tea.Cmd {
 
 func runYapiCmd(path string) tea.Cmd {
 	return func() tea.Msg {
-		analysis, err := validation.AnalyzeConfigFile(path)
+		analysis, result, err := engine.RunConfig(
+			context.Background(),
+			path,
+			runner.Options{NoColor: false},
+		)
+
 		if err != nil {
-			return runResultMsg{err: fmt.Errorf("analysis error: %w", err)}
+			return runResultMsg{err: err}
+		}
+		if analysis == nil {
+			return runResultMsg{err: fmt.Errorf("no analysis produced")}
 		}
 
-		var outputText string
+		var b strings.Builder
 
-		// Warnings
+		// Render warnings/diagnostics in TUI style.
 		for _, w := range analysis.Warnings {
-			outputText += theme.Warn.Render("[WARN] "+w) + "\n"
+			fmt.Fprintln(&b, theme.Warn.Render("[WARN] "+w))
 		}
-
-		// Diagnostics
 		for _, d := range analysis.Diagnostics {
-			prefix := "[INFO]"
-			style := theme.Info
+			prefix, style := "[INFO]", theme.Info
 			if d.Severity == validation.SeverityWarning {
-				prefix = "[WARN]"
-				style = theme.Warn
+				prefix, style = "[WARN]", theme.Warn
 			}
 			if d.Severity == validation.SeverityError {
-				prefix = "[ERROR]"
-				style = theme.Error
+				prefix, style = "[ERROR]", theme.Error
 			}
-			outputText += style.Render(prefix+" "+d.Message) + "\n"
+			fmt.Fprintln(&b, style.Render(prefix+" "+d.Message))
 		}
 
-		if analysis.HasErrors() {
-			return runResultMsg{content: outputText, err: nil}
+		if analysis.HasErrors() || result == nil {
+			return runResultMsg{content: b.String()}
 		}
 
-		req := analysis.Request
-		if req == nil {
-			return runResultMsg{err: fmt.Errorf("no request parsed")}
+		if b.Len() > 0 {
+			b.WriteString("\n")
 		}
 
-		if outputText != "" {
-			outputText += "\n"
-		}
+		out := output.Highlight(result.Body, result.ContentType, false)
+		b.WriteString(out)
 
-		// Create executor
-		httpClient := &http.Client{Timeout: 30 * time.Second}
-		factory := executor.NewFactory(httpClient)
-		exec, err := factory.Create(req.Metadata["transport"])
-		if err != nil {
-			return runResultMsg{err: err}
+		return runResultMsg{
+			content:  b.String(),
+			duration: result.Duration,
 		}
-
-		opts := runner.Options{NoColor: false}
-		output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
-		if err != nil {
-			return runResultMsg{err: err}
-		}
-
-		return runResultMsg{content: outputText + output, duration: result.Duration}
 	}
 }
 

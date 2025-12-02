@@ -11,28 +11,28 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"yapi.run/cli/internal/executor"
+	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"
+	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/tui"
 	"yapi.run/cli/internal/validation"
 )
 
 type rootCommand struct {
-	urlOverride     string
-	noColor         bool
-	httpClient      *http.Client
-	executorFactory *executor.Factory
+	urlOverride string
+	noColor     bool
+	httpClient  *http.Client
+	engine      *core.Engine
 }
 
 func main() {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-	}
+	httpClient := &http.Client{Timeout: 30 * time.Second}
 	app := &rootCommand{
-		httpClient:      httpClient,
-		executorFactory: executor.NewFactory(httpClient),
+		httpClient: httpClient,
+		engine:     core.NewEngine(httpClient),
 	}
+
 	rootCmd := &cobra.Command{
 		Use:   "yapi",
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
@@ -119,15 +119,12 @@ func (app *rootCommand) watchConfigPath(path string) {
 		log.Fatalf("Failed to resolve path: %v", err)
 	}
 
-	// Initial run
 	clearScreen()
 	printWatchHeader(absPath)
 	app.runConfigPathSafe(absPath)
 
-	// Get initial mod time
 	lastMod := getModTime(absPath)
 
-	// Poll for changes
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -167,24 +164,27 @@ type runContext struct {
 
 // executeRun is the unified execution pipeline for both Run and Watch modes.
 func (app *rootCommand) executeRun(ctx runContext) {
-	analysis, err := validation.AnalyzeConfigFile(ctx.path)
+	opts := runner.Options{
+		URLOverride: app.urlOverride,
+		NoColor:     app.noColor,
+	}
+
+	analysis, result, err := app.engine.RunConfig(context.Background(), ctx.path, opts)
 	if err != nil {
 		app.handleError(err, ctx.strict)
 		return
 	}
 
-	// Print errors only (warnings come after output)
-	app.printErrors(analysis, ctx.strict)
-
-	if analysis.HasErrors() {
+	if analysis == nil || analysis.Request == nil {
+		app.printErrors(analysis, ctx.strict)
 		if ctx.strict {
 			os.Exit(1)
 		}
 		return
 	}
 
-	req := analysis.Request
-	if req == nil {
+	app.printErrors(analysis, ctx.strict)
+	if analysis.HasErrors() {
 		if ctx.strict {
 			os.Exit(1)
 		}
@@ -195,25 +195,10 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		logHistory(ctx.path, app.urlOverride)
 	}
 
-	exec, err := app.createExecutor(req.Metadata["transport"])
-	if err != nil {
-		app.handleError(err, ctx.strict)
-		return
+	if result != nil {
+		fmt.Println(output.Highlight(result.Body, result.ContentType, app.noColor))
+		printResultMeta(result)
 	}
-
-	opts := runner.Options{
-		URLOverride: app.urlOverride,
-		NoColor:     app.noColor,
-	}
-
-	output, result, err := runner.RunAndFormat(context.Background(), exec, req, nil, opts)
-	if err != nil {
-		app.handleError(err, ctx.strict)
-		return
-	}
-
-	fmt.Println(output)
-	printResultMeta(result)
 	app.printWarnings(analysis, ctx.strict)
 }
 
@@ -226,52 +211,64 @@ func (app *rootCommand) handleError(err error, strict bool) {
 	}
 }
 
-// printErrors prints only error-level diagnostics (before request runs)
-func (app *rootCommand) printErrors(analysis *validation.Analysis, strict bool) {
+// printDiagnostics prints diagnostics filtered by a predicate.
+func (app *rootCommand) printDiagnostics(
+	analysis *validation.Analysis,
+	strict bool,
+	filter func(validation.Diagnostic) bool,
+) {
+	if analysis == nil {
+		return
+	}
+
 	out := os.Stdout
 	if strict {
 		out = os.Stderr
 	}
 
 	for _, d := range analysis.Diagnostics {
-		if d.Severity != validation.SeverityError {
+		if !filter(d) {
 			continue
 		}
-		lineInfo := ""
-		if d.Line >= 0 {
-			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
-		}
-		fmt.Fprintf(out, "\033[31m[ERROR]%s %s\033[0m\n", lineInfo, d.Message)
-	}
-}
-
-// printWarnings prints warnings and info diagnostics (after output)
-func (app *rootCommand) printWarnings(analysis *validation.Analysis, strict bool) {
-	out := os.Stdout
-	if strict {
-		out = os.Stderr
-	}
-
-	for _, w := range analysis.Warnings {
-		fmt.Fprintf(out, "\033[33m[WARN] %s\033[0m\n", w)
-	}
-
-	for _, d := range analysis.Diagnostics {
-		if d.Severity == validation.SeverityError {
-			continue
-		}
-		prefix := "[INFO]"
-		color := "\033[36m"
+		color, prefix := "\033[36m", "[INFO]"
 		if d.Severity == validation.SeverityWarning {
-			prefix = "[WARN]"
-			color = "\033[33m"
+			color, prefix = "\033[33m", "[WARN]"
 		}
+		if d.Severity == validation.SeverityError {
+			color, prefix = "\033[31m", "[ERROR]"
+		}
+
 		lineInfo := ""
 		if d.Line >= 0 {
 			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
 		}
 		fmt.Fprintf(out, "%s%s%s %s\033[0m\n", color, prefix, lineInfo, d.Message)
 	}
+}
+
+func (app *rootCommand) printErrors(a *validation.Analysis, strict bool) {
+	app.printDiagnostics(a, strict, func(d validation.Diagnostic) bool {
+		return d.Severity == validation.SeverityError
+	})
+}
+
+func (app *rootCommand) printWarnings(a *validation.Analysis, strict bool) {
+	if a == nil {
+		return
+	}
+
+	out := os.Stdout
+	if strict {
+		out = os.Stderr
+	}
+
+	for _, w := range a.Warnings {
+		fmt.Fprintf(out, "\033[33m[WARN] %s\033[0m\n", w)
+	}
+
+	app.printDiagnostics(a, strict, func(d validation.Diagnostic) bool {
+		return d.Severity != validation.SeverityError
+	})
 }
 
 // runConfigPathSafe runs a config file without exiting on error (for watch mode)
@@ -292,10 +289,6 @@ func newLSPCmd() *cobra.Command {
 // runConfigPath runs a config file in strict mode (exits on error)
 func (app *rootCommand) runConfigPath(path string) {
 	app.executeRun(runContext{path: path, strict: true})
-}
-
-func (app *rootCommand) createExecutor(transport string) (executor.Executor, error) {
-	return app.executorFactory.Create(transport)
 }
 
 // dim wraps text in ANSI dim escape codes
@@ -360,7 +353,6 @@ func newHistoryCmd() *cobra.Command {
 				return
 			}
 
-			// Get last N lines
 			start := len(lines) - count
 			if start < 0 {
 				start = 0
@@ -388,19 +380,16 @@ func logHistory(configPath, urlOverride string) {
 	}
 	defer f.Close()
 
-	// Get absolute path for the config
 	absPath, err := filepath.Abs(configPath)
 	if err != nil {
 		absPath = configPath
 	}
 
-	// Build the command string
 	cmd := fmt.Sprintf("yapi run \"%s\"", absPath)
 	if urlOverride != "" {
 		cmd += fmt.Sprintf(" -u \"%s\"", urlOverride)
 	}
 
-	// Write in format: <timestamp> | <command>
 	line := fmt.Sprintf("%d | %s\n", time.Now().Unix(), cmd)
 	f.WriteString(line)
 }

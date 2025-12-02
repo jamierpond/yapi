@@ -178,38 +178,36 @@ func (m *Model) filterFiles() {
 	m.loadFileContent()
 }
 
+// visibleWindow calculates the start and end indices for a scrolling window.
+func visibleWindow(total, cursor, max int) (start, end int) {
+	if max <= 0 || total <= max {
+		return 0, total
+	}
+	start = cursor - max/2
+	if start < 0 {
+		start = 0
+	}
+	end = start + max
+	if end > total {
+		end = total
+		start = end - max
+		if start < 0 {
+			start = 0
+		}
+	}
+	return
+}
+
 func (m Model) View() string {
-	// --- File List (with virtual scrolling) ---
 	fileList := ""
 	maxVisible := m.maxVisibleFiles
 	if maxVisible < 1 {
 		maxVisible = 10
 	}
-	var visibleFileStartIndex int
 
-	// Determine the slice of files to show
-	if len(m.filteredFiles) > maxVisible {
-		visibleFileStartIndex = m.cursor - (maxVisible / 2)
-		if visibleFileStartIndex < 0 {
-			visibleFileStartIndex = 0
-		}
-		endIndex := visibleFileStartIndex + maxVisible
-		if endIndex > len(m.filteredFiles) {
-			endIndex = len(m.filteredFiles)
-			visibleFileStartIndex = endIndex - maxVisible
-			if visibleFileStartIndex < 0 {
-				visibleFileStartIndex = 0
-			}
-		}
-	}
+	start, end := visibleWindow(len(m.filteredFiles), m.cursor, maxVisible)
 
-	endIndex := visibleFileStartIndex + maxVisible
-	if endIndex > len(m.filteredFiles) {
-		endIndex = len(m.filteredFiles)
-	}
-
-	// Render only the visible files
-	for i := visibleFileStartIndex; i < endIndex; i++ {
+	for i := start; i < end; i++ {
 		file := m.filteredFiles[i]
 		prefix := "  "
 		if _, ok := m.selectedSet[file]; ok {

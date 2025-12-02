@@ -121,12 +121,18 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 func (c *ConfigV1) expandEnvVars() {
 	c.URL = os.ExpandEnv(c.URL)
 	c.Path = os.ExpandEnv(c.Path)
-	for k, v := range c.Headers {
-		c.Headers[k] = os.ExpandEnv(v)
+	c.Headers = expandMapEnv(c.Headers)
+	c.Query = expandMapEnv(c.Query)
+}
+
+func expandMapEnv(m map[string]string) map[string]string {
+	if len(m) == 0 {
+		return m
 	}
-	for k, v := range c.Query {
-		c.Query[k] = os.ExpandEnv(v)
+	for k, v := range m {
+		m[k] = os.ExpandEnv(v)
 	}
+	return m
 }
 
 // setDefaults applies default values for Method
