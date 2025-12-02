@@ -395,17 +395,12 @@ another_bad_key: 123`
 	}
 
 	// Verify specific keys are detected
-	var msgs []string
-	for _, d := range unknownKeyDiags {
-		msgs = append(msgs, d.Message)
+	if !hasDiagnostic(unknownKeyDiags, "unknown_field") {
+		t.Errorf("expected warning about 'unknown_field', got %v", unknownKeyDiags)
 	}
 
-	if !containsSubstr(msgs, "unknown_field") {
-		t.Errorf("expected warning about 'unknown_field', got %v", msgs)
-	}
-
-	if !containsSubstr(msgs, "another_bad_key") {
-		t.Errorf("expected warning about 'another_bad_key', got %v", msgs)
+	if !hasDiagnostic(unknownKeyDiags, "another_bad_key") {
+		t.Errorf("expected warning about 'another_bad_key', got %v", unknownKeyDiags)
 	}
 }
 
