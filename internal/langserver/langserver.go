@@ -10,6 +10,7 @@ import (
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
+	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
 )
 
@@ -227,6 +228,22 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
+// valDesc represents a value with its description for completions
+type valDesc struct {
+	val  string
+	desc string
+}
+
+func toValueCompletion(v valDesc) protocol.CompletionItem {
+	return protocol.CompletionItem{
+		Label:         v.val,
+		Kind:          ptr(protocol.CompletionItemKindValue),
+		Detail:        ptr(v.desc),
+		InsertText:    ptr(v.val),
+		Documentation: v.desc,
+	}
+}
+
 // Schema definitions for completions
 var topLevelKeys = []struct {
 	key  string
@@ -255,10 +272,7 @@ var topLevelKeys = []struct {
 	{"close_after_send", "Close TCP connection after sending (boolean)"},
 }
 
-var methodValues = []struct {
-	val  string
-	desc string
-}{
+var methodValues = []valDesc{
 	{"GET", "HTTP GET request"},
 	{"POST", "HTTP POST request"},
 	{"PUT", "HTTP PUT request"},
@@ -270,19 +284,13 @@ var methodValues = []struct {
 	{"tcp", "Raw TCP request (deprecated)"},
 }
 
-var encodingValues = []struct {
-	val  string
-	desc string
-}{
+var encodingValues = []valDesc{
 	{"text", "Plain text encoding"},
 	{"hex", "Hexadecimal encoding"},
 	{"base64", "Base64 encoding"},
 }
 
-var contentTypeValues = []struct {
-	val  string
-	desc string
-}{
+var contentTypeValues = []valDesc{
 	{"application/json", "JSON content type"},
 }
 
@@ -315,35 +323,11 @@ func textDocumentCompletion(ctx *glsp.Context, params *protocol.CompletionParams
 
 		switch key {
 		case "method":
-			for _, m := range methodValues {
-				items = append(items, protocol.CompletionItem{
-					Label:         m.val,
-					Kind:          ptr(protocol.CompletionItemKindValue),
-					Detail:        ptr(m.desc),
-					InsertText:    ptr(m.val),
-					Documentation: m.desc,
-				})
-			}
+			items = utils.Map(methodValues, toValueCompletion)
 		case "encoding":
-			for _, e := range encodingValues {
-				items = append(items, protocol.CompletionItem{
-					Label:         e.val,
-					Kind:          ptr(protocol.CompletionItemKindValue),
-					Detail:        ptr(e.desc),
-					InsertText:    ptr(e.val),
-					Documentation: e.desc,
-				})
-			}
+			items = utils.Map(encodingValues, toValueCompletion)
 		case "content_type":
-			for _, ct := range contentTypeValues {
-				items = append(items, protocol.CompletionItem{
-					Label:         ct.val,
-					Kind:          ptr(protocol.CompletionItemKindValue),
-					Detail:        ptr(ct.desc),
-					InsertText:    ptr(ct.val),
-					Documentation: ct.desc,
-				})
-			}
+			items = utils.Map(contentTypeValues, toValueCompletion)
 		case "insecure", "plaintext", "close_after_send":
 			items = append(items,
 				protocol.CompletionItem{
