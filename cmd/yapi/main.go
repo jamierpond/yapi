@@ -248,7 +248,11 @@ func (app *rootCommand) printDiagnostics(analysis *validation.Analysis, strict b
 			prefix = "[ERROR]"
 			color = "\033[31m"
 		}
-		fmt.Fprintf(out, "%s%s %s\033[0m\n", color, prefix, d.Message)
+		lineInfo := ""
+		if d.Line >= 0 {
+			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1) // 0-indexed to 1-indexed
+		}
+		fmt.Fprintf(out, "%s%s%s %s\033[0m\n", color, prefix, lineInfo, d.Message)
 	}
 }
 
