@@ -31,6 +31,7 @@ make install
 1.  **Create a request file** (e.g., `get-user.yapi.yml`):
 
     ```yaml
+    yapi: v1
     url: https://jsonplaceholder.typicode.com/users/1
     method: GET
     ```
@@ -42,6 +43,8 @@ make install
     ```
 
 3.  **See the magic:** You get a beautifully highlighted, formatted response.
+
+> **Note:** The `yapi: v1` version tag is required at the top of all config files. This enables future schema evolution while maintaining backwards compatibility.
 
 -----
 
