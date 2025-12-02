@@ -13,34 +13,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/runner"
+	"yapi.run/cli/internal/tui/theme"
 	"yapi.run/cli/internal/validation"
-)
-
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FAFAFA")).
-			Background(lipgloss.Color("#7D56F4")).
-			Padding(0, 1)
-
-	infoStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666"))
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF6B6B"))
-
-	successStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#69DB7C"))
-
-	warnStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFE066"))
-
-	borderStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#7D56F4"))
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666"))
 )
 
 type watchModel struct {
@@ -96,20 +70,20 @@ func runYapiCmd(path string) tea.Cmd {
 
 		// Warnings
 		for _, w := range analysis.Warnings {
-			outputText += warnStyle.Render("[WARN] "+w) + "\n"
+			outputText += theme.Warn.Render("[WARN] "+w) + "\n"
 		}
 
 		// Diagnostics
 		for _, d := range analysis.Diagnostics {
 			prefix := "[INFO]"
-			style := infoStyle
+			style := theme.Info
 			if d.Severity == validation.SeverityWarning {
 				prefix = "[WARN]"
-				style = warnStyle
+				style = theme.Warn
 			}
 			if d.Severity == validation.SeverityError {
 				prefix = "[ERROR]"
-				style = errorStyle
+				style = theme.Error
 			}
 			outputText += style.Render(prefix+" "+d.Message) + "\n"
 		}
