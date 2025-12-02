@@ -159,19 +159,83 @@ func printWatchHeader(path string) {
 	fmt.Printf("\033[2m[%s]\033[0m\n\n", time.Now().Format("15:04:05"))
 }
 
-func (app *rootCommand) runConfigPathSafe(path string) {
-	analysis, err := validation.AnalyzeConfigFile(path)
+// runContext holds options for executeRun
+type runContext struct {
+	path   string
+	strict bool // If true, os.Exit(1) on errors; if false, print and return
+}
+
+// executeRun is the unified execution pipeline for both Run and Watch modes.
+func (app *rootCommand) executeRun(ctx runContext) {
+	analysis, err := validation.AnalyzeConfigFile(ctx.path)
 	if err != nil {
-		fmt.Printf("\033[31mError analyzing config: %v\033[0m\n", err)
+		app.handleError(err, ctx.strict)
 		return
 	}
 
-	// Print warnings first
-	for _, w := range analysis.Warnings {
-		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
+	// Print diagnostics
+	app.printDiagnostics(analysis, ctx.strict)
+
+	if analysis.HasErrors() {
+		if ctx.strict {
+			os.Exit(1)
+		}
+		return
 	}
 
-	// Print diagnostics
+	req := analysis.Request
+	if req == nil {
+		if ctx.strict {
+			os.Exit(1)
+		}
+		return
+	}
+
+	if ctx.strict {
+		logHistory(ctx.path, app.urlOverride)
+	}
+
+	exec, err := app.createExecutor(req.Metadata["transport"])
+	if err != nil {
+		app.handleError(err, ctx.strict)
+		return
+	}
+
+	opts := runner.Options{
+		URLOverride: app.urlOverride,
+		NoColor:     app.noColor,
+	}
+
+	output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
+	if err != nil {
+		app.handleError(err, ctx.strict)
+		return
+	}
+
+	fmt.Println(output)
+	printResultMeta(result)
+}
+
+// handleError prints an error, optionally exiting for strict mode
+func (app *rootCommand) handleError(err error, strict bool) {
+	if strict {
+		log.Fatalf("%v", err)
+	} else {
+		fmt.Printf("\033[31m%v\033[0m\n", err)
+	}
+}
+
+// printDiagnostics prints warnings and diagnostics to the appropriate output
+func (app *rootCommand) printDiagnostics(analysis *validation.Analysis, strict bool) {
+	out := os.Stdout
+	if strict {
+		out = os.Stderr
+	}
+
+	for _, w := range analysis.Warnings {
+		fmt.Fprintf(out, "\033[33m[WARN] %s\033[0m\n", w)
+	}
+
 	for _, d := range analysis.Diagnostics {
 		prefix := "[INFO]"
 		color := "\033[36m"
@@ -183,37 +247,13 @@ func (app *rootCommand) runConfigPathSafe(path string) {
 			prefix = "[ERROR]"
 			color = "\033[31m"
 		}
-		fmt.Printf("%s%s %s\033[0m\n", color, prefix, d.Message)
+		fmt.Fprintf(out, "%s%s %s\033[0m\n", color, prefix, d.Message)
 	}
+}
 
-	if analysis.HasErrors() {
-		return
-	}
-
-	req := analysis.Request
-	if req == nil {
-		return
-	}
-
-	exec, err := app.createExecutor(req.Metadata["transport"])
-	if err != nil {
-		fmt.Printf("\033[31m%v\033[0m\n", err)
-		return
-	}
-
-	opts := runner.Options{
-		URLOverride: app.urlOverride,
-		NoColor:     app.noColor,
-	}
-
-	output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
-	if err != nil {
-		fmt.Printf("\033[31m%v\033[0m\n", err)
-		return
-	}
-
-	fmt.Println(output)
-	printResultMeta(result)
+// runConfigPathSafe runs a config file without exiting on error (for watch mode)
+func (app *rootCommand) runConfigPathSafe(path string) {
+	app.executeRun(runContext{path: path, strict: false})
 }
 
 func newLSPCmd() *cobra.Command {
@@ -226,61 +266,9 @@ func newLSPCmd() *cobra.Command {
 	}
 }
 
+// runConfigPath runs a config file in strict mode (exits on error)
 func (app *rootCommand) runConfigPath(path string) {
-	analysis, err := validation.AnalyzeConfigFile(path)
-	if err != nil {
-		log.Fatalf("Failed to analyze config: %v", err)
-	}
-
-	// Print warnings first
-	for _, w := range analysis.Warnings {
-		fmt.Fprintf(os.Stderr, "\033[33m[WARN] %s\033[0m\n", w)
-	}
-
-	// Print diagnostics and bail on errors
-	for _, d := range analysis.Diagnostics {
-		prefix := "[INFO]"
-		color := "\033[36m"
-		if d.Severity == validation.SeverityWarning {
-			prefix = "[WARN]"
-			color = "\033[33m"
-		}
-		if d.Severity == validation.SeverityError {
-			prefix = "[ERROR]"
-			color = "\033[31m"
-		}
-		fmt.Fprintf(os.Stderr, "%s%s %s\033[0m\n", color, prefix, d.Message)
-	}
-
-	if analysis.HasErrors() {
-		os.Exit(1)
-	}
-
-	// Request is only available if parsing succeeded
-	req := analysis.Request
-	if req == nil {
-		os.Exit(1)
-	}
-
-	logHistory(path, app.urlOverride)
-
-	exec, err := app.createExecutor(req.Metadata["transport"])
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	opts := runner.Options{
-		URLOverride: app.urlOverride,
-		NoColor:     app.noColor,
-	}
-
-	output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	fmt.Println(output)
-	printResultMeta(result)
+	app.executeRun(runContext{path: path, strict: true})
 }
 
 func (app *rootCommand) createExecutor(transport string) (executor.Executor, error) {
