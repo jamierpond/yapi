@@ -193,14 +193,14 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.duration = msg.duration
 		if msg.err != nil {
 			m.err = msg.err
-			m.content = errorStyle.Render(msg.err.Error())
+			m.content = theme.Error.Render(msg.err.Error())
 			m.status = "error"
-			m.statusStyle = errorStyle
+			m.statusStyle = theme.Error
 		} else {
 			m.err = nil
 			m.content = msg.content
 			m.status = "ok"
-			m.statusStyle = successStyle
+			m.statusStyle = theme.Success
 		}
 		if m.ready {
 			m.viewport.SetContent(m.content)
@@ -223,11 +223,11 @@ func (m watchModel) View() string {
 
 	// Header
 	filename := filepath.Base(m.filepath)
-	title := titleStyle.Render(" yapi watch ")
-	fileInfo := infoStyle.Render(filename)
+	title := theme.Title.Render(" yapi watch ")
+	fileInfo := theme.Info.Render(filename)
 	statusText := m.statusStyle.Render(fmt.Sprintf("[%s]", m.status))
-	timeText := infoStyle.Render(m.lastRun.Format("15:04:05"))
-	durationText := infoStyle.Render(fmt.Sprintf("(%s)", m.duration.Round(time.Millisecond)))
+	timeText := theme.Info.Render(m.lastRun.Format("15:04:05"))
+	durationText := theme.Info.Render(fmt.Sprintf("(%s)", m.duration.Round(time.Millisecond)))
 
 	header := lipgloss.JoinHorizontal(
 		lipgloss.Center,
@@ -243,10 +243,10 @@ func (m watchModel) View() string {
 	)
 
 	// Footer
-	help := helpStyle.Render("q: quit • r: refresh • ↑/↓: scroll")
+	help := theme.Help.Render("q: quit • r: refresh • ↑/↓: scroll")
 
 	// Content
-	content := borderStyle.Width(m.width - 2).Render(m.viewport.View())
+	content := theme.BorderedBox.Width(m.width - 2).Render(m.viewport.View())
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
