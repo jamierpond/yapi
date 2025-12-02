@@ -19,4 +19,7 @@ graphql: |
     }
   }
 
+body:
+  fuck: foo
+
 jq_filter: ".data.characters.results[:3]"
