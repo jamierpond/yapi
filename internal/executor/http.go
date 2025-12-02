@@ -1,109 +1,61 @@
 package executor
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
+	"time"
 
-	"yapi.run/cli/internal/config"
+	"github.com/j-pond/yapi/internal/domain"
 )
 
-// HTTPResponse contains the response from an HTTP request.
-type HTTPResponse struct {
-	Body        string
-	ContentType string
-	StatusCode  int
-	RequestURL  string // The full constructed URL with query params
+// HTTPClient is an interface for a client that can send HTTP requests.
+// It's implemented by *http.Client.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
 // HTTPExecutor handles HTTP requests.
-type HTTPExecutor struct{}
-
-// NewHTTPExecutor creates a new HTTPExecutor.
-func NewHTTPExecutor() *HTTPExecutor {
-	return &HTTPExecutor{}
+type HTTPExecutor struct {
+	client HTTPClient
 }
 
-// Execute performs an HTTP request based on the provided YapiConfig.
-func (e *HTTPExecutor) Execute(cfg *config.Config) (*HTTPResponse, error) {
-	var reqBody io.Reader
+// NewHTTPExecutor creates a new HTTPExecutor.
+func NewHTTPExecutor(client HTTPClient) *HTTPExecutor {
+	return &HTTPExecutor{client: client}
+}
 
-	if cfg.Body != nil {
-		switch body := cfg.Body.(type) {
-		case string:
-			reqBody = bytes.NewBufferString(body)
-		case []byte:
-			reqBody = bytes.NewBuffer(body)
-		default:
-			b, err := json.Marshal(cfg.Body)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal request body: %w", err)
-			}
-			reqBody = bytes.NewBuffer(b)
-		}
-
-		// Default content type to application/json if body or json is present and not explicitly set
-		if cfg.ContentType == "" {
-			cfg.ContentType = "application/json"
-		}
-	}
-
-	baseURL, err := url.Parse(cfg.URL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse base URL: %w", err)
-	}
-
-	if cfg.Path != "" {
-		fullURL, err := baseURL.Parse(cfg.Path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse path: %w", err)
-		}
-		baseURL = fullURL
-	}
-
-	// Add query parameters
-	if len(cfg.Query) > 0 {
-		query := baseURL.Query()
-		for k, v := range cfg.Query {
-			query.Set(k, v)
-		}
-		baseURL.RawQuery = query.Encode()
-	}
-
-	req, err := http.NewRequest(cfg.Method, baseURL.String(), reqBody)
+// Execute performs an HTTP request based on the provided domain.Request.
+func (e *HTTPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, req.Method, req.URL, req.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set custom headers
-	for k, v := range cfg.Headers {
-		req.Header.Set(k, v)
+	for k, v := range req.Headers {
+		httpReq.Header.Set(k, v)
 	}
 
-	// Set Content-Type (can be overridden by headers map)
-	if cfg.ContentType != "" {
-		req.Header.Set("Content-Type", cfg.ContentType)
-	}
-
-	client := &http.Client{}
-	res, err := client.Do(req)
+	startTime := time.Now()
+	res, err := e.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer res.Body.Close()
+	duration := time.Since(startTime)
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+	// Convert http.Header to map[string]string
+	headers := make(map[string]string)
+	for k, v := range res.Header {
+		if len(v) > 0 {
+			headers[k] = v[0]
+		}
 	}
 
-	return &HTTPResponse{
-		Body:        string(body),
-		ContentType: res.Header.Get("Content-Type"),
-		StatusCode:  res.StatusCode,
-		RequestURL:  baseURL.String(),
+	return &domain.Response{
+		StatusCode: res.StatusCode,
+		Headers:    headers,
+		Body:       res.Body,
+		Duration:   duration,
 	}, nil
 }

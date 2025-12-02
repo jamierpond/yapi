@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/j-pond/yapi/internal/domain"
 	"gopkg.in/yaml.v3"
 )
 
@@ -13,7 +14,7 @@ type Envelope struct {
 }
 
 type ParseResult struct {
-	Config   *Config // The IR
+	Request  *domain.Request
 	Warnings []string
 }
 
@@ -54,10 +55,10 @@ func parseV1(data []byte) (*ParseResult, error) {
 		return nil, err
 	}
 
-	internal, err := v1.ToInternal()
+	domainReq, err := v1.ToDomain()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ParseResult{Config: internal}, nil
+	return &ParseResult{Request: domainReq}, nil
 }
