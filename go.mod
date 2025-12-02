@@ -1,6 +1,6 @@
 module yapi.run/cli
 
-go 1.25.1
+go 1.24
 
 require (
 	codeberg.org/derat/htmlpretty v0.0.0-20241226124600-6358d6878bd9
