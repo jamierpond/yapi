@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -15,6 +16,34 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/mattn/go-isatty"
 )
+
+// getTTY returns input and output file handles for interactive TUI.
+// On Unix, it tries /dev/tty first to work when stdout is piped.
+// On Windows, it uses stdin/stdout directly.
+// Returns nil, nil if no TTY is available.
+func getTTY() (in, out *os.File, cleanup func()) {
+	cleanup = func() {} // no-op by default
+
+	// On Unix, try /dev/tty for piped scenarios
+	if runtime.GOOS != "windows" {
+		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+		if err == nil {
+			return tty, tty, func() { tty.Close() }
+		}
+	}
+
+	// Fall back to stdin/stdout if they're terminals
+	if isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd()) {
+		return os.Stdin, os.Stdout, cleanup
+	}
+
+	// Also check for Cygwin/MSYS terminals on Windows
+	if isatty.IsCygwinTerminal(os.Stdin.Fd()) && isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		return os.Stdin, os.Stdout, cleanup
+	}
+
+	return nil, nil, cleanup
+}
 
 // yapiFilePattern matches *.yapi.yaml or *.yapi.yml in subdirectories only
 var yapiFilePattern = regexp.MustCompile(`^.+/.+\.yapi\.ya?ml$`)
@@ -95,25 +124,16 @@ func FindConfigFileSingle() (string, error) {
 		return "", fmt.Errorf("no .yapi.yml files found")
 	}
 
-	var in, out *os.File
-	// Prefer /dev/tty for interactive TUI so it still works when stdout is piped.
-	// Example: yapi pick | jq
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	if err == nil {
-		in = tty
-		out = tty
-		defer tty.Close()
-	} else if isatty.IsTerminal(os.Stdout.Fd()) {
-		in = os.Stdin
-		out = os.Stdout
-	} else {
+	in, out, cleanup := getTTY()
+	defer cleanup()
+
+	if in == nil || out == nil {
 		// No TTY at all (CI, cron, etc) -> non-interactive fallback
 		return files[0], nil
 	}
 
 	// Render TUI to the chosen terminal, not to stdout.
-	renderer := lipgloss.NewRenderer(out)
-	lipgloss.SetDefaultRenderer(renderer)
+	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(out))
 
 	p := tea.NewProgram(
 		selector.New(files, false),
