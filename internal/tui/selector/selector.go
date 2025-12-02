@@ -158,11 +158,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case "pgup", "b":
+		case "pgup":
 			m.viewport.LineUp(5)
 			return m, nil
 
-		case "pgdown", "f":
+		case "pgdown":
 			m.viewport.LineDown(5)
 			return m, nil
 

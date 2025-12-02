@@ -19,6 +19,9 @@ type Result struct {
 	Warnings    []string
 	RequestURL  string        // The full constructed URL (HTTP/GraphQL only)
 	Duration    time.Duration // Time taken for the request
+	BodyLines   int
+	BodyChars   int
+	BodyBytes   int
 }
 
 // Options for execution
