@@ -1,11 +1,8 @@
-- vim mode in the playground
 - record videos to put on website
 - record videos for gifs for readme
 - add real lsp to playground (maybe over http, maybe wasm, local)
 - vscode extension
 - jetbrains extension
-- bug with `f` in fuzzy search mode
-- add number of lines, chars, mb to the output summary
 
 - add yapi version to top of all yapi file
 ```yapi
