@@ -78,14 +78,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		const leftPanelWidth = 50
 		const leftPanelPadding = 2
 
-		// Chrome heights: appStyle border(2) + padding(2) + header(1) + margin(1) + footer(2) + viewportBorder(2) + viewportPadding(2)
+		// Chrome heights: theme.App border(2) + padding(2) + header(1) + margin(1) + footer(2) + viewportBorder(2) + viewportPadding(2)
 		const chromeHeight = 12
 
 		if msg.Width < minWidthForHorizontalLayout || msg.Height < minHeightForHorizontalLayout {
 			m.isVertical = true
-			availableWidth := msg.Width - appStyle.GetHorizontalFrameSize()
+			availableWidth := msg.Width - theme.App.GetHorizontalFrameSize()
 			m.textInput.Width = availableWidth
-			m.viewport.Width = availableWidth - viewportContentStyle.GetHorizontalFrameSize()
+			m.viewport.Width = availableWidth - theme.ViewportContent.GetHorizontalFrameSize()
 			// In vertical mode, split remaining height between file list and preview
 			availableForContent := msg.Height - chromeHeight
 			// Give file list ~1/3, preview ~2/3, with minimums
@@ -95,7 +95,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.isVertical = false
 			m.maxVisibleFiles = 10
 			m.textInput.Width = leftPanelWidth
-			m.viewport.Width = msg.Width - appStyle.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - viewportContentStyle.GetHorizontalFrameSize()
+			m.viewport.Width = msg.Width - theme.App.GetHorizontalFrameSize() - leftPanelWidth - leftPanelPadding - theme.ViewportContent.GetHorizontalFrameSize()
 			m.viewport.Height = msg.Height - chromeHeight
 		}
 		return m, nil
@@ -213,12 +213,12 @@ func (m Model) View() string {
 		file := m.filteredFiles[i]
 		prefix := "  "
 		if _, ok := m.selectedSet[file]; ok {
-			prefix = lipgloss.NewStyle().Foreground(yapiAccent).Render("* ")
+			prefix = lipgloss.NewStyle().Foreground(theme.Accent).Render("* ")
 		}
 
-		style := itemStyle
+		style := theme.Item
 		if m.cursor == i {
-			style = selectedItemStyle
+			style = theme.SelectedItem
 		}
 
 		renderedLine := style.Render("> " + prefix + file)
@@ -228,7 +228,7 @@ func (m Model) View() string {
 		fileList += renderedLine + "\n"
 	}
 	// --- Viewport ---
-	viewportContent := viewportContentStyle.Render(m.viewport.View())
+	viewportContent := theme.ViewportContent.Render(m.viewport.View())
 
 	// --- Left Panel (input + file list) ---
 	leftPanel := lipgloss.JoinVertical(
@@ -249,7 +249,7 @@ func (m Model) View() string {
 	} else {
 		const leftPanelWidth = 50
 		const leftPanelPadding = 2
-		viewportTitle := titleStyle.Render("Preview")
+		viewportTitle := theme.TitleAccent.Render("Preview")
 		viewportFull := lipgloss.JoinVertical(lipgloss.Left, viewportTitle, viewportContent)
 		mainContent = lipgloss.JoinHorizontal(
 			lipgloss.Top,
@@ -259,7 +259,7 @@ func (m Model) View() string {
 	}
 
 	// --- Header ---
-	header := titleStyle.Render("🐑 yapi")
+	header := theme.TitleAccent.Render("yapi")
 
 	// --- Final Layout ---
 	var content string
@@ -276,10 +276,10 @@ func (m Model) View() string {
 			lipgloss.Left,
 			header,
 			lipgloss.NewStyle().MarginTop(1).Render(mainContent),
-			footerStyle.Render("↑/↓ move | type to filter | space select | enter accept | esc quit"),
+			theme.Footer.Render("↑/↓ move | type to filter | space select | enter accept | esc quit"),
 		)
 	}
-	return appStyle.Render(content)
+	return theme.App.Render(content)
 }
 
 func (m Model) SelectedList() []string {
