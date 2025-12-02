@@ -221,7 +221,7 @@ func printResultMeta(result *runner.Result) {
 func formatBytes(b int) string {
 	const unit = 1000
 	if b < unit {
-		return fmt.Sprintf("%d B", b)
+		return fmt.Sprintf("%dB", b)
 	}
 	div, exp := int64(unit), 0
 	for n := b / unit; n >= unit; n /= unit {
