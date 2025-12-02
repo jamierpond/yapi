@@ -26,7 +26,10 @@ func NewGraphQLExecutor() *GraphQLExecutor {
 }
 
 // Execute performs a GraphQL request
-func (e *GraphQLExecutor) Execute(cfg *config.Config) (*HTTPResponse, error) {
+func (e *GraphQLExecutor) Execute(originalCfg *config.Config) (*HTTPResponse, error) {
+	// Create a deep copy of the config to avoid mutating the original
+	cfg := *originalCfg
+
 	// Construct the GraphQL payload
 	payload := graphqlPayload{
 		Query:     cfg.Graphql,
@@ -39,14 +42,13 @@ func (e *GraphQLExecutor) Execute(cfg *config.Config) (*HTTPResponse, error) {
 		return nil, fmt.Errorf("failed to marshal graphql payload: %w", err)
 	}
 
-	// Create a copy of the config for HTTP execution
-	httpCfg := *cfg
-	httpCfg.Method = "POST"
-	httpCfg.Body = string(jsonBytes)
-	httpCfg.ContentType = "application/json"
+	// Modify the copy for HTTP execution
+	cfg.Method = "POST"
+	cfg.Body = string(jsonBytes)
+	cfg.ContentType = "application/json"
 	// Clear GraphQL fields to avoid confusion
-	httpCfg.Graphql = ""
-	httpCfg.Variables = nil
+	cfg.Graphql = ""
+	cfg.Variables = nil
 
-	return e.httpExec.Execute(&httpCfg)
+	return e.httpExec.Execute(&cfg)
 }

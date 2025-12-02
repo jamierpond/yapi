@@ -495,6 +495,20 @@ rpc: GetData`)
 	}
 }
 
+func TestValidateConfig_GraphQLOnly(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/graphql
+graphql: 'query { foo }'`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateConfig(res.Config)
+
+	if len(issues) != 0 {
+		t.Errorf("expected no issues for graphql-only config, got %d: %+v", len(issues), issues)
+	}
+}
+
 func TestValidateConfig_NoIssuesForMinimalValidTCP(t *testing.T) {
 	res, err := config.LoadFromString(`yapi: v1
 url: tcp://localhost:9000
