@@ -4,7 +4,6 @@ NAME := yapi
 
 
 install: build
-	@$(MAKE) lint
 	@echo "Installing yapi to $$(go env GOPATH)/bin..."
 	@cp ./bin/yapi $$(go env GOPATH)/bin/yapi
 	@codesign --sign - --force $$(go env GOPATH)/bin/yapi 2>/dev/null || true
