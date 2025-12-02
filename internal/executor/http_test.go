@@ -64,6 +64,22 @@ query:
 				"baz": {"qux"},
 			},
 		},
+		{
+			name: "URL with special characters in query requiring encoding",
+			yaml: `
+yapi: v1
+url: https://example.com
+path: /search
+method: GET
+query:
+  q: "fish in:name"
+  sort: stars`,
+			expectedPath: "/search",
+			expectedQuery: url.Values{
+				"q":    {"fish in:name"},
+				"sort": {"stars"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
