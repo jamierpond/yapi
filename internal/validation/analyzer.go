@@ -61,8 +61,8 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 			Severity: iss.Severity,
 			Field:    iss.Field,
 			Message:  iss.Message,
-			Line:     -1,
-			Col:      -1,
+			Line:     findFieldLine(text, iss.Field),
+			Col:      0,
 		})
 	}
 
@@ -114,8 +114,8 @@ func analyzeRequest(req *domain.Request, text string, warnings []string) *Analys
 			Severity: iss.Severity,
 			Field:    iss.Field,
 			Message:  iss.Message,
-			Line:     -1,
-			Col:      -1,
+			Line:     findFieldLine(text, iss.Field),
+			Col:      0,
 		})
 	}
 

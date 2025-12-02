@@ -153,7 +153,8 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		return
 	}
 
-	var diagnostics []protocol.Diagnostic
+	// Initialize to empty slice, not nil, so JSON serializes as [] not null
+	diagnostics := []protocol.Diagnostic{}
 
 	// Config-level warnings (missing yapi: v1 etc)
 	for _, w := range analysis.Warnings {
