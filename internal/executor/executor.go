@@ -23,17 +23,22 @@ func NewFactory(httpClient HTTPClient) *Factory {
 }
 
 // Create returns the appropriate executor for the given transport.
+// The returned executor is wrapped with timing middleware.
 func (f *Factory) Create(transport string) (Executor, error) {
+	var exec Executor
+
 	switch transport {
 	case "http":
-		return NewHTTPExecutor(f.httpClient), nil
+		exec = NewHTTPExecutor(f.httpClient)
 	case "graphql":
-		return NewGraphQLExecutor(f.httpClient), nil
+		exec = NewGraphQLExecutor(f.httpClient)
 	case "grpc":
-		return NewGRPCExecutor(), nil
+		exec = NewGRPCExecutor()
 	case "tcp":
-		return NewTCPExecutor(), nil
+		exec = NewTCPExecutor()
 	default:
 		return nil, fmt.Errorf("unsupported transport: %s", transport)
 	}
+
+	return WithTiming(exec), nil
 }
