@@ -86,10 +86,6 @@ func RunAndFormat(ctx context.Context, exec executor.Executor, req *domain.Reque
 	}
 
 	out := output.Highlight(result.Body, result.ContentType, opts.NoColor)
-	if len(result.Warnings) > 0 {
-		warningBlock := strings.Join(result.Warnings, "\n")
-		out = warningBlock + "\n\n" + out + "\n\n" + warningBlock
-	}
 
 	return out, result, nil
 }
