@@ -2,6 +2,8 @@ yapi: v1
 # GraphQL - List continents with their countries
 url: https://countries.trevorblades.com/graphql
 
+fish: somth
+
 graphql: |
   query {
     continents {
