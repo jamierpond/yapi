@@ -133,13 +133,18 @@ func ValidateRequest(req *domain.Request) []Issue {
 	}
 
 	hasBody := req.Body != nil
+	hasJSON := req.Metadata["body_source"] == "json"
 	hasGraphql := req.Metadata["graphql_query"] != ""
 
-	// Rule 6: graphql is mutually exclusive with body
+	// Rule 6: graphql is mutually exclusive with body/json
 	if hasGraphql && hasBody {
+		field := "body"
+		if hasJSON {
+			field = "json"
+		}
 		issues = append(issues, Issue{
 			Severity: SeverityError,
-			Field:    "graphql",
+			Field:    field,
 			Message:  "`graphql` cannot be used with `body` or `json`",
 		})
 	}
