@@ -13,7 +13,4 @@ graphql: |
     }
   }
 
-body:
-  format: json
-
 jq_filter: ".data.countries[:5]"
