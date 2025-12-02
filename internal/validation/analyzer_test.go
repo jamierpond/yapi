@@ -3,15 +3,14 @@ package validation
 import (
 	"strings"
 	"testing"
+
+	"yapi.run/cli/internal/utils"
 )
 
-func containsSubstr(msgs []string, substr string) bool {
-	for _, m := range msgs {
-		if strings.Contains(m, substr) {
-			return true
-		}
-	}
-	return false
+func hasDiagnostic(diags []Diagnostic, substr string) bool {
+	return utils.ContainsFunc(diags, func(d Diagnostic) bool {
+		return strings.Contains(d.Message, substr)
+	})
 }
 
 func TestAnalyzeConfig_ValidHTTP(t *testing.T) {
@@ -46,13 +45,8 @@ method: GET`
 		t.Fatal("expected errors for missing URL")
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
-	}
-
-	if !containsSubstr(msgs, "missing required field") {
-		t.Errorf("expected 'missing required field' message, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "missing required field") {
+		t.Errorf("expected 'missing required field' message, got %+v", a.Diagnostics)
 	}
 }
 
