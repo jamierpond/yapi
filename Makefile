@@ -2,6 +2,11 @@
 
 NAME := yapi
 
+
+deadcode:
+	@echo "Running deadcode analysis..."
+	@deadcode ./...
+
 install: build
 	@echo "Installing yapi to $$(go env GOPATH)/bin..."
 	@cp ./bin/yapi $$(go env GOPATH)/bin/yapi

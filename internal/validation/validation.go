@@ -30,25 +30,6 @@ type Issue struct {
 	Message  string // human-readable
 }
 
-// getURLScheme returns the protocol scheme from a URL
-func getURLScheme(url string) string {
-	urlLower := strings.ToLower(url)
-	switch {
-	case strings.HasPrefix(urlLower, schemeGRPCS):
-		return "grpcs"
-	case strings.HasPrefix(urlLower, schemeGRPC):
-		return "grpc"
-	case strings.HasPrefix(urlLower, schemeTCP):
-		return "tcp"
-	case strings.HasPrefix(urlLower, schemeHTTPS):
-		return "https"
-	case strings.HasPrefix(urlLower, schemeHTTP):
-		return "http"
-	default:
-		return ""
-	}
-}
-
 // isGRPCRequest returns true if this is a gRPC request
 func isGRPCRequest(req *domain.Request) bool {
 	return req.Metadata["transport"] == "grpc"
