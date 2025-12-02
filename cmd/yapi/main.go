@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"yapi.run/cli/internal/executor"
 	"github.com/spf13/cobra"
-	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/tui"
+	"yapi.run/cli/internal/validation"
 )
 
 type rootCommand struct {
@@ -160,17 +160,42 @@ func printWatchHeader(path string) {
 }
 
 func (app *rootCommand) runConfigPathSafe(path string) {
-	res, err := config.Load(path)
+	analysis, err := validation.AnalyzeConfigFile(path)
 	if err != nil {
-		fmt.Printf("\033[31mError loading config: %v\033[0m\n", err)
+		fmt.Printf("\033[31mError analyzing config: %v\033[0m\n", err)
 		return
 	}
 
-	for _, w := range res.Warnings {
+	// Print warnings first
+	for _, w := range analysis.Warnings {
 		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
-	exec, err := app.createExecutor(res.Request.Metadata["transport"])
+	// Print diagnostics
+	for _, d := range analysis.Diagnostics {
+		prefix := "[INFO]"
+		color := "\033[36m"
+		if d.Severity == validation.SeverityWarning {
+			prefix = "[WARN]"
+			color = "\033[33m"
+		}
+		if d.Severity == validation.SeverityError {
+			prefix = "[ERROR]"
+			color = "\033[31m"
+		}
+		fmt.Printf("%s%s %s\033[0m\n", color, prefix, d.Message)
+	}
+
+	if analysis.HasErrors() {
+		return
+	}
+
+	req := analysis.Request
+	if req == nil {
+		return
+	}
+
+	exec, err := app.createExecutor(req.Metadata["transport"])
 	if err != nil {
 		fmt.Printf("\033[31m%v\033[0m\n", err)
 		return
@@ -181,7 +206,7 @@ func (app *rootCommand) runConfigPathSafe(path string) {
 		NoColor:     app.noColor,
 	}
 
-	output, result, err := runner.RunAndFormat(context.Background(), exec, res.Request, res.Warnings, opts)
+	output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
 	if err != nil {
 		fmt.Printf("\033[31m%v\033[0m\n", err)
 		return
@@ -202,18 +227,44 @@ func newLSPCmd() *cobra.Command {
 }
 
 func (app *rootCommand) runConfigPath(path string) {
-	res, err := config.Load(path)
+	analysis, err := validation.AnalyzeConfigFile(path)
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("Failed to analyze config: %v", err)
 	}
 
-	for _, w := range res.Warnings {
-		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
+	// Print warnings first
+	for _, w := range analysis.Warnings {
+		fmt.Fprintf(os.Stderr, "\033[33m[WARN] %s\033[0m\n", w)
+	}
+
+	// Print diagnostics and bail on errors
+	for _, d := range analysis.Diagnostics {
+		prefix := "[INFO]"
+		color := "\033[36m"
+		if d.Severity == validation.SeverityWarning {
+			prefix = "[WARN]"
+			color = "\033[33m"
+		}
+		if d.Severity == validation.SeverityError {
+			prefix = "[ERROR]"
+			color = "\033[31m"
+		}
+		fmt.Fprintf(os.Stderr, "%s%s %s\033[0m\n", color, prefix, d.Message)
+	}
+
+	if analysis.HasErrors() {
+		os.Exit(1)
+	}
+
+	// Request is only available if parsing succeeded
+	req := analysis.Request
+	if req == nil {
+		os.Exit(1)
 	}
 
 	logHistory(path, app.urlOverride)
 
-	exec, err := app.createExecutor(res.Request.Metadata["transport"])
+	exec, err := app.createExecutor(req.Metadata["transport"])
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -223,7 +274,7 @@ func (app *rootCommand) runConfigPath(path string) {
 		NoColor:     app.noColor,
 	}
 
-	output, result, err := runner.RunAndFormat(context.Background(), exec, res.Request, res.Warnings, opts)
+	output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

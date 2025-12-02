@@ -2,17 +2,13 @@ package langserver
 
 import (
 	"strings"
-	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/validation"
 
-	"github.com/graphql-go/graphql/language/parser"
-	"github.com/graphql-go/graphql/language/source"
-	"github.com/itchyny/gojq"
 	"github.com/tliron/commonlog"
 	_ "github.com/tliron/commonlog/simple"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
+	"yapi.run/cli/internal/validation"
 )
 
 const lsName = "yapi language server"
@@ -139,60 +135,59 @@ func textDocumentDidSave(ctx *glsp.Context, params *protocol.DidSaveTextDocument
 }
 
 func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string) {
-	diagnostics := []protocol.Diagnostic{}
-
-	res, err := config.LoadFromString(text)
+	analysis, err := validation.AnalyzeConfigString(text)
 	if err != nil {
-		// YAML parse error - show at line 0
+		// Catastrophic error - send one diagnostic and bail
+		ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+			URI: uri,
+			Diagnostics: []protocol.Diagnostic{{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 0, Character: 0},
+					End:   protocol.Position{Line: 0, Character: 1},
+				},
+				Severity: ptr(protocol.DiagnosticSeverityError),
+				Source:   ptr("yapi"),
+				Message:  "internal validation error: " + err.Error(),
+			}},
+		})
+		return
+	}
+
+	var diagnostics []protocol.Diagnostic
+
+	// Config-level warnings (missing yapi: v1 etc)
+	for _, w := range analysis.Warnings {
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{Line: 0, Character: 0},
-				End:   protocol.Position{Line: 0, Character: 1},
+				End:   protocol.Position{Line: 0, Character: 100},
 			},
-			Severity: ptr(protocol.DiagnosticSeverityError),
+			Severity: ptr(protocol.DiagnosticSeverityWarning),
 			Source:   ptr("yapi"),
-			Message:  "invalid YAML: " + err.Error(),
+			Message:  w,
 		})
-	} else {
-		req := res.Request
-		for _, w := range res.Warnings {
-			diagnostics = append(diagnostics, protocol.Diagnostic{
-				Range: protocol.Range{
-					Start: protocol.Position{Line: 0, Character: 0},
-					End:   protocol.Position{Line: 0, Character: 100},
-				},
-				Severity: ptr(protocol.DiagnosticSeverityWarning),
-				Source:   ptr("yapi"),
-				Message:  w,
-			})
+	}
+
+	// Analyzer diagnostics
+	for _, d := range analysis.Diagnostics {
+		line := protocol.UInteger(0)
+		char := protocol.UInteger(0)
+		if d.Line >= 0 {
+			line = protocol.UInteger(d.Line)
 		}
-		issues := validation.ValidateRequest(req)
-		for _, issue := range issues {
-			line := findFieldLine(text, issue.Field)
-			diagnostics = append(diagnostics, protocol.Diagnostic{
-				Range: protocol.Range{
-					Start: protocol.Position{Line: line, Character: 0},
-					End:   protocol.Position{Line: line, Character: 100},
-				},
-				Severity: ptr(severityToProtocol(issue.Severity)),
-				Source:   ptr("yapi"),
-				Message:  issue.Message,
-			})
+		if d.Col >= 0 {
+			char = protocol.UInteger(d.Col)
 		}
 
-		// GraphQL syntax validation
-		if gqlQuery, ok := req.Metadata["graphql_query"]; ok && gqlQuery != "" {
-			gqlDiags := validateGraphQLSyntax(text, gqlQuery)
-			diagnostics = append(diagnostics, gqlDiags...)
-		}
-
-		// JQ syntax validation
-		if jqFilter, ok := req.Metadata["jq_filter"]; ok && jqFilter != "" {
-			jqDiags := validateJQSyntax(text, jqFilter)
-			diagnostics = append(diagnostics, jqDiags...)
-		}
-
-
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: line, Character: char},
+				End:   protocol.Position{Line: line, Character: 100},
+			},
+			Severity: ptr(severityToProtocol(d.Severity)),
+			Source:   ptr("yapi"),
+			Message:  d.Message,
+		})
 	}
 
 	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
@@ -200,73 +195,6 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		Diagnostics: diagnostics,
 	})
 }
-
-func findFieldLine(text string, field string) protocol.UInteger {
-	if field == "" {
-		return 0
-	}
-	lines := strings.Split(text, "\n")
-	for i, line := range lines {
-		if strings.HasPrefix(strings.TrimSpace(line), field+":") {
-			return protocol.UInteger(i)
-		}
-	}
-	return 0
-}
-
-func validateGraphQLSyntax(fullYamlText string, gqlQuery string) []protocol.Diagnostic {
-	src := source.NewSource(&source.Source{
-		Body: []byte(gqlQuery),
-		Name: "GraphQL Query",
-	})
-
-	_, err := parser.Parse(parser.ParseParams{Source: src})
-	if err == nil {
-		return nil
-	}
-
-	// Find where the "graphql:" block starts in the YAML file
-	blockStartLine := findFieldLine(fullYamlText, "graphql")
-
-	// The query content starts on the line after "graphql: |"
-	// so we add 1 to get to the actual query content
-	targetLine := blockStartLine + 1
-
-	return []protocol.Diagnostic{
-		{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: targetLine, Character: 0},
-				End:   protocol.Position{Line: targetLine + 1, Character: 0},
-			},
-			Severity: ptr(protocol.DiagnosticSeverityError),
-			Source:   ptr("yapi"),
-			Message:  "GraphQL syntax error: " + err.Error(),
-		},
-	}
-}
-
-func validateJQSyntax(fullYamlText string, jqFilter string) []protocol.Diagnostic {
-	_, err := gojq.Parse(jqFilter)
-	if err == nil {
-		return nil
-	}
-
-	// Find where the "jq_filter:" field is in the YAML file
-	targetLine := findFieldLine(fullYamlText, "jq_filter")
-
-	return []protocol.Diagnostic{
-		{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: targetLine, Character: 0},
-				End:   protocol.Position{Line: targetLine, Character: 100},
-			},
-			Severity: ptr(protocol.DiagnosticSeverityError),
-			Source:   ptr("yapi"),
-			Message:  "JQ syntax error: " + err.Error(),
-		},
-	}
-}
-
 
 func ptr[T any](v T) *T {
 	return &v
@@ -282,19 +210,6 @@ func severityToProtocol(s validation.Severity) protocol.DiagnosticSeverity {
 		return protocol.DiagnosticSeverityInformation
 	default:
 		return protocol.DiagnosticSeverityInformation
-	}
-}
-
-func severityToMessageType(s validation.Severity) protocol.MessageType {
-	switch s {
-	case validation.SeverityError:
-		return protocol.MessageTypeError
-	case validation.SeverityWarning:
-		return protocol.MessageTypeWarning
-	case validation.SeverityInfo:
-		return protocol.MessageTypeInfo
-	default:
-		return protocol.MessageTypeInfo
 	}
 }
 

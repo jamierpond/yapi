@@ -8,13 +8,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/executor"
-	"yapi.run/cli/internal/runner"
-
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"yapi.run/cli/internal/executor"
+	"yapi.run/cli/internal/runner"
+	"yapi.run/cli/internal/validation"
 )
 
 var (
@@ -88,22 +87,49 @@ func checkFileCmd(path string, lastMod time.Time) tea.Cmd {
 
 func runYapiCmd(path string) tea.Cmd {
 	return func() tea.Msg {
-		res, err := config.Load(path)
+		analysis, err := validation.AnalyzeConfigFile(path)
 		if err != nil {
-			return runResultMsg{err: fmt.Errorf("config error: %w", err)}
+			return runResultMsg{err: fmt.Errorf("analysis error: %w", err)}
 		}
 
-		var warningText string
-		if len(res.Warnings) > 0 {
-			for _, w := range res.Warnings {
-				warningText += warnStyle.Render("[WARN] "+w) + "\n"
+		var outputText string
+
+		// Warnings
+		for _, w := range analysis.Warnings {
+			outputText += warnStyle.Render("[WARN] "+w) + "\n"
+		}
+
+		// Diagnostics
+		for _, d := range analysis.Diagnostics {
+			prefix := "[INFO]"
+			style := infoStyle
+			if d.Severity == validation.SeverityWarning {
+				prefix = "[WARN]"
+				style = warnStyle
 			}
-			warningText += "\n"
+			if d.Severity == validation.SeverityError {
+				prefix = "[ERROR]"
+				style = errorStyle
+			}
+			outputText += style.Render(prefix+" "+d.Message) + "\n"
+		}
+
+		if analysis.HasErrors() {
+			return runResultMsg{content: outputText, err: nil}
+		}
+
+		req := analysis.Request
+		if req == nil {
+			return runResultMsg{err: fmt.Errorf("no request parsed")}
+		}
+
+		if outputText != "" {
+			outputText += "\n"
 		}
 
 		// Create executor
 		var exec executor.Executor
-		switch res.Request.Metadata["transport"] {
+		switch req.Metadata["transport"] {
 		case "http", "graphql":
 			exec = executor.NewHTTPExecutor(&http.Client{Timeout: 30 * time.Second})
 		case "grpc":
@@ -111,16 +137,16 @@ func runYapiCmd(path string) tea.Cmd {
 		case "tcp":
 			exec = executor.NewTCPExecutor()
 		default:
-			return runResultMsg{err: fmt.Errorf("unknown transport: %s", res.Request.Metadata["transport"])}
+			return runResultMsg{err: fmt.Errorf("unknown transport: %s", req.Metadata["transport"])}
 		}
 
 		opts := runner.Options{NoColor: false}
-		output, result, err := runner.RunAndFormat(context.Background(), exec, res.Request, res.Warnings, opts)
+		output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
 		if err != nil {
 			return runResultMsg{err: err}
 		}
 
-		return runResultMsg{content: warningText + output, duration: result.Duration}
+		return runResultMsg{content: outputText + output, duration: result.Duration}
 	}
 }
 

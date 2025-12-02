@@ -1,0 +1,395 @@
+package validation
+
+import (
+	"strings"
+	"testing"
+)
+
+func containsSubstr(msgs []string, substr string) bool {
+	for _, m := range msgs {
+		if strings.Contains(m, substr) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestAnalyzeConfig_ValidHTTP(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+method: GET`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if len(a.Diagnostics) != 0 {
+		t.Errorf("expected no diagnostics for valid HTTP config, got %d: %+v", len(a.Diagnostics), a.Diagnostics)
+	}
+
+	if a.Request == nil {
+		t.Fatal("expected Request to be populated")
+	}
+}
+
+func TestAnalyzeConfig_MissingURL(t *testing.T) {
+	yaml := `yapi: v1
+method: GET`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if !a.HasErrors() {
+		t.Fatal("expected errors for missing URL")
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "missing required field") {
+		t.Errorf("expected 'missing required field' message, got %+v", msgs)
+	}
+}
+
+func TestAnalyzeConfig_BadYAML(t *testing.T) {
+	yaml := `yapi: v1
+url: [invalid yaml`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if !a.HasErrors() {
+		t.Fatal("expected errors for invalid YAML")
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "invalid YAML") {
+		t.Errorf("expected 'invalid YAML' message, got %+v", msgs)
+	}
+}
+
+func TestAnalyzeConfig_BadGraphQL(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com/graphql
+graphql: |
+  query { foo( }`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "GraphQL syntax error") {
+		t.Fatalf("expected GraphQL syntax error, got %+v", msgs)
+	}
+
+	// Verify line number is set for GraphQL diagnostic
+	for _, d := range a.Diagnostics {
+		if strings.Contains(d.Message, "GraphQL") && d.Line < 0 {
+			t.Errorf("expected GraphQL diagnostic to have line number set")
+		}
+	}
+}
+
+func TestAnalyzeConfig_ValidGraphQL(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com/graphql
+graphql: |
+  query { foo }`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	// Should have no GraphQL syntax errors
+	for _, d := range a.Diagnostics {
+		if strings.Contains(d.Message, "GraphQL") {
+			t.Errorf("unexpected GraphQL diagnostic: %s", d.Message)
+		}
+	}
+}
+
+func TestAnalyzeConfig_BadJQ(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+jq_filter: .foo[`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "JQ syntax error") {
+		t.Fatalf("expected JQ syntax error, got %+v", msgs)
+	}
+
+	// Verify line number is set for JQ diagnostic
+	for _, d := range a.Diagnostics {
+		if strings.Contains(d.Message, "JQ") && d.Line < 0 {
+			t.Errorf("expected JQ diagnostic to have line number set")
+		}
+	}
+}
+
+func TestAnalyzeConfig_ValidJQ(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+jq_filter: .data.items[]`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	// Should have no JQ syntax errors
+	for _, d := range a.Diagnostics {
+		if strings.Contains(d.Message, "JQ") {
+			t.Errorf("unexpected JQ diagnostic: %s", d.Message)
+		}
+	}
+}
+
+func TestAnalyzeConfig_MissingVersion(t *testing.T) {
+	yaml := `url: http://example.com
+method: GET`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if len(a.Warnings) == 0 {
+		t.Error("expected warning for missing yapi version")
+	}
+
+	found := false
+	for _, w := range a.Warnings {
+		if strings.Contains(w, "Missing") && strings.Contains(w, "v1") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("expected warning about missing version, got %+v", a.Warnings)
+	}
+}
+
+func TestAnalyzeConfig_GRPCMissingRequirements(t *testing.T) {
+	yaml := `yapi: v1
+url: grpc://localhost:50051`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if !a.HasErrors() {
+		t.Fatal("expected errors for gRPC missing service/rpc")
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "service") {
+		t.Errorf("expected error about missing service, got %+v", msgs)
+	}
+
+	if !containsSubstr(msgs, "rpc") {
+		t.Errorf("expected error about missing rpc, got %+v", msgs)
+	}
+}
+
+func TestAnalyzeConfig_TCPInvalidEncoding(t *testing.T) {
+	yaml := `yapi: v1
+url: tcp://localhost:9000
+data: hello
+encoding: invalid`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if !a.HasErrors() {
+		t.Fatal("expected errors for invalid TCP encoding")
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "unsupported TCP encoding") {
+		t.Errorf("expected error about unsupported encoding, got %+v", msgs)
+	}
+}
+
+func TestAnalyzeConfig_UnknownHTTPMethod(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+method: FOOBAR`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	// Should have a warning, not an error
+	if a.HasErrors() {
+		t.Error("expected warning, not error, for unknown HTTP method")
+	}
+
+	var found bool
+	for _, d := range a.Diagnostics {
+		if d.Severity == SeverityWarning && strings.Contains(d.Message, "unknown HTTP method") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("expected warning about unknown HTTP method")
+	}
+}
+
+func TestAnalyzeConfig_GraphQLWithBody(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com/graphql
+graphql: query { foo }
+body:
+  key: value`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	if !a.HasErrors() {
+		t.Fatal("expected error for graphql + body")
+	}
+
+	var msgs []string
+	for _, d := range a.Diagnostics {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "cannot be used with") {
+		t.Errorf("expected error about graphql/body conflict, got %+v", msgs)
+	}
+}
+
+func TestHasErrors(t *testing.T) {
+	tests := []struct {
+		name       string
+		diags      []Diagnostic
+		wantErrors bool
+	}{
+		{
+			name:       "no diagnostics",
+			diags:      nil,
+			wantErrors: false,
+		},
+		{
+			name: "only warnings",
+			diags: []Diagnostic{
+				{Severity: SeverityWarning, Message: "warning"},
+			},
+			wantErrors: false,
+		},
+		{
+			name: "only info",
+			diags: []Diagnostic{
+				{Severity: SeverityInfo, Message: "info"},
+			},
+			wantErrors: false,
+		},
+		{
+			name: "has errors",
+			diags: []Diagnostic{
+				{Severity: SeverityError, Message: "error"},
+			},
+			wantErrors: true,
+		},
+		{
+			name: "mixed",
+			diags: []Diagnostic{
+				{Severity: SeverityWarning, Message: "warning"},
+				{Severity: SeverityError, Message: "error"},
+				{Severity: SeverityInfo, Message: "info"},
+			},
+			wantErrors: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Analysis{Diagnostics: tt.diags}
+			if got := a.HasErrors(); got != tt.wantErrors {
+				t.Errorf("HasErrors() = %v, want %v", got, tt.wantErrors)
+			}
+		})
+	}
+}
+
+func TestFindFieldLine(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+method: GET
+graphql: |
+  query { foo }
+jq_filter: .data`
+
+	tests := []struct {
+		field    string
+		wantLine int
+	}{
+		{"yapi", 0},
+		{"url", 1},
+		{"method", 2},
+		{"graphql", 3},
+		{"jq_filter", 5},
+		{"nonexistent", -1},
+		{"", -1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.field, func(t *testing.T) {
+			got := findFieldLine(yaml, tt.field)
+			if got != tt.wantLine {
+				t.Errorf("findFieldLine(%q) = %d, want %d", tt.field, got, tt.wantLine)
+			}
+		})
+	}
+}
+
+func TestFindFieldLine_EmptyText(t *testing.T) {
+	got := findFieldLine("", "field")
+	if got != -1 {
+		t.Errorf("findFieldLine with empty text = %d, want -1", got)
+	}
+}
