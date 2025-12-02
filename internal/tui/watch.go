@@ -1,12 +1,15 @@
 package tui
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/runner"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -98,8 +101,21 @@ func runYapiCmd(path string) tea.Cmd {
 			warningText += "\n"
 		}
 
+		// Create executor
+		var exec executor.Executor
+		switch res.Request.Metadata["transport"] {
+		case "http", "graphql":
+			exec = executor.NewHTTPExecutor(&http.Client{Timeout: 30 * time.Second})
+		case "grpc":
+			exec = executor.NewGRPCExecutor()
+		case "tcp":
+			exec = executor.NewTCPExecutor()
+		default:
+			return runResultMsg{err: fmt.Errorf("unknown transport: %s", res.Request.Metadata["transport"])}
+		}
+
 		opts := runner.Options{NoColor: false}
-		output, result, err := runner.RunAndFormat(res.Config, opts)
+		output, result, err := runner.RunAndFormat(context.Background(), exec, res.Request, res.Warnings, opts)
 		if err != nil {
 			return runResultMsg{err: err}
 		}

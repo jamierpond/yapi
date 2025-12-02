@@ -1,6 +1,7 @@
 package executor_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -61,16 +62,20 @@ close_after_send: true`, l.Addr().String(), expected)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
-	cfg := res.Config
+	req := res.Request
 
 	exec := executor.NewTCPExecutor()
-	result, err := exec.Execute(cfg)
+	result, err := exec.Execute(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
 
-	if result != expected {
-		t.Errorf("Expected response %q, got %q", expected, result)
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+	if string(body) != expected {
+		t.Errorf("Expected response %q, got %q", expected, string(body))
 	}
 	wg.Wait()
 }
@@ -121,16 +126,20 @@ close_after_send: true`, l.Addr().String(), hexData)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
-	cfg := res.Config
+	req := res.Request
 
 	exec := executor.NewTCPExecutor()
-	result, err := exec.Execute(cfg)
+	result, err := exec.Execute(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
 
-	if result != expected {
-		t.Errorf("Expected response %q, got %q", expected, result)
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+	if string(body) != expected {
+		t.Errorf("Expected response %q, got %q", expected, string(body))
 	}
 	wg.Wait()
 }
@@ -181,16 +190,20 @@ close_after_send: true`, l.Addr().String(), base64Data)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
-	cfg := res.Config
+	req := res.Request
 
 	exec := executor.NewTCPExecutor()
-	result, err := exec.Execute(cfg)
+	result, err := exec.Execute(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
 
-	if result != expected {
-		t.Errorf("Expected response %q, got %q", expected, result)
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+	if string(body) != expected {
+		t.Errorf("Expected response %q, got %q", expected, string(body))
 	}
 	wg.Wait()
 }

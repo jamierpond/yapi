@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/j-pond/yapi/internal/domain"
+	"yapi.run/cli/internal/domain"
 )
 
 // HTTPClient is an interface for a client that can send HTTP requests.

@@ -111,7 +111,6 @@ func FindConfigFileSingle() (string, error) {
 		return files[0], nil
 	}
 
-	os.Setenv("CLICOLOR_FORCE", "1")
 	// Render TUI to the chosen terminal, not to stdout.
 	renderer := lipgloss.NewRenderer(out)
 	lipgloss.SetDefaultRenderer(renderer)
@@ -149,7 +148,8 @@ func FindConfigFileMulti(multi bool) ([]string, error) {
 	}
 
 	var in, out *os.File
-	// Same TTY detection strategy as FindConfigFileSingle.
+	// Prefer /dev/tty for interactive TUI so it still works when stdout is piped.
+	// Example: yapi pick | jq
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err == nil {
 		in = tty
@@ -163,7 +163,6 @@ func FindConfigFileMulti(multi bool) ([]string, error) {
 		return files, nil
 	}
 
-	os.Setenv("CLICOLOR_FORCE", "1")
 	lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(out))
 
 	p := tea.NewProgram(

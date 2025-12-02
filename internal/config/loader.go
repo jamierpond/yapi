@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/j-pond/yapi/internal/domain"
+	"yapi.run/cli/internal/domain"
 	"gopkg.in/yaml.v3"
 )
 

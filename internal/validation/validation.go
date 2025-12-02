@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/domain"
 )
 
 // URL scheme constants
@@ -49,30 +49,27 @@ func getURLScheme(url string) string {
 	}
 }
 
-// isGRPCRequest returns true if this is a gRPC request (by method or URL scheme)
-func isGRPCRequest(cfg *config.Config) bool {
-	scheme := getURLScheme(cfg.URL)
-	return cfg.Method == "grpc" || scheme == "grpc" || scheme == "grpcs"
+// isGRPCRequest returns true if this is a gRPC request
+func isGRPCRequest(req *domain.Request) bool {
+	return req.Metadata["transport"] == "grpc"
 }
 
-// isTCPRequest returns true if this is a TCP request (by method or URL scheme)
-func isTCPRequest(cfg *config.Config) bool {
-	scheme := getURLScheme(cfg.URL)
-	return cfg.Method == "tcp" || scheme == "tcp"
+// isTCPRequest returns true if this is a TCP request
+func isTCPRequest(req *domain.Request) bool {
+	return req.Metadata["transport"] == "tcp"
 }
 
 // isHTTPRequest returns true if this is an HTTP request
-func isHTTPRequest(cfg *config.Config) bool {
-	return !isGRPCRequest(cfg) && !isTCPRequest(cfg)
+func isHTTPRequest(req *domain.Request) bool {
+	return req.Metadata["transport"] == "http" || req.Metadata["transport"] == "graphql"
 }
 
-// ValidateConfig performs semantic validation on a parsed YapiConfig.
-// It must not read files, print, or talk to LSP/CLI. Pure logic only.
-func ValidateConfig(cfg *config.Config) []Issue {
+// ValidateRequest performs semantic validation on a domain.Request.
+func ValidateRequest(req *domain.Request) []Issue {
 	var issues []Issue
 
 	// Rule 1: url is required
-	if cfg.URL == "" {
+	if req.URL == "" {
 		issues = append(issues, Issue{
 			Severity: SeverityError,
 			Field:    "url",
@@ -81,7 +78,7 @@ func ValidateConfig(cfg *config.Config) []Issue {
 	}
 
 	// Rule 2: method validation
-	method := strings.ToUpper(cfg.Method)
+	method := strings.ToUpper(req.Method)
 	validHTTPMethods := map[string]bool{
 		"":        true, // empty is allowed, defaults to GET
 		"GET":     true,
@@ -93,36 +90,24 @@ func ValidateConfig(cfg *config.Config) []Issue {
 		"OPTIONS": true,
 	}
 
-	if cfg.Method == "grpc" {
+	if !validHTTPMethods[method] && isHTTPRequest(req) {
 		issues = append(issues, Issue{
 			Severity: SeverityWarning,
 			Field:    "method",
-			Message:  "`method: grpc` is deprecated, use a dedicated transport field instead",
-		})
-	} else if cfg.Method == "tcp" {
-		issues = append(issues, Issue{
-			Severity: SeverityWarning,
-			Field:    "method",
-			Message:  "`method: tcp` is deprecated, use a dedicated transport field instead",
-		})
-	} else if !validHTTPMethods[method] {
-		issues = append(issues, Issue{
-			Severity: SeverityWarning,
-			Field:    "method",
-			Message:  fmt.Sprintf("unknown HTTP method `%s`", cfg.Method),
+			Message:  fmt.Sprintf("unknown HTTP method `%s`", req.Method),
 		})
 	}
 
-	// Rule 3: gRPC requires service and rpc (by method or URL scheme)
-	if isGRPCRequest(cfg) {
-		if cfg.Service == "" {
+	// Rule 3: gRPC requires service and rpc
+	if isGRPCRequest(req) {
+		if req.Metadata["service"] == "" {
 			issues = append(issues, Issue{
 				Severity: SeverityError,
 				Field:    "service",
 				Message:  "gRPC config requires `service`",
 			})
 		}
-		if cfg.RPC == "" {
+		if req.Metadata["rpc"] == "" {
 			issues = append(issues, Issue{
 				Severity: SeverityError,
 				Field:    "rpc",
@@ -132,30 +117,23 @@ func ValidateConfig(cfg *config.Config) []Issue {
 	}
 
 	// Rule 4: TCP encoding validation
-	if isTCPRequest(cfg) && cfg.Encoding != "" {
+	if isTCPRequest(req) && req.Metadata["encoding"] != "" {
 		validEncodings := map[string]bool{
 			"text":   true,
 			"hex":    true,
 			"base64": true,
 		}
-		if !validEncodings[cfg.Encoding] {
+		if !validEncodings[req.Metadata["encoding"]] {
 			issues = append(issues, Issue{
 				Severity: SeverityError,
 				Field:    "encoding",
-				Message:  fmt.Sprintf("unsupported TCP encoding `%s` (allowed: text, hex, base64)", cfg.Encoding),
+				Message:  fmt.Sprintf("unsupported TCP encoding `%s` (allowed: text, hex, base64)", req.Metadata["encoding"]),
 			})
 		}
 	}
 
-	hasBody := false
-	if cfg.Body != nil {
-		if bodyMap, ok := cfg.Body.(map[string]interface{}); ok && len(bodyMap) > 0 {
-			hasBody = true
-		} else if _, ok := cfg.Body.(string); ok {
-			hasBody = true
-		}
-	}
-	hasGraphql := cfg.Graphql != ""
+	hasBody := req.Body != nil
+	hasGraphql := req.Metadata["graphql_query"] != ""
 
 	// Rule 6: graphql is mutually exclusive with body
 	if hasGraphql && hasBody {
@@ -163,15 +141,6 @@ func ValidateConfig(cfg *config.Config) []Issue {
 			Severity: SeverityError,
 			Field:    "graphql",
 			Message:  "`graphql` cannot be used with `body` or `json`",
-		})
-	}
-
-	// Rule 7: content_type required when body or json is present (HTTP only, not GraphQL)
-	if isHTTPRequest(cfg) && !hasGraphql && hasBody && cfg.ContentType == "" {
-		issues = append(issues, Issue{
-			Severity: SeverityError,
-			Field:    "content_type",
-			Message:  "`content_type` is required when `body` or `json` is present",
 		})
 	}
 

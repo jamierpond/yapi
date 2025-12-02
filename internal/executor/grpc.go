@@ -3,13 +3,14 @@ package executor
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fullstorydev/grpcurl"
+	"yapi.run/cli/internal/domain"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,8 +18,6 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-
-	"yapi.run/cli/internal/config"
 )
 
 // GRPCExecutor handles gRPC requests.
@@ -29,31 +28,37 @@ func NewGRPCExecutor() *GRPCExecutor {
 	return &GRPCExecutor{}
 }
 
-// Execute performs a gRPC request based on the provided YapiConfig.
-func (e *GRPCExecutor) Execute(cfg *config.Config) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // TODO: Make timeout configurable
-	defer cancel()
+// Execute performs a gRPC request based on the provided domain.Request.
+func (e *GRPCExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+	// Extract metadata
+	service := req.Metadata["service"]
+	rpc := req.Metadata["rpc"]
+	protoFile := req.Metadata["proto"]
+	protoPath := req.Metadata["proto_path"]
+	insecureFlag, _ := strconv.ParseBool(req.Metadata["insecure"])
+	plaintext, _ := strconv.ParseBool(req.Metadata["plaintext"])
 
-	target := strings.TrimPrefix(cfg.URL, "grpc://")
-
+	// Connection setup
+	target := strings.TrimPrefix(req.URL, "grpc://")
 	var opts []grpc.DialOption
-	// Default to insecure credentials for local development or when explicitly requested
-	if cfg.Insecure || cfg.Plaintext || strings.HasPrefix(target, "localhost") || strings.HasPrefix(target, "127.0.0.1") {
+	if insecureFlag || plaintext || strings.HasPrefix(target, "localhost") || strings.HasPrefix(target, "127.0.0.1") {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
 	// Establish connection
+	startTime := time.Now()
 	cc, err := grpc.DialContext(ctx, target, opts...)
 	if err != nil {
-		return "", fmt.Errorf("failed to dial gRPC target %s: %w", target, err)
+		return nil, fmt.Errorf("failed to dial gRPC target %s: %w", target, err)
 	}
 	defer cc.Close()
 
 	// Determine descriptor source
 	var descSource grpcurl.DescriptorSource
-	if cfg.Proto != "" {
+	if protoFile != "" {
 		// TODO: Handle proto and proto_path. For now, we focus on reflection.
-		return "", fmt.Errorf("proto file support not yet implemented")
+		_ = protoPath // Avoid unused variable error
+		return nil, fmt.Errorf("proto file support not yet implemented")
 	} else {
 		// Use server reflection
 		refClient := grpcreflect.NewClient(ctx, grpc_reflection_v1alpha.NewServerReflectionClient(cc))
@@ -62,10 +67,10 @@ func (e *GRPCExecutor) Execute(cfg *config.Config) (string, error) {
 
 	// Prepare request payload
 	var reqData []byte
-	if cfg.Body != nil {
-		reqData, err = json.Marshal(cfg.Body)
+	if req.Body != nil {
+		reqData, err = io.ReadAll(req.Body)
 		if err != nil {
-			return "", fmt.Errorf("failed to marshal gRPC request body: %w", err)
+			return nil, fmt.Errorf("failed to read gRPC request body: %w", err)
 		}
 	}
 
@@ -80,16 +85,23 @@ func (e *GRPCExecutor) Execute(cfg *config.Config) (string, error) {
 		}
 		reqData = nil // Clear data after first use for unary/server-streaming RPCs
 		return nil
-	} // Setup output buffer for handler
+	}
+
+	// Setup output buffer for handler
 	respBuf := bytes.NewBuffer(nil)
-	// TODO: Handle error output and verbose mode properly
 	formatter := grpcurl.NewJSONFormatter(true, nil)
 	handler := grpcurl.NewDefaultEventHandler(respBuf, descSource, formatter, false)
 
 	// Invoke RPC
-	if err := grpcurl.InvokeRPC(ctx, descSource, cc, cfg.Service+"/"+cfg.RPC, nil, handler, reqSupplier); err != nil {
-		return "", fmt.Errorf("failed to invoke gRPC RPC %s/%s: %w", cfg.Service, cfg.RPC, err)
+	if err := grpcurl.InvokeRPC(ctx, descSource, cc, service+"/"+rpc, nil, handler, reqSupplier); err != nil {
+		return nil, fmt.Errorf("failed to invoke gRPC RPC %s/%s: %w", service, rpc, err)
 	}
+	duration := time.Since(startTime)
 
-	return respBuf.String(), nil
+	return &domain.Response{
+		StatusCode: 0, // gRPC status is handled differently, 0 for OK
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		Body:       io.NopCloser(respBuf),
+		Duration:   duration,
+	}, nil
 }

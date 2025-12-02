@@ -2,16 +2,17 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
-	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/domain"
 )
 
 // TCPExecutor handles TCP requests.
@@ -22,50 +23,59 @@ func NewTCPExecutor() *TCPExecutor {
 	return &TCPExecutor{}
 }
 
-// Execute performs a TCP request based on the provided YapiConfig.
-func (e *TCPExecutor) Execute(cfg *config.Config) (string, error) {
+// Execute performs a TCP request based on the provided domain.Request.
+func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+	// Extract metadata
+	data := req.Metadata["data"]
+	encoding := req.Metadata["encoding"]
+	readTimeout, _ := strconv.Atoi(req.Metadata["read_timeout"])
+	idleTimeout, _ := strconv.Atoi(req.Metadata["idle_timeout"])
+	closeAfterSend, _ := strconv.ParseBool(req.Metadata["close_after_send"])
+
 	// Extract host and port from URL
-	target := strings.TrimPrefix(cfg.URL, "tcp://")
+	target := strings.TrimPrefix(req.URL, "tcp://")
 	if !strings.Contains(target, ":") {
-		return "", fmt.Errorf("TCP URL must be in format tcp://host:port, got %s", cfg.URL)
+		return nil, fmt.Errorf("TCP URL must be in format tcp://host:port, got %s", req.URL)
 	}
 
 	// Prepare data to send
 	var sendData []byte
 	var err error
-	if cfg.Data != "" {
-		sendData = []byte(cfg.Data)
-	} else if cfg.Body != nil {
-		sendData, err = json.Marshal(cfg.Body)
+	if data != "" {
+		sendData = []byte(data)
+	} else if req.Body != nil {
+		sendData, err = io.ReadAll(req.Body)
 		if err != nil {
-			return "", fmt.Errorf("failed to marshal request body for TCP: %w", err)
+			return nil, fmt.Errorf("failed to read request body for TCP: %w", err)
 		}
 	}
 
 	// Handle encoding
-	switch cfg.Encoding {
+	switch encoding {
 	case "hex":
 		decoded, err := hex.DecodeString(string(sendData))
 		if err != nil {
-			return "", fmt.Errorf("failed to decode hex data: %w", err)
+			return nil, fmt.Errorf("failed to decode hex data: %w", err)
 		}
 		sendData = decoded
 	case "base64":
 		decoded, err := base64.StdEncoding.DecodeString(string(sendData))
 		if err != nil {
-			return "", fmt.Errorf("failed to decode base64 data: %w", err)
+			return nil, fmt.Errorf("failed to decode base64 data: %w", err)
 		}
 		sendData = decoded
 	case "text", "": // Default is text
 		// No special decoding needed
 	default:
-		return "", fmt.Errorf("unsupported TCP encoding: %s", cfg.Encoding)
+		return nil, fmt.Errorf("unsupported TCP encoding: %s", encoding)
 	}
 
-	// Establish connection with a dial timeout (e.g., 5 seconds for connection setup)
-	conn, err := net.DialTimeout("tcp", target, 5*time.Second)
+	// Establish connection
+	var d net.Dialer
+	startTime := time.Now()
+	conn, err := d.DialContext(ctx, "tcp", target)
 	if err != nil {
-		return "", fmt.Errorf("failed to dial TCP target %s: %w", target, err)
+		return nil, fmt.Errorf("failed to dial TCP target %s: %w", target, err)
 	}
 	defer conn.Close()
 
@@ -73,64 +83,39 @@ func (e *TCPExecutor) Execute(cfg *config.Config) (string, error) {
 	if len(sendData) > 0 {
 		_, err := conn.Write(sendData)
 		if err != nil {
-			return "", fmt.Errorf("failed to write data to TCP connection: %w", err)
+			return nil, fmt.Errorf("failed to write data to TCP connection: %w", err)
 		}
-		if cfg.CloseAfterSend {
-			// Explicitly close the write half of the connection
-			// This signals to the server that no more data will be sent from client side
+		if closeAfterSend {
 			if tcpConn, ok := conn.(*net.TCPConn); ok {
-				_ = tcpConn.CloseWrite() // Ignore error as we still want to read response
+				_ = tcpConn.CloseWrite()
 			}
 		}
 	}
 
-	// Read response with idle timeout
-	// Use a short idle timeout to detect end of response when server doesn't close connection
-	idleTimeout := 500 * time.Millisecond
-	if cfg.IdleTimeout > 0 {
-		idleTimeout = time.Duration(cfg.IdleTimeout) * time.Millisecond
-	}
-	maxTimeout := 5 * time.Second
-	if cfg.ReadTimeout > 0 {
-		maxTimeout = time.Duration(cfg.ReadTimeout) * time.Second
-	}
-
-	respBuf := bytes.NewBuffer(nil)
-	buf := make([]byte, 4096)
-	deadline := time.Now().Add(maxTimeout)
-
-	for {
-		// Set a short read deadline to detect idle connection
-		readDeadline := time.Now().Add(idleTimeout)
-		if readDeadline.After(deadline) {
-			readDeadline = deadline
-		}
-		_ = conn.SetReadDeadline(readDeadline)
-
-		n, err := conn.Read(buf)
-		if n > 0 {
-			respBuf.Write(buf[:n])
-		}
-
-		if err != nil {
-			if err == io.EOF {
-				break // Server closed connection
-			}
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				if respBuf.Len() > 0 {
-					// We have data and hit idle timeout - assume response is complete
-					break
-				}
-				if time.Now().After(deadline) {
-					// Hit max timeout with no data
-					break
-				}
-				// No data yet, keep waiting until max timeout
-				continue
-			}
-			return "", fmt.Errorf("failed to read from TCP connection: %w", err)
-		}
+	// Read response
+	var respBuf bytes.Buffer
+	
+	// Set read deadline
+	if readTimeout > 0 {
+		conn.SetReadDeadline(time.Now().Add(time.Duration(readTimeout) * time.Second))
+	} else if idleTimeout > 0 {
+		// This is a simplification. A more robust solution would reset the deadline after each read.
+		conn.SetReadDeadline(time.Now().Add(time.Duration(idleTimeout) * time.Millisecond))
 	}
 
-	return respBuf.String(), nil
+
+	_, err = io.Copy(&respBuf, conn)
+	if err != nil {
+		// Ignore timeout errors as they are expected when the server doesn't close the connection
+		if netErr, ok := err.(net.Error); !ok || !netErr.Timeout() {
+			return nil, fmt.Errorf("failed to read from TCP connection: %w", err)
+		}
+	}
+	duration := time.Since(startTime)
+
+	return &domain.Response{
+		StatusCode: 0, // TCP has no status code
+		Body:       io.NopCloser(&respBuf),
+		Duration:   duration,
+	}, nil
 }

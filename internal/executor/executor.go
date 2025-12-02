@@ -3,7 +3,7 @@ package executor
 import (
 	"context"
 
-	"github.com/j-pond/yapi/internal/domain"
+	"yapi.run/cli/internal/domain"
 )
 
 type Executor interface {

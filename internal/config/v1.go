@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/j-pond/yapi/internal/domain"
+	"yapi.run/cli/internal/domain"
 )
 
 // ConfigV1 represents the v1 YAML schema
@@ -108,8 +108,27 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 	}
 
 	// Add transport-specific data to metadata
-	req.Metadata["transport"] = strings.ToLower(c.Method)
-	switch req.Metadata["transport"] {
+	var transport string
+	urlLower := strings.ToLower(c.URL)
+	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
+		transport = "grpc"
+	} else if strings.HasPrefix(urlLower, "tcp://") {
+		transport = "tcp"
+	} else if c.Graphql != "" {
+		transport = "graphql"
+	} else {
+		methodLower := strings.ToLower(c.Method)
+		if methodLower == "grpc" {
+			transport = "grpc"
+		} else if methodLower == "tcp" {
+			transport = "tcp"
+		} else {
+			transport = "http"
+		}
+	}
+	req.Metadata["transport"] = transport
+
+	switch transport {
 	case "grpc":
 		req.Metadata["service"] = c.Service
 		req.Metadata["rpc"] = c.RPC

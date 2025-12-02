@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"yapi.run/cli/internal/executor"
 	"github.com/spf13/cobra"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/langserver"
@@ -15,24 +18,29 @@ import (
 	"yapi.run/cli/internal/tui"
 )
 
-var (
-	configPath  string
+type rootCommand struct {
 	urlOverride string
 	noColor     bool
-)
+	httpClient  *http.Client
+}
 
 func main() {
+	app := &rootCommand{
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
 	rootCmd := &cobra.Command{
 		Use:   "yapi",
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
-		Run:   runInteractive,
+		Run:   app.runInteractive,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&urlOverride, "url", "u", "", "Override the URL specified in the config file")
-	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color output")
+	rootCmd.PersistentFlags().StringVarP(&app.urlOverride, "url", "u", "", "Override the URL specified in the config file")
+	rootCmd.PersistentFlags().BoolVar(&app.noColor, "no-color", false, "Disable color output")
 
-	rootCmd.AddCommand(newRunCmd())
-	rootCmd.AddCommand(newWatchCmd())
+	rootCmd.AddCommand(app.newRunCmd())
+	rootCmd.AddCommand(app.newWatchCmd())
 	rootCmd.AddCommand(newHistoryCmd())
 	rootCmd.AddCommand(newLSPCmd())
 
@@ -42,27 +50,27 @@ func main() {
 	}
 }
 
-func runInteractive(cmd *cobra.Command, args []string) {
+func (app *rootCommand) runInteractive(cmd *cobra.Command, args []string) {
 	selectedPath, err := tui.FindConfigFileSingle()
 	if err != nil {
 		log.Fatalf("Failed to select config file: %v", err)
 	}
-	runConfigPath(selectedPath)
+	app.runConfigPath(selectedPath)
 }
 
-func newRunCmd() *cobra.Command {
+func (app *rootCommand) newRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run <file>",
 		Short: "Run a request defined in a yapi config file",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			runConfigPath(args[0])
+			app.runConfigPath(args[0])
 		},
 	}
 	return cmd
 }
 
-func newWatchCmd() *cobra.Command {
+func (app *rootCommand) newWatchCmd() *cobra.Command {
 	var pretty bool
 	var noPretty bool
 
@@ -84,8 +92,6 @@ func newWatchCmd() *cobra.Command {
 				path = args[0]
 			}
 
-			// --pretty forces pretty mode, --no-pretty disables it
-			// Default: pretty in interactive mode, simple when file is passed
 			usePretty := pretty || (interactive && !noPretty)
 
 			if usePretty {
@@ -93,7 +99,7 @@ func newWatchCmd() *cobra.Command {
 					log.Fatalf("Watch failed: %v", err)
 				}
 			} else {
-				watchConfigPath(path)
+				app.watchConfigPath(path)
 			}
 		},
 	}
@@ -104,7 +110,7 @@ func newWatchCmd() *cobra.Command {
 	return cmd
 }
 
-func watchConfigPath(path string) {
+func (app *rootCommand) watchConfigPath(path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		log.Fatalf("Failed to resolve path: %v", err)
@@ -113,7 +119,7 @@ func watchConfigPath(path string) {
 	// Initial run
 	clearScreen()
 	printWatchHeader(absPath)
-	runConfigPathSafe(absPath)
+	app.runConfigPathSafe(absPath)
 
 	// Get initial mod time
 	lastMod := getModTime(absPath)
@@ -128,7 +134,7 @@ func watchConfigPath(path string) {
 			lastMod = currentMod
 			clearScreen()
 			printWatchHeader(absPath)
-			runConfigPathSafe(absPath)
+			app.runConfigPathSafe(absPath)
 		}
 	}
 }
@@ -150,24 +156,29 @@ func printWatchHeader(path string) {
 	fmt.Printf("\033[2m[%s]\033[0m\n\n", time.Now().Format("15:04:05"))
 }
 
-func runConfigPathSafe(path string) {
-	res, err := config.Load(path) // Updated signature
+func (app *rootCommand) runConfigPathSafe(path string) {
+	res, err := config.Load(path)
 	if err != nil {
 		fmt.Printf("\033[31mError loading config: %v\033[0m\n", err)
 		return
 	}
 
-	// Print Warnings
 	for _, w := range res.Warnings {
 		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
-	opts := runner.Options{
-		URLOverride: urlOverride,
-		NoColor:     noColor,
+	exec, err := app.createExecutor(res.Request.Metadata["transport"])
+	if err != nil {
+		fmt.Printf("\033[31m%v\033[0m\n", err)
+		return
 	}
 
-	output, result, err := runner.RunAndFormat(res.Config, opts)
+	opts := runner.Options{
+		URLOverride: app.urlOverride,
+		NoColor:     app.noColor,
+	}
+
+	output, result, err := runner.RunAndFormat(context.Background(), exec, res.Request, res.Warnings, opts)
 	if err != nil {
 		fmt.Printf("\033[31m%v\033[0m\n", err)
 		return
@@ -187,7 +198,7 @@ func newLSPCmd() *cobra.Command {
 	}
 }
 
-func runConfigPath(path string) {
+func (app *rootCommand) runConfigPath(path string) {
 	res, err := config.Load(path)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -197,20 +208,38 @@ func runConfigPath(path string) {
 		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
-	logHistory(path, urlOverride)
+	logHistory(path, app.urlOverride)
 
-	opts := runner.Options{
-		URLOverride: urlOverride,
-		NoColor:     noColor,
+	exec, err := app.createExecutor(res.Request.Metadata["transport"])
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
 
-	output, result, err := runner.RunAndFormat(res.Config, opts)
+	opts := runner.Options{
+		URLOverride: app.urlOverride,
+		NoColor:     app.noColor,
+	}
+
+	output, result, err := runner.RunAndFormat(context.Background(), exec, res.Request, res.Warnings, opts)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
 	fmt.Println(output)
 	printResultMeta(result)
+}
+
+func (app *rootCommand) createExecutor(transport string) (executor.Executor, error) {
+	switch transport {
+	case "http", "graphql":
+		return executor.NewHTTPExecutor(app.httpClient), nil
+	case "grpc":
+		return executor.NewGRPCExecutor(), nil
+	case "tcp":
+		return executor.NewTCPExecutor(), nil
+	default:
+		return nil, fmt.Errorf("unsupported transport: %s", transport)
+	}
 }
 
 // dim wraps text in ANSI dim escape codes

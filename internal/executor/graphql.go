@@ -1,10 +1,12 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
-	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/domain"
 )
 
 // graphqlPayload represents the standard GraphQL JSON envelope
@@ -19,21 +21,22 @@ type GraphQLExecutor struct {
 }
 
 // NewGraphQLExecutor creates a new GraphQLExecutor
-func NewGraphQLExecutor() *GraphQLExecutor {
+func NewGraphQLExecutor(client HTTPClient) *GraphQLExecutor {
 	return &GraphQLExecutor{
-		httpExec: NewHTTPExecutor(),
+		httpExec: NewHTTPExecutor(client),
 	}
 }
 
 // Execute performs a GraphQL request
-func (e *GraphQLExecutor) Execute(originalCfg *config.Config) (*HTTPResponse, error) {
-	// Create a deep copy of the config to avoid mutating the original
-	cfg := *originalCfg
-
+func (e *GraphQLExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
 	// Construct the GraphQL payload
 	payload := graphqlPayload{
-		Query:     cfg.Graphql,
-		Variables: cfg.Variables,
+		Query: req.Metadata["graphql_query"],
+	}
+	if vars, ok := req.Metadata["graphql_variables"]; ok && vars != "" {
+		if err := json.Unmarshal([]byte(vars), &payload.Variables); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal graphql variables: %w", err)
+		}
 	}
 
 	// Marshal to JSON
@@ -42,13 +45,17 @@ func (e *GraphQLExecutor) Execute(originalCfg *config.Config) (*HTTPResponse, er
 		return nil, fmt.Errorf("failed to marshal graphql payload: %w", err)
 	}
 
-	// Modify the copy for HTTP execution
-	cfg.Method = "POST"
-	cfg.Body = string(jsonBytes)
-	cfg.ContentType = "application/json"
-	// Clear GraphQL fields to avoid confusion
-	cfg.Graphql = ""
-	cfg.Variables = nil
+	// Create a new request for HTTP execution
+	httpReq := &domain.Request{
+		URL:     req.URL,
+		Method:  "POST",
+		Headers: req.Headers,
+		Body:    strings.NewReader(string(jsonBytes)),
+	}
+	if httpReq.Headers == nil {
+		httpReq.Headers = make(map[string]string)
+	}
+	httpReq.Headers["Content-Type"] = "application/json"
 
-	return e.httpExec.Execute(&cfg)
+	return e.httpExec.Execute(ctx, httpReq)
 }
