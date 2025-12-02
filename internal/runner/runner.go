@@ -32,7 +32,7 @@ type Options struct {
 
 // Run executes a yapi config and returns the result.
 // This is the single source of truth for config execution.
-func Run(cfg *config.YapiConfig, opts Options) (*Result, error) {
+func Run(cfg *config.Config, opts Options) (*Result, error) {
 	// Validate
 	issues := validation.ValidateConfig(cfg)
 	var warnings []string
@@ -92,7 +92,7 @@ func Run(cfg *config.YapiConfig, opts Options) (*Result, error) {
 }
 
 // RunAndFormat executes and returns highlighted output plus Result metadata
-func RunAndFormat(cfg *config.YapiConfig, opts Options) (string, *Result, error) {
+func RunAndFormat(cfg *config.Config, opts Options) (string, *Result, error) {
 	result, err := Run(cfg, opts)
 	if err != nil {
 		return "", nil, err
@@ -107,7 +107,7 @@ func RunAndFormat(cfg *config.YapiConfig, opts Options) (string, *Result, error)
 }
 
 // execute dispatches to the appropriate executor based on config
-func execute(cfg *config.YapiConfig) (body, ctype, requestURL string, duration time.Duration, err error) {
+func execute(cfg *config.Config) (body, ctype, requestURL string, duration time.Duration, err error) {
 	transport := detectTransport(cfg)
 
 	start := time.Now()
@@ -143,7 +143,7 @@ func execute(cfg *config.YapiConfig) (body, ctype, requestURL string, duration t
 }
 
 // detectTransport determines the transport type from URL scheme or config fields
-func detectTransport(cfg *config.YapiConfig) string {
+func detectTransport(cfg *config.Config) string {
 	urlLower := strings.ToLower(cfg.URL)
 
 	// Check URL scheme first
