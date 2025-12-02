@@ -1,7 +1,6 @@
 package langserver
 
 import (
-	"fmt"
 	"strings"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/validation"

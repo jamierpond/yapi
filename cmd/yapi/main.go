@@ -19,16 +19,19 @@ import (
 )
 
 type rootCommand struct {
-	urlOverride string
-	noColor     bool
-	httpClient  *http.Client
+	urlOverride     string
+	noColor         bool
+	httpClient      *http.Client
+	executorFactory *executor.Factory
 }
 
 func main() {
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	app := &rootCommand{
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		httpClient:      httpClient,
+		executorFactory: executor.NewFactory(httpClient),
 	}
 	rootCmd := &cobra.Command{
 		Use:   "yapi",
@@ -230,16 +233,7 @@ func (app *rootCommand) runConfigPath(path string) {
 }
 
 func (app *rootCommand) createExecutor(transport string) (executor.Executor, error) {
-	switch transport {
-	case "http", "graphql":
-		return executor.NewHTTPExecutor(app.httpClient), nil
-	case "grpc":
-		return executor.NewGRPCExecutor(), nil
-	case "tcp":
-		return executor.NewTCPExecutor(), nil
-	default:
-		return nil, fmt.Errorf("unsupported transport: %s", transport)
-	}
+	return app.executorFactory.Create(transport)
 }
 
 // dim wraps text in ANSI dim escape codes

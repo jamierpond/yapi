@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/executor"
 )
 
