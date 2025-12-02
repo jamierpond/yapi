@@ -393,3 +393,54 @@ func TestFindFieldLine_EmptyText(t *testing.T) {
 		t.Errorf("findFieldLine with empty text = %d, want -1", got)
 	}
 }
+
+func TestAnalyzeConfig_UnknownKeys(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+method: GET
+unknown_field: value
+another_bad_key: 123`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	// Should not have errors - unknown keys are warnings
+	if a.HasErrors() {
+		t.Error("expected no errors for unknown keys")
+	}
+
+	// Should have warnings about unknown keys
+	if len(a.Warnings) < 2 {
+		t.Errorf("expected at least 2 warnings for unknown keys, got %d: %v", len(a.Warnings), a.Warnings)
+	}
+
+	if !containsSubstr(a.Warnings, "unknown_field") {
+		t.Errorf("expected warning about 'unknown_field', got %v", a.Warnings)
+	}
+
+	if !containsSubstr(a.Warnings, "another_bad_key") {
+		t.Errorf("expected warning about 'another_bad_key', got %v", a.Warnings)
+	}
+}
+
+func TestAnalyzeConfig_NoUnknownKeys(t *testing.T) {
+	yaml := `yapi: v1
+url: http://example.com
+method: GET
+headers:
+  Authorization: Bearer token`
+
+	a, err := AnalyzeConfigString(yaml)
+	if err != nil {
+		t.Fatalf("AnalyzeConfigString error: %v", err)
+	}
+
+	// Should have no warnings about unknown keys
+	for _, w := range a.Warnings {
+		if strings.Contains(w, "unknown key") {
+			t.Errorf("unexpected unknown key warning: %s", w)
+		}
+	}
+}
