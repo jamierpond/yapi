@@ -3,10 +3,25 @@ package validation
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/domain"
 )
+
+// extractLineFromError attempts to extract a line number from YAML error messages.
+// YAML errors often look like "line 22: cannot unmarshal..." - returns 0-indexed line or -1 if not found.
+func extractLineFromError(errMsg string) int {
+	re := regexp.MustCompile(`line (\d+):`)
+	matches := re.FindStringSubmatch(errMsg)
+	if len(matches) >= 2 {
+		if lineNum, err := strconv.Atoi(matches[1]); err == nil {
+			return lineNum - 1 // Convert to 0-indexed
+		}
+	}
+	return -1
+}
 
 // Diagnostic is the canonical diagnostic type that both CLI and LSP use.
 type Diagnostic struct {
@@ -42,11 +57,13 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 	parseRes, err := config.LoadFromString(text)
 	if err != nil {
 		// YAML parse error - no Request available
+		// Try to extract line number from error message (e.g., "line 22: cannot unmarshal...")
+		line := extractLineFromError(err.Error())
 		diag := Diagnostic{
 			Severity: SeverityError,
 			Field:    "",
 			Message:  fmt.Sprintf("invalid YAML: %v", err),
-			Line:     0,
+			Line:     line,
 			Col:      0,
 		}
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
