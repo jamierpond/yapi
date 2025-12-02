@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # run all example yapi files
 set -eou pipefail
 
