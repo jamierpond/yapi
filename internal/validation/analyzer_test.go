@@ -411,17 +411,37 @@ another_bad_key: 123`
 		t.Error("expected no errors for unknown keys")
 	}
 
-	// Should have warnings about unknown keys
-	if len(a.Warnings) < 2 {
-		t.Errorf("expected at least 2 warnings for unknown keys, got %d: %v", len(a.Warnings), a.Warnings)
+	// Should have warning diagnostics about unknown keys
+	var unknownKeyDiags []Diagnostic
+	for _, d := range a.Diagnostics {
+		if d.Severity == SeverityWarning && strings.Contains(d.Message, "unknown key") {
+			unknownKeyDiags = append(unknownKeyDiags, d)
+		}
 	}
 
-	if !containsSubstr(a.Warnings, "unknown_field") {
-		t.Errorf("expected warning about 'unknown_field', got %v", a.Warnings)
+	if len(unknownKeyDiags) < 2 {
+		t.Errorf("expected at least 2 unknown key warnings, got %d", len(unknownKeyDiags))
 	}
 
-	if !containsSubstr(a.Warnings, "another_bad_key") {
-		t.Errorf("expected warning about 'another_bad_key', got %v", a.Warnings)
+	// Check that line numbers are set correctly
+	for _, d := range unknownKeyDiags {
+		if d.Line < 0 {
+			t.Errorf("expected line number for unknown key '%s', got %d", d.Field, d.Line)
+		}
+	}
+
+	// Verify specific keys are detected
+	var msgs []string
+	for _, d := range unknownKeyDiags {
+		msgs = append(msgs, d.Message)
+	}
+
+	if !containsSubstr(msgs, "unknown_field") {
+		t.Errorf("expected warning about 'unknown_field', got %v", msgs)
+	}
+
+	if !containsSubstr(msgs, "another_bad_key") {
+		t.Errorf("expected warning about 'another_bad_key', got %v", msgs)
 	}
 }
 

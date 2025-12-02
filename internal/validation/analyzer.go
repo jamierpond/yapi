@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/domain"
 )
@@ -89,6 +90,9 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 	// 3. JQ syntax validation
 	diags = append(diags, ValidateJQSyntax(text, req)...)
 
+	// 4. Unknown key detection
+	diags = append(diags, validateUnknownKeys(text)...)
+
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
@@ -142,6 +146,9 @@ func analyzeRequest(req *domain.Request, text string, warnings []string) *Analys
 	// 3. JQ syntax validation
 	diags = append(diags, ValidateJQSyntax(text, req)...)
 
+	// 4. Unknown key detection
+	diags = append(diags, validateUnknownKeys(text)...)
+
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
@@ -152,4 +159,29 @@ func analyzeRequest(req *domain.Request, text string, warnings []string) *Analys
 // readFileForAnalysis reads a file for analysis purposes.
 func readFileForAnalysis(path string) ([]byte, error) {
 	return os.ReadFile(path)
+}
+
+// validateUnknownKeys checks for unknown keys in the YAML and returns warnings.
+func validateUnknownKeys(text string) []Diagnostic {
+	if text == "" {
+		return nil
+	}
+
+	var raw map[string]interface{}
+	if err := yaml.Unmarshal([]byte(text), &raw); err != nil {
+		return nil
+	}
+
+	unknownKeys := config.FindUnknownKeys(raw)
+	var diags []Diagnostic
+	for _, key := range unknownKeys {
+		diags = append(diags, Diagnostic{
+			Severity: SeverityWarning,
+			Field:    key,
+			Message:  fmt.Sprintf("unknown key '%s' will be ignored", key),
+			Line:     findFieldLine(text, key),
+			Col:      0,
+		})
+	}
+	return diags
 }
