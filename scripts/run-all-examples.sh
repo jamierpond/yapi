@@ -1,6 +1,6 @@
 #!/bin/sh
 # run all example yapi files
-set -e
+set -eou pipefail
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 root_dir="$(cd "$script_dir/.." && pwd)"
