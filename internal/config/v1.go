@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 
@@ -84,11 +85,11 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 		finalURL += c.Path
 	}
 	if len(c.Query) > 0 {
-		queryParams := make([]string, 0, len(c.Query))
+		q := url.Values{}
 		for k, v := range c.Query {
-			queryParams = append(queryParams, fmt.Sprintf("%s=%s", k, v))
+			q.Set(k, v)
 		}
-		finalURL += "?" + strings.Join(queryParams, "&")
+		finalURL += "?" + q.Encode()
 	}
 
 	// 5. Build domain.Request
