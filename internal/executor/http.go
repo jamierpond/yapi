@@ -36,12 +36,10 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *domain.Request) (*domai
 		httpReq.Header.Set(k, v)
 	}
 
-	startTime := time.Now()
 	res, err := e.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	duration := time.Since(startTime)
 
 	// Convert http.Header to map[string]string
 	headers := make(map[string]string)
@@ -55,6 +53,5 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *domain.Request) (*domai
 		StatusCode: res.StatusCode,
 		Headers:    headers,
 		Body:       res.Body,
-		Duration:   duration,
 	}, nil
 }

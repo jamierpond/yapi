@@ -7,7 +7,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/fullstorydev/grpcurl"
 	"yapi.run/cli/internal/domain"
