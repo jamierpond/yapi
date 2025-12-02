@@ -132,7 +132,7 @@ func NewWatchModel(path string) watchModel {
 		filepath:    path,
 		content:     "Loading...",
 		status:      "starting",
-		statusStyle: infoStyle,
+		statusStyle: theme.Info,
 	}
 }
 
@@ -154,7 +154,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "r":
 			m.status = "running..."
-			m.statusStyle = infoStyle
+			m.statusStyle = theme.Info
 			return m, runYapiCmd(m.filepath)
 		}
 
@@ -185,7 +185,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastMod = info.ModTime()
 		}
 		m.status = "running..."
-		m.statusStyle = infoStyle
+		m.statusStyle = theme.Info
 		cmds = append(cmds, runYapiCmd(m.filepath))
 
 	case runResultMsg:
