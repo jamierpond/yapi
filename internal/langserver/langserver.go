@@ -8,6 +8,7 @@ import (
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
+	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
 )
@@ -264,15 +265,15 @@ var topLevelKeys = []struct {
 }
 
 var methodValues = []valDesc{
-	{"GET", "HTTP GET request"},
-	{"POST", "HTTP POST request"},
-	{"PUT", "HTTP PUT request"},
-	{"DELETE", "HTTP DELETE request"},
-	{"PATCH", "HTTP PATCH request"},
-	{"HEAD", "HTTP HEAD request"},
-	{"OPTIONS", "HTTP OPTIONS request"},
-	{"grpc", "gRPC request (deprecated)"},
-	{"tcp", "Raw TCP request (deprecated)"},
+	{constants.MethodGET, "HTTP GET request"},
+	{constants.MethodPOST, "HTTP POST request"},
+	{constants.MethodPUT, "HTTP PUT request"},
+	{constants.MethodDELETE, "HTTP DELETE request"},
+	{constants.MethodPATCH, "HTTP PATCH request"},
+	{constants.MethodHEAD, "HTTP HEAD request"},
+	{constants.MethodOPTIONS, "HTTP OPTIONS request"},
+	{constants.MethodGRPC, "gRPC request (DEPRECATED: use url: grpc://)"},
+	{constants.MethodTCP, "TCP request (DEPRECATED: use url: tcp://)"},
 }
 
 var encodingValues = []valDesc{

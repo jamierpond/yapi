@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 )
 
@@ -138,9 +139,9 @@ func expandMapEnv(m map[string]string) map[string]string {
 // setDefaults applies default values for Method
 func (c *ConfigV1) setDefaults() {
 	if c.Method == "" {
-		c.Method = "GET"
+		c.Method = constants.MethodGET
 	}
-	c.Method = strings.ToUpper(c.Method)
+	c.Method = constants.CanonicalizeMethod(c.Method)
 }
 
 // prepareBody processes the body/json fields and returns a reader, source identifier, and any error
@@ -189,18 +190,18 @@ func (c *ConfigV1) buildURL() string {
 // detectTransport determines the transport type from URL and method
 func (c *ConfigV1) detectTransport() string {
 	urlLower := strings.ToLower(c.URL)
-	methodLower := strings.ToLower(c.Method)
+	method := constants.CanonicalizeMethod(c.Method)
 
-	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") || methodLower == "grpc" {
-		return "grpc"
+	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") || method == constants.MethodGRPC {
+		return constants.TransportGRPC
 	}
-	if strings.HasPrefix(urlLower, "tcp://") || methodLower == "tcp" {
-		return "tcp"
+	if strings.HasPrefix(urlLower, "tcp://") || method == constants.MethodTCP {
+		return constants.TransportTCP
 	}
 	if c.Graphql != "" {
-		return "graphql"
+		return constants.TransportGraphQL
 	}
-	return "http"
+	return constants.TransportHTTP
 }
 
 // enrichMetadata adds transport-specific metadata to the request
@@ -209,14 +210,14 @@ func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
 	req.Metadata["transport"] = transport
 
 	switch transport {
-	case "grpc":
+	case constants.TransportGRPC:
 		req.Metadata["service"] = c.Service
 		req.Metadata["rpc"] = c.RPC
 		req.Metadata["proto"] = c.Proto
 		req.Metadata["proto_path"] = c.ProtoPath
 		req.Metadata["insecure"] = fmt.Sprintf("%t", c.Insecure)
 		req.Metadata["plaintext"] = fmt.Sprintf("%t", c.Plaintext)
-	case "tcp":
+	case constants.TransportTCP:
 		req.Metadata["data"] = c.Data
 		req.Metadata["encoding"] = c.Encoding
 		req.Metadata["read_timeout"] = fmt.Sprintf("%d", c.ReadTimeout)

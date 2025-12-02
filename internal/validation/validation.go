@@ -2,8 +2,8 @@ package validation
 
 import (
 	"fmt"
-	"strings"
 
+	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 )
 
@@ -32,17 +32,18 @@ type Issue struct {
 
 // isGRPCRequest returns true if this is a gRPC request
 func isGRPCRequest(req *domain.Request) bool {
-	return req.Metadata["transport"] == "grpc"
+	return req.Metadata["transport"] == constants.TransportGRPC
 }
 
 // isTCPRequest returns true if this is a TCP request
 func isTCPRequest(req *domain.Request) bool {
-	return req.Metadata["transport"] == "tcp"
+	return req.Metadata["transport"] == constants.TransportTCP
 }
 
 // isHTTPRequest returns true if this is an HTTP request
 func isHTTPRequest(req *domain.Request) bool {
-	return req.Metadata["transport"] == "http" || req.Metadata["transport"] == "graphql"
+	t := req.Metadata["transport"]
+	return t == constants.TransportHTTP || t == constants.TransportGraphQL
 }
 
 // ValidateRequest performs semantic validation on a domain.Request.
@@ -56,8 +57,8 @@ func ValidateRequest(req *domain.Request) []Issue {
 		add(SeverityError, "url", "missing required field `url`")
 	}
 
-	method := strings.ToUpper(req.Method)
-	if isHTTPRequest(req) && !validHTTPMethod(method) {
+	method := constants.CanonicalizeMethod(req.Method)
+	if isHTTPRequest(req) && method != "" && !constants.ValidHTTPMethods[method] {
 		add(SeverityWarning, "method", fmt.Sprintf("unknown HTTP method `%s`", req.Method))
 	}
 
@@ -85,15 +86,6 @@ func ValidateRequest(req *domain.Request) []Issue {
 	}
 
 	return issues
-}
-
-func validHTTPMethod(m string) bool {
-	switch m {
-	case "", "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS":
-		return true
-	default:
-		return false
-	}
 }
 
 func validEncoding(enc string) bool {

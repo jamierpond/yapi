@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 )
 
@@ -28,13 +29,13 @@ func (f *Factory) Create(transport string) (Executor, error) {
 	var exec Executor
 
 	switch transport {
-	case "http":
+	case constants.TransportHTTP:
 		exec = NewHTTPExecutor(f.httpClient)
-	case "graphql":
+	case constants.TransportGraphQL:
 		exec = NewGraphQLExecutor(f.httpClient)
-	case "grpc":
+	case constants.TransportGRPC:
 		exec = NewGRPCExecutor()
-	case "tcp":
+	case constants.TransportTCP:
 		exec = NewTCPExecutor()
 	default:
 		return nil, fmt.Errorf("unsupported transport: %s", transport)
