@@ -110,6 +110,10 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 		req.Headers["Content-Type"] = c.ContentType
 	}
 
+	if bodySource != "" {
+		req.Metadata["body_source"] = bodySource
+	}
+
 	// Add transport-specific data to metadata
 	var transport string
 	urlLower := strings.ToLower(c.URL)

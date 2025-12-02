@@ -18,5 +18,8 @@ graphql: |
     }
   }
 
+body:
+  foo: bar
+
 variables:
   code: "GB"

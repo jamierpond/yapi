@@ -32,8 +32,11 @@ body:
 		t.Fatal("expected graphql+body conflict diagnostic")
 	}
 
-	// graphql: is on line 4 (0-indexed)
-	if graphqlDiag.Line != 4 {
-		t.Errorf("expected graphql diagnostic on line 4, got %d", graphqlDiag.Line)
+	// body: is on line 5 (0-indexed)
+	if graphqlDiag.Line != 5 {
+		t.Errorf("expected body diagnostic on line 5, got %d", graphqlDiag.Line)
+	}
+	if graphqlDiag.Field != "body" {
+		t.Errorf("expected field 'body', got %q", graphqlDiag.Field)
 	}
 }
