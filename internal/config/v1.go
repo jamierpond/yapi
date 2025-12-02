@@ -60,7 +60,7 @@ type ConfigV1 struct {
 	Yapi           string                 `yaml:"yapi"` // The version tag
 	URL            string                 `yaml:"url"`
 	Path           string                 `yaml:"path,omitempty"`
-	Method         string                 `yaml:"method,omitempty"` // GET, POST, grpc, tcp
+	Method         string                 `yaml:"method,omitempty"` // HTTP method (GET, POST, PUT, DELETE, etc.)
 	ContentType    string                 `yaml:"content_type,omitempty"`
 	Headers        map[string]string      `yaml:"headers,omitempty"`
 	Body           map[string]interface{} `yaml:"body,omitempty"`
@@ -187,15 +187,14 @@ func (c *ConfigV1) buildURL() string {
 	return finalURL
 }
 
-// detectTransport determines the transport type from URL and method
+// detectTransport determines the transport type from URL scheme
 func (c *ConfigV1) detectTransport() string {
 	urlLower := strings.ToLower(c.URL)
-	method := constants.CanonicalizeMethod(c.Method)
 
-	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") || method == constants.MethodGRPC {
+	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
 		return constants.TransportGRPC
 	}
-	if strings.HasPrefix(urlLower, "tcp://") || method == constants.MethodTCP {
+	if strings.HasPrefix(urlLower, "tcp://") {
 		return constants.TransportTCP
 	}
 	if c.Graphql != "" {

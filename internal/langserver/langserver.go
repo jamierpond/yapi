@@ -272,8 +272,6 @@ var methodValues = []valDesc{
 	{constants.MethodPATCH, "HTTP PATCH request"},
 	{constants.MethodHEAD, "HTTP HEAD request"},
 	{constants.MethodOPTIONS, "HTTP OPTIONS request"},
-	{constants.MethodGRPC, "gRPC request (DEPRECATED: use url: grpc://)"},
-	{constants.MethodTCP, "TCP request (DEPRECATED: use url: tcp://)"},
 }
 
 var encodingValues = []valDesc{
