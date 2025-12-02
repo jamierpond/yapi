@@ -19,15 +19,18 @@ import (
 	"yapi.run/cli/internal/validation"
 )
 
-//go:embed icon.txt
-var logo string
-
 // ANSI color codes (matching theme orange accent #ff9e64)
 const (
 	colorOrange = "\033[38;2;255;158;100m"
 	colorReset  = "\033[0m"
 	colorDim    = "\033[2m"
 )
+
+const logo = `     ________  ________  ________   ________
+    ╱    ╱   ╲╱        ╲╱        ╲ ╱        ╲
+   ╱         ╱         ╱         ╱_╱       ╱
+   ╲__      ╱         ╱       __╱╱         ╱
+     ╲_____╱╲___╱____╱╲______╱   ╲________╱`
 
 type rootCommand struct {
 	urlOverride string
@@ -162,8 +165,10 @@ func clearScreen() {
 }
 
 func printWatchHeader(path string) {
-	fmt.Printf("\033[2m[watching %s]\033[0m\n", filepath.Base(path))
-	fmt.Printf("\033[2m[%s]\033[0m\n\n", time.Now().Format("15:04:05"))
+	fmt.Println(colorOrange + logo + colorReset)
+	fmt.Printf("\n%s🐑 yapi watch%s\n\n", colorOrange, colorReset)
+	fmt.Printf("%s[watching %s]%s\n", colorDim, filepath.Base(path), colorReset)
+	fmt.Printf("%s[%s]%s\n\n", colorDim, time.Now().Format("15:04:05"), colorReset)
 }
 
 // runContext holds options for executeRun

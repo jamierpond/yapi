@@ -210,7 +210,7 @@ func (m watchModel) View() string {
 
 	// Header
 	filename := filepath.Base(m.filepath)
-	title := theme.Title.Render(" yapi watch ")
+	title := theme.Title.Render(" 🐑 yapi watch ")
 	fileInfo := theme.Info.Render(filename)
 	statusText := m.statusStyle.Render(fmt.Sprintf("[%s]", m.status))
 	timeText := theme.Info.Render(m.lastRun.Format("15:04:05"))
