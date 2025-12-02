@@ -173,8 +173,8 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		return
 	}
 
-	// Print diagnostics
-	app.printDiagnostics(analysis, ctx.strict)
+	// Print errors only (warnings come after output)
+	app.printErrors(analysis, ctx.strict)
 
 	if analysis.HasErrors() {
 		if ctx.strict {
