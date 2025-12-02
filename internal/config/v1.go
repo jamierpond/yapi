@@ -83,68 +83,22 @@ type ConfigV1 struct {
 
 // ToDomain converts V1 YAML to the Canonical Config
 func (c *ConfigV1) ToDomain() (*domain.Request, error) {
-	// 1. Expand environment variables
-	c.URL = os.ExpandEnv(c.URL)
-	c.Path = os.ExpandEnv(c.Path)
-	for k, v := range c.Headers {
-		c.Headers[k] = os.ExpandEnv(v)
-	}
-	for k, v := range c.Query {
-		c.Query[k] = os.ExpandEnv(v)
+	c.expandEnvVars()
+	c.setDefaults()
+
+	bodyReader, bodySource, err := c.prepareBody()
+	if err != nil {
+		return nil, err
 	}
 
-	// 2. Set defaults
-	if c.Method == "" {
-		c.Method = "GET"
-	}
-	c.Method = strings.ToUpper(c.Method)
-
-	// 3. Process body
-	var bodyReader io.Reader
-	if c.JSON != "" && c.Body != nil && len(c.Body) > 0 {
-		return nil, fmt.Errorf("`body` and `json` are mutually exclusive")
-	}
-
-	bodySource := ""
-	if c.JSON != "" {
-		bodyReader = strings.NewReader(c.JSON)
-		if c.ContentType == "" {
-			c.ContentType = "application/json"
-		}
-		bodySource = "json"
-	} else if c.Body != nil {
-		bodyBytes, err := json.Marshal(c.Body)
-		if err != nil {
-			return nil, fmt.Errorf("invalid json in 'body' field: %w", err)
-		}
-		bodyReader = bytes.NewReader(bodyBytes)
-		if c.ContentType == "" {
-			c.ContentType = "application/json"
-		}
-	}
-
-	// 4. Construct final URL with path and query
-	finalURL := c.URL
-	if c.Path != "" {
-		finalURL += c.Path
-	}
-	if len(c.Query) > 0 {
-		q := url.Values{}
-		for k, v := range c.Query {
-			q.Set(k, v)
-		}
-		finalURL += "?" + q.Encode()
-	}
-
-	// 5. Build domain.Request
 	req := &domain.Request{
-		URL:      finalURL,
+		URL:      c.buildURL(),
 		Method:   c.Method,
 		Headers:  c.Headers,
 		Body:     bodyReader,
 		Metadata: make(map[string]string),
 	}
-	
+
 	if c.ContentType != "" {
 		if req.Headers == nil {
 			req.Headers = make(map[string]string)
@@ -156,20 +110,96 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 		req.Metadata["body_source"] = bodySource
 	}
 
-	// Add transport-specific data to metadata
-	var transport string
+	if err := c.enrichMetadata(req); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// expandEnvVars expands environment variables in URL, Path, Headers, and Query
+func (c *ConfigV1) expandEnvVars() {
+	c.URL = os.ExpandEnv(c.URL)
+	c.Path = os.ExpandEnv(c.Path)
+	for k, v := range c.Headers {
+		c.Headers[k] = os.ExpandEnv(v)
+	}
+	for k, v := range c.Query {
+		c.Query[k] = os.ExpandEnv(v)
+	}
+}
+
+// setDefaults applies default values for Method
+func (c *ConfigV1) setDefaults() {
+	if c.Method == "" {
+		c.Method = "GET"
+	}
+	c.Method = strings.ToUpper(c.Method)
+}
+
+// prepareBody processes the body/json fields and returns a reader, source identifier, and any error
+func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
+	if c.JSON != "" && c.Body != nil && len(c.Body) > 0 {
+		return nil, "", fmt.Errorf("`body` and `json` are mutually exclusive")
+	}
+
+	if c.JSON != "" {
+		if c.ContentType == "" {
+			c.ContentType = "application/json"
+		}
+		return strings.NewReader(c.JSON), "json", nil
+	}
+
+	if c.Body != nil {
+		bodyBytes, err := json.Marshal(c.Body)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid json in 'body' field: %w", err)
+		}
+		if c.ContentType == "" {
+			c.ContentType = "application/json"
+		}
+		return bytes.NewReader(bodyBytes), "", nil
+	}
+
+	return nil, "", nil
+}
+
+// buildURL constructs the final URL with path and query parameters
+func (c *ConfigV1) buildURL() string {
+	finalURL := c.URL
+	if c.Path != "" {
+		finalURL += c.Path
+	}
+	if len(c.Query) > 0 {
+		q := url.Values{}
+		for k, v := range c.Query {
+			q.Set(k, v)
+		}
+		finalURL += "?" + q.Encode()
+	}
+	return finalURL
+}
+
+// detectTransport determines the transport type from URL and method
+func (c *ConfigV1) detectTransport() string {
 	urlLower := strings.ToLower(c.URL)
 	methodLower := strings.ToLower(c.Method)
 
 	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") || methodLower == "grpc" {
-		transport = "grpc"
-	} else if strings.HasPrefix(urlLower, "tcp://") || methodLower == "tcp" {
-		transport = "tcp"
-	} else if c.Graphql != "" {
-		transport = "graphql"
-	} else {
-		transport = "http"
+		return "grpc"
 	}
+	if strings.HasPrefix(urlLower, "tcp://") || methodLower == "tcp" {
+		return "tcp"
+	}
+	if c.Graphql != "" {
+		return "graphql"
+	}
+	return "http"
+}
+
+// enrichMetadata adds transport-specific metadata to the request
+func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
+	transport := c.detectTransport()
 	req.Metadata["transport"] = transport
 
 	switch transport {
@@ -187,20 +217,21 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 		req.Metadata["idle_timeout"] = fmt.Sprintf("%d", c.IdleTimeout)
 		req.Metadata["close_after_send"] = fmt.Sprintf("%t", c.CloseAfterSend)
 	}
+
 	if c.JQFilter != "" {
 		req.Metadata["jq_filter"] = c.JQFilter
 	}
+
 	if c.Graphql != "" {
 		req.Metadata["graphql_query"] = c.Graphql
 		if c.Variables != nil {
 			vars, err := json.Marshal(c.Variables)
 			if err != nil {
-				return nil, fmt.Errorf("could not marshal graphql variables: %w", err)
+				return fmt.Errorf("could not marshal graphql variables: %w", err)
 			}
 			req.Metadata["graphql_variables"] = string(vars)
 		}
 	}
 
-
-	return req, nil
+	return nil
 }
