@@ -26,12 +26,6 @@ const (
 	colorDim    = "\033[2m"
 )
 
-const logo = `     ________  ________  ________   ________
-    ╱    ╱   ╲╱        ╲╱        ╲ ╱        ╲
-   ╱         ╱         ╱         ╱_╱       ╱
-   ╲__      ╱         ╱       __╱╱         ╱
-     ╲_____╱╲___╱____╱╲______╱   ╲________╱`
-
 type rootCommand struct {
 	urlOverride string
 	noColor     bool
