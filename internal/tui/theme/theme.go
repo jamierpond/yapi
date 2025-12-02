@@ -30,18 +30,18 @@ var (
 		Padding(0, 1)
 
 	TitleAccent = lipgloss.NewStyle().
-		Foreground(Bg).
-		Background(Accent).
-		Padding(0, 1).
-		Bold(true)
+			Foreground(Bg).
+			Background(Accent).
+			Padding(0, 1).
+			Bold(true)
 
 	Item = lipgloss.NewStyle().
 		PaddingLeft(2)
 
 	SelectedItem = lipgloss.NewStyle().
-		PaddingLeft(2).
-		Foreground(Accent).
-		Bold(true)
+			PaddingLeft(2).
+			Foreground(Accent).
+			Bold(true)
 
 	Footer = lipgloss.NewStyle().
 		Foreground(FgMuted).
@@ -49,9 +49,9 @@ var (
 		MarginTop(1)
 
 	ViewportContent = lipgloss.NewStyle().
-		Padding(1).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Border)
+			Padding(1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Border)
 
 	Error   = lipgloss.NewStyle().Foreground(Red)
 	Success = lipgloss.NewStyle().Foreground(Green)
@@ -59,8 +59,8 @@ var (
 	Info    = lipgloss.NewStyle().Foreground(FgMuted)
 
 	BorderedBox = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(Primary)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(Primary)
 
 	Help = lipgloss.NewStyle().
 		Foreground(FgMuted)

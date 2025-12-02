@@ -157,4 +157,3 @@ func FindConfigFileSingle() (string, error) {
 	// which can safely be piped to jq, xargs, etc.
 	return selected[0], nil
 }
-

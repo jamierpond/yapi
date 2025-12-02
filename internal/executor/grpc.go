@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/fullstorydev/grpcurl"
-	"yapi.run/cli/internal/domain"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+	"yapi.run/cli/internal/domain"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"

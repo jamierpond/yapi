@@ -94,7 +94,7 @@ func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain
 
 	// Read response
 	var respBuf bytes.Buffer
-	
+
 	// Set read deadline
 	if readTimeout > 0 {
 		conn.SetReadDeadline(time.Now().Add(time.Duration(readTimeout) * time.Second))
@@ -102,7 +102,6 @@ func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain
 		// This is a simplification. A more robust solution would reset the deadline after each read.
 		conn.SetReadDeadline(time.Now().Add(time.Duration(idleTimeout) * time.Millisecond))
 	}
-
 
 	_, err = io.Copy(&respBuf, conn)
 	if err != nil {

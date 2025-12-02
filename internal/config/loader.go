@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"yapi.run/cli/internal/domain"
 	"gopkg.in/yaml.v3"
+	"yapi.run/cli/internal/domain"
 )
 
 // Envelope is used solely to peek at the version
