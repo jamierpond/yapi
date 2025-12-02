@@ -73,7 +73,6 @@ func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain
 
 	// Establish connection
 	var d net.Dialer
-	startTime := time.Now()
 	conn, err := d.DialContext(ctx, "tcp", target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial TCP target %s: %w", target, err)
@@ -112,11 +111,9 @@ func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain
 			return nil, fmt.Errorf("failed to read from TCP connection: %w", err)
 		}
 	}
-	duration := time.Since(startTime)
 
 	return &domain.Response{
 		StatusCode: 0, // TCP has no status code
 		Body:       io.NopCloser(&respBuf),
-		Duration:   duration,
 	}, nil
 }

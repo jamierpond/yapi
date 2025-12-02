@@ -45,7 +45,6 @@ func (e *GRPCExecutor) Execute(ctx context.Context, req *domain.Request) (*domai
 	}
 
 	// Establish connection
-	startTime := time.Now()
 	cc, err := grpc.DialContext(ctx, target, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial gRPC target %s: %w", target, err)
@@ -96,12 +95,10 @@ func (e *GRPCExecutor) Execute(ctx context.Context, req *domain.Request) (*domai
 	if err := grpcurl.InvokeRPC(ctx, descSource, cc, service+"/"+rpc, nil, handler, reqSupplier); err != nil {
 		return nil, fmt.Errorf("failed to invoke gRPC RPC %s/%s: %w", service, rpc, err)
 	}
-	duration := time.Since(startTime)
 
 	return &domain.Response{
 		StatusCode: 0, // gRPC status is handled differently, 0 for OK
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       io.NopCloser(respBuf),
-		Duration:   duration,
 	}, nil
 }

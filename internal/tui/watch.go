@@ -102,19 +102,11 @@ func runYapiCmd(path string) tea.Cmd {
 		}
 
 		// Create executor
-		var exec executor.Executor
 		httpClient := &http.Client{Timeout: 30 * time.Second}
-		switch req.Metadata["transport"] {
-		case "http":
-			exec = executor.NewHTTPExecutor(httpClient)
-		case "graphql":
-			exec = executor.NewGraphQLExecutor(httpClient)
-		case "grpc":
-			exec = executor.NewGRPCExecutor()
-		case "tcp":
-			exec = executor.NewTCPExecutor()
-		default:
-			return runResultMsg{err: fmt.Errorf("unknown transport: %s", req.Metadata["transport"])}
+		factory := executor.NewFactory(httpClient)
+		exec, err := factory.Create(req.Metadata["transport"])
+		if err != nil {
+			return runResultMsg{err: err}
 		}
 
 		opts := runner.Options{NoColor: false}
