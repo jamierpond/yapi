@@ -1,0 +1,26 @@
+url: https://api.github.com/search/repositories
+method: GET
+
+query:
+  # 'in:name' ensures we only search the repo name, not the description or readme
+  # Change "yapi" to whatever you want to search for
+  q: "fish in:name"
+  sort: stars
+  order: desc
+  per_page: 100
+
+headers:
+  Accept: application/vnd.github+json
+  X-GitHub-Api-Version: "2022-11-28"
+  # User-Agent is often required by GitHub API
+  User-Agent: yapi
+  Authorization: Bearer ${GH_TOKEN}  # Make sure to set your GitHub token in the environment variable
+
+# Clean up the huge JSON response to show just what we care about
+jq_filter: |
+   .items[] | {
+     repo: .full_name,
+     stars: .stargazers_count,
+     url: .html_url,
+     description: .description
+   }

@@ -3,6 +3,7 @@
 - add real lsp to playground (maybe over http, maybe wasm, local)
 - vscode extension
 - jetbrains extension
+- maybe interactive history?
 
 - add yapi version to top of all yapi file
 ```yapi
