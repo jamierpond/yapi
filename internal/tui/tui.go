@@ -167,18 +167,10 @@ func FindConfigFileMulti(multi bool) ([]string, error) {
 		return nil, fmt.Errorf("no .yapi.yml files found")
 	}
 
-	var in, out *os.File
-	// Prefer /dev/tty for interactive TUI so it still works when stdout is piped.
-	// Example: yapi pick | jq
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	if err == nil {
-		in = tty
-		out = tty
-		defer tty.Close()
-	} else if isatty.IsTerminal(os.Stdout.Fd()) {
-		in = os.Stdin
-		out = os.Stdout
-	} else {
+	in, out, cleanup := getTTY()
+	defer cleanup()
+
+	if in == nil || out == nil {
 		// No TTY -> just return the list for non-interactive use
 		return files, nil
 	}

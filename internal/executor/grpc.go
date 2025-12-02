@@ -68,10 +68,11 @@ func (e *GRPCExecutor) Execute(ctx context.Context, req *domain.Request) (*domai
 	// Prepare request payload
 	var reqData []byte
 	if req.Body != nil {
-		reqData, err = io.ReadAll(req.Body)
-		if err != nil {
+		var buf bytes.Buffer
+		if _, err = io.Copy(&buf, req.Body); err != nil {
 			return nil, fmt.Errorf("failed to read gRPC request body: %w", err)
 		}
+		reqData = buf.Bytes()
 	}
 
 	// Create a RequestSupplier to feed the request data

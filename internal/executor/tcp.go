@@ -44,10 +44,11 @@ func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain
 	if data != "" {
 		sendData = []byte(data)
 	} else if req.Body != nil {
-		sendData, err = io.ReadAll(req.Body)
-		if err != nil {
+		var buf bytes.Buffer
+		if _, err = io.Copy(&buf, req.Body); err != nil {
 			return nil, fmt.Errorf("failed to read request body for TCP: %w", err)
 		}
+		sendData = buf.Bytes()
 	}
 
 	// Handle encoding
