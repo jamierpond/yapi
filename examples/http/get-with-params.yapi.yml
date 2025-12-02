@@ -1,3 +1,4 @@
+yapi: v1
 # GET request with query parameters
 url: https://jsonplaceholder.typicode.com/posts
 params:

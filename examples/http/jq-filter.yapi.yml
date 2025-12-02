@@ -1,3 +1,4 @@
+yapi: v1
 # Using jq to filter response data
 url: https://jsonplaceholder.typicode.com/users
 

@@ -1,3 +1,4 @@
+yapi: v1
 # Request with custom headers
 url: https://httpbin.org/headers
 method: GET

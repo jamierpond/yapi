@@ -1,3 +1,4 @@
+yapi: v1
 # Basic authentication example
 # httpbin returns success if credentials match the URL path
 url: https://httpbin.org/basic-auth/myuser/mypass

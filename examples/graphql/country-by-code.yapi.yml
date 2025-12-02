@@ -1,3 +1,4 @@
+yapi: v1
 # GraphQL - Get country by code with variables
 url: https://countries.trevorblades.com/graphql
 

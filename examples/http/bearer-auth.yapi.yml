@@ -1,3 +1,4 @@
+yapi: v1
 # Bearer token authentication
 url: https://httpbin.org/bearer
 method: GET

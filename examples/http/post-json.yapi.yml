@@ -1,3 +1,4 @@
+yapi: v1
 # POST request with JSON body
 url: https://httpbin.org/post
 method: POST

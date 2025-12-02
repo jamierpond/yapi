@@ -1,3 +1,4 @@
+yapi: v1
 url: https://api.github.com/search/repositories
 method: GET
 

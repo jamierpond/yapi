@@ -1,3 +1,4 @@
+yapi: v1
 # TCP with multiline data
 url: tcp://tcpbin.com:4242
 

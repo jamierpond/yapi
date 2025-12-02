@@ -1,3 +1,4 @@
+yapi: v1
 # PUT request to update a resource
 url: https://jsonplaceholder.typicode.com/posts/1
 method: PUT

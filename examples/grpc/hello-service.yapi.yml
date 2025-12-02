@@ -1,3 +1,4 @@
+yapi: v1
 # gRPC Hello Service example
 # Uses grpcb.in test service with server reflection
 url: grpc://grpcb.in:9000

@@ -1,2 +1,3 @@
+yapi: v1
 # Simple GET request
 url: https://jsonplaceholder.typicode.com/posts/1
