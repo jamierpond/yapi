@@ -7,10 +7,52 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 
 	"yapi.run/cli/internal/domain"
 )
+
+// knownV1Keys is the set of valid keys for v1 config files.
+// Must be kept in sync with ConfigV1 struct yaml tags.
+var knownV1Keys = map[string]bool{
+	"yapi":             true,
+	"url":              true,
+	"path":             true,
+	"method":           true,
+	"content_type":     true,
+	"headers":          true,
+	"body":             true,
+	"json":             true,
+	"query":            true,
+	"graphql":          true,
+	"variables":        true,
+	"service":          true,
+	"rpc":              true,
+	"proto":            true,
+	"proto_path":       true,
+	"data":             true,
+	"encoding":         true,
+	"jq_filter":        true,
+	"insecure":         true,
+	"plaintext":        true,
+	"read_timeout":     true,
+	"idle_timeout":     true,
+	"close_after_send": true,
+}
+
+// FindUnknownKeys checks a raw map for keys not in knownV1Keys.
+// Returns a sorted slice of unknown key names.
+func FindUnknownKeys(raw map[string]interface{}) []string {
+	var unknown []string
+	for key := range raw {
+		if !knownV1Keys[key] {
+			unknown = append(unknown, key)
+		}
+	}
+	sort.Strings(unknown)
+	return unknown
+}
 
 // ConfigV1 represents the v1 YAML schema
 type ConfigV1 struct {

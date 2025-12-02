@@ -2,6 +2,8 @@ yapi: v1
 # GraphQL - Rick and Morty API
 url: https://rickandmortyapi.com/graphql
 
+fish: {}
+
 graphql: |
   query {
     characters(page: 1, filter: { name: "Rick" }) {

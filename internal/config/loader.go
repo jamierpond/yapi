@@ -60,5 +60,16 @@ func parseV1(data []byte) (*ParseResult, error) {
 		return nil, err
 	}
 
+	// Check for unknown keys
+	var raw map[string]interface{}
+	if err := yaml.Unmarshal(data, &raw); err == nil {
+		unknownKeys := FindUnknownKeys(raw)
+		var warnings []string
+		for _, key := range unknownKeys {
+			warnings = append(warnings, fmt.Sprintf("unknown key '%s' will be ignored", key))
+		}
+		return &ParseResult{Request: domainReq, Warnings: warnings}, nil
+	}
+
 	return &ParseResult{Request: domainReq}, nil
 }
