@@ -4,8 +4,13 @@
   "title": "yapit Configuration",
   "description": "Schema for yapit YAML API testing configuration files (HTTP and gRPC)",
   "type": "object",
-  "required": ["url"],
+  "required": ["yapi", "url"],
   "properties": {
+    "yapi": {
+      "type": "string",
+      "enum": ["v1"],
+      "description": "The version of the yapi configuration schema"
+    },
     "url": {
       "type": "string",
       "description": "Base URL for the API request. Use http://, https:// for HTTP/REST, grpc://, grpcs:// for gRPC, tcp:// for TCP",

@@ -151,10 +151,15 @@ func printWatchHeader(path string) {
 }
 
 func runConfigPathSafe(path string) {
-	cfg, err := config.LoadConfig(path)
+	cfg, warnings, err := config.LoadConfig(path) // Updated signature
 	if err != nil {
 		fmt.Printf("\033[31mError loading config: %v\033[0m\n", err)
 		return
+	}
+
+	// Print Warnings
+	for _, w := range warnings {
+		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
 	opts := runner.Options{
@@ -183,9 +188,13 @@ func newLSPCmd() *cobra.Command {
 }
 
 func runConfigPath(path string) {
-	cfg, err := config.LoadConfig(path)
+	cfg, warnings, err := config.LoadConfig(path)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	for _, w := range warnings {
+		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
 	}
 
 	logHistory(path, urlOverride)

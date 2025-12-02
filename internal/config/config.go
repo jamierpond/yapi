@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -8,6 +9,8 @@ import (
 )
 
 type YapiConfig struct {
+	// Add the version field
+	Yapi           string                 `yaml:"yapi"`
 	URL            string                 `yaml:"url"`
 	Path           string                 `yaml:"path,omitempty"`
 	Method         string                 `yaml:"method,omitempty"` // GET, POST, grpc, tcp
@@ -32,16 +35,34 @@ type YapiConfig struct {
 	CloseAfterSend bool                   `yaml:"close_after_send,omitempty"`
 }
 
-func LoadConfig(path string) (*YapiConfig, error) {
+// Temporary "Pre-load" struct to avoid strict parsing issues initially if needed
+type versionCheck struct {
+	Yapi string `yaml:"yapi"`
+}
+
+func LoadConfig(path string) (*YapiConfig, []string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	// Check version
+	var vCheck versionCheck
+	yaml.Unmarshal(data, &vCheck) // Ignore error, just peeking
+
+	var warnings []string
+	if vCheck.Yapi == "" {
+		warnings = append(warnings, "deprecated: yapi file is missing version. Please add 'yapi: v1' to the top of the file.")
+	} else if vCheck.Yapi != "v1" {
+		return nil, nil, fmt.Errorf("unsupported yapi version: '%s'. Only 'v1' is supported", vCheck.Yapi)
+	}
+
+	// Parse as current config (V1)
 	var cfg YapiConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return &cfg, nil
+	return &cfg, warnings, nil
 }
 
 // SubstituteEnvVars replaces all ${VAR_NAME} patterns with environment variable values.
