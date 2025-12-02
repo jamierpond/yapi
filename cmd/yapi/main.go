@@ -214,7 +214,7 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	fmt.Println(output)
 	printResultMeta(result)
-	app.printDiagnostics(analysis, ctx.strict)
+	app.printWarnings(analysis, ctx.strict)
 }
 
 // handleError prints an error, optionally exiting for strict mode
