@@ -159,8 +159,7 @@ func clearScreen() {
 }
 
 func printWatchHeader(path string) {
-	fmt.Println(colorOrange + logo + colorReset)
-	fmt.Printf("\n%s🐑 yapi watch%s\n\n", colorOrange, colorReset)
+	fmt.Printf("%s🐑 yapi watch%s\n\n", colorOrange, colorReset)
 	fmt.Printf("%s[watching %s]%s\n", colorDim, filepath.Base(path), colorReset)
 	fmt.Printf("%s[%s]%s\n\n", colorDim, time.Now().Format("15:04:05"), colorReset)
 }
