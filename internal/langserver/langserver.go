@@ -1,8 +1,6 @@
 package langserver
 
 import (
-	"log"
-	"os"
 	"strings"
 
 	"github.com/tliron/commonlog"
@@ -172,11 +170,6 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		})
 	}
 
-	// Debug logging to file
-	f, _ := os.OpenFile("/tmp/yapi-lsp-debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	debugLog := log.New(f, "[yapi-lsp] ", log.LstdFlags)
-	defer f.Close()
-
 	// Analyzer diagnostics
 	for _, d := range analysis.Diagnostics {
 		line := protocol.UInteger(0)
@@ -187,8 +180,6 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		if d.Col >= 0 {
 			char = protocol.UInteger(d.Col)
 		}
-
-		debugLog.Printf("Diagnostic: Field=%q Line=%d (d.Line=%d) Message=%s", d.Field, line, d.Line, d.Message)
 
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
