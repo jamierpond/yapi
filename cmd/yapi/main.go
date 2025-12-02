@@ -226,8 +226,27 @@ func (app *rootCommand) handleError(err error, strict bool) {
 	}
 }
 
-// printDiagnostics prints warnings and diagnostics to the appropriate output
-func (app *rootCommand) printDiagnostics(analysis *validation.Analysis, strict bool) {
+// printErrors prints only error-level diagnostics (before request runs)
+func (app *rootCommand) printErrors(analysis *validation.Analysis, strict bool) {
+	out := os.Stdout
+	if strict {
+		out = os.Stderr
+	}
+
+	for _, d := range analysis.Diagnostics {
+		if d.Severity != validation.SeverityError {
+			continue
+		}
+		lineInfo := ""
+		if d.Line >= 0 {
+			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
+		}
+		fmt.Fprintf(out, "\033[31m[ERROR]%s %s\033[0m\n", lineInfo, d.Message)
+	}
+}
+
+// printWarnings prints warnings and info diagnostics (after output)
+func (app *rootCommand) printWarnings(analysis *validation.Analysis, strict bool) {
 	out := os.Stdout
 	if strict {
 		out = os.Stderr
@@ -238,19 +257,18 @@ func (app *rootCommand) printDiagnostics(analysis *validation.Analysis, strict b
 	}
 
 	for _, d := range analysis.Diagnostics {
+		if d.Severity == validation.SeverityError {
+			continue
+		}
 		prefix := "[INFO]"
 		color := "\033[36m"
 		if d.Severity == validation.SeverityWarning {
 			prefix = "[WARN]"
 			color = "\033[33m"
 		}
-		if d.Severity == validation.SeverityError {
-			prefix = "[ERROR]"
-			color = "\033[31m"
-		}
 		lineInfo := ""
 		if d.Line >= 0 {
-			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1) // 0-indexed to 1-indexed
+			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
 		}
 		fmt.Fprintf(out, "%s%s%s %s\033[0m\n", color, prefix, lineInfo, d.Message)
 	}
