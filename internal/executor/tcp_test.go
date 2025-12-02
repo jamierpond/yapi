@@ -53,7 +53,8 @@ func TestTCPExecutor_Execute_Echo(t *testing.T) {
 yapi: v1
 url: tcp://%s
 method: tcp
-data: "%s"
+data: |
+  %s
 read_timeout: 1
 close_after_send: true`, l.Addr().String(), expected)
 	res, err := config.LoadFromString(yaml)

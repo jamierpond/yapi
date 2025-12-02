@@ -147,9 +147,14 @@ func ValidateConfig(cfg *config.Config) []Issue {
 		}
 	}
 
-	// Rule 5: body and json are mutually exclusive is handled by the parser.
-	// We just need to check if body is not nil.
-	hasBody := cfg.Body != nil
+	hasBody := false
+	if cfg.Body != nil {
+		if bodyMap, ok := cfg.Body.(map[string]interface{}); ok && len(bodyMap) > 0 {
+			hasBody = true
+		} else if _, ok := cfg.Body.(string); ok {
+			hasBody = true
+		}
+	}
 	hasGraphql := cfg.Graphql != ""
 
 	// Rule 6: graphql is mutually exclusive with body

@@ -242,7 +242,7 @@ body:
 func TestValidateConfig_BodyAndJSONMutuallyExclusive(t *testing.T) {
 	// This test is no longer relevant as the parser handles mutual exclusion.
 	// We can test that both are not set in the final config.
-	res, err := config.LoadFromString(`yapi: v1
+	_, err := config.LoadFromString(`yapi: v1
 url: http://example.com/api
 method: POST
 content_type: application/json
