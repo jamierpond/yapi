@@ -63,13 +63,8 @@ url: [invalid yaml`
 		t.Fatal("expected errors for invalid YAML")
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
-	}
-
-	if !containsSubstr(msgs, "invalid YAML") {
-		t.Errorf("expected 'invalid YAML' message, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "invalid YAML") {
+		t.Errorf("expected 'invalid YAML' message, got %+v", a.Diagnostics)
 	}
 }
 
@@ -84,13 +79,8 @@ graphql: |
 		t.Fatalf("AnalyzeConfigString error: %v", err)
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
-	}
-
-	if !containsSubstr(msgs, "GraphQL syntax error") {
-		t.Fatalf("expected GraphQL syntax error, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "GraphQL syntax error") {
+		t.Fatalf("expected GraphQL syntax error, got %+v", a.Diagnostics)
 	}
 
 	// Verify line number is set for GraphQL diagnostic
@@ -130,13 +120,8 @@ jq_filter: .foo[`
 		t.Fatalf("AnalyzeConfigString error: %v", err)
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
-	}
-
-	if !containsSubstr(msgs, "JQ syntax error") {
-		t.Fatalf("expected JQ syntax error, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "JQ syntax error") {
+		t.Fatalf("expected JQ syntax error, got %+v", a.Diagnostics)
 	}
 
 	// Verify line number is set for JQ diagnostic
@@ -204,17 +189,12 @@ url: grpc://localhost:50051`
 		t.Fatal("expected errors for gRPC missing service/rpc")
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
+	if !hasDiagnostic(a.Diagnostics, "service") {
+		t.Errorf("expected error about missing service, got %+v", a.Diagnostics)
 	}
 
-	if !containsSubstr(msgs, "service") {
-		t.Errorf("expected error about missing service, got %+v", msgs)
-	}
-
-	if !containsSubstr(msgs, "rpc") {
-		t.Errorf("expected error about missing rpc, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "rpc") {
+		t.Errorf("expected error about missing rpc, got %+v", a.Diagnostics)
 	}
 }
 
@@ -233,13 +213,8 @@ encoding: invalid`
 		t.Fatal("expected errors for invalid TCP encoding")
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
-	}
-
-	if !containsSubstr(msgs, "unsupported TCP encoding") {
-		t.Errorf("expected error about unsupported encoding, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "unsupported TCP encoding") {
+		t.Errorf("expected error about unsupported encoding, got %+v", a.Diagnostics)
 	}
 }
 
@@ -287,13 +262,8 @@ body:
 		t.Fatal("expected error for graphql + body")
 	}
 
-	var msgs []string
-	for _, d := range a.Diagnostics {
-		msgs = append(msgs, d.Message)
-	}
-
-	if !containsSubstr(msgs, "cannot be used with") {
-		t.Errorf("expected error about graphql/body conflict, got %+v", msgs)
+	if !hasDiagnostic(a.Diagnostics, "cannot be used with") {
+		t.Errorf("expected error about graphql/body conflict, got %+v", a.Diagnostics)
 	}
 }
 
