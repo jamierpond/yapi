@@ -110,21 +110,16 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 	// Add transport-specific data to metadata
 	var transport string
 	urlLower := strings.ToLower(c.URL)
-	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
+	methodLower := strings.ToLower(c.Method)
+
+	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") || methodLower == "grpc" {
 		transport = "grpc"
-	} else if strings.HasPrefix(urlLower, "tcp://") {
+	} else if strings.HasPrefix(urlLower, "tcp://") || methodLower == "tcp" {
 		transport = "tcp"
 	} else if c.Graphql != "" {
 		transport = "graphql"
 	} else {
-		methodLower := strings.ToLower(c.Method)
-		if methodLower == "grpc" {
-			transport = "grpc"
-		} else if methodLower == "tcp" {
-			transport = "tcp"
-		} else {
-			transport = "http"
-		}
+		transport = "http"
 	}
 	req.Metadata["transport"] = transport
 

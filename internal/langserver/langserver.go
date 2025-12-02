@@ -155,7 +155,7 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 			Message:  "invalid YAML: " + err.Error(),
 		})
 	} else {
-		cfg := res.Config
+		req := res.Request
 		for _, w := range res.Warnings {
 			diagnostics = append(diagnostics, protocol.Diagnostic{
 				Range: protocol.Range{
@@ -167,7 +167,7 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 				Message:  w,
 			})
 		}
-		issues := validation.ValidateConfig(cfg)
+		issues := validation.ValidateRequest(req)
 		for _, issue := range issues {
 			line := findFieldLine(text, issue.Field)
 			diagnostics = append(diagnostics, protocol.Diagnostic{
@@ -182,14 +182,14 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		}
 
 		// GraphQL syntax validation
-		if cfg.Graphql != "" {
-			gqlDiags := validateGraphQLSyntax(text, cfg.Graphql)
+		if gqlQuery, ok := req.Metadata["graphql_query"]; ok && gqlQuery != "" {
+			gqlDiags := validateGraphQLSyntax(text, gqlQuery)
 			diagnostics = append(diagnostics, gqlDiags...)
 		}
 
 		// JQ syntax validation
-		if cfg.JQFilter != "" {
-			jqDiags := validateJQSyntax(text, cfg.JQFilter)
+		if jqFilter, ok := req.Metadata["jq_filter"]; ok && jqFilter != "" {
+			jqDiags := validateJQSyntax(text, jqFilter)
 			diagnostics = append(diagnostics, jqDiags...)
 		}
 
