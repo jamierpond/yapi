@@ -57,6 +57,7 @@ make install
 No more escaping quotes in curl.
 
 ```yaml
+yapi: v1
 url: https://api.example.com/posts
 method: POST
 content_type: application/json
@@ -77,6 +78,7 @@ body:
 Use shell environment variables directly. Perfect for CI/CD or keeping secrets out of git.
 
 ```yaml
+yapi: v1
 url: https://api.example.com/secure-data
 method: GET
 
