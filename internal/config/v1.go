@@ -63,11 +63,13 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 		return nil, fmt.Errorf("`body` and `json` are mutually exclusive")
 	}
 
+	bodySource := ""
 	if c.JSON != "" {
 		bodyReader = strings.NewReader(c.JSON)
 		if c.ContentType == "" {
 			c.ContentType = "application/json"
 		}
+		bodySource = "json"
 	} else if c.Body != nil {
 		bodyBytes, err := json.Marshal(c.Body)
 		if err != nil {
