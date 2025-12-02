@@ -3,15 +3,16 @@
 NAME := yapi
 
 
-deadcode:
-	@echo "Running deadcode analysis..."
-	@deadcode ./...
-
 install: build
+	@$(MAKE) lint
 	@echo "Installing yapi to $$(go env GOPATH)/bin..."
 	@cp ./bin/yapi $$(go env GOPATH)/bin/yapi
 	@codesign --sign - --force $$(go env GOPATH)/bin/yapi 2>/dev/null || true
 	@echo "Done! Ensure $$(go env GOPATH)/bin is in your PATH."
+
+lint:
+	@echo "Running deadcode analysis..."
+	@deadcode ./...
 
 build:
 	@echo "Building yapi CLI..."
