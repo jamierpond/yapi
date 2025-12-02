@@ -8,46 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sahilm/fuzzy"
-)
-
-var (
-	// Colors (extracted from webapp/tailwind.config.js)
-	yapiBg         = lipgloss.Color("#1a1b26")
-	yapiBgElevated = lipgloss.Color("#2a2d3b")
-	yapiFg         = lipgloss.Color("#a9b1d6")
-	yapiFgMuted    = lipgloss.Color("#565f89")
-	yapiAccent     = lipgloss.Color("#ff9e64")
-	yapiBorder     = lipgloss.Color("#414868")
-
-	// Styles
-	appStyle = lipgloss.NewStyle().
-			Padding(1, 2).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(yapiBorder)
-
-	titleStyle = lipgloss.NewStyle().
-			Foreground(yapiBg).
-			Background(yapiAccent).
-			Padding(0, 1).
-			Bold(true)
-
-	itemStyle = lipgloss.NewStyle().
-			PaddingLeft(2)
-
-	selectedItemStyle = lipgloss.NewStyle().
-				PaddingLeft(2).
-				Foreground(yapiAccent).
-				Bold(true)
-
-	footerStyle = lipgloss.NewStyle().
-			Foreground(yapiFgMuted).
-			Padding(0, 1).
-			MarginTop(1)
-
-	viewportContentStyle = lipgloss.NewStyle().
-				Padding(1).
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(yapiBorder)
+	"yapi.run/cli/internal/tui/theme"
 )
 
 type Model struct {
@@ -66,16 +27,16 @@ func New(files []string, multi bool) Model {
 	ti := textinput.New()
 	ti.Placeholder = "Type to filter..."
 	ti.Focus()
-	ti.PromptStyle = lipgloss.NewStyle().Foreground(yapiAccent)
-	ti.TextStyle = lipgloss.NewStyle().Foreground(yapiFg)
-	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(yapiFgMuted)
-	ti.Cursor.Style = lipgloss.NewStyle().Foreground(yapiAccent)
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(theme.Accent)
+	ti.TextStyle = lipgloss.NewStyle().Foreground(theme.Fg)
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(theme.FgMuted)
+	ti.Cursor.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
 	vp := viewport.New(80, 20)
 	vp.Style = lipgloss.NewStyle().
 		Padding(0, 1).
-		Foreground(yapiFg).
-		Background(yapiBgElevated)
+		Foreground(theme.Fg).
+		Background(theme.BgElevated)
 
 	m := Model{
 		files:           files,
