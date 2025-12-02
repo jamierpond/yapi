@@ -129,9 +129,12 @@ func runYapiCmd(path string) tea.Cmd {
 
 		// Create executor
 		var exec executor.Executor
+		httpClient := &http.Client{Timeout: 30 * time.Second}
 		switch req.Metadata["transport"] {
-		case "http", "graphql":
-			exec = executor.NewHTTPExecutor(&http.Client{Timeout: 30 * time.Second})
+		case "http":
+			exec = executor.NewHTTPExecutor(httpClient)
+		case "graphql":
+			exec = executor.NewGraphQLExecutor(httpClient)
 		case "grpc":
 			exec = executor.NewGRPCExecutor()
 		case "tcp":
