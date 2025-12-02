@@ -75,12 +75,19 @@ func Run(cfg *config.YapiConfig, opts Options) (*Result, error) {
 		ctype = "application/json"
 	}
 
+	bodyLines := strings.Count(body, "\n") + 1
+	bodyChars := len(body)
+	bodyBytes := len([]byte(body))
+
 	return &Result{
 		Body:        body,
 		ContentType: ctype,
 		Warnings:    warnings,
 		RequestURL:  requestURL,
 		Duration:    duration,
+		BodyLines:   bodyLines,
+		BodyChars:   bodyChars,
+		BodyBytes:   bodyBytes,
 	}, nil
 }
 

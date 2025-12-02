@@ -215,6 +215,20 @@ func printResultMeta(result *runner.Result) {
 		fmt.Fprintf(os.Stderr, "\n%s\n", dim("URL: "+result.RequestURL))
 	}
 	fmt.Fprintf(os.Stderr, "%s\n", dim("Time: "+result.Duration.String()))
+	fmt.Fprintf(os.Stderr, "%s\n", dim(fmt.Sprintf("Size: %s (%d lines, %d chars)", formatBytes(result.BodyBytes), result.BodyLines, result.BodyChars)))
+}
+
+func formatBytes(b int) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 func newHistoryCmd() *cobra.Command {
