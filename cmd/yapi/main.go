@@ -206,7 +206,7 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		NoColor:     app.noColor,
 	}
 
-	output, result, err := runner.RunAndFormat(context.Background(), exec, req, analysis.Warnings, opts)
+	output, result, err := runner.RunAndFormat(context.Background(), exec, req, nil, opts)
 	if err != nil {
 		app.handleError(err, ctx.strict)
 		return
@@ -214,6 +214,7 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	fmt.Println(output)
 	printResultMeta(result)
+	app.printDiagnostics(analysis, ctx.strict)
 }
 
 // handleError prints an error, optionally exiting for strict mode
