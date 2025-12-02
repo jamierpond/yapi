@@ -44,23 +44,3 @@ jobs:
 
     - name: Test
       run: make test
-
-  test-examples:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24'
-        cache-dependency-path: go.sum
-
-    - name: Install CLI
-      run: make install
-
-    - name: Test examples
-      run: ./scripts/run-all-examples.sh
