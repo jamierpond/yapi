@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
-	"strings"
 	"testing"
 
 	"yapi.run/cli/internal/config"
@@ -86,7 +85,16 @@ query:
 			}))
 			defer srv.Close()
 
-			req.URL = srv.URL + req.URL[strings.Index(req.URL, "/")+1:]
+			// Parse the original URL to extract path and query
+			parsedURL, err := url.Parse(req.URL)
+			if err != nil {
+				t.Fatalf("Failed to parse URL: %v", err)
+			}
+			// Replace with test server URL + path + query
+			req.URL = srv.URL + parsedURL.Path
+			if parsedURL.RawQuery != "" {
+				req.URL += "?" + parsedURL.RawQuery
+			}
 
 			client := &http.Client{}
 			exec := executor.NewHTTPExecutor(client)
