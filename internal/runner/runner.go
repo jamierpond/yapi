@@ -10,7 +10,6 @@ import (
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/filter"
-	"yapi.run/cli/internal/output"
 )
 
 // Result holds the output of a yapi execution
@@ -78,14 +77,3 @@ func Run(ctx context.Context, exec executor.Executor, req *domain.Request, warni
 	}, nil
 }
 
-// RunAndFormat executes and returns highlighted output plus Result metadata
-func RunAndFormat(ctx context.Context, exec executor.Executor, req *domain.Request, warnings []string, opts Options) (string, *Result, error) {
-	result, err := Run(ctx, exec, req, warnings, opts)
-	if err != nil {
-		return "", nil, err
-	}
-
-	out := output.Highlight(result.Body, result.ContentType, opts.NoColor)
-
-	return out, result, nil
-}
