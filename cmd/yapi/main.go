@@ -19,6 +19,16 @@ import (
 	"yapi.run/cli/internal/validation"
 )
 
+//go:embed icon.txt
+var logo string
+
+// ANSI color codes (matching theme orange accent #ff9e64)
+const (
+	colorOrange = "\033[38;2;255;158;100m"
+	colorReset  = "\033[0m"
+	colorDim    = "\033[2m"
+)
+
 type rootCommand struct {
 	urlOverride string
 	noColor     bool
