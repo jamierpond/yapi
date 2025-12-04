@@ -83,7 +83,7 @@ type ExampleKey = keyof typeof EXAMPLES;
 
 export default function Playground() {
   const pathname = usePathname();
-  const [yaml, setYaml] = useState(EXAMPLES.http.yaml);
+  const [yaml, setYaml] = useState<string>(EXAMPLES.http.yaml);
   const [result, setResult] = useState<ExecuteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
