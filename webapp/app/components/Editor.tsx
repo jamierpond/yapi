@@ -273,16 +273,8 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
           </div>
 
           {hasErrors && (
-            <div className="group relative flex items-center gap-2 text-xs text-yapi-error bg-yapi-error/10 border border-yapi-error/20 px-3 py-1.5 rounded-lg backdrop-blur-sm animate-shake">
-              <span className="text-sm">⚠</span>
-              <span className="font-medium max-w-xs truncate">{errorMessage}</span>
-
-              {/* Tooltip on hover */}
-              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50">
-                <div className="bg-yapi-bg-elevated border border-yapi-error/30 rounded-lg px-3 py-2 shadow-xl max-w-md">
-                  <p className="text-xs text-yapi-fg whitespace-pre-wrap">{errorMessage}</p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 text-xs text-yapi-error bg-yapi-error/10 border border-yapi-error/20 px-3 py-1.5 rounded-lg backdrop-blur-sm" title={errorMessage}>
+              <span className="font-medium">{errorMessage}</span>
             </div>
           )}
         </div>
@@ -308,9 +300,8 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
         </button>
       </div>
 
-      {/* Monaco Editor Container with subtle inner glow */}
-      <div className="relative flex-1 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-yapi-accent/5 via-transparent to-transparent pointer-events-none h-32"></div>
+      {/* Monaco Editor Container */}
+      <div className="relative flex-1">
         <div ref={containerRef} className="h-full" />
       </div>
 
