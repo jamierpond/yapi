@@ -1,8 +1,9 @@
+"use server";
 import Link from "next/link";
 import NavbarLogo from "./NavbarLogo";
 import CopyInstallButton from "./CopyInstallButton";
 
-export default function Landing() {
+export default async function Landing() {
   return (
     <div className="min-h-screen flex flex-col bg-yapi-bg relative overflow-hidden font-sans text-yapi-fg selection:bg-yapi-accent selection:text-white">
       {/* --- Fun Layer: Background Grid & Noise --- */}
