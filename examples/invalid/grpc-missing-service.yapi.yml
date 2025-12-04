@@ -1,0 +1,3 @@
+yapi: v1
+url: grpc://localhost:50051
+rpc: SayHello

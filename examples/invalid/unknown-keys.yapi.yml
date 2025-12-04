@@ -1,0 +1,5 @@
+yapi: v1
+url: https://example.com
+method: GET
+foo: bar
+baz: qux
