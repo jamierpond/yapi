@@ -124,6 +124,12 @@ export default function Playground() {
     setYaml(newYaml);
   };
 
+  const handleTabChange = (tab: ExampleKey) => {
+    setActiveTab(tab);
+    setYaml(EXAMPLES[tab].yaml);
+    setResult(null);
+  };
+
   async function handleRun() {
     setIsLoading(true);
     setResult(null);

@@ -4,13 +4,22 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as monaco from "monaco-editor";
 import type { ValidateResponse, Diagnostic } from "../types/api-contract";
 
+export interface ExampleTab {
+  key: string;
+  label: string;
+  defaultYaml: string;
+}
+
 interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   onRun: () => void;
+  tabs?: ExampleTab[];
+  activeTab?: string;
+  onTabChange?: (key: string) => void;
 }
 
-export default function Editor({ value, onChange, onRun }: EditorProps) {
+export default function Editor({ value, onChange, onRun, tabs, activeTab, onTabChange }: EditorProps) {
   // Ref to the DOM node Monaco will render into
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Ref to keep the editor instance (avoid double init, allow dispose)
@@ -265,12 +274,31 @@ export default function Editor({ value, onChange, onRun }: EditorProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-yapi-accent/5 via-transparent to-transparent opacity-50"></div>
 
         <div className="relative flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
-            <h2 className="text-xs font-semibold text-yapi-fg tracking-wider">
-              REQUEST
-            </h2>
-          </div>
+          {/* Tabs */}
+          {tabs && tabs.length > 0 ? (
+            <div className="flex items-center gap-1 bg-yapi-bg-subtle/50 rounded-lg p-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => onTabChange?.(tab.key)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                    activeTab === tab.key
+                      ? "bg-yapi-accent text-white shadow-sm"
+                      : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-subtle"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
+              <h2 className="text-xs font-semibold text-yapi-fg tracking-wider">
+                REQUEST
+              </h2>
+            </div>
+          )}
 
           {hasErrors && (
             <div className="flex items-center gap-2 text-xs text-yapi-error bg-yapi-error/10 border border-yapi-error/20 px-3 py-1.5 rounded-lg backdrop-blur-sm" title={errorMessage}>
