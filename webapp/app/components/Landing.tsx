@@ -1,21 +1,8 @@
-'use client';
 import Link from "next/link";
-import { useState } from "react";
+import NavbarLogo from "./NavbarLogo";
+import CopyInstallButton from "./CopyInstallButton";
 
 export default function Landing() {
-  const [copied, setCopied] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-
-  const copyInstall = () => {
-    navigator.clipboard.writeText("go install yapi.run/cli/cmd/yapi@latest");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const spinSheep = () => {
-    setClickCount(prev => prev + 1);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-yapi-bg relative overflow-hidden font-sans text-yapi-fg selection:bg-yapi-accent selection:text-white">
       {/* --- Fun Layer: Background Grid & Noise --- */}
@@ -34,18 +21,7 @@ export default function Landing() {
       {/* Navbar */}
       <nav className="relative z-50 px-6 py-6 border-b border-yapi-border/30 backdrop-blur-md bg-yapi-bg/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button
-            onClick={spinSheep}
-            className="flex items-center gap-3 group select-none transition-transform active:scale-95"
-          >
-            <span
-              className="text-3xl transition-transform duration-700 ease-in-out"
-              style={{ transform: `rotate(${clickCount * 360}deg)` }}
-            >
-              🐑
-            </span>
-            <span className="text-xl font-bold tracking-tight font-mono group-hover:text-yapi-accent transition-colors">yapi</span>
-          </button>
+          <NavbarLogo />
           <div className="flex gap-6 items-center">
             <a href="https://github.com/jamierpond/yapi" className="text-sm font-medium text-yapi-fg-muted hover:text-yapi-fg transition-colors">
               GitHub
@@ -89,17 +65,7 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
-             <button
-              onClick={copyInstall}
-              className="group relative px-6 py-4 bg-black/40 border border-yapi-border hover:border-yapi-accent/50 rounded-xl transition-all duration-300 text-left flex items-center gap-4 font-mono text-sm overflow-hidden min-w-[300px]"
-            >
-              <div className="absolute inset-0 bg-yapi-accent/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-              <span className="text-yapi-accent mr-1 z-10 font-bold">$</span>
-              <span className="text-yapi-fg-muted z-10 flex-1">go install yapi.run...</span>
-              <span className={`text-yapi-fg-subtle group-hover:text-yapi-accent transition-all whitespace-nowrap z-10 ${copied ? 'scale-110 font-bold text-yapi-success' : ''}`}>
-                {copied ? "✓ Copied" : "Copy"}
-              </span>
-            </button>
+            <CopyInstallButton />
             <Link
               href="/playground"
               className="px-8 py-4 w-full sm:w-auto rounded-xl bg-yapi-fg text-yapi-bg font-bold hover:bg-white transition-all shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]"
