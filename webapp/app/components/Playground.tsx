@@ -256,7 +256,18 @@ export default function Playground() {
         {/* Left Panel - Editor */}
         <div className="w-1/2 relative group">
           <div className="absolute -right-px top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-yapi-border-strong to-transparent"></div>
-          <Editor value={yaml} onChange={handleYamlChange} onRun={handleRun} />
+          <Editor
+            value={yaml}
+            onChange={handleYamlChange}
+            onRun={handleRun}
+            tabs={Object.entries(EXAMPLES).map(([key, { label, yaml }]) => ({
+              key,
+              label,
+              defaultYaml: yaml,
+            }))}
+            activeTab={activeTab}
+            onTabChange={(key) => handleTabChange(key as ExampleKey)}
+          />
         </div>
 
         {/* Right Panel - Output */}
