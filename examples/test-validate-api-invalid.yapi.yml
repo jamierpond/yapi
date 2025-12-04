@@ -1,0 +1,7 @@
+yapi: v1
+url: http://localhost:3001/api/validate
+method: POST
+content_type: application/json
+body:
+  yaml: |
+    method: GET
