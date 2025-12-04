@@ -10,23 +10,81 @@ import { yapiEncode, yapiDecode } from "../_lib/yapi-encode";
 import dynamic from "next/dynamic";
 const Editor = dynamic(() => import("./Editor"), { ssr: false });
 
-const DEFAULT_YAML = `yapi: v1
-url: https://jsonplaceholder.typicode.com/posts
+const EXAMPLES = {
+  http: {
+    label: "HTTP",
+    yaml: `yapi: v1
+# POST request with JSON body
+url: https://httpbin.org/post
 method: POST
 content_type: application/json
-query:
-  userId: 1
-  tags: example,demo
 
 body:
-  title: Example Post
-  body: This is a more complex example with query parameters and a JSON body
-  userId: 1
-`;
+  title: "Hello from yapi"
+  content: "This is a test post"
+  tags:
+    - testing
+    - api
+  metadata:
+    source: yapi
+    version: "1.0"
+`,
+  },
+  graphql: {
+    label: "GraphQL",
+    yaml: `yapi: v1
+# GraphQL - List all countries
+url: https://countries.trevorblades.com/graphql
+
+graphql: |
+  query {
+    countries {
+      code
+      name
+      capital
+      currency
+    }
+  }
+
+jq_filter: ".data.countries[:5]"
+`,
+  },
+  grpc: {
+    label: "gRPC",
+    yaml: `yapi: v1
+# gRPC Hello Service example
+# Uses grpcb.in test service with server reflection
+url: grpc://grpcb.in:9000
+
+service: hello.HelloService
+rpc: SayHello
+plaintext: true
+
+body:
+  greeting: "World"
+`,
+  },
+  tcp: {
+    label: "TCP",
+    yaml: `yapi: v1
+# TCP echo server test
+url: tcp://tcpbin.com:4242
+
+data: "Hello from yapi!\\n"
+encoding: text
+read_timeout: 5
+idle_timeout: 500
+close_after_send: true
+`,
+  },
+} as const;
+
+type ExampleKey = keyof typeof EXAMPLES;
 
 export default function Playground() {
   const pathname = usePathname();
-  const [yaml, setYaml] = useState(DEFAULT_YAML);
+  const [yaml, setYaml] = useState(EXAMPLES.http.yaml);
+  const [activeTab, setActiveTab] = useState<ExampleKey>("http");
   const [result, setResult] = useState<ExecuteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
