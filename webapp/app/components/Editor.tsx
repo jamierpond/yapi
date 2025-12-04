@@ -14,12 +14,11 @@ interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   onRun: () => void;
-  tabs?: ExampleTab[];
-  activeTab?: string;
-  onTabChange?: (key: string) => void;
+  examples?: ExampleTab[];
+  onLoadExample?: (key: string) => void;
 }
 
-export default function Editor({ value, onChange, onRun, tabs, activeTab, onTabChange }: EditorProps) {
+export default function Editor({ value, onChange, onRun, examples, onLoadExample }: EditorProps) {
   // Ref to the DOM node Monaco will render into
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Ref to keep the editor instance (avoid double init, allow dispose)
@@ -27,10 +26,24 @@ export default function Editor({ value, onChange, onRun, tabs, activeTab, onTabC
   // Track validation state
   const [hasErrors, setHasErrors] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  // Examples dropdown state
+  const [showExamples, setShowExamples] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Use ref to always have the latest onRun callback and validation state
   const onRunRef = useRef(onRun);
   const hasErrorsRef = useRef(hasErrors);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowExamples(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   useEffect(() => {
     onRunRef.current = onRun;
   }, [onRun]);
@@ -267,36 +280,48 @@ export default function Editor({ value, onChange, onRun, tabs, activeTab, onTabC
   }, [onRun]);
 
   return (
-    <div className="h-full flex flex-col bg-yapi-bg relative">
+    <div className="h-full flex flex-col bg-yapi-bg relative overflow-visible">
       {/* Editor Toolbar */}
-      <div className="relative flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
+      <div className="relative z-20 flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
         {/* Subtle gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-r from-yapi-accent/5 via-transparent to-transparent opacity-50"></div>
 
         <div className="relative flex items-center gap-4">
-          {/* Tabs */}
-          {tabs && tabs.length > 0 ? (
-            <div className="flex items-center gap-1 bg-yapi-bg-subtle/50 rounded-lg p-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => onTabChange?.(tab.key)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                    activeTab === tab.key
-                      ? "bg-yapi-accent text-white shadow-sm"
-                      : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-subtle"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
-              <h2 className="text-xs font-semibold text-yapi-fg tracking-wider">
-                REQUEST
-              </h2>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
+            <h2 className="text-xs font-semibold text-yapi-fg tracking-wider">
+              REQUEST
+            </h2>
+          </div>
+
+          {/* Examples Dropdown */}
+          {examples && examples.length > 0 && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowExamples(!showExamples)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-yapi-fg-muted hover:text-yapi-fg bg-yapi-bg-subtle/50 hover:bg-yapi-bg-subtle rounded-md transition-all duration-200"
+              >
+                <span>Examples</span>
+                <svg className={`w-3 h-3 transition-transform ${showExamples ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showExamples && (
+                <div className="absolute top-full left-0 mt-1 py-1 bg-yapi-bg-elevated border border-yapi-border rounded-lg shadow-xl z-50 min-w-[120px]">
+                  {examples.map((example) => (
+                    <button
+                      key={example.key}
+                      onClick={() => {
+                        onLoadExample?.(example.key);
+                        setShowExamples(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-xs text-left text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-subtle transition-colors"
+                    >
+                      {example.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

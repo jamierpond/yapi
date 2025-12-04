@@ -84,7 +84,6 @@ type ExampleKey = keyof typeof EXAMPLES;
 export default function Playground() {
   const pathname = usePathname();
   const [yaml, setYaml] = useState(EXAMPLES.http.yaml);
-  const [activeTab, setActiveTab] = useState<ExampleKey>("http");
   const [result, setResult] = useState<ExecuteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -124,9 +123,8 @@ export default function Playground() {
     setYaml(newYaml);
   };
 
-  const handleTabChange = (tab: ExampleKey) => {
-    setActiveTab(tab);
-    setYaml(EXAMPLES[tab].yaml);
+  const handleLoadExample = (key: ExampleKey) => {
+    setYaml(EXAMPLES[key].yaml);
     setResult(null);
   };
 
@@ -254,19 +252,18 @@ export default function Playground() {
       {/* Main Content - Split Pane */}
       <div className="flex-1 flex overflow-hidden relative z-0">
         {/* Left Panel - Editor */}
-        <div className="w-1/2 relative group">
+        <div className="w-1/2 relative group z-10">
           <div className="absolute -right-px top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-yapi-border-strong to-transparent"></div>
           <Editor
             value={yaml}
             onChange={handleYamlChange}
             onRun={handleRun}
-            tabs={Object.entries(EXAMPLES).map(([key, { label, yaml }]) => ({
+            examples={Object.entries(EXAMPLES).map(([key, { label, yaml }]) => ({
               key,
               label,
               defaultYaml: yaml,
             }))}
-            activeTab={activeTab}
-            onTabChange={(key) => handleTabChange(key as ExampleKey)}
+            onLoadExample={(key) => handleLoadExample(key as ExampleKey)}
           />
         </div>
 
