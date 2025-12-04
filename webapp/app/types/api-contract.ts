@@ -102,3 +102,40 @@ export function isErrorResponse(
 ): response is ExecuteErrorResponse {
   return response.success === false;
 }
+
+// ============================================================================
+// Validation API: POST /api/validate
+// ============================================================================
+
+/**
+ * Request payload for validation
+ */
+export const ValidateRequestSchema = z.object({
+  yaml: z.string(),
+});
+
+export type ValidateRequest = z.infer<typeof ValidateRequestSchema>;
+
+/**
+ * A single diagnostic from the validator
+ */
+export const DiagnosticSchema = z.object({
+  severity: z.enum(["error", "warning", "info"]),
+  field: z.string().optional(),
+  message: z.string(),
+  line: z.number(),
+  col: z.number(),
+});
+
+export type Diagnostic = z.infer<typeof DiagnosticSchema>;
+
+/**
+ * Validation response
+ */
+export const ValidateResponseSchema = z.object({
+  valid: z.boolean(),
+  diagnostics: z.array(DiagnosticSchema),
+  warnings: z.array(z.string()),
+});
+
+export type ValidateResponse = z.infer<typeof ValidateResponseSchema>;
