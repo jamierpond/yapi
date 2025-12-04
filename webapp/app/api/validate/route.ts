@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
+import { spawn } from "child_process";
 import {
   ValidateRequestSchema,
   ValidateResponseSchema,
   type ValidateResponse,
 } from "@/app/types/api-contract";
 
-const execAsync = promisify(exec);
-
 /**
  * POST /api/validate
  *
  * Validates yapi YAML and returns diagnostics.
- * Uses `yapi validate --json` via stdin.
+ * Uses `yapi validate --json -` with stdin.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -36,25 +33,49 @@ export async function POST(request: NextRequest) {
 
     const { yaml } = parseResult.data;
 
-    // Run yapi validate --json with yaml piped to stdin
-    const { stdout } = await execAsync(
-      `echo ${JSON.stringify(yaml)} | yapi validate --json -`,
-      {
+    // Spawn yapi validate and pipe yaml to stdin
+    const result = await new Promise<string>((resolve, reject) => {
+      const proc = spawn("yapi", ["validate", "--json", "-"], {
         timeout: 5000,
-        maxBuffer: 1024 * 1024,
-        shell: "/bin/bash",
-      }
-    );
+      });
+
+      let stdout = "";
+      let stderr = "";
+
+      proc.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on("close", (code) => {
+        // yapi validate returns exit code 1 for validation errors, but still outputs valid JSON
+        if (stdout) {
+          resolve(stdout);
+        } else {
+          reject(new Error(stderr || `Process exited with code ${code}`));
+        }
+      });
+
+      proc.on("error", (err) => {
+        reject(err);
+      });
+
+      // Write yaml to stdin and close
+      proc.stdin.write(yaml);
+      proc.stdin.end();
+    });
 
     // Parse the JSON output from yapi
-    const result = JSON.parse(stdout);
-    const validated = ValidateResponseSchema.parse(result);
+    const parsed = JSON.parse(result);
+    const validated = ValidateResponseSchema.parse(parsed);
 
     return NextResponse.json(validated);
   } catch (error: unknown) {
     console.error("Error in /api/validate:", error);
 
-    // Even on error, try to return a valid response structure
     const errorResponse: ValidateResponse = {
       valid: false,
       diagnostics: [{
