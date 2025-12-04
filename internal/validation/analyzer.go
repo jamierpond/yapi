@@ -52,6 +52,47 @@ func (a *Analysis) HasErrors() bool {
 	return false
 }
 
+// JSONOutput is the JSON-serializable output for validation results.
+type JSONOutput struct {
+	Valid       bool             `json:"valid"`
+	Diagnostics []JSONDiagnostic `json:"diagnostics"`
+	Warnings    []string         `json:"warnings"`
+}
+
+// JSONDiagnostic is a JSON-serializable diagnostic.
+type JSONDiagnostic struct {
+	Severity string `json:"severity"`
+	Field    string `json:"field,omitempty"`
+	Message  string `json:"message"`
+	Line     int    `json:"line"`
+	Col      int    `json:"col"`
+}
+
+// ToJSON converts the analysis to a JSON-serializable output.
+func (a *Analysis) ToJSON() JSONOutput {
+	diags := make([]JSONDiagnostic, 0, len(a.Diagnostics))
+	for _, d := range a.Diagnostics {
+		diags = append(diags, JSONDiagnostic{
+			Severity: d.Severity.String(),
+			Field:    d.Field,
+			Message:  d.Message,
+			Line:     d.Line,
+			Col:      d.Col,
+		})
+	}
+
+	warnings := a.Warnings
+	if warnings == nil {
+		warnings = []string{}
+	}
+
+	return JSONOutput{
+		Valid:       !a.HasErrors(),
+		Diagnostics: diags,
+		Warnings:    warnings,
+	}
+}
+
 // AnalyzeConfigString is the single entrypoint for analyzing YAML config.
 // Both CLI and LSP should call this function.
 func AnalyzeConfigString(text string) (*Analysis, error) {

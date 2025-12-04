@@ -317,32 +317,6 @@ func newVersionCmd() *cobra.Command {
 	}
 }
 
-// validateOutput is the JSON output structure for the validate command
-type validateOutput struct {
-	Valid       bool                 `json:"valid"`
-	Diagnostics []validateDiagnostic `json:"diagnostics"`
-	Warnings    []string             `json:"warnings"`
-}
-
-type validateDiagnostic struct {
-	Severity string `json:"severity"`
-	Field    string `json:"field,omitempty"`
-	Message  string `json:"message"`
-	Line     int    `json:"line"`
-	Col      int    `json:"col"`
-}
-
-func severityString(s validation.Severity) string {
-	switch s {
-	case validation.SeverityError:
-		return "error"
-	case validation.SeverityWarning:
-		return "warning"
-	default:
-		return "info"
-	}
-}
-
 func newValidateCmd() *cobra.Command {
 	var jsonOutput bool
 
@@ -353,28 +327,25 @@ func newValidateCmd() *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			var text string
-			var err error
 
 			if len(args) == 0 || args[0] == "-" {
-				// Read from stdin
-				data, readErr := io.ReadAll(os.Stdin)
-				if readErr != nil {
+				data, err := io.ReadAll(os.Stdin)
+				if err != nil {
 					if jsonOutput {
-						outputValidateError(readErr)
+						outputValidateError(err)
 					} else {
-						log.Fatalf("Failed to read stdin: %v", readErr)
+						log.Fatalf("Failed to read stdin: %v", err)
 					}
 					return
 				}
 				text = string(data)
 			} else {
-				// Read from file
-				data, readErr := os.ReadFile(args[0])
-				if readErr != nil {
+				data, err := os.ReadFile(args[0])
+				if err != nil {
 					if jsonOutput {
-						outputValidateError(readErr)
+						outputValidateError(err)
 					} else {
-						log.Fatalf("Failed to read file: %v", readErr)
+						log.Fatalf("Failed to read file: %v", err)
 					}
 					return
 				}
@@ -392,7 +363,7 @@ func newValidateCmd() *cobra.Command {
 			}
 
 			if jsonOutput {
-				outputValidateJSON(analysis)
+				json.NewEncoder(os.Stdout).Encode(analysis.ToJSON())
 			} else {
 				outputValidateText(analysis)
 			}
@@ -405,45 +376,15 @@ func newValidateCmd() *cobra.Command {
 }
 
 func outputValidateError(err error) {
-	out := validateOutput{
+	out := validation.JSONOutput{
 		Valid: false,
-		Diagnostics: []validateDiagnostic{{
+		Diagnostics: []validation.JSONDiagnostic{{
 			Severity: "error",
 			Message:  err.Error(),
 			Line:     0,
 			Col:      0,
 		}},
 		Warnings: []string{},
-	}
-	json.NewEncoder(os.Stdout).Encode(out)
-}
-
-func outputValidateJSON(analysis *validation.Analysis) {
-	diags := make([]validateDiagnostic, 0, len(analysis.Diagnostics))
-	hasErrors := false
-
-	for _, d := range analysis.Diagnostics {
-		if d.Severity == validation.SeverityError {
-			hasErrors = true
-		}
-		diags = append(diags, validateDiagnostic{
-			Severity: severityString(d.Severity),
-			Field:    d.Field,
-			Message:  d.Message,
-			Line:     d.Line,
-			Col:      d.Col,
-		})
-	}
-
-	warnings := analysis.Warnings
-	if warnings == nil {
-		warnings = []string{}
-	}
-
-	out := validateOutput{
-		Valid:       !hasErrors,
-		Diagnostics: diags,
-		Warnings:    warnings,
 	}
 	json.NewEncoder(os.Stdout).Encode(out)
 }
