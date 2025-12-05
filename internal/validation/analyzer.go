@@ -118,6 +118,7 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 	// Check if it is a chain
 	if len(parseRes.Chain) > 0 {
 		diags = append(diags, validateChain(text, parseRes.Chain)...)
+		diags = append(diags, validateEnvVars(text)...)
 		return &Analysis{
 			Request:     nil,
 			Chain:       parseRes.Chain,
@@ -147,6 +148,9 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 
 	// 4. Unknown key detection
 	diags = append(diags, validateUnknownKeys(text)...)
+
+	// 5. Environment variable validation
+	diags = append(diags, validateEnvVars(text)...)
 
 	return &Analysis{
 		Request:     req,
@@ -416,5 +420,102 @@ func scanForUndefinedRefs(text, value string, definedSteps map[string]bool, curr
 			}
 		}
 	}
+	return diags
+}
+
+// envVarRegex captures environment variable references ($VAR and ${VAR}) without dots
+var envVarRegex = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)`)
+
+// EnvVarInfo holds information about an env var reference for hover/diagnostics
+type EnvVarInfo struct {
+	Name       string
+	Value      string // Empty if not defined
+	IsDefined  bool
+	Line       int
+	Col        int
+	StartIndex int
+	EndIndex   int
+}
+
+// FindEnvVarRefs finds all environment variable references in text
+func FindEnvVarRefs(text string) []EnvVarInfo {
+	var refs []EnvVarInfo
+	lines := strings.Split(text, "\n")
+
+	for lineNum, line := range lines {
+		matches := envVarRegex.FindAllStringSubmatchIndex(line, -1)
+		for _, match := range matches {
+			// match[0:2] = full match, match[2:4] = ${VAR} capture, match[4:6] = $VAR capture
+			fullStart, fullEnd := match[0], match[1]
+			fullMatch := line[fullStart:fullEnd]
+
+			// Skip if this looks like a chain reference (contains a dot after the var name)
+			// Check the character after the match
+			if fullEnd < len(line) && line[fullEnd] == '.' {
+				continue
+			}
+
+			var varName string
+			if match[2] != -1 {
+				// ${VAR} style
+				varName = line[match[2]:match[3]]
+			} else if match[4] != -1 {
+				// $VAR style
+				varName = line[match[4]:match[5]]
+			}
+
+			if varName == "" {
+				continue
+			}
+
+			// Check if it's actually an env var (not a chain ref)
+			// Chain refs have dots like ${step.field}
+			if strings.Contains(fullMatch, ".") {
+				continue
+			}
+
+			value := os.Getenv(varName)
+			refs = append(refs, EnvVarInfo{
+				Name:       varName,
+				Value:      value,
+				IsDefined:  value != "",
+				Line:       lineNum,
+				Col:        fullStart,
+				StartIndex: fullStart,
+				EndIndex:   fullEnd,
+			})
+		}
+	}
+	return refs
+}
+
+// RedactValue redacts a value for display, showing only first/last chars
+func RedactValue(value string) string {
+	if value == "" {
+		return "(empty)"
+	}
+	if len(value) <= 4 {
+		return strings.Repeat("*", len(value))
+	}
+	return value[:2] + strings.Repeat("*", len(value)-4) + value[len(value)-2:]
+}
+
+// validateEnvVars checks for undefined environment variables and returns warnings
+func validateEnvVars(text string) []Diagnostic {
+	var diags []Diagnostic
+
+	refs := FindEnvVarRefs(text)
+	for _, ref := range refs {
+		if !ref.IsDefined {
+			diags = append(diags, Diagnostic{
+				Severity: SeverityWarning,
+				Field:    ref.Name,
+				Message:  fmt.Sprintf("environment variable '%s' is not defined", ref.Name),
+				Line:     ref.Line,
+				Col:      ref.Col,
+			})
+		}
+	}
+
 	return diags
 }
