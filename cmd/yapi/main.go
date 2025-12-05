@@ -243,7 +243,9 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		// Print results from all steps
 		for i, stepResult := range chainResult.Results {
 			fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
-			fmt.Println(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor))
+			// Trim trailing whitespace to avoid double newlines (e.g. TCP responses with \n)
+			body := strings.TrimRight(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor), "\n\r")
+			fmt.Println(body)
 			printResultMeta(stepResult)
 		}
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
