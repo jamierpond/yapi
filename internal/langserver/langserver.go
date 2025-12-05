@@ -9,9 +9,11 @@ import (
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
+	"yapi.run/cli/internal/compiler"
 	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
+	"yapi.run/cli/internal/vars"
 )
 
 const lsName = "yapi language server"
