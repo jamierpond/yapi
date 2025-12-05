@@ -113,8 +113,8 @@ query:
 			}
 
 			client := &http.Client{}
-			exec := executor.NewHTTPExecutor(client)
-			resp, err := exec.Execute(context.Background(), req)
+			execFn := executor.HTTPTransport(client)
+			resp, err := execFn(context.Background(), req)
 			if err != nil {
 				t.Fatalf("Execute failed: %v", err)
 			}
@@ -125,7 +125,7 @@ query:
 	}
 }
 
-func TestHTTPExecutor_Execute_BodyAndJSON(t *testing.T) {
+func TestHTTPTransport_BodyAndJSON(t *testing.T) {
 	tests := []struct {
 		name           string
 		yaml           string

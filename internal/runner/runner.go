@@ -35,14 +35,14 @@ type Options struct {
 }
 
 // Run executes a yapi request and returns the result.
-func Run(ctx context.Context, exec executor.Executor, req *domain.Request, warnings []string, opts Options) (*Result, error) {
+func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, warnings []string, opts Options) (*Result, error) {
 	// Apply URL override
 	if opts.URLOverride != "" {
 		req.URL = opts.URLOverride
 	}
 
 	// Execute the request
-	resp, err := exec.Execute(ctx, req)
+	resp, err := exec(ctx, req)
 	if err != nil {
 		return nil, err
 	}
