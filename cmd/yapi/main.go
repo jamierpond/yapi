@@ -228,9 +228,25 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	// Check if this is a chain config
 	if runRes.Analysis != nil && len(runRes.Analysis.Chain) > 0 {
-		chainResult, err := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts)
-		if err != nil {
-			app.handleError(err, ctx.strict)
+		chainResult, chainErr := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts)
+
+		// Print results from all completed steps (even if chain failed)
+		if chainResult != nil {
+			for i, stepResult := range chainResult.Results {
+				fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
+				// Trim trailing whitespace to avoid double newlines (e.g. TCP responses with \n)
+				body := strings.TrimRight(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor), "\n\r")
+				fmt.Println(body)
+				printResultMeta(stepResult)
+				// Print expectation results for this step
+				if i < len(chainResult.ExpectationResults) {
+					printExpectationResult(chainResult.ExpectationResults[i])
+				}
+			}
+		}
+
+		if chainErr != nil {
+			app.handleError(chainErr, ctx.strict)
 			return
 		}
 
@@ -238,18 +254,6 @@ func (app *rootCommand) executeRun(ctx runContext) {
 			logHistory(ctx.path, app.urlOverride)
 		}
 
-		// Print results from all steps
-		for i, stepResult := range chainResult.Results {
-			fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
-			// Trim trailing whitespace to avoid double newlines (e.g. TCP responses with \n)
-			body := strings.TrimRight(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor), "\n\r")
-			fmt.Println(body)
-			printResultMeta(stepResult)
-			// Print expectation results for this step
-			if i < len(chainResult.ExpectationResults) {
-				printExpectationResult(chainResult.ExpectationResults[i])
-			}
-		}
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 		app.printWarnings(runRes.Analysis, ctx.strict)
 		return
