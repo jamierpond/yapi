@@ -1,4 +1,6 @@
+import Navbar from "../../components/Navbar";
 import Playground from "../../components/Playground";
+import ShareButton from "../../components/ShareButton";
 import { yapiDecode } from "../../_lib/yapi-encode";
 import type { Metadata } from "next";
 
@@ -35,5 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function Home() {
-  return <Playground />;
+  return (
+    <div className="flex flex-col h-screen">
+      <Navbar rightContent={<ShareButton />} />
+      <Playground />
+    </div>
+  );
 }
