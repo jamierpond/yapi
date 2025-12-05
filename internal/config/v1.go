@@ -142,10 +142,31 @@ type ChainStep struct {
 }
 
 // Merge creates a full ConfigV1 by applying step overrides to the base config.
+// Maps are deep copied to avoid polluting the shared base config between steps.
 func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
-	merged := *base // Copy base
+	merged := *base // Shallow copy of scalar fields
 	merged.Chain = nil // Don't copy chain into merged step
 	merged.Expect = step.Expect // Step expectations override base
+
+	// Deep copy maps from base to avoid reference pollution between steps
+	if base.Headers != nil {
+		merged.Headers = make(map[string]string, len(base.Headers))
+		for k, v := range base.Headers {
+			merged.Headers[k] = v
+		}
+	}
+	if base.Query != nil {
+		merged.Query = make(map[string]string, len(base.Query))
+		for k, v := range base.Query {
+			merged.Query[k] = v
+		}
+	}
+	if base.Body != nil {
+		merged.Body = deepCopyMap(base.Body)
+	}
+	if base.Variables != nil {
+		merged.Variables = deepCopyMap(base.Variables)
+	}
 
 	// Override string fields if step has them
 	if step.URL != "" {
@@ -230,6 +251,44 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 	}
 
 	return merged
+}
+
+// deepCopyMap creates a deep copy of a map[string]interface{}
+func deepCopyMap(src map[string]interface{}) map[string]interface{} {
+	if src == nil {
+		return nil
+	}
+	dst := make(map[string]interface{}, len(src))
+	for k, v := range src {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			dst[k] = deepCopyMap(val)
+		case []interface{}:
+			dst[k] = deepCopySlice(val)
+		default:
+			dst[k] = v
+		}
+	}
+	return dst
+}
+
+// deepCopySlice creates a deep copy of a []interface{}
+func deepCopySlice(src []interface{}) []interface{} {
+	if src == nil {
+		return nil
+	}
+	dst := make([]interface{}, len(src))
+	for i, v := range src {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			dst[i] = deepCopyMap(val)
+		case []interface{}:
+			dst[i] = deepCopySlice(val)
+		default:
+			dst[i] = v
+		}
+	}
+	return dst
 }
 
 // Expectation defines assertions for a chain step
