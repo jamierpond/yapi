@@ -20,50 +20,60 @@ func NewEngine(httpClient *http.Client) *Engine {
 	return &Engine{Factory: executor.NewFactory(httpClient)}
 }
 
+// RunConfigResult contains the results of running a config
+type RunConfigResult struct {
+	Analysis    *validation.Analysis
+	Result      *runner.Result
+	ExpectRes   *runner.ExpectationResult
+	Error       error
+}
+
 // RunConfig analyzes, validates, and executes a config file.
 // It never prints. Callers decide how to render diagnostics/output.
 func (e *Engine) RunConfig(
 	ctx context.Context,
 	path string,
 	opts runner.Options,
-) (*validation.Analysis, *runner.Result, error) {
+) *RunConfigResult {
 	analysis, err := validation.AnalyzeConfigFile(path)
 	if err != nil {
-		return nil, nil, err
+		return &RunConfigResult{Error: err}
 	}
 
 	if analysis.HasErrors() {
-		return analysis, nil, nil
+		return &RunConfigResult{Analysis: analysis}
 	}
 
 	// Check if this is a chain config
 	if len(analysis.Chain) > 0 {
 		// For chains, return analysis only - caller handles execution
-		return analysis, nil, nil
+		return &RunConfigResult{Analysis: analysis}
 	}
 
 	if analysis.Request == nil {
-		return analysis, nil, nil
+		return &RunConfigResult{Analysis: analysis}
 	}
 
 	exec, err := e.Factory.Create(analysis.Request.Metadata["transport"])
 	if err != nil {
-		return analysis, nil, err
+		return &RunConfigResult{Analysis: analysis, Error: err}
 	}
 
 	result, err := runner.Run(ctx, exec, analysis.Request, analysis.Warnings, opts)
 	if err != nil {
-		return analysis, result, err
+		return &RunConfigResult{Analysis: analysis, Result: result, Error: err}
 	}
 
 	// Check expectations if present
+	var expectRes *runner.ExpectationResult
 	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert) > 0) {
-		if expectErr := runner.CheckExpectations(analysis.Expect, result); expectErr != nil {
-			return analysis, result, expectErr
+		expectRes = runner.CheckExpectations(analysis.Expect, result)
+		if expectRes.Error != nil {
+			return &RunConfigResult{Analysis: analysis, Result: result, ExpectRes: expectRes, Error: expectRes.Error}
 		}
 	}
 
-	return analysis, result, nil
+	return &RunConfigResult{Analysis: analysis, Result: result, ExpectRes: expectRes}
 }
 
 // RunChain executes a chain configuration
