@@ -103,8 +103,6 @@ func (a *Analysis) ToJSON() JSONOutput {
 func AnalyzeConfigString(text string) (*Analysis, error) {
 	parseRes, err := config.LoadFromString(text)
 	if err != nil {
-		// YAML parse error - no Request available
-		// Try to extract line number from error message (e.g., "line 22: cannot unmarshal...")
 		line := extractLineFromError(err.Error())
 		diag := Diagnostic{
 			Severity: SeverityError,
@@ -115,58 +113,7 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 		}
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
-
-	var diags []Diagnostic
-
-	// Check if it is a chain
-	if len(parseRes.Chain) > 0 {
-		diags = append(diags, validateChain(text, parseRes.Base, parseRes.Chain)...)
-		diags = append(diags, validateEnvVars(text)...)
-		return &Analysis{
-			Request:     nil,
-			Chain:       parseRes.Chain,
-			Base:        parseRes.Base,
-			Diagnostics: diags,
-			Warnings:    parseRes.Warnings,
-		}, nil
-	}
-
-	req := parseRes.Request
-
-	// 1. Structural / semantic validation
-	for _, iss := range ValidateRequest(req) {
-		diags = append(diags, Diagnostic{
-			Severity: iss.Severity,
-			Field:    iss.Field,
-			Message:  iss.Message,
-			Line:     findFieldLine(text, iss.Field),
-			Col:      0,
-		})
-	}
-
-	// 2. GraphQL syntax validation
-	diags = append(diags, ValidateGraphQLSyntax(text, req)...)
-
-	// 3. JQ syntax validation
-	diags = append(diags, ValidateJQSyntax(text, req)...)
-
-	// 4. Unknown key detection
-	diags = append(diags, validateUnknownKeys(text)...)
-
-	// 5. Environment variable validation
-	diags = append(diags, validateEnvVars(text)...)
-
-	// 6. Validate expect assertions
-	if len(parseRes.Expect.Assert) > 0 {
-		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert, "")...)
-	}
-
-	return &Analysis{
-		Request:     req,
-		Diagnostics: diags,
-		Warnings:    parseRes.Warnings,
-		Expect:      parseRes.Expect,
-	}, nil
+	return analyzeParsed(text, parseRes), nil
 }
 
 // AnalyzeConfigFile loads a file and analyzes it.
@@ -183,40 +130,29 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	// Re-read file to get text for line number detection
-	// This is a bit redundant but keeps the API clean
-	data, readErr := readFileForAnalysis(path)
-	text := ""
-	if readErr == nil {
-		text = string(data)
-	}
+	data, _ := os.ReadFile(path)
+	return analyzeParsed(string(data), parseRes), nil
+}
 
-	// Check if it is a chain
+// analyzeParsed is the common analysis path for both string and file inputs.
+func analyzeParsed(text string, parseRes *config.ParseResult) *Analysis {
+	var diags []Diagnostic
+
+	// Chain config
 	if len(parseRes.Chain) > 0 {
-		var diags []Diagnostic
 		diags = append(diags, validateChain(text, parseRes.Base, parseRes.Chain)...)
+		diags = append(diags, validateEnvVars(text)...)
 		return &Analysis{
-			Request:     nil,
 			Chain:       parseRes.Chain,
 			Base:        parseRes.Base,
 			Diagnostics: diags,
 			Warnings:    parseRes.Warnings,
-		}, nil
+		}
 	}
 
-	if readErr != nil {
-		// Fall back to analysis without line numbers
-		return analyzeRequest(parseRes.Request, "", parseRes.Warnings, parseRes.Expect), nil
-	}
+	// Single request config
+	req := parseRes.Request
 
-	return analyzeRequest(parseRes.Request, text, parseRes.Warnings, parseRes.Expect), nil
-}
-
-// analyzeRequest validates an already-parsed request.
-func analyzeRequest(req *domain.Request, text string, warnings []string, expect config.Expectation) *Analysis {
-	var diags []Diagnostic
-
-	// 1. Structural / semantic validation
 	for _, iss := range ValidateRequest(req) {
 		diags = append(diags, Diagnostic{
 			Severity: iss.Severity,
@@ -227,35 +163,23 @@ func analyzeRequest(req *domain.Request, text string, warnings []string, expect 
 		})
 	}
 
-	// 2. GraphQL syntax validation
 	diags = append(diags, ValidateGraphQLSyntax(text, req)...)
-
-	// 3. JQ syntax validation
 	diags = append(diags, ValidateJQSyntax(text, req)...)
-
-	// 4. Unknown key detection
 	diags = append(diags, validateUnknownKeys(text)...)
-
-	// 5. Environment variable validation
 	diags = append(diags, validateEnvVars(text)...)
 
-	// 6. Validate expect assertions
-	if len(expect.Assert) > 0 {
-		diags = append(diags, ValidateChainAssertions(text, expect.Assert, "")...)
+	if len(parseRes.Expect.Assert) > 0 {
+		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert, "")...)
 	}
 
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
-		Warnings:    warnings,
-		Expect:      expect,
+		Warnings:    parseRes.Warnings,
+		Expect:      parseRes.Expect,
 	}
 }
 
-// readFileForAnalysis reads a file for analysis purposes.
-func readFileForAnalysis(path string) ([]byte, error) {
-	return os.ReadFile(path)
-}
 
 // validateUnknownKeys checks for unknown keys in the YAML and returns warnings.
 func validateUnknownKeys(text string) []Diagnostic {
