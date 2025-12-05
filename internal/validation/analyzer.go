@@ -404,7 +404,39 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 	var refs []EnvVarInfo
 	lines := strings.Split(text, "\n")
 
+	// Track if we're inside a graphql block (which uses $var syntax for GraphQL variables)
+	inGraphQLBlock := false
+	graphqlIndent := 0
+
 	for lineNum, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Check for graphql: field start
+		if strings.HasPrefix(trimmed, "graphql:") {
+			inGraphQLBlock = true
+			// Find the indentation of the graphql key
+			graphqlIndent = len(line) - len(strings.TrimLeft(line, " \t"))
+			continue
+		}
+
+		// If we're in a graphql block, check if we've exited it
+		if inGraphQLBlock {
+			// Empty lines stay in block
+			if trimmed == "" {
+				continue
+			}
+			// Calculate current line's indentation
+			currentIndent := len(line) - len(strings.TrimLeft(line, " \t"))
+			// If current indentation is <= graphql key's indentation and line has content,
+			// we've exited the block (unless it's a continuation like |)
+			if currentIndent <= graphqlIndent && !strings.HasPrefix(trimmed, "|") && !strings.HasPrefix(trimmed, ">") {
+				inGraphQLBlock = false
+			} else {
+				// Still in graphql block - skip $var matching (GraphQL variables)
+				continue
+			}
+		}
+
 		matches := vars.EnvOnly.FindAllStringSubmatchIndex(line, -1)
 		for _, match := range matches {
 			// match[0:2] = full match, match[2:4] = ${VAR} capture, match[4:6] = $VAR capture
