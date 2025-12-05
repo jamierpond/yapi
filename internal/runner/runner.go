@@ -267,28 +267,14 @@ func checkExpectations(expect config.Expectation, result *Result) error {
 		}
 	}
 
-	// Body Contains
-	if expect.BodyContains != "" && !strings.Contains(result.Body, expect.BodyContains) {
-		return fmt.Errorf("body does not contain '%s'", expect.BodyContains)
-	}
-
-	// JSON expectations (deep equality check)
-	if expect.JSON != nil {
-		var responseJSON map[string]interface{}
-		if err := json.Unmarshal([]byte(result.Body), &responseJSON); err != nil {
-			return fmt.Errorf("response is not valid JSON: %w", err)
+	// JQ Assertions
+	for _, assertion := range expect.Assert {
+		passed, err := filter.EvalJQBool(result.Body, assertion)
+		if err != nil {
+			return fmt.Errorf("assertion failed: %w", err)
 		}
-		for key, expectedVal := range expect.JSON {
-			actualVal, ok := responseJSON[key]
-			if !ok {
-				return fmt.Errorf("expected JSON key '%s' not found in response", key)
-			}
-			// Simple equality check - could be expanded for deep comparison
-			expectedJSON, _ := json.Marshal(expectedVal)
-			actualJSON, _ := json.Marshal(actualVal)
-			if string(expectedJSON) != string(actualJSON) {
-				return fmt.Errorf("JSON key '%s': expected %s, got %s", key, string(expectedJSON), string(actualJSON))
-			}
+		if !passed {
+			return fmt.Errorf("assertion failed: %s", assertion)
 		}
 	}
 

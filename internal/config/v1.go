@@ -56,6 +56,12 @@ var knownChainStepKeys = map[string]bool{
 	"expect":    true,
 }
 
+// knownExpectKeys is the set of valid keys for expect blocks.
+var knownExpectKeys = map[string]bool{
+	"status": true,
+	"assert": true,
+}
+
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
 // Returns a sorted slice of unknown key names.
 func FindUnknownKeys(raw map[string]interface{}) []string {
@@ -116,9 +122,8 @@ type ChainStep struct {
 
 // Expectation defines assertions for a chain step
 type Expectation struct {
-	Status       interface{}            `yaml:"status,omitempty"` // int or []int
-	JSON         map[string]interface{} `yaml:"json,omitempty"`
-	BodyContains string                 `yaml:"body_contains,omitempty"`
+	Status interface{} `yaml:"status,omitempty"` // int or []int
+	Assert []string    `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
 }
 
 // ToDomain converts a ChainStep into a domain.Request.
