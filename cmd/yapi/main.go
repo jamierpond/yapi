@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/output"
@@ -52,12 +53,6 @@ func init() {
 	}
 }
 
-// ANSI color codes (matching theme orange accent #ff9e64)
-const (
-	colorOrange = "\033[38;2;255;158;100m"
-	colorReset  = "\033[0m"
-	colorDim    = "\033[2m"
-)
 
 type rootCommand struct {
 	urlOverride string
@@ -194,9 +189,9 @@ func clearScreen() {
 }
 
 func printWatchHeader(path string) {
-	fmt.Printf("%s🐑 yapi watch%s\n\n", colorOrange, colorReset)
-	fmt.Printf("%s[watching %s]%s\n", colorDim, filepath.Base(path), colorReset)
-	fmt.Printf("%s[%s]%s\n\n", colorDim, time.Now().Format("15:04:05"), colorReset)
+	fmt.Printf("%s\n\n", color.Accent("yapi watch"))
+	fmt.Printf("%s\n", color.Dim("[watching "+filepath.Base(path)+"]"))
+	fmt.Printf("%s\n\n", color.Dim("["+time.Now().Format("15:04:05")+"]"))
 }
 
 // runContext holds options for executeRun
@@ -290,7 +285,7 @@ func (app *rootCommand) handleError(err error, strict bool) {
 	if strict {
 		log.Fatalf("%v", err)
 	} else {
-		fmt.Printf("\033[31m%v\033[0m\n", err)
+		fmt.Println(color.Red(err.Error()))
 	}
 }
 
@@ -313,19 +308,22 @@ func (app *rootCommand) printDiagnostics(
 		if !filter(d) {
 			continue
 		}
-		color, prefix := "\033[36m", "[INFO]"
-		if d.Severity == validation.SeverityWarning {
-			color, prefix = "\033[33m", "[WARN]"
-		}
-		if d.Severity == validation.SeverityError {
-			color, prefix = "\033[31m", "[ERROR]"
-		}
 
 		lineInfo := ""
 		if d.Line >= 0 {
 			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
 		}
-		fmt.Fprintf(out, "%s%s%s %s\033[0m\n", color, prefix, lineInfo, d.Message)
+
+		var msg string
+		switch d.Severity {
+		case validation.SeverityError:
+			msg = color.Red("[ERROR]" + lineInfo + " " + d.Message)
+		case validation.SeverityWarning:
+			msg = color.Yellow("[WARN]" + lineInfo + " " + d.Message)
+		default:
+			msg = color.Cyan("[INFO]" + lineInfo + " " + d.Message)
+		}
+		fmt.Fprintln(out, msg)
 	}
 }
 
@@ -346,7 +344,7 @@ func (app *rootCommand) printWarnings(a *validation.Analysis, strict bool) {
 	}
 
 	for _, w := range a.Warnings {
-		fmt.Fprintf(out, "\033[33m[WARN] %s\033[0m\n", w)
+		fmt.Fprintln(out, color.Yellow("[WARN] "+w))
 	}
 
 	app.printDiagnostics(a, strict, func(d validation.Diagnostic) bool {
