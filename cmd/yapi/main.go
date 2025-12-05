@@ -242,11 +242,11 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 		// Print results from all steps
 		for i, stepResult := range chainResult.Results {
-			fmt.Printf("\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
+			fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
 			fmt.Println(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor))
 			printResultMeta(stepResult)
 		}
-		fmt.Println("\nChain completed successfully.")
+		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 		app.printWarnings(runRes.Analysis, ctx.strict)
 		return
 	}
