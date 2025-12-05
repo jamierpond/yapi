@@ -15,16 +15,8 @@ import (
 	"yapi.run/cli/internal/domain"
 )
 
-// TCPExecutor handles TCP requests.
-type TCPExecutor struct{}
-
-// NewTCPExecutor creates a new TCPExecutor.
-func NewTCPExecutor() *TCPExecutor {
-	return &TCPExecutor{}
-}
-
-// Execute performs a TCP request based on the provided domain.Request.
-func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+// TCPTransport is the transport function for TCP requests.
+func TCPTransport(ctx context.Context, req *domain.Request) (*domain.Response, error) {
 	// Extract metadata
 	data := req.Metadata["data"]
 	encoding := req.Metadata["encoding"]
@@ -99,7 +91,6 @@ func (e *TCPExecutor) Execute(ctx context.Context, req *domain.Request) (*domain
 	if readTimeout > 0 {
 		conn.SetReadDeadline(time.Now().Add(time.Duration(readTimeout) * time.Second))
 	} else if idleTimeout > 0 {
-		// This is a simplification. A more robust solution would reset the deadline after each read.
 		conn.SetReadDeadline(time.Now().Add(time.Duration(idleTimeout) * time.Millisecond))
 	}
 
