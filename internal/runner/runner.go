@@ -98,7 +98,7 @@ func RunChain(ctx context.Context, factory *executor.Factory, steps []config.Cha
 	}
 
 	for i, step := range steps {
-		fmt.Printf("Running step %d: %s...\n", i+1, step.Name)
+		fmt.Fprintf(os.Stderr, "Running step %d: %s...\n", i+1, step.Name)
 
 		// 1. Interpolate Strings
 		finalURL, err := chainCtx.ExpandVariables(step.URL)
