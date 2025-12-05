@@ -36,3 +36,21 @@ changelog:
       - "^chore:"
       - "^[release]:"
 
+homebrew_casks:
+  - name: yapi
+    description: "CLI-first, offline-first, git-friendly API client for HTTP, gRPC, and TCP"
+    homepage: "https://github.com/jamierpond/yapi"
+    skip_upload: true
+    directory: Casks
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/yapi"]
+    caveats: |
+      yapi is a CLI tool. After installation, run:
+        yapi
+      For more information: https://github.com/jamierpond/yapi
+    repository:
+      owner: jamierpond
+      name: homebrew-yapi
+      branch: main
