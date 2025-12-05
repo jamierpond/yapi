@@ -212,14 +212,16 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		NoColor:     app.noColor,
 	}
 
-	analysis, result, err := app.engine.RunConfig(context.Background(), ctx.path, opts)
-	if err != nil {
-		app.handleError(err, ctx.strict)
+	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)
+
+	// Handle validation/parse errors first
+	if runRes.Error != nil && runRes.Analysis == nil {
+		app.handleError(runRes.Error, ctx.strict)
 		return
 	}
 
-	app.printErrors(analysis, ctx.strict)
-	if analysis.HasErrors() {
+	app.printErrors(runRes.Analysis, ctx.strict)
+	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
 			os.Exit(1)
 		}
@@ -227,8 +229,8 @@ func (app *rootCommand) executeRun(ctx runContext) {
 	}
 
 	// Check if this is a chain config
-	if len(analysis.Chain) > 0 {
-		chainResult, err := app.engine.RunChain(context.Background(), analysis.Chain, opts)
+	if runRes.Analysis != nil && len(runRes.Analysis.Chain) > 0 {
+		chainResult, err := app.engine.RunChain(context.Background(), runRes.Analysis.Chain, opts)
 		if err != nil {
 			app.handleError(err, ctx.strict)
 			return
@@ -245,11 +247,11 @@ func (app *rootCommand) executeRun(ctx runContext) {
 			printResultMeta(stepResult)
 		}
 		fmt.Println("\nChain completed successfully.")
-		app.printWarnings(analysis, ctx.strict)
+		app.printWarnings(runRes.Analysis, ctx.strict)
 		return
 	}
 
-	if analysis == nil || analysis.Request == nil {
+	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
 		if ctx.strict {
 			os.Exit(1)
 		}
@@ -260,11 +262,23 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		logHistory(ctx.path, app.urlOverride)
 	}
 
-	if result != nil {
-		fmt.Println(output.Highlight(result.Body, result.ContentType, app.noColor))
-		printResultMeta(result)
+	if runRes.Result != nil {
+		fmt.Println(output.Highlight(runRes.Result.Body, runRes.Result.ContentType, app.noColor))
+		printResultMeta(runRes.Result)
 	}
-	app.printWarnings(analysis, ctx.strict)
+
+	// Print expectation results
+	if runRes.ExpectRes != nil {
+		printExpectationResult(runRes.ExpectRes)
+	}
+
+	// Handle expectation errors after printing result
+	if runRes.Error != nil {
+		app.handleError(runRes.Error, ctx.strict)
+		return
+	}
+
+	app.printWarnings(runRes.Analysis, ctx.strict)
 }
 
 // handleError prints an error, optionally exiting for strict mode
@@ -477,6 +491,41 @@ func (app *rootCommand) runConfigPath(path string) {
 // dim wraps text in ANSI dim escape codes
 func dim(s string) string {
 	return "\033[2m" + s + "\033[0m"
+}
+
+// printExpectationResult prints expectation results to stderr
+func printExpectationResult(res *runner.ExpectationResult) {
+	if res.AssertionsTotal == 0 && !res.StatusChecked {
+		return
+	}
+
+	colorGreen := "\033[32m"
+	colorRed := "\033[31m"
+	colorReset := "\033[0m"
+
+	var parts []string
+
+	// Status check result
+	if res.StatusChecked {
+		if res.StatusPassed {
+			parts = append(parts, fmt.Sprintf("%sstatus: pass%s", colorGreen, colorReset))
+		} else {
+			parts = append(parts, fmt.Sprintf("%sstatus: fail%s", colorRed, colorReset))
+		}
+	}
+
+	// Assertions result
+	if res.AssertionsTotal > 0 {
+		if res.AllPassed() {
+			parts = append(parts, fmt.Sprintf("%sassertions: %d/%d passed%s", colorGreen, res.AssertionsPassed, res.AssertionsTotal, colorReset))
+		} else {
+			parts = append(parts, fmt.Sprintf("%sassertions: %d/%d passed%s", colorRed, res.AssertionsPassed, res.AssertionsTotal, colorReset))
+		}
+	}
+
+	if len(parts) > 0 {
+		fmt.Fprintf(os.Stderr, "%s\n", strings.Join(parts, ", "))
+	}
 }
 
 // printResultMeta prints request URL and timing to stderr
