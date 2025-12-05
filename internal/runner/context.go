@@ -4,15 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
-)
 
-// Regex to capture variables.
-// Group 1: Strict format ${...} -> matches anything inside
-// Group 2: Lazy format $...    -> matches alphanumerics, underscores, dots, dashes
-var expansionRegex = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z0-9_\-\.]+)`)
+	"yapi.run/cli/internal/vars"
+)
 
 type StepResult struct {
 	BodyRaw    string
@@ -55,7 +51,7 @@ func (c *ChainContext) AddResult(name string, result *Result) {
 func (c *ChainContext) ExpandVariables(input string) (string, error) {
 	var capturedErr error
 
-	result := expansionRegex.ReplaceAllStringFunc(input, func(match string) string {
+	result := vars.Expansion.ReplaceAllStringFunc(input, func(match string) string {
 		var key string
 		if strings.HasPrefix(match, "${") {
 			// Strict: ${key}
@@ -194,7 +190,7 @@ func (c *ChainContext) ResolveVariableRaw(input string) (interface{}, bool) {
 	trimmed := strings.TrimSpace(input)
 
 	// Check if it's a pure reference (entire string is just the variable)
-	match := expansionRegex.FindStringSubmatch(trimmed)
+	match := vars.Expansion.FindStringSubmatch(trimmed)
 	if match == nil {
 		return nil, false
 	}

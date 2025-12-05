@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/domain"
+	"yapi.run/cli/internal/vars"
 )
 
 // extractLineFromError attempts to extract a line number from YAML error messages.
@@ -281,8 +282,6 @@ func validateUnknownKeys(text string) []Diagnostic {
 	return diags
 }
 
-// varRefRegex captures variable references ($var and ${var}) for chain validation
-var varRefRegex = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z0-9_\-\.]+)`)
 
 // findChainStepLine finds the line number where a chain step with given name starts
 func findChainStepLine(text, stepName string) int {
@@ -426,7 +425,7 @@ func scanBodyForUndefinedRefs(text string, body map[string]interface{}, definedS
 // scanForUndefinedRefs checks a value string for references to undefined steps
 func scanForUndefinedRefs(text, value string, definedSteps map[string]bool, currentStep, fieldName string) []Diagnostic {
 	var diags []Diagnostic
-	matches := varRefRegex.FindAllStringSubmatch(value, -1)
+	matches := vars.Expansion.FindAllStringSubmatch(value, -1)
 
 	for _, match := range matches {
 		var key string
