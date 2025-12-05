@@ -5,3 +5,8 @@ content_type: application/json
 body:
   yaml: |
     method: GET
+
+expect:
+  status_code: 400
+  body:
+    error: "Invalid API definition: 'info' section is missing."

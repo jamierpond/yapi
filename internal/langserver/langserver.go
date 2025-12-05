@@ -1,6 +1,7 @@
 package langserver
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/tliron/commonlog"

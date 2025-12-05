@@ -225,6 +225,9 @@ func analyzeRequest(req *domain.Request, text string, warnings []string) *Analys
 	// 4. Unknown key detection
 	diags = append(diags, validateUnknownKeys(text)...)
 
+	// 5. Environment variable validation
+	diags = append(diags, validateEnvVars(text)...)
+
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
