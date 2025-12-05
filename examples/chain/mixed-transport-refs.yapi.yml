@@ -1,0 +1,26 @@
+yapi: v1
+
+# Mixed transport chain with variable references across transports
+
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+
+  - name: tcp_echo
+    url: tcp://tcpbin.com:4242
+    # Reference the HTTP response in TCP payload
+    data: "Todo title: ${get_todo.title}\n"
+    encoding: text
+    read_timeout: 5
+    close_after_send: true
+
+  - name: create_post
+    url: https://jsonplaceholder.typicode.com/posts
+    method: POST
+    headers:
+      Content-Type: application/json
+    body:
+      # Reference data from both previous steps
+      original_todo: $get_todo.title
+      userId: $get_todo.userId

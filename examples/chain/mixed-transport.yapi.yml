@@ -1,0 +1,26 @@
+yapi: v1
+
+# Mixed transport chain - TCP -> HTTP -> HTTP
+# Each step can override the transport by changing url/method
+
+chain:
+  - name: tcp_echo
+    url: tcp://tcpbin.com:4242
+    data: "hello from tcp\n"
+    encoding: text
+    read_timeout: 5
+    close_after_send: true
+
+  - name: http_get
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+
+  - name: http_post
+    url: https://jsonplaceholder.typicode.com/posts
+    method: POST
+    headers:
+      Content-Type: application/json
+    body:
+      title: "Created after TCP and HTTP"
+      body: "This chain mixed transports"
+      userId: 1
