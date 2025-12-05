@@ -18,6 +18,6 @@ chain:
     url: https://jsonplaceholder.typicode.com/posts/1/comments
     method: GET
     headers:
-      X-Created-Post-Id: "${create_post.id}"
+      X-Created-Post-Id: ${create_post.id}
     expect:
       status: 200

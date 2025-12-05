@@ -261,18 +261,61 @@ func validateUnknownKeys(text string) []Diagnostic {
 // varRefRegex captures variable references ($var and ${var}) for chain validation
 var varRefRegex = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z0-9_\-\.]+)`)
 
+// findChainStepLine finds the line number where a chain step with given name starts
+func findChainStepLine(text, stepName string) int {
+	if text == "" || stepName == "" {
+		return -1
+	}
+	// Look for "- name: stepName" or "name: stepName" pattern
+	patterns := []string{
+		fmt.Sprintf("- name: %s", stepName),
+		fmt.Sprintf("-  name: %s", stepName),
+		fmt.Sprintf("name: %s", stepName),
+		fmt.Sprintf("- name: \"%s\"", stepName),
+		fmt.Sprintf("name: \"%s\"", stepName),
+		fmt.Sprintf("- name: '%s'", stepName),
+		fmt.Sprintf("name: '%s'", stepName),
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		for _, pattern := range patterns {
+			if strings.HasPrefix(trimmed, pattern) {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// findValueInText finds the line number where a specific value appears in text
+func findValueInText(text, value string) int {
+	if text == "" || value == "" {
+		return -1
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if strings.Contains(line, value) {
+			return i
+		}
+	}
+	return -1
+}
+
 // validateChain validates chain configuration
 func validateChain(text string, chain []config.ChainStep) []Diagnostic {
 	var diags []Diagnostic
 	definedSteps := make(map[string]bool)
 
 	for i, step := range chain {
+		stepLine := findChainStepLine(text, step.Name)
+
 		// 1. Check name is present
 		if step.Name == "" {
 			diags = append(diags, Diagnostic{
 				Severity: SeverityError,
 				Message:  fmt.Sprintf("step #%d missing 'name'", i+1),
-				Line:     -1,
+				Line:     stepLine,
 				Col:      0,
 			})
 		} else if definedSteps[step.Name] {
@@ -280,7 +323,7 @@ func validateChain(text string, chain []config.ChainStep) []Diagnostic {
 				Severity: SeverityError,
 				Field:    step.Name,
 				Message:  fmt.Sprintf("duplicate step name '%s'", step.Name),
-				Line:     -1,
+				Line:     stepLine,
 				Col:      0,
 			})
 		}
@@ -291,35 +334,35 @@ func validateChain(text string, chain []config.ChainStep) []Diagnostic {
 				Severity: SeverityError,
 				Field:    step.Name,
 				Message:  fmt.Sprintf("step '%s' missing 'url'", step.Name),
-				Line:     -1,
+				Line:     stepLine,
 				Col:      0,
 			})
 		}
 
 		// 3. Check for references to future steps
-		diags = append(diags, scanForUndefinedRefs(step.URL, definedSteps, step.Name, "url")...)
+		diags = append(diags, scanForUndefinedRefs(text, step.URL, definedSteps, step.Name, "url")...)
 
 		// Check Headers
 		for _, v := range step.Headers {
-			diags = append(diags, scanForUndefinedRefs(v, definedSteps, step.Name, "headers")...)
+			diags = append(diags, scanForUndefinedRefs(text, v, definedSteps, step.Name, "headers")...)
 		}
 
 		// Check Body values (if they are strings)
 		for k, v := range step.Body {
 			if s, ok := v.(string); ok {
-				diags = append(diags, scanForUndefinedRefs(s, definedSteps, step.Name, fmt.Sprintf("body.%s", k))...)
+				diags = append(diags, scanForUndefinedRefs(text, s, definedSteps, step.Name, fmt.Sprintf("body.%s", k))...)
 			}
 		}
 
 		// Check JSON field
 		if step.JSON != "" {
-			diags = append(diags, scanForUndefinedRefs(step.JSON, definedSteps, step.Name, "json")...)
+			diags = append(diags, scanForUndefinedRefs(text, step.JSON, definedSteps, step.Name, "json")...)
 		}
 
 		// Check Variables
 		for k, v := range step.Variables {
 			if s, ok := v.(string); ok {
-				diags = append(diags, scanForUndefinedRefs(s, definedSteps, step.Name, fmt.Sprintf("variables.%s", k))...)
+				diags = append(diags, scanForUndefinedRefs(text, s, definedSteps, step.Name, fmt.Sprintf("variables.%s", k))...)
 			}
 		}
 
@@ -332,7 +375,7 @@ func validateChain(text string, chain []config.ChainStep) []Diagnostic {
 }
 
 // scanForUndefinedRefs checks a value string for references to undefined steps
-func scanForUndefinedRefs(value string, definedSteps map[string]bool, currentStep, fieldName string) []Diagnostic {
+func scanForUndefinedRefs(text, value string, definedSteps map[string]bool, currentStep, fieldName string) []Diagnostic {
 	var diags []Diagnostic
 	matches := varRefRegex.FindAllStringSubmatch(value, -1)
 
@@ -355,11 +398,14 @@ func scanForUndefinedRefs(value string, definedSteps map[string]bool, currentSte
 					msg = fmt.Sprintf("step '%s' cannot reference itself", currentStep)
 				}
 
+				// Find the actual line where this reference appears
+				line := findValueInText(text, match[0])
+
 				diags = append(diags, Diagnostic{
 					Severity: SeverityError,
 					Field:    fmt.Sprintf("%s.%s", currentStep, fieldName),
 					Message:  msg,
-					Line:     -1,
+					Line:     line,
 					Col:      0,
 				})
 			}
