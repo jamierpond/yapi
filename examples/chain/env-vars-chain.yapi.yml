@@ -1,11 +1,11 @@
-# Chain example using environment variables
+# Chain example showing variable interpolation between steps
 yapi: v1
 chain:
   - name: first_request
     url: https://httpbin.org/get
     method: GET
     headers:
-      X-Custom-Header: ${MY_CUSTOM_VAR}
+      X-Custom-Header: "foobar"
     expect:
       status: 200
 
@@ -17,3 +17,5 @@ chain:
       header_value: ${first_request.headers.X-Custom-Header}
     expect:
       status: 200
+      body_contains: "foobar"
+

@@ -38,9 +38,9 @@ func (c *ChainContext) AddResult(name string, result *Result) {
 		StatusCode: result.StatusCode,
 	}
 
-	// Copy headers
-	if result.ContentType != "" {
-		sr.Headers["Content-Type"] = result.ContentType
+	// Copy all response headers
+	for k, v := range result.Headers {
+		sr.Headers[k] = v
 	}
 
 	var data map[string]interface{}
@@ -116,20 +116,27 @@ func (c *ChainContext) resolveChainVar(key string) (string, error) {
 		}
 	}
 
-	// 2. Headers
+	// 2. Headers - check HTTP response headers first, then fall back to JSON body
 	if path[0] == "headers" {
 		if len(path) < 2 {
 			return "", fmt.Errorf("header reference requires key (e.g. headers.Content-Type)")
 		}
 		target := path[1]
-		// Try exact match
+		// Try exact match in HTTP response headers
 		if v, ok := res.Headers[target]; ok {
 			return v, nil
 		}
-		// Try case-insensitive
+		// Try case-insensitive in HTTP response headers
 		for k, v := range res.Headers {
 			if strings.EqualFold(k, target) {
 				return v, nil
+			}
+		}
+		// Fall back to JSON path lookup (for APIs like httpbin that echo headers in body)
+		if res.BodyJSON != nil {
+			val, err := jsonPathLookup(res.BodyJSON, path)
+			if err == nil {
+				return val, nil
 			}
 		}
 		return "", fmt.Errorf("header '%s' not found in step '%s'", target, stepName)
