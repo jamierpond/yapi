@@ -275,12 +275,12 @@ type AssertionResult struct {
 
 // ExpectationResult contains the results of running expectations
 type ExpectationResult struct {
-	StatusPassed      bool
-	StatusChecked     bool
-	AssertionsPassed  int
-	AssertionsTotal   int
-	AssertionResults  []AssertionResult
-	Error             error
+	StatusPassed     bool
+	StatusChecked    bool
+	AssertionsPassed int
+	AssertionsTotal  int
+	AssertionResults []AssertionResult
+	Error            error
 }
 
 // AllPassed returns true if all expectations passed

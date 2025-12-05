@@ -53,7 +53,6 @@ func init() {
 	}
 }
 
-
 type rootCommand struct {
 	urlOverride string
 	noColor     bool
@@ -488,7 +487,6 @@ func outputValidateText(analysis *validation.Analysis) {
 func (app *rootCommand) runConfigPath(path string) {
 	app.executeRun(runContext{path: path, strict: true})
 }
-
 
 // printExpectationResult prints expectation results to stderr
 func printExpectationResult(res *runner.ExpectationResult) {
