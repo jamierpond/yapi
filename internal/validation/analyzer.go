@@ -462,8 +462,6 @@ func scanForUndefinedRefs(text, value string, definedSteps map[string]bool, curr
 	return diags
 }
 
-// envVarRegex captures environment variable references ($VAR and ${VAR}) without dots
-var envVarRegex = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)`)
 
 // EnvVarInfo holds information about an env var reference for hover/diagnostics
 type EnvVarInfo struct {
@@ -482,7 +480,7 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 	lines := strings.Split(text, "\n")
 
 	for lineNum, line := range lines {
-		matches := envVarRegex.FindAllStringSubmatchIndex(line, -1)
+		matches := vars.EnvOnly.FindAllStringSubmatchIndex(line, -1)
 		for _, match := range matches {
 			// match[0:2] = full match, match[2:4] = ${VAR} capture, match[4:6] = $VAR capture
 			fullStart, fullEnd := match[0], match[1]
