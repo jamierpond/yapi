@@ -12,6 +12,9 @@ chain:
       userId: 1
     expect:
       status: 201
+      assert:
+        - .id != null
+        - .title == "Test Post"
 
   - name: get_comments
     # Use the created post ID to get comments (this works as a real fetch)
@@ -21,3 +24,6 @@ chain:
       X-Created-Post-Id: ${create_post.id}
     expect:
       status: 200
+      assert:
+        - . | length > 0
+        - .[0].postId == 1
