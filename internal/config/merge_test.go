@@ -1,0 +1,152 @@
+package config
+
+import "testing"
+
+func TestMerge_MapIsolation(t *testing.T) {
+	// This test ensures that modifying merged config doesn't pollute the base config
+	base := &ConfigV1{
+		URL: "http://example.com",
+		Headers: map[string]string{
+			"Authorization": "Bearer base-token",
+		},
+		Query: map[string]string{
+			"page": "1",
+		},
+	}
+
+	// Store original values
+	originalAuthHeader := base.Headers["Authorization"]
+	originalPage := base.Query["page"]
+
+	// Step 1 adds headers
+	step1 := ChainStep{
+		Name: "step1",
+		Headers: map[string]string{
+			"X-Step": "1",
+		},
+	}
+
+	merged1 := base.Merge(step1)
+
+	// Verify step1 merged correctly
+	if merged1.Headers["X-Step"] != "1" {
+		t.Error("step1 header not merged")
+	}
+	if merged1.Headers["Authorization"] != "Bearer base-token" {
+		t.Error("base Authorization header not inherited")
+	}
+
+	// Modify the merged config (simulating what runner does)
+	merged1.Headers["X-Modified"] = "yes"
+
+	// Critical: base should NOT be affected
+	if _, exists := base.Headers["X-Modified"]; exists {
+		t.Error("base.Headers was polluted by modifying merged1.Headers")
+	}
+	if _, exists := base.Headers["X-Step"]; exists {
+		t.Error("base.Headers was polluted by step1 merge")
+	}
+	if base.Headers["Authorization"] != originalAuthHeader {
+		t.Error("base.Headers Authorization was modified")
+	}
+
+	// Step 2 should also get clean base headers
+	step2 := ChainStep{
+		Name: "step2",
+		Headers: map[string]string{
+			"X-Step": "2",
+		},
+	}
+
+	merged2 := base.Merge(step2)
+
+	// merged2 should NOT have X-Modified from merged1
+	if _, exists := merged2.Headers["X-Modified"]; exists {
+		t.Error("merged2 inherited pollution from merged1")
+	}
+	if merged2.Headers["X-Step"] != "2" {
+		t.Error("step2 header not merged correctly")
+	}
+
+	// Base should still be unchanged
+	if base.Headers["Authorization"] != originalAuthHeader {
+		t.Error("base.Headers Authorization was modified after step2")
+	}
+	if base.Query["page"] != originalPage {
+		t.Error("base.Query was modified")
+	}
+}
+
+func TestMerge_BodyDeepCopy(t *testing.T) {
+	base := &ConfigV1{
+		URL: "http://example.com",
+		Body: map[string]interface{}{
+			"nested": map[string]interface{}{
+				"key": "value",
+			},
+		},
+	}
+
+	step := ChainStep{Name: "step1"}
+	merged := base.Merge(step)
+
+	// Modify the nested map in merged
+	if nested, ok := merged.Body["nested"].(map[string]interface{}); ok {
+		nested["key"] = "modified"
+	}
+
+	// Base should NOT be affected
+	if baseNested, ok := base.Body["nested"].(map[string]interface{}); ok {
+		if baseNested["key"] != "value" {
+			t.Error("base.Body nested map was polluted")
+		}
+	}
+}
+
+func TestDeepCopyMap(t *testing.T) {
+	src := map[string]interface{}{
+		"string": "value",
+		"number": 42,
+		"nested": map[string]interface{}{
+			"inner": "data",
+		},
+		"array": []interface{}{
+			"a",
+			map[string]interface{}{"b": "c"},
+		},
+	}
+
+	dst := deepCopyMap(src)
+
+	// Modify dst
+	dst["string"] = "changed"
+	if nested, ok := dst["nested"].(map[string]interface{}); ok {
+		nested["inner"] = "changed"
+	}
+	if arr, ok := dst["array"].([]interface{}); ok {
+		arr[0] = "changed"
+		if m, ok := arr[1].(map[string]interface{}); ok {
+			m["b"] = "changed"
+		}
+	}
+
+	// Verify src is unchanged
+	if src["string"] != "value" {
+		t.Error("src string was modified")
+	}
+	if nested, ok := src["nested"].(map[string]interface{}); ok {
+		if nested["inner"] != "data" {
+			t.Error("src nested map was modified")
+		}
+	}
+	if arr, ok := src["array"].([]interface{}); ok {
+		if arr[0] != "a" {
+			t.Error("src array element was modified")
+		}
+		if m, ok := arr[1].(map[string]interface{}); ok {
+			if m["b"] != "c" {
+				t.Error("src array nested map was modified")
+			}
+		}
+	}
+}
