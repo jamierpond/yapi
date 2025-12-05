@@ -38,15 +38,14 @@ export default async function Landing() {
 
         <div className="max-w-5xl w-full text-center space-y-6 mb-16">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]">
-            Your API Collection <br className="hidden md:block" />
+            YAML in.<br className="hidden md:block" />
             <span className="bg-gradient-to-r from-yapi-accent via-orange-300 to-yapi-accent bg-clip-text text-transparent animate-shine bg-[length:200%_auto]">
-              Belongs in Git.
+              HTTP out.
             </span>
           </h1>
 
-          <p className="text-xl text-yapi-fg-muted max-w-2xl mx-auto leading-relaxed">
-            Stop debugging your API client. Start debugging your API. <br className="hidden md:block"/>
-            <strong>yapi</strong> is the HTTP & gRPC client that lives in your terminal.
+          <p className="text-xl text-yapi-fg-muted max-w-xl mx-auto leading-relaxed">
+            Define API requests in YAML. Run them from your terminal. HTTP, gRPC, GraphQL. Commit to git. No Postman. No Insomnia.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
@@ -173,7 +172,10 @@ export default async function Landing() {
   - `}<span className="text-yapi-accent">name</span>{`: profile
     `}<span className="text-yapi-accent">url</span>{`: /me
     `}<span className="text-yapi-accent">headers</span>{`:
-      `}<span className="text-blue-300">Authorization</span>{`: `}<span className="text-orange-300">{'${auth.token}'}</span>
+      `}<span className="text-blue-300">Authorization</span>{`: `}<span className="text-orange-300">{'${auth.token}'}</span>{`
+    `}<span className="text-yapi-accent">expect</span>{`:
+      `}<span className="text-blue-300">assert</span>{`:
+        - `}<span className="text-green-400">.email != null</span>
                      </code>
                    </pre>
                  </div>
