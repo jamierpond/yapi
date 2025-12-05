@@ -245,6 +245,10 @@ func (app *rootCommand) executeRun(ctx runContext) {
 			body := strings.TrimRight(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor), "\n\r")
 			fmt.Println(body)
 			printResultMeta(stepResult)
+			// Print expectation results for this step
+			if i < len(chainResult.ExpectationResults) {
+				printExpectationResult(chainResult.ExpectationResults[i])
+			}
 		}
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 		app.printWarnings(runRes.Analysis, ctx.strict)
@@ -488,29 +492,34 @@ func printExpectationResult(res *runner.ExpectationResult) {
 		return
 	}
 
-	var parts []string
+	fmt.Fprintln(os.Stderr)
 
 	// Status check result
 	if res.StatusChecked {
 		if res.StatusPassed {
-			parts = append(parts, color.Green("status: pass"))
+			fmt.Fprintf(os.Stderr, "%s %s\n", color.Green("[PASS]"), "status check")
 		} else {
-			parts = append(parts, color.Red("status: fail"))
+			fmt.Fprintf(os.Stderr, "%s %s\n", color.Red("[FAIL]"), "status check")
 		}
 	}
 
-	// Assertions result
+	// Print each assertion result
+	for _, ar := range res.AssertionResults {
+		if ar.Passed {
+			fmt.Fprintf(os.Stderr, "%s %s\n", color.Green("[PASS]"), ar.Expression)
+		} else {
+			fmt.Fprintf(os.Stderr, "%s %s\n", color.Red("[FAIL]"), ar.Expression)
+		}
+	}
+
+	// Summary line
 	if res.AssertionsTotal > 0 {
-		assertMsg := fmt.Sprintf("assertions: %d/%d passed", res.AssertionsPassed, res.AssertionsTotal)
+		summary := fmt.Sprintf("assertions: %d/%d passed", res.AssertionsPassed, res.AssertionsTotal)
 		if res.AllPassed() {
-			parts = append(parts, color.Green(assertMsg))
+			fmt.Fprintf(os.Stderr, "\n%s\n", color.Green(summary))
 		} else {
-			parts = append(parts, color.Red(assertMsg))
+			fmt.Fprintf(os.Stderr, "\n%s\n", color.Red(summary))
 		}
-	}
-
-	if len(parts) > 0 {
-		fmt.Fprintf(os.Stderr, "%s\n", strings.Join(parts, ", "))
 	}
 }
 

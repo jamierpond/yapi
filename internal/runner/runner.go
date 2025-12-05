@@ -83,16 +83,18 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 
 // ChainResult holds the output of a chain execution
 type ChainResult struct {
-	Results   []*Result // Results from each step
-	StepNames []string  // Names of each step
+	Results            []*Result            // Results from each step
+	StepNames          []string             // Names of each step
+	ExpectationResults []*ExpectationResult // Expectation results from each step
 }
 
 // RunChain executes a sequence of steps, merging each step with the base config
 func RunChain(ctx context.Context, factory *executor.Factory, base *config.ConfigV1, steps []config.ChainStep, opts Options) (*ChainResult, error) {
 	chainCtx := NewChainContext()
 	chainResult := &ChainResult{
-		Results:   make([]*Result, 0, len(steps)),
-		StepNames: make([]string, 0, len(steps)),
+		Results:            make([]*Result, 0, len(steps)),
+		StepNames:          make([]string, 0, len(steps)),
+		ExpectationResults: make([]*ExpectationResult, 0, len(steps)),
 	}
 
 	for i, step := range steps {
@@ -127,14 +129,16 @@ func RunChain(ctx context.Context, factory *executor.Factory, base *config.Confi
 
 		// 6. Assert Expectations
 		expectRes := CheckExpectations(step.Expect, result)
-		if expectRes.Error != nil {
-			return nil, fmt.Errorf("step '%s' assertion failed: %w", step.Name, expectRes.Error)
-		}
 
-		// 7. Store Result
+		// 7. Store Result (including expectation result even if failed)
 		chainCtx.AddResult(step.Name, result)
 		chainResult.Results = append(chainResult.Results, result)
 		chainResult.StepNames = append(chainResult.StepNames, step.Name)
+		chainResult.ExpectationResults = append(chainResult.ExpectationResults, expectRes)
+
+		if expectRes.Error != nil {
+			return chainResult, fmt.Errorf("step '%s' assertion failed: %w", step.Name, expectRes.Error)
+		}
 	}
 
 	return chainResult, nil
@@ -262,13 +266,21 @@ func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[s
 	return result, nil
 }
 
+// AssertionResult holds the result of a single assertion
+type AssertionResult struct {
+	Expression string
+	Passed     bool
+	Error      error
+}
+
 // ExpectationResult contains the results of running expectations
 type ExpectationResult struct {
-	StatusPassed     bool
-	StatusChecked    bool
-	AssertionsPassed int
-	AssertionsTotal  int
-	Error            error
+	StatusPassed      bool
+	StatusChecked     bool
+	AssertionsPassed  int
+	AssertionsTotal   int
+	AssertionResults  []AssertionResult
+	Error             error
 }
 
 // AllPassed returns true if all expectations passed
@@ -279,7 +291,8 @@ func (e *ExpectationResult) AllPassed() bool {
 // CheckExpectations validates the response against expected values
 func CheckExpectations(expect config.Expectation, result *Result) *ExpectationResult {
 	res := &ExpectationResult{
-		AssertionsTotal: len(expect.Assert),
+		AssertionsTotal:  len(expect.Assert),
+		AssertionResults: make([]AssertionResult, 0, len(expect.Assert)),
 	}
 
 	// Status Check
@@ -319,6 +332,13 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 	// JQ Assertions
 	for _, assertion := range expect.Assert {
 		passed, err := filter.EvalJQBool(result.Body, assertion)
+		ar := AssertionResult{
+			Expression: assertion,
+			Passed:     passed && err == nil,
+			Error:      err,
+		}
+		res.AssertionResults = append(res.AssertionResults, ar)
+
 		if err != nil {
 			res.Error = fmt.Errorf("assertion failed: %w", err)
 			return res
