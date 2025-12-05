@@ -1,12 +1,8 @@
 // Package color provides CLI color constants matching the yapi theme.
-// Uses fatih/color for terminal-aware color output with automatic NoColor support.
+// Uses ANSI true color (24-bit) for exact RGB color matching.
 package color
 
-import (
-	"fmt"
-
-	"github.com/fatih/color"
-)
+import "fmt"
 
 // Theme RGB values from internal/tui/theme/theme.go
 const (
@@ -24,7 +20,6 @@ const (
 
 // ANSI true color escape sequences
 var (
-	// Accent is the orange highlight color (#ff9e64)
 	accentSeq = fmt.Sprintf("\033[38;2;%d;%d;%dm", accentR, accentG, accentB)
 	greenSeq  = fmt.Sprintf("\033[38;2;%d;%d;%dm", greenR, greenG, greenB)
 	redSeq    = fmt.Sprintf("\033[38;2;%d;%d;%dm", redR, redG, redB)
@@ -38,10 +33,8 @@ var (
 var noColor bool
 
 // SetNoColor globally disables color output.
-// Call this early in main() if --no-color flag is set.
 func SetNoColor(disabled bool) {
 	noColor = disabled
-	color.NoColor = disabled
 }
 
 // wrap returns text wrapped in color sequence, respecting NoColor

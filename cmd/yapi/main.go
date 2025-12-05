@@ -71,7 +71,10 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "yapi",
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
-		Run:   app.runInteractive,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			color.SetNoColor(app.noColor)
+		},
+		Run: app.runInteractive,
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&app.urlOverride, "url", "u", "", "Override the URL specified in the config file")
@@ -455,29 +458,31 @@ func outputValidateText(analysis *validation.Analysis) {
 	hasOutput := false
 
 	for _, w := range analysis.Warnings {
-		fmt.Printf("\033[33m[WARN] %s\033[0m\n", w)
+		fmt.Println(color.Yellow("[WARN] " + w))
 		hasOutput = true
 	}
 
 	for _, d := range analysis.Diagnostics {
-		color, prefix := "\033[36m", "[INFO]"
-		if d.Severity == validation.SeverityWarning {
-			color, prefix = "\033[33m", "[WARN]"
-		}
-		if d.Severity == validation.SeverityError {
-			color, prefix = "\033[31m", "[ERROR]"
-		}
-
 		lineInfo := ""
 		if d.Line >= 0 {
 			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
 		}
-		fmt.Printf("%s%s%s %s\033[0m\n", color, prefix, lineInfo, d.Message)
+
+		var msg string
+		switch d.Severity {
+		case validation.SeverityError:
+			msg = color.Red("[ERROR]" + lineInfo + " " + d.Message)
+		case validation.SeverityWarning:
+			msg = color.Yellow("[WARN]" + lineInfo + " " + d.Message)
+		default:
+			msg = color.Cyan("[INFO]" + lineInfo + " " + d.Message)
+		}
+		fmt.Println(msg)
 		hasOutput = true
 	}
 
 	if !hasOutput {
-		fmt.Println("\033[32mValid\033[0m")
+		fmt.Println(color.Green("Valid"))
 	}
 
 	if analysis.HasErrors() {
@@ -490,10 +495,6 @@ func (app *rootCommand) runConfigPath(path string) {
 	app.executeRun(runContext{path: path, strict: true})
 }
 
-// dim wraps text in ANSI dim escape codes
-func dim(s string) string {
-	return "\033[2m" + s + "\033[0m"
-}
 
 // printExpectationResult prints expectation results to stderr
 func printExpectationResult(res *runner.ExpectationResult) {
@@ -501,27 +502,24 @@ func printExpectationResult(res *runner.ExpectationResult) {
 		return
 	}
 
-	colorGreen := "\033[32m"
-	colorRed := "\033[31m"
-	colorReset := "\033[0m"
-
 	var parts []string
 
 	// Status check result
 	if res.StatusChecked {
 		if res.StatusPassed {
-			parts = append(parts, fmt.Sprintf("%sstatus: pass%s", colorGreen, colorReset))
+			parts = append(parts, color.Green("status: pass"))
 		} else {
-			parts = append(parts, fmt.Sprintf("%sstatus: fail%s", colorRed, colorReset))
+			parts = append(parts, color.Red("status: fail"))
 		}
 	}
 
 	// Assertions result
 	if res.AssertionsTotal > 0 {
+		assertMsg := fmt.Sprintf("assertions: %d/%d passed", res.AssertionsPassed, res.AssertionsTotal)
 		if res.AllPassed() {
-			parts = append(parts, fmt.Sprintf("%sassertions: %d/%d passed%s", colorGreen, res.AssertionsPassed, res.AssertionsTotal, colorReset))
+			parts = append(parts, color.Green(assertMsg))
 		} else {
-			parts = append(parts, fmt.Sprintf("%sassertions: %d/%d passed%s", colorRed, res.AssertionsPassed, res.AssertionsTotal, colorReset))
+			parts = append(parts, color.Red(assertMsg))
 		}
 	}
 
@@ -533,10 +531,10 @@ func printExpectationResult(res *runner.ExpectationResult) {
 // printResultMeta prints request URL and timing to stderr
 func printResultMeta(result *runner.Result) {
 	if result.RequestURL != "" {
-		fmt.Fprintf(os.Stderr, "\n%s\n", dim("URL: "+result.RequestURL))
+		fmt.Fprintf(os.Stderr, "\n%s\n", color.Dim("URL: "+result.RequestURL))
 	}
-	fmt.Fprintf(os.Stderr, "%s\n", dim("Time: "+result.Duration.String()))
-	fmt.Fprintf(os.Stderr, "%s\n", dim(fmt.Sprintf("Size: %s (%d lines, %d chars)", formatBytes(result.BodyBytes), result.BodyLines, result.BodyChars)))
+	fmt.Fprintf(os.Stderr, "%s\n", color.Dim("Time: "+result.Duration.String()))
+	fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Size: %s (%d lines, %d chars)", formatBytes(result.BodyBytes), result.BodyLines, result.BodyChars)))
 }
 
 func formatBytes(b int) string {
