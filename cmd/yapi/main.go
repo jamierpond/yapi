@@ -292,6 +292,23 @@ func (app *rootCommand) handleError(err error, strict bool) {
 	}
 }
 
+// formatDiagnostic formats a single diagnostic with color.
+func formatDiagnostic(d validation.Diagnostic) string {
+	lineInfo := ""
+	if d.Line >= 0 {
+		lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
+	}
+
+	switch d.Severity {
+	case validation.SeverityError:
+		return color.Red("[ERROR]" + lineInfo + " " + d.Message)
+	case validation.SeverityWarning:
+		return color.Yellow("[WARN]" + lineInfo + " " + d.Message)
+	default:
+		return color.Cyan("[INFO]" + lineInfo + " " + d.Message)
+	}
+}
+
 // printDiagnostics prints diagnostics filtered by a predicate.
 func (app *rootCommand) printDiagnostics(
 	analysis *validation.Analysis,
@@ -311,22 +328,7 @@ func (app *rootCommand) printDiagnostics(
 		if !filter(d) {
 			continue
 		}
-
-		lineInfo := ""
-		if d.Line >= 0 {
-			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
-		}
-
-		var msg string
-		switch d.Severity {
-		case validation.SeverityError:
-			msg = color.Red("[ERROR]" + lineInfo + " " + d.Message)
-		case validation.SeverityWarning:
-			msg = color.Yellow("[WARN]" + lineInfo + " " + d.Message)
-		default:
-			msg = color.Cyan("[INFO]" + lineInfo + " " + d.Message)
-		}
-		fmt.Fprintln(out, msg)
+		fmt.Fprintln(out, formatDiagnostic(d))
 	}
 }
 
