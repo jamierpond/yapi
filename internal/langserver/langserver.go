@@ -40,6 +40,7 @@ func Run() {
 		TextDocumentDidClose:   textDocumentDidClose,
 		TextDocumentDidSave:    textDocumentDidSave,
 		TextDocumentCompletion: textDocumentCompletion,
+		TextDocumentHover:      textDocumentHover,
 	}
 
 	srv := server.NewServer(&handler, lsName, false)
@@ -61,6 +62,8 @@ func initialize(ctx *glsp.Context, params *protocol.InitializeParams) (any, erro
 	capabilities.CompletionProvider = &protocol.CompletionOptions{
 		TriggerCharacters: []string{":", " ", "\n"},
 	}
+
+	capabilities.HoverProvider = true
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
