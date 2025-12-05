@@ -1,5 +1,7 @@
 # general todos
 
+- add color lib to dry out code.
+- add analytics
 - syntax highlighting in cli interactive preview (file selector)
 - add to-curl for http requests, to grpccurl for grpc requests, for tcp too ?
 - record videos to put on website
