@@ -130,8 +130,8 @@ type ConfigV1 struct {
 // ChainStep represents a single step in a request chain.
 // It embeds ConfigV1 so all config fields are available as overrides.
 type ChainStep struct {
-	Name     string `yaml:"name"` // Required: unique step identifier
-	ConfigV1 `yaml:",inline"`     // All ConfigV1 fields available as overrides
+	Name     string           `yaml:"name"` // Required: unique step identifier
+	ConfigV1 `yaml:",inline"` // All ConfigV1 fields available as overrides
 }
 
 // Merge creates a full ConfigV1 by applying step overrides to the base config.
@@ -190,7 +190,6 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 
 	return m
 }
-
 
 // Expectation defines assertions for a chain step
 type Expectation struct {

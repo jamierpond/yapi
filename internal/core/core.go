@@ -22,10 +22,10 @@ func NewEngine(httpClient *http.Client) *Engine {
 
 // RunConfigResult contains the results of running a config
 type RunConfigResult struct {
-	Analysis    *validation.Analysis
-	Result      *runner.Result
-	ExpectRes   *runner.ExpectationResult
-	Error       error
+	Analysis  *validation.Analysis
+	Result    *runner.Result
+	ExpectRes *runner.ExpectationResult
+	Error     error
 }
 
 // RunConfig analyzes, validates, and executes a config file.

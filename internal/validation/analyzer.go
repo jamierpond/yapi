@@ -181,7 +181,6 @@ func analyzeParsed(text string, parseRes *config.ParseResult) *Analysis {
 	}
 }
 
-
 // validateUnknownKeys checks for unknown keys in the YAML and returns warnings.
 func validateUnknownKeys(text string) []Diagnostic {
 	if text == "" {
@@ -206,7 +205,6 @@ func validateUnknownKeys(text string) []Diagnostic {
 	}
 	return diags
 }
-
 
 // findChainStepLine finds the line number where a chain step with given name starts
 func findChainStepLine(text, stepName string) int {
@@ -386,7 +384,6 @@ func scanForUndefinedRefs(text, value string, definedSteps map[string]bool, curr
 	}
 	return diags
 }
-
 
 // EnvVarInfo holds information about an env var reference for hover/diagnostics
 type EnvVarInfo struct {

@@ -20,8 +20,8 @@ type Result struct {
 	ContentType string
 	StatusCode  int
 	Warnings    []string
-	RequestURL  string            // The full constructed URL (HTTP/GraphQL only)
-	Duration    time.Duration     // Time taken for the request
+	RequestURL  string        // The full constructed URL (HTTP/GraphQL only)
+	Duration    time.Duration // Time taken for the request
 	BodyLines   int
 	BodyChars   int
 	BodyBytes   int

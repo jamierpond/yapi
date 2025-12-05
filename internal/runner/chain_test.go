@@ -149,10 +149,10 @@ func TestResolveVariableRaw(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		input    string
-		wantVal  interface{}
-		wantOk   bool
+		name    string
+		input   string
+		wantVal interface{}
+		wantOk  bool
 	}{
 		{
 			name:    "pure int reference",
