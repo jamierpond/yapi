@@ -1,0 +1,182 @@
+package runner
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+)
+
+// Regex to capture variables.
+// Group 1: Strict format ${...} -> matches anything inside
+// Group 2: Lazy format $...    -> matches alphanumerics, underscores, dots, dashes
+var expansionRegex = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z0-9_\-\.]+)`)
+
+type StepResult struct {
+	BodyRaw    string
+	BodyJSON   map[string]interface{}
+	Headers    map[string]string
+	StatusCode int
+}
+
+type ChainContext struct {
+	Results map[string]StepResult
+}
+
+func NewChainContext() *ChainContext {
+	return &ChainContext{
+		Results: make(map[string]StepResult),
+	}
+}
+
+func (c *ChainContext) AddResult(name string, result *Result) {
+	sr := StepResult{
+		BodyRaw:    result.Body,
+		Headers:    make(map[string]string),
+		StatusCode: result.StatusCode,
+	}
+
+	// Copy headers
+	if result.ContentType != "" {
+		sr.Headers["Content-Type"] = result.ContentType
+	}
+
+	var data map[string]interface{}
+	// Try parsing JSON; ignore errors (BodyJSON stays nil)
+	if err := json.Unmarshal([]byte(result.Body), &data); err == nil {
+		sr.BodyJSON = data
+	}
+	c.Results[name] = sr
+}
+
+// ExpandVariables replaces $var and ${var} with values from Env or Chain Context.
+func (c *ChainContext) ExpandVariables(input string) (string, error) {
+	var capturedErr error
+
+	result := expansionRegex.ReplaceAllStringFunc(input, func(match string) string {
+		var key string
+		if strings.HasPrefix(match, "${") {
+			// Strict: ${key}
+			key = match[2 : len(match)-1]
+		} else {
+			// Lazy: $key
+			key = match[1:]
+		}
+
+		// 1. Check OS Environment
+		if val, ok := os.LookupEnv(key); ok {
+			return val
+		}
+
+		// 2. Check Chain Context (must contain dot)
+		if strings.Contains(key, ".") {
+			val, err := c.resolveChainVar(key)
+			if err != nil {
+				if capturedErr == nil {
+					capturedErr = err
+				}
+				return match // Return original on error
+			}
+			return val
+		}
+
+		// Not found: return as is (or could error if strict mode)
+		return match
+	})
+
+	if capturedErr != nil {
+		return "", capturedErr
+	}
+	return result, nil
+}
+
+func (c *ChainContext) resolveChainVar(key string) (string, error) {
+	parts := strings.Split(key, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid reference format '%s'", key)
+	}
+
+	stepName := parts[0]
+	path := parts[1:]
+
+	res, ok := c.Results[stepName]
+	if !ok {
+		return "", fmt.Errorf("step '%s' not found (or hasn't run yet)", stepName)
+	}
+
+	// 1. Reserved Keywords
+	if len(path) == 1 {
+		switch path[0] {
+		case "body":
+			return res.BodyRaw, nil
+		case "status":
+			return strconv.Itoa(res.StatusCode), nil
+		}
+	}
+
+	// 2. Headers
+	if path[0] == "headers" {
+		if len(path) < 2 {
+			return "", fmt.Errorf("header reference requires key (e.g. headers.Content-Type)")
+		}
+		target := path[1]
+		// Try exact match
+		if v, ok := res.Headers[target]; ok {
+			return v, nil
+		}
+		// Try case-insensitive
+		for k, v := range res.Headers {
+			if strings.EqualFold(k, target) {
+				return v, nil
+			}
+		}
+		return "", fmt.Errorf("header '%s' not found in step '%s'", target, stepName)
+	}
+
+	// 3. JSON Path
+	if res.BodyJSON == nil {
+		return "", fmt.Errorf("step '%s' did not return JSON, cannot access property '%s'", stepName, key)
+	}
+
+	return jsonPathLookup(res.BodyJSON, path)
+}
+
+func jsonPathLookup(data interface{}, path []string) (string, error) {
+	current := data
+	for i, key := range path {
+		switch v := current.(type) {
+		case map[string]interface{}:
+			val, ok := v[key]
+			if !ok {
+				return "", fmt.Errorf("key '%s' not found at path '%s'", key, strings.Join(path[:i+1], "."))
+			}
+			current = val
+		default:
+			return "", fmt.Errorf("path segment '%s' is not an object", strings.Join(path[:i], "."))
+		}
+	}
+	// Convert final value to string
+	switch v := current.(type) {
+	case string:
+		return v, nil
+	case float64:
+		// Check if it's actually an integer
+		if v == float64(int(v)) {
+			return strconv.Itoa(int(v)), nil
+		}
+		return fmt.Sprintf("%v", v), nil
+	case bool:
+		return strconv.FormatBool(v), nil
+	case nil:
+		return "null", nil
+	default:
+		// For complex types, marshal to JSON
+		jsonBytes, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Sprintf("%v", v), nil
+		}
+		return string(jsonBytes), nil
+	}
+}

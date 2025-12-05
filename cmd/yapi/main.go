@@ -218,16 +218,38 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		return
 	}
 
-	if analysis == nil || analysis.Request == nil {
-		app.printErrors(analysis, ctx.strict)
+	app.printErrors(analysis, ctx.strict)
+	if analysis.HasErrors() {
 		if ctx.strict {
 			os.Exit(1)
 		}
 		return
 	}
 
-	app.printErrors(analysis, ctx.strict)
-	if analysis.HasErrors() {
+	// Check if this is a chain config
+	if len(analysis.Chain) > 0 {
+		chainResult, err := app.engine.RunChain(context.Background(), analysis.Chain, opts)
+		if err != nil {
+			app.handleError(err, ctx.strict)
+			return
+		}
+
+		if ctx.strict {
+			logHistory(ctx.path, app.urlOverride)
+		}
+
+		// Print results from all steps
+		for i, stepResult := range chainResult.Results {
+			fmt.Printf("\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
+			fmt.Println(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor))
+			printResultMeta(stepResult)
+		}
+		fmt.Println("\nChain completed successfully.")
+		app.printWarnings(analysis, ctx.strict)
+		return
+	}
+
+	if analysis == nil || analysis.Request == nil {
 		if ctx.strict {
 			os.Exit(1)
 		}

@@ -1,12 +1,16 @@
 package runner
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/filter"
@@ -18,11 +22,12 @@ type Result struct {
 	ContentType string
 	StatusCode  int
 	Warnings    []string
-	RequestURL  string        // The full constructed URL (HTTP/GraphQL only)
-	Duration    time.Duration // Time taken for the request
+	RequestURL  string            // The full constructed URL (HTTP/GraphQL only)
+	Duration    time.Duration     // Time taken for the request
 	BodyLines   int
 	BodyChars   int
 	BodyBytes   int
+	Headers     map[string]string // Response headers
 }
 
 // Options for execution
@@ -74,5 +79,218 @@ func Run(ctx context.Context, exec executor.Executor, req *domain.Request, warni
 		BodyLines:   bodyLines,
 		BodyChars:   bodyChars,
 		BodyBytes:   bodyBytesLen,
+		Headers:     resp.Headers,
 	}, nil
+}
+
+// ChainResult holds the output of a chain execution
+type ChainResult struct {
+	Results   []*Result // Results from each step
+	StepNames []string  // Names of each step
+}
+
+// RunChain executes a sequence of steps
+func RunChain(ctx context.Context, factory *executor.Factory, steps []config.ChainStep, opts Options) (*ChainResult, error) {
+	chainCtx := NewChainContext()
+	chainResult := &ChainResult{
+		Results:   make([]*Result, 0, len(steps)),
+		StepNames: make([]string, 0, len(steps)),
+	}
+
+	for i, step := range steps {
+		fmt.Printf("Running step %d: %s...\n", i+1, step.Name)
+
+		// 1. Interpolate Strings
+		finalURL, err := chainCtx.ExpandVariables(step.URL)
+		if err != nil {
+			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
+		}
+
+		finalHeaders := make(map[string]string)
+		for k, v := range step.Headers {
+			expanded, err := chainCtx.ExpandVariables(v)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s' header '%s': %w", step.Name, k, err)
+			}
+			finalHeaders[k] = expanded
+		}
+
+		// Interpolate body if it contains string values
+		finalBody, err := interpolateBody(chainCtx, step.Body)
+		if err != nil {
+			return nil, fmt.Errorf("step '%s' body: %w", step.Name, err)
+		}
+
+		// Interpolate JSON string if present
+		finalJSON := step.JSON
+		if finalJSON != "" {
+			finalJSON, err = chainCtx.ExpandVariables(finalJSON)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s' json: %w", step.Name, err)
+			}
+		}
+
+		// 2. Build request manually (don't use ToDomain as we've already interpolated)
+		method := step.Method
+		if method == "" {
+			method = constants.MethodGET
+		}
+
+		var bodyReader io.Reader
+		var contentType string
+
+		if finalJSON != "" {
+			contentType = "application/json"
+			bodyReader = strings.NewReader(finalJSON)
+		} else if finalBody != nil {
+			contentType = "application/json"
+			bodyBytes, err := json.Marshal(finalBody)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s': invalid json in body: %w", step.Name, err)
+			}
+			bodyReader = bytes.NewReader(bodyBytes)
+		}
+
+		req := &domain.Request{
+			URL:      finalURL,
+			Method:   constants.CanonicalizeMethod(method),
+			Headers:  finalHeaders,
+			Body:     bodyReader,
+			Metadata: make(map[string]string),
+		}
+
+		if contentType != "" {
+			if req.Headers == nil {
+				req.Headers = make(map[string]string)
+			}
+			if _, ok := req.Headers["Content-Type"]; !ok {
+				req.Headers["Content-Type"] = contentType
+			}
+		}
+
+		// Handle GraphQL Metadata
+		if step.Graphql != "" {
+			req.Metadata["transport"] = constants.TransportGraphQL
+			req.Metadata["graphql_query"] = step.Graphql
+			if step.Variables != nil {
+				vars, _ := json.Marshal(step.Variables)
+				req.Metadata["graphql_variables"] = string(vars)
+			}
+		} else {
+			req.Metadata["transport"] = constants.TransportHTTP
+		}
+
+		// 3. Create executor for this step's transport
+		exec, err := factory.Create(req.Metadata["transport"])
+		if err != nil {
+			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
+		}
+
+		// 4. Execute
+		result, err := Run(ctx, exec, req, []string{}, opts)
+		if err != nil {
+			return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
+		}
+
+		// 5. Assert Expectations
+		if err := checkExpectations(step.Expect, result); err != nil {
+			return nil, fmt.Errorf("step '%s' assertion failed: %w", step.Name, err)
+		}
+
+		// 6. Store Result
+		chainCtx.AddResult(step.Name, result)
+		chainResult.Results = append(chainResult.Results, result)
+		chainResult.StepNames = append(chainResult.StepNames, step.Name)
+	}
+
+	return chainResult, nil
+}
+
+// interpolateBody recursively interpolates variables in body map
+func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[string]interface{}, error) {
+	if body == nil {
+		return nil, nil
+	}
+
+	result := make(map[string]interface{})
+	for k, v := range body {
+		switch val := v.(type) {
+		case string:
+			expanded, err := chainCtx.ExpandVariables(val)
+			if err != nil {
+				return nil, err
+			}
+			result[k] = expanded
+		case map[string]interface{}:
+			nested, err := interpolateBody(chainCtx, val)
+			if err != nil {
+				return nil, err
+			}
+			result[k] = nested
+		default:
+			result[k] = v
+		}
+	}
+	return result, nil
+}
+
+// checkExpectations validates the response against expected values
+func checkExpectations(expect config.Expectation, result *Result) error {
+	// Status Check
+	if expect.Status != nil {
+		matched := false
+		switch v := expect.Status.(type) {
+		case int:
+			if result.StatusCode == v {
+				matched = true
+			}
+		case float64: // YAML often parses numbers as float64
+			if result.StatusCode == int(v) {
+				matched = true
+			}
+		case []interface{}: // YAML often parses arrays as []interface{}
+			for _, code := range v {
+				switch c := code.(type) {
+				case int:
+					if c == result.StatusCode {
+						matched = true
+					}
+				case float64:
+					if int(c) == result.StatusCode {
+						matched = true
+					}
+				}
+			}
+		}
+		if !matched {
+			return fmt.Errorf("expected status %v, got %d", expect.Status, result.StatusCode)
+		}
+	}
+
+	// Body Contains
+	if expect.BodyContains != "" && !strings.Contains(result.Body, expect.BodyContains) {
+		return fmt.Errorf("body does not contain '%s'", expect.BodyContains)
+	}
+
+	// JSON expectations (deep equality check)
+	if expect.JSON != nil {
+		var responseJSON map[string]interface{}
+		if err := json.Unmarshal([]byte(result.Body), &responseJSON); err != nil {
+			return fmt.Errorf("response is not valid JSON: %w", err)
+		}
+		for key, expectedVal := range expect.JSON {
+			actualVal, ok := responseJSON[key]
+			if !ok {
+				return fmt.Errorf("expected JSON key '%s' not found in response", key)
+			}
+			// Simple equality check - could be expanded for deep comparison
+			expectedJSON, _ := json.Marshal(expectedVal)
+			actualJSON, _ := json.Marshal(actualVal)
+			if string(expectedJSON) != string(actualJSON) {
+				return fmt.Errorf("JSON key '%s': expected %s, got %s", key, string(expectedJSON), string(actualJSON))
+			}
+		}
+	}
+
+	return nil
 }

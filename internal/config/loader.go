@@ -16,6 +16,7 @@ type Envelope struct {
 type ParseResult struct {
 	Request  *domain.Request
 	Warnings []string
+	Chain    []ChainStep // Chain steps if this is a chain config
 }
 
 func Load(path string) (*ParseResult, error) {
@@ -53,6 +54,11 @@ func parseV1(data []byte) (*ParseResult, error) {
 	var v1 ConfigV1
 	if err := yaml.Unmarshal(data, &v1); err != nil {
 		return nil, err
+	}
+
+	// Check if this is a chain config
+	if len(v1.Chain) > 0 {
+		return &ParseResult{Chain: v1.Chain}, nil
 	}
 
 	domainReq, err := v1.ToDomain()

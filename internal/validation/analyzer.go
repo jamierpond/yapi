@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/config"
@@ -39,7 +40,8 @@ type Diagnostic struct {
 type Analysis struct {
 	Request     *domain.Request
 	Diagnostics []Diagnostic
-	Warnings    []string // parsed-level warnings like missing yapi: v1
+	Warnings    []string           // parsed-level warnings like missing yapi: v1
+	Chain       []config.ChainStep // Chain steps if this is a chain config
 }
 
 // HasErrors returns true if there are any error-level diagnostics.
@@ -111,8 +113,20 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	req := parseRes.Request
 	var diags []Diagnostic
+
+	// Check if it is a chain
+	if len(parseRes.Chain) > 0 {
+		diags = append(diags, validateChain(text, parseRes.Chain)...)
+		return &Analysis{
+			Request:     nil,
+			Chain:       parseRes.Chain,
+			Diagnostics: diags,
+			Warnings:    parseRes.Warnings,
+		}, nil
+	}
+
+	req := parseRes.Request
 
 	// 1. Structural / semantic validation
 	for _, iss := range ValidateRequest(req) {
@@ -158,12 +172,29 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 	// Re-read file to get text for line number detection
 	// This is a bit redundant but keeps the API clean
 	data, readErr := readFileForAnalysis(path)
+	text := ""
+	if readErr == nil {
+		text = string(data)
+	}
+
+	// Check if it is a chain
+	if len(parseRes.Chain) > 0 {
+		var diags []Diagnostic
+		diags = append(diags, validateChain(text, parseRes.Chain)...)
+		return &Analysis{
+			Request:     nil,
+			Chain:       parseRes.Chain,
+			Diagnostics: diags,
+			Warnings:    parseRes.Warnings,
+		}, nil
+	}
+
 	if readErr != nil {
 		// Fall back to analysis without line numbers
 		return analyzeRequest(parseRes.Request, "", parseRes.Warnings), nil
 	}
 
-	return analyzeRequest(parseRes.Request, string(data), parseRes.Warnings), nil
+	return analyzeRequest(parseRes.Request, text, parseRes.Warnings), nil
 }
 
 // analyzeRequest validates an already-parsed request.
@@ -223,6 +254,116 @@ func validateUnknownKeys(text string) []Diagnostic {
 			Line:     findFieldLine(text, key),
 			Col:      0,
 		})
+	}
+	return diags
+}
+
+// varRefRegex captures variable references ($var and ${var}) for chain validation
+var varRefRegex = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z0-9_\-\.]+)`)
+
+// validateChain validates chain configuration
+func validateChain(text string, chain []config.ChainStep) []Diagnostic {
+	var diags []Diagnostic
+	definedSteps := make(map[string]bool)
+
+	for i, step := range chain {
+		// 1. Check name is present
+		if step.Name == "" {
+			diags = append(diags, Diagnostic{
+				Severity: SeverityError,
+				Message:  fmt.Sprintf("step #%d missing 'name'", i+1),
+				Line:     -1,
+				Col:      0,
+			})
+		} else if definedSteps[step.Name] {
+			diags = append(diags, Diagnostic{
+				Severity: SeverityError,
+				Field:    step.Name,
+				Message:  fmt.Sprintf("duplicate step name '%s'", step.Name),
+				Line:     -1,
+				Col:      0,
+			})
+		}
+
+		// 2. Check URL is present
+		if step.URL == "" {
+			diags = append(diags, Diagnostic{
+				Severity: SeverityError,
+				Field:    step.Name,
+				Message:  fmt.Sprintf("step '%s' missing 'url'", step.Name),
+				Line:     -1,
+				Col:      0,
+			})
+		}
+
+		// 3. Check for references to future steps
+		diags = append(diags, scanForUndefinedRefs(step.URL, definedSteps, step.Name, "url")...)
+
+		// Check Headers
+		for _, v := range step.Headers {
+			diags = append(diags, scanForUndefinedRefs(v, definedSteps, step.Name, "headers")...)
+		}
+
+		// Check Body values (if they are strings)
+		for k, v := range step.Body {
+			if s, ok := v.(string); ok {
+				diags = append(diags, scanForUndefinedRefs(s, definedSteps, step.Name, fmt.Sprintf("body.%s", k))...)
+			}
+		}
+
+		// Check JSON field
+		if step.JSON != "" {
+			diags = append(diags, scanForUndefinedRefs(step.JSON, definedSteps, step.Name, "json")...)
+		}
+
+		// Check Variables
+		for k, v := range step.Variables {
+			if s, ok := v.(string); ok {
+				diags = append(diags, scanForUndefinedRefs(s, definedSteps, step.Name, fmt.Sprintf("variables.%s", k))...)
+			}
+		}
+
+		// 4. Add to defined scope
+		if step.Name != "" {
+			definedSteps[step.Name] = true
+		}
+	}
+	return diags
+}
+
+// scanForUndefinedRefs checks a value string for references to undefined steps
+func scanForUndefinedRefs(value string, definedSteps map[string]bool, currentStep, fieldName string) []Diagnostic {
+	var diags []Diagnostic
+	matches := varRefRegex.FindAllStringSubmatch(value, -1)
+
+	for _, match := range matches {
+		var key string
+		if strings.HasPrefix(match[0], "${") {
+			key = match[1]
+		} else {
+			key = match[2]
+		}
+
+		// Only check chain references (containing dot)
+		if strings.Contains(key, ".") {
+			parts := strings.Split(key, ".")
+			refStep := parts[0]
+
+			if !definedSteps[refStep] {
+				msg := fmt.Sprintf("step '%s' references '%s' before it is defined", currentStep, refStep)
+				if refStep == currentStep {
+					msg = fmt.Sprintf("step '%s' cannot reference itself", currentStep)
+				}
+
+				diags = append(diags, Diagnostic{
+					Severity: SeverityError,
+					Field:    fmt.Sprintf("%s.%s", currentStep, fieldName),
+					Message:  msg,
+					Line:     -1,
+					Col:      0,
+				})
+			}
+		}
 	}
 	return diags
 }

@@ -94,6 +94,90 @@ type ConfigV1 struct {
 	ReadTimeout    int                    `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
 	IdleTimeout    int                    `yaml:"idle_timeout,omitempty"` // TCP idle timeout in milliseconds (default 500)
 	CloseAfterSend bool                   `yaml:"close_after_send,omitempty"`
+
+	// Chain allows executing multiple dependent requests
+	Chain []ChainStep `yaml:"chain,omitempty"`
+}
+
+// ChainStep represents a single step in a request chain
+type ChainStep struct {
+	Name      string                 `yaml:"name"`
+	URL       string                 `yaml:"url"`
+	Method    string                 `yaml:"method,omitempty"`
+	Headers   map[string]string      `yaml:"headers,omitempty"`
+	Body      map[string]interface{} `yaml:"body,omitempty"`
+	JSON      string                 `yaml:"json,omitempty"`
+	Graphql   string                 `yaml:"graphql,omitempty"`
+	Variables map[string]interface{} `yaml:"variables,omitempty"`
+
+	// Assertion logic
+	Expect Expectation `yaml:"expect,omitempty"`
+}
+
+// Expectation defines assertions for a chain step
+type Expectation struct {
+	Status       interface{}            `yaml:"status,omitempty"` // int or []int
+	JSON         map[string]interface{} `yaml:"json,omitempty"`
+	BodyContains string                 `yaml:"body_contains,omitempty"`
+}
+
+// ToDomain converts a ChainStep into a domain.Request.
+// Note: It does NOT expand env vars here; the runner does that to capture context.
+func (s *ChainStep) ToDomain() (*domain.Request, error) {
+	// Set default method
+	method := s.Method
+	if method == "" {
+		method = constants.MethodGET
+	}
+
+	// Prepare Body
+	var bodyReader io.Reader
+	var contentType string
+
+	if s.JSON != "" {
+		contentType = "application/json"
+		bodyReader = strings.NewReader(s.JSON)
+	} else if s.Body != nil {
+		contentType = "application/json"
+		bodyBytes, err := json.Marshal(s.Body)
+		if err != nil {
+			return nil, fmt.Errorf("step '%s': invalid json in body: %w", s.Name, err)
+		}
+		bodyReader = bytes.NewReader(bodyBytes)
+	}
+
+	req := &domain.Request{
+		URL:      s.URL,
+		Method:   constants.CanonicalizeMethod(method),
+		Headers:  s.Headers,
+		Body:     bodyReader,
+		Metadata: make(map[string]string),
+	}
+
+	if contentType != "" {
+		if req.Headers == nil {
+			req.Headers = make(map[string]string)
+		}
+		// Don't overwrite if user provided specific content type
+		if _, ok := req.Headers["Content-Type"]; !ok {
+			req.Headers["Content-Type"] = contentType
+		}
+	}
+
+	// Handle GraphQL Metadata
+	if s.Graphql != "" {
+		req.Metadata["transport"] = constants.TransportGraphQL
+		req.Metadata["graphql_query"] = s.Graphql
+		if s.Variables != nil {
+			vars, _ := json.Marshal(s.Variables)
+			req.Metadata["graphql_variables"] = string(vars)
+		}
+	} else {
+		// Default to HTTP
+		req.Metadata["transport"] = constants.TransportHTTP
+	}
+
+	return req, nil
 }
 
 // ToDomain converts V1 YAML to the Canonical Config
