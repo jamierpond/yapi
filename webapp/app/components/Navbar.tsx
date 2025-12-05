@@ -23,7 +23,7 @@ export default async function Navbar({ rightContent }: NavbarProps) {
 
   return (
     <nav className="relative z-50 px-6 py-4 border-b border-yapi-border/30 backdrop-blur-md bg-yapi-bg/50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <NavbarLogo />
         <div className="flex gap-4 items-center">
           <a
@@ -43,13 +43,13 @@ export default async function Navbar({ rightContent }: NavbarProps) {
               </>
             )}
           </a>
-          {rightContent}
           <Link
             href="/playground"
             className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
           >
             Playground
           </Link>
+          {rightContent}
         </div>
       </div>
     </nav>
