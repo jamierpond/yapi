@@ -134,10 +134,103 @@ func TestCheckExpectations_Assert(t *testing.T) {
 	}
 }
 
+func TestResolveVariableRaw(t *testing.T) {
+	ctx := NewChainContext()
+	ctx.Results["step1"] = StepResult{
+		BodyJSON: map[string]interface{}{
+			"result": map[string]interface{}{
+				"index":   float64(7), // JSON numbers are float64
+				"enabled": true,
+				"ratio":   3.14,
+				"name":    "test",
+			},
+		},
+		StatusCode: 200,
+	}
+
+	tests := []struct {
+		name     string
+		input    string
+		wantVal  interface{}
+		wantOk   bool
+	}{
+		{
+			name:    "pure int reference",
+			input:   "$step1.result.index",
+			wantVal: float64(7),
+			wantOk:  true,
+		},
+		{
+			name:    "pure bool reference",
+			input:   "$step1.result.enabled",
+			wantVal: true,
+			wantOk:  true,
+		},
+		{
+			name:    "pure float reference",
+			input:   "$step1.result.ratio",
+			wantVal: 3.14,
+			wantOk:  true,
+		},
+		{
+			name:    "pure string reference",
+			input:   "$step1.result.name",
+			wantVal: "test",
+			wantOk:  true,
+		},
+		{
+			name:    "strict format reference",
+			input:   "${step1.result.index}",
+			wantVal: float64(7),
+			wantOk:  true,
+		},
+		{
+			name:    "mixed string not resolved",
+			input:   "prefix-$step1.result.index",
+			wantVal: nil,
+			wantOk:  false,
+		},
+		{
+			name:    "env var not resolved",
+			input:   "$HOME",
+			wantVal: nil,
+			wantOk:  false,
+		},
+		{
+			name:    "no variable",
+			input:   "plain text",
+			wantVal: nil,
+			wantOk:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, ok := ctx.ResolveVariableRaw(tt.input)
+			if ok != tt.wantOk {
+				t.Errorf("ResolveVariableRaw() ok = %v, wantOk %v", ok, tt.wantOk)
+				return
+			}
+			if ok && val != tt.wantVal {
+				t.Errorf("ResolveVariableRaw() = %v (%T), want %v (%T)", val, val, tt.wantVal, tt.wantVal)
+			}
+		})
+	}
+}
+
 func TestInterpolateBody(t *testing.T) {
 	ctx := NewChainContext()
 	ctx.Results["prev"] = StepResult{
 		BodyJSON:   map[string]interface{}{"token": "abc123"},
+		StatusCode: 200,
+	}
+	// Add step with typed values for type preservation tests
+	ctx.Results["step1"] = StepResult{
+		BodyJSON: map[string]interface{}{
+			"result": map[string]interface{}{
+				"index": float64(7),
+			},
+		},
 		StatusCode: 200,
 	}
 
@@ -186,6 +279,26 @@ func TestInterpolateBody(t *testing.T) {
 				"data": map[string]interface{}{
 					"token": "abc123",
 				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "type preservation - int",
+			body: map[string]interface{}{
+				"track_index": "$step1.result.index",
+			},
+			expected: map[string]interface{}{
+				"track_index": float64(7), // Preserved as number, not string
+			},
+			wantErr: false,
+		},
+		{
+			name: "mixed string stays string",
+			body: map[string]interface{}{
+				"message": "Track $step1.result.index created",
+			},
+			expected: map[string]interface{}{
+				"message": "Track 7 created", // Interpolated as string
 			},
 			wantErr: false,
 		},
