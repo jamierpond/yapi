@@ -1,0 +1,12 @@
+yapi: v1
+
+method: tcp
+url: tcp://localhost:9877
+
+chain:
+  - name: step1
+    body:
+      type: "test"
+      params:
+        # This references a step that doesn't exist
+        track_index: $undefined_step.result.index

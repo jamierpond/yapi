@@ -371,12 +371,8 @@ func validateChain(text string, base *config.ConfigV1, chain []config.ChainStep)
 			diags = append(diags, scanForUndefinedRefs(text, v, definedSteps, step.Name, "headers")...)
 		}
 
-		// Check Body values (if they are strings)
-		for k, v := range step.Body {
-			if s, ok := v.(string); ok {
-				diags = append(diags, scanForUndefinedRefs(text, s, definedSteps, step.Name, fmt.Sprintf("body.%s", k))...)
-			}
-		}
+		// Check Body values recursively (handles nested maps like body.params.track_index)
+		diags = append(diags, scanBodyForUndefinedRefs(text, step.Body, definedSteps, step.Name, "body")...)
 
 		// Check JSON field
 		if step.JSON != "" {
@@ -398,6 +394,30 @@ func validateChain(text string, base *config.ConfigV1, chain []config.ChainStep)
 		// 5. Add to defined scope
 		if step.Name != "" {
 			definedSteps[step.Name] = true
+		}
+	}
+	return diags
+}
+
+// scanBodyForUndefinedRefs recursively scans a body map for undefined step references
+func scanBodyForUndefinedRefs(text string, body map[string]interface{}, definedSteps map[string]bool, currentStep, path string) []Diagnostic {
+	var diags []Diagnostic
+	for k, v := range body {
+		fieldPath := fmt.Sprintf("%s.%s", path, k)
+		switch val := v.(type) {
+		case string:
+			diags = append(diags, scanForUndefinedRefs(text, val, definedSteps, currentStep, fieldPath)...)
+		case map[string]interface{}:
+			diags = append(diags, scanBodyForUndefinedRefs(text, val, definedSteps, currentStep, fieldPath)...)
+		case []interface{}:
+			for i, item := range val {
+				itemPath := fmt.Sprintf("%s[%d]", fieldPath, i)
+				if s, ok := item.(string); ok {
+					diags = append(diags, scanForUndefinedRefs(text, s, definedSteps, currentStep, itemPath)...)
+				} else if m, ok := item.(map[string]interface{}); ok {
+					diags = append(diags, scanBodyForUndefinedRefs(text, m, definedSteps, currentStep, itemPath)...)
+				}
+			}
 		}
 	}
 	return diags
