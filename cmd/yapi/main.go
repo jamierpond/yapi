@@ -457,30 +457,14 @@ func outputValidateError(err error) {
 }
 
 func outputValidateText(analysis *validation.Analysis) {
-	hasOutput := false
+	hasOutput := len(analysis.Warnings) > 0 || len(analysis.Diagnostics) > 0
 
 	for _, w := range analysis.Warnings {
 		fmt.Println(color.Yellow("[WARN] " + w))
-		hasOutput = true
 	}
 
 	for _, d := range analysis.Diagnostics {
-		lineInfo := ""
-		if d.Line >= 0 {
-			lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
-		}
-
-		var msg string
-		switch d.Severity {
-		case validation.SeverityError:
-			msg = color.Red("[ERROR]" + lineInfo + " " + d.Message)
-		case validation.SeverityWarning:
-			msg = color.Yellow("[WARN]" + lineInfo + " " + d.Message)
-		default:
-			msg = color.Cyan("[INFO]" + lineInfo + " " + d.Message)
-		}
-		fmt.Println(msg)
-		hasOutput = true
+		fmt.Println(formatDiagnostic(d))
 	}
 
 	if !hasOutput {
