@@ -53,9 +53,9 @@ func TestCheckExpectations_Status(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckExpectations(tt.expectation, tt.result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CheckExpectations() error = %v, wantErr %v", err, tt.wantErr)
+			res := CheckExpectations(tt.expectation, tt.result)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("CheckExpectations() error = %v, wantErr %v", res.Error, tt.wantErr)
 			}
 		})
 	}
@@ -126,9 +126,9 @@ func TestCheckExpectations_Assert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckExpectations(tt.expectation, tt.result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CheckExpectations() error = %v, wantErr %v", err, tt.wantErr)
+			res := CheckExpectations(tt.expectation, tt.result)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("CheckExpectations() error = %v, wantErr %v", res.Error, tt.wantErr)
 			}
 		})
 	}

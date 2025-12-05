@@ -66,26 +66,26 @@ func checkFileCmd(path string, lastMod time.Time) tea.Cmd {
 
 func runYapiCmd(path string) tea.Cmd {
 	return func() tea.Msg {
-		analysis, result, err := engine.RunConfig(
+		runRes := engine.RunConfig(
 			context.Background(),
 			path,
 			runner.Options{NoColor: false},
 		)
 
-		if err != nil {
-			return runResultMsg{err: err}
+		if runRes.Error != nil && runRes.Analysis == nil {
+			return runResultMsg{err: runRes.Error}
 		}
-		if analysis == nil {
+		if runRes.Analysis == nil {
 			return runResultMsg{err: fmt.Errorf("no analysis produced")}
 		}
 
 		var b strings.Builder
 
 		// Render warnings/diagnostics in TUI style.
-		for _, w := range analysis.Warnings {
+		for _, w := range runRes.Analysis.Warnings {
 			fmt.Fprintln(&b, theme.Warn.Render("[WARN] "+w))
 		}
-		for _, d := range analysis.Diagnostics {
+		for _, d := range runRes.Analysis.Diagnostics {
 			prefix, style := "[INFO]", theme.Info
 			if d.Severity == validation.SeverityWarning {
 				prefix, style = "[WARN]", theme.Warn
@@ -96,7 +96,7 @@ func runYapiCmd(path string) tea.Cmd {
 			fmt.Fprintln(&b, style.Render(prefix+" "+d.Message))
 		}
 
-		if analysis.HasErrors() || result == nil {
+		if runRes.Analysis.HasErrors() || runRes.Result == nil {
 			return runResultMsg{content: b.String()}
 		}
 
@@ -104,12 +104,31 @@ func runYapiCmd(path string) tea.Cmd {
 			b.WriteString("\n")
 		}
 
-		out := output.Highlight(result.Body, result.ContentType, false)
+		out := output.Highlight(runRes.Result.Body, runRes.Result.ContentType, false)
 		b.WriteString(out)
+
+		// Add expectation result if present
+		if runRes.ExpectRes != nil && (runRes.ExpectRes.AssertionsTotal > 0 || runRes.ExpectRes.StatusChecked) {
+			b.WriteString("\n")
+			if runRes.ExpectRes.AllPassed() {
+				b.WriteString(theme.Success.Render(fmt.Sprintf("assertions: %d/%d passed", runRes.ExpectRes.AssertionsPassed, runRes.ExpectRes.AssertionsTotal)))
+			} else {
+				b.WriteString(theme.Error.Render(fmt.Sprintf("assertions: %d/%d passed", runRes.ExpectRes.AssertionsPassed, runRes.ExpectRes.AssertionsTotal)))
+			}
+		}
+
+		// Handle expectation error
+		if runRes.Error != nil {
+			return runResultMsg{
+				content:  b.String(),
+				duration: runRes.Result.Duration,
+				err:      runRes.Error,
+			}
+		}
 
 		return runResultMsg{
 			content:  b.String(),
-			duration: result.Duration,
+			duration: runRes.Result.Duration,
 		}
 	}
 }
