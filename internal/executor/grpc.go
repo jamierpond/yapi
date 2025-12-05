@@ -19,16 +19,8 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// GRPCExecutor handles gRPC requests.
-type GRPCExecutor struct{}
-
-// NewGRPCExecutor creates a new GRPCExecutor.
-func NewGRPCExecutor() *GRPCExecutor {
-	return &GRPCExecutor{}
-}
-
-// Execute performs a gRPC request based on the provided domain.Request.
-func (e *GRPCExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+// GRPCTransport is the transport function for gRPC requests.
+func GRPCTransport(ctx context.Context, req *domain.Request) (*domain.Response, error) {
 	// Extract metadata
 	service := req.Metadata["service"]
 	rpc := req.Metadata["rpc"]
