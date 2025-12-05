@@ -1,0 +1,24 @@
+yapi: v1
+
+method: tcp
+url: tcp://localhost:9877
+
+chain:
+  - name: create_track
+    body:
+      type: "create_audio_track"
+      params:
+        index: -1
+
+  - name: create_clip
+    body:
+      type: "create_arrangement_audio_clip"
+      params:
+        track_index: $create_track.result.index
+        file_path: "/Users/jamiepond/Downloads/yungchaiboy_after.wav"
+        start_time: 400
+        clip_name: "Hi Matt"
+
+read_timeout: 10
+close_after_send: true
+

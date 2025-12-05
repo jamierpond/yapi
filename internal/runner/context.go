@@ -187,3 +187,77 @@ func jsonPathLookup(data interface{}, path []string) (string, error) {
 		return string(jsonBytes), nil
 	}
 }
+
+// ResolveVariableRaw checks if input is a pure variable reference (e.g. "$step.field" or "${step.field}")
+// and returns the raw typed value. Returns (value, true) if resolved, (nil, false) otherwise.
+func (c *ChainContext) ResolveVariableRaw(input string) (interface{}, bool) {
+	trimmed := strings.TrimSpace(input)
+
+	// Check if it's a pure reference (entire string is just the variable)
+	match := expansionRegex.FindStringSubmatch(trimmed)
+	if match == nil {
+		return nil, false
+	}
+
+	// Verify the entire string is just the variable reference
+	if match[0] != trimmed {
+		return nil, false
+	}
+
+	var key string
+	if match[1] != "" {
+		// Strict format: ${key}
+		key = match[1]
+	} else {
+		// Lazy format: $key
+		key = match[2]
+	}
+
+	// Must contain a dot to be a chain reference
+	if !strings.Contains(key, ".") {
+		return nil, false
+	}
+
+	parts := strings.Split(key, ".")
+	if len(parts) < 2 {
+		return nil, false
+	}
+
+	stepName := parts[0]
+	path := parts[1:]
+
+	res, ok := c.Results[stepName]
+	if !ok {
+		return nil, false
+	}
+
+	// JSON Path lookup returning raw value
+	if res.BodyJSON == nil {
+		return nil, false
+	}
+
+	val, err := jsonPathLookupRaw(res.BodyJSON, path)
+	if err != nil {
+		return nil, false
+	}
+
+	return val, true
+}
+
+// jsonPathLookupRaw returns the raw typed value at the given path
+func jsonPathLookupRaw(data interface{}, path []string) (interface{}, error) {
+	current := data
+	for i, key := range path {
+		switch v := current.(type) {
+		case map[string]interface{}:
+			val, ok := v[key]
+			if !ok {
+				return nil, fmt.Errorf("key '%s' not found at path '%s'", key, strings.Join(path[:i+1], "."))
+			}
+			current = val
+		default:
+			return nil, fmt.Errorf("path segment '%s' is not an object", strings.Join(path[:i], "."))
+		}
+	}
+	return current, nil
+}

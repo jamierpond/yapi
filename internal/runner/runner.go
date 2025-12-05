@@ -228,6 +228,7 @@ func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.Co
 }
 
 // interpolateBody recursively interpolates variables in body map
+// It preserves types for pure variable references (e.g. $step.field returns int/bool, not string)
 func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[string]interface{}, error) {
 	if body == nil {
 		return nil, nil
@@ -237,11 +238,17 @@ func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[s
 	for k, v := range body {
 		switch val := v.(type) {
 		case string:
-			expanded, err := chainCtx.ExpandVariables(val)
-			if err != nil {
-				return nil, err
+			// First, try to resolve as a pure variable reference (preserves type)
+			if rawVal, ok := chainCtx.ResolveVariableRaw(val); ok {
+				result[k] = rawVal
+			} else {
+				// Fall back to string interpolation
+				expanded, err := chainCtx.ExpandVariables(val)
+				if err != nil {
+					return nil, err
+				}
+				result[k] = expanded
 			}
-			result[k] = expanded
 		case map[string]interface{}:
 			nested, err := interpolateBody(chainCtx, val)
 			if err != nil {
