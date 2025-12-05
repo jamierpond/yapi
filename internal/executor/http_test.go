@@ -197,8 +197,8 @@ json: '{"status":"active","code":42}'`,
 			req.URL = srv.URL
 
 			client := &http.Client{}
-			exec := executor.NewHTTPExecutor(client)
-			resp, err := exec.Execute(context.Background(), req)
+			execFn := executor.HTTPTransport(client)
+			resp, err := execFn(context.Background(), req)
 			if err != nil {
 				t.Fatalf("Execute failed: %v", err)
 			}

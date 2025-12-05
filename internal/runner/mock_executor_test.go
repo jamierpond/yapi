@@ -8,31 +8,20 @@ import (
 	"time"
 
 	"yapi.run/cli/internal/domain"
+	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/runner"
 )
 
-// MockExecutor is a mock implementation of the executor.Executor interface.
-type MockExecutor struct {
-	ExecuteFunc func(ctx context.Context, req *domain.Request) (*domain.Response, error)
-}
-
-// Execute calls the mock function.
-func (m *MockExecutor) Execute(ctx context.Context, req *domain.Request) (*domain.Response, error) {
-	return m.ExecuteFunc(ctx, req)
-}
-
 func TestRun(t *testing.T) {
-	// 1. Setup mock
-	mockExec := &MockExecutor{
-		ExecuteFunc: func(ctx context.Context, req *domain.Request) (*domain.Response, error) {
-			// Simulate a successful response
-			return &domain.Response{
-				StatusCode: 200,
-				Headers:    map[string]string{"Content-Type": "application/json"},
-				Body:       io.NopCloser(strings.NewReader(`{"message": "success"}`)),
-				Duration:   100 * time.Millisecond,
-			}, nil
-		},
+	// 1. Setup mock transport function
+	mockTransport := func(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+		// Simulate a successful response
+		return &domain.Response{
+			StatusCode: 200,
+			Headers:    map[string]string{"Content-Type": "application/json"},
+			Body:       io.NopCloser(strings.NewReader(`{"message": "success"}`)),
+			Duration:   100 * time.Millisecond,
+		}, nil
 	}
 
 	// 2. Create a sample domain request
@@ -46,8 +35,9 @@ func TestRun(t *testing.T) {
 		NoColor: true,
 	}
 
-	// 4. Call the runner with the mock executor
-	result, err := runner.Run(context.Background(), mockExec, req, nil, opts)
+	// 4. Call the runner with the mock transport function
+	var execFn executor.TransportFunc = mockTransport
+	result, err := runner.Run(context.Background(), execFn, req, nil, opts)
 
 	// 5. Assert the results
 	if err != nil {

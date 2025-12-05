@@ -12,7 +12,7 @@ import (
 	"yapi.run/cli/internal/executor"
 )
 
-func TestTCPExecutor_Execute_Echo(t *testing.T) {
+func TestTCPTransport_Echo(t *testing.T) {
 	expected := "Hello from yapi!\n"
 
 	// Mock TCP server
@@ -64,8 +64,7 @@ close_after_send: true`, l.Addr().String(), expected)
 	}
 	req := res.Request
 
-	exec := executor.NewTCPExecutor()
-	result, err := exec.Execute(context.Background(), req)
+	result, err := executor.TCPTransport(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
@@ -80,7 +79,7 @@ close_after_send: true`, l.Addr().String(), expected)
 	wg.Wait()
 }
 
-func TestTCPExecutor_Execute_HexEncoding(t *testing.T) {
+func TestTCPTransport_HexEncoding(t *testing.T) {
 	hexData := "48656c6c6f"
 	expected := "Hello"
 
@@ -128,8 +127,7 @@ close_after_send: true`, l.Addr().String(), hexData)
 	}
 	req := res.Request
 
-	exec := executor.NewTCPExecutor()
-	result, err := exec.Execute(context.Background(), req)
+	result, err := executor.TCPTransport(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
@@ -144,7 +142,7 @@ close_after_send: true`, l.Addr().String(), hexData)
 	wg.Wait()
 }
 
-func TestTCPExecutor_Execute_Base64Encoding(t *testing.T) {
+func TestTCPTransport_Base64Encoding(t *testing.T) {
 	base64Data := "SGVsbG8="
 	expected := "Hello"
 
@@ -192,8 +190,7 @@ close_after_send: true`, l.Addr().String(), base64Data)
 	}
 	req := res.Request
 
-	exec := executor.NewTCPExecutor()
-	result, err := exec.Execute(context.Background(), req)
+	result, err := executor.TCPTransport(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
