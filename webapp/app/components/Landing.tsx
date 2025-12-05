@@ -145,14 +145,14 @@ export default async function Landing() {
         <div className="max-w-4xl w-full mx-auto mt-32 mb-16 border-t border-yapi-border/50 pt-16">
            <div className="flex flex-col md:flex-row gap-12 items-center">
               <div className="flex-1 space-y-4">
-                <div className="inline-block px-3 py-1 rounded bg-yapi-accent/10 text-yapi-accent text-xs font-bold uppercase tracking-wider">
-                  Coming Soon
+                <div className="inline-block px-3 py-1 rounded bg-yapi-success/10 text-yapi-success text-xs font-bold uppercase tracking-wider">
+                  New
                 </div>
-                <h3 className="text-3xl font-bold">Request Chaining</h3>
+                <h3 className="text-3xl font-bold">Request Chaining & Assertions</h3>
                 <p className="text-yapi-fg-muted leading-relaxed">
-                  Building complex workflows shouldn't require a GUI scripting engine.
-                  With <strong>yapi</strong>, you can chain requests declaratively. Pass the token from login
-                  to the next request automatically.
+                  Build complex workflows without a GUI scripting engine.
+                  Chain requests declaratively, pass data between steps, and validate responses
+                  with JQ-powered assertions. Perfect for auth flows and integration tests.
                 </p>
               </div>
               <div className="flex-1 w-full">
@@ -164,6 +164,10 @@ export default async function Landing() {
   - `}<span className="text-yapi-accent">name</span>{`: auth
     `}<span className="text-yapi-accent">url</span>{`: /login
     `}<span className="text-yapi-accent">body</span>{`: { user: "me" }
+    `}<span className="text-yapi-accent">expect</span>{`:
+      `}<span className="text-blue-300">status</span>{`: 200
+      `}<span className="text-blue-300">assert</span>{`:
+        - `}<span className="text-green-400">.token != null</span>{`
 
   `}<span className="text-yapi-fg-subtle"># Step 2: Use Token</span>{`
   - `}<span className="text-yapi-accent">name</span>{`: profile
