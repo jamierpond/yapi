@@ -1,0 +1,18 @@
+# POST chain example: Create a resource, then fetch it
+yapi: v1
+chain:
+  - name: create_post
+    url: https://jsonplaceholder.typicode.com/posts
+    method: POST
+    body:
+      title: "Test Post"
+      body: "This is a test post body"
+      userId: 1
+    expect:
+      status: 201
+
+  - name: get_post
+    url: https://jsonplaceholder.typicode.com/posts/${create_post.id}
+    method: GET
+    expect:
+      status: 200

@@ -1,0 +1,20 @@
+# Auth chain example: Login then make authenticated request
+# Note: Uses httpbin for testing
+yapi: v1
+chain:
+  - name: login
+    url: https://httpbin.org/post
+    method: POST
+    body:
+      username: testuser
+      password: testpass
+    expect:
+      status: 200
+
+  - name: get_data
+    url: https://httpbin.org/headers
+    method: GET
+    headers:
+      Authorization: Bearer ${login.json.username}
+    expect:
+      status: 200

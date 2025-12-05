@@ -40,6 +40,20 @@ var knownV1Keys = map[string]bool{
 	"read_timeout":     true,
 	"idle_timeout":     true,
 	"close_after_send": true,
+	"chain":            true,
+}
+
+// knownChainStepKeys is the set of valid keys for chain step entries.
+var knownChainStepKeys = map[string]bool{
+	"name":      true,
+	"url":       true,
+	"method":    true,
+	"headers":   true,
+	"body":      true,
+	"json":      true,
+	"graphql":   true,
+	"variables": true,
+	"expect":    true,
 }
 
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.

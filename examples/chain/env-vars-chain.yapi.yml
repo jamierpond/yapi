@@ -1,0 +1,19 @@
+# Chain example using environment variables
+yapi: v1
+chain:
+  - name: first_request
+    url: https://httpbin.org/get
+    method: GET
+    headers:
+      X-Custom-Header: ${MY_CUSTOM_VAR}
+    expect:
+      status: 200
+
+  - name: second_request
+    url: https://httpbin.org/post
+    method: POST
+    body:
+      previous_url: ${first_request.url}
+      header_value: ${first_request.headers.X-Custom-Header}
+    expect:
+      status: 200

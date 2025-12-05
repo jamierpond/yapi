@@ -1,0 +1,14 @@
+# Simple chain example: Get a todo, then get the user who created it
+yapi: v1
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+    expect:
+      status: 200
+
+  - name: get_user
+    url: https://jsonplaceholder.typicode.com/users/${get_todo.userId}
+    method: GET
+    expect:
+      status: 200
