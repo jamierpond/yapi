@@ -369,3 +369,43 @@ func textDocumentCompletion(ctx *glsp.Context, params *protocol.CompletionParams
 
 	return items, nil
 }
+
+func textDocumentHover(ctx *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+	uri := params.TextDocument.URI
+	doc, ok := docs[uri]
+	if !ok {
+		return nil, nil
+	}
+
+	line := int(params.Position.Line)
+	char := int(params.Position.Character)
+
+	// Find all env var references in the document
+	refs := validation.FindEnvVarRefs(doc.Text)
+
+	// Check if cursor is within any env var reference
+	for _, ref := range refs {
+		if ref.Line == line && char >= ref.Col && char <= ref.EndIndex {
+			var content string
+			if ref.IsDefined {
+				redacted := validation.RedactValue(ref.Value)
+				content = fmt.Sprintf("**Environment Variable: `%s`**\n\nValue: `%s`", ref.Name, redacted)
+			} else {
+				content = fmt.Sprintf("**Environment Variable: `%s`**\n\n_Not defined_", ref.Name)
+			}
+
+			return &protocol.Hover{
+				Contents: protocol.MarkupContent{
+					Kind:  protocol.MarkupKindMarkdown,
+					Value: content,
+				},
+				Range: &protocol.Range{
+					Start: protocol.Position{Line: protocol.UInteger(line), Character: protocol.UInteger(ref.Col)},
+					End:   protocol.Position{Line: protocol.UInteger(line), Character: protocol.UInteger(ref.EndIndex)},
+				},
+			}, nil
+		}
+	}
+
+	return nil, nil
+}
