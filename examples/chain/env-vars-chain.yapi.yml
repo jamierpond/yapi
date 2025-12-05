@@ -8,6 +8,9 @@ chain:
       X-Custom-Header: "foobar"
     expect:
       status: 200
+      assert:
+        - .url != null
+        - .headers["X-Custom-Header"] == "foobar"
 
   - name: second_request
     url: https://httpbin.org/post
@@ -17,5 +20,7 @@ chain:
       header_value: ${first_request.headers.X-Custom-Header}
     expect:
       status: 200
-      body_contains: "foobar"
+      assert:
+        - .json.header_value == "foobar"
+        - .json.previous_url != null
 

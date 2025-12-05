@@ -6,9 +6,15 @@ chain:
     method: GET
     expect:
       status: 200
+      assert:
+        - .userId != null
+        - .id == 1
 
   - name: get_user
     url: https://jsonplaceholder.typicode.com/users/${get_todo.userId}
     method: GET
     expect:
       status: 200
+      assert:
+        - .name != null
+        - .email != null

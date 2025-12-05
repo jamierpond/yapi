@@ -366,7 +366,12 @@ func validateChain(text string, chain []config.ChainStep) []Diagnostic {
 			}
 		}
 
-		// 4. Add to defined scope
+		// 4. Validate JQ assertions
+		if len(step.Expect.Assert) > 0 {
+			diags = append(diags, ValidateChainAssertions(text, step.Expect.Assert, step.Name)...)
+		}
+
+		// 5. Add to defined scope
 		if step.Name != "" {
 			definedSteps[step.Name] = true
 		}

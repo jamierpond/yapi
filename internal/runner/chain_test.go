@@ -61,7 +61,7 @@ func TestCheckExpectations_Status(t *testing.T) {
 	}
 }
 
-func TestCheckExpectations_BodyContains(t *testing.T) {
+func TestCheckExpectations_Assert(t *testing.T) {
 	tests := []struct {
 		name        string
 		expectation config.Expectation
@@ -69,73 +69,58 @@ func TestCheckExpectations_BodyContains(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "body contains expected string",
-			expectation: config.Expectation{BodyContains: "success"},
+			name:        "assertion passes - contains check",
+			expectation: config.Expectation{Assert: []string{`.status == "success"`}},
 			result:      &Result{Body: `{"status": "success"}`},
 			wantErr:     false,
 		},
 		{
-			name:        "body does not contain expected string",
-			expectation: config.Expectation{BodyContains: "error"},
+			name:        "assertion fails - value mismatch",
+			expectation: config.Expectation{Assert: []string{`.status == "error"`}},
 			result:      &Result{Body: `{"status": "success"}`},
 			wantErr:     true,
 		},
 		{
-			name:        "no body_contains expectation",
+			name:        "assertion passes - field exists",
+			expectation: config.Expectation{Assert: []string{`.status != null`}},
+			result:      &Result{Body: `{"status": "success"}`},
+			wantErr:     false,
+		},
+		{
+			name:        "assertion fails - field missing",
+			expectation: config.Expectation{Assert: []string{`.missing != null`}},
+			result:      &Result{Body: `{"status": "success"}`},
+			wantErr:     true,
+		},
+		{
+			name:        "multiple assertions - all pass",
+			expectation: config.Expectation{Assert: []string{`.status == "success"`, `.data == "test"`}},
+			result:      &Result{Body: `{"status": "success", "data": "test"}`},
+			wantErr:     false,
+		},
+		{
+			name:        "multiple assertions - one fails",
+			expectation: config.Expectation{Assert: []string{`.status == "success"`, `.data == "wrong"`}},
+			result:      &Result{Body: `{"status": "success", "data": "test"}`},
+			wantErr:     true,
+		},
+		{
+			name:        "no assertions",
 			expectation: config.Expectation{},
 			result:      &Result{Body: "anything"},
 			wantErr:     false,
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := checkExpectations(tt.expectation, tt.result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("checkExpectations() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestCheckExpectations_JSON(t *testing.T) {
-	tests := []struct {
-		name        string
-		expectation config.Expectation
-		result      *Result
-		wantErr     bool
-	}{
 		{
-			name: "JSON key matches",
-			expectation: config.Expectation{
-				JSON: map[string]interface{}{"status": "success"},
-			},
-			result:  &Result{Body: `{"status": "success", "data": "test"}`},
-			wantErr: false,
+			name:        "array length check",
+			expectation: config.Expectation{Assert: []string{`.items | length > 0`}},
+			result:      &Result{Body: `{"items": [1, 2, 3]}`},
+			wantErr:     false,
 		},
 		{
-			name: "JSON key does not match",
-			expectation: config.Expectation{
-				JSON: map[string]interface{}{"status": "error"},
-			},
-			result:  &Result{Body: `{"status": "success"}`},
-			wantErr: true,
-		},
-		{
-			name: "JSON key missing",
-			expectation: config.Expectation{
-				JSON: map[string]interface{}{"missing": "value"},
-			},
-			result:  &Result{Body: `{"status": "success"}`},
-			wantErr: true,
-		},
-		{
-			name: "invalid JSON response",
-			expectation: config.Expectation{
-				JSON: map[string]interface{}{"status": "success"},
-			},
-			result:  &Result{Body: "not json"},
-			wantErr: true,
+			name:        "empty array fails length check",
+			expectation: config.Expectation{Assert: []string{`.items | length > 0`}},
+			result:      &Result{Body: `{"items": []}`},
+			wantErr:     true,
 		},
 	}
 

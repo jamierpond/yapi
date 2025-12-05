@@ -79,3 +79,41 @@ func findFieldLine(text, field string) int {
 	}
 	return -1
 }
+
+// ValidateChainAssertions validates JQ syntax for all assertions in chain steps.
+func ValidateChainAssertions(text string, assertions []string, stepName string) []Diagnostic {
+	var diags []Diagnostic
+
+	for _, assertion := range assertions {
+		_, err := gojq.Parse(assertion)
+		if err != nil {
+			// Find the line where this assertion appears
+			line := findValueInTextForAssertion(text, assertion)
+
+			diags = append(diags, Diagnostic{
+				Severity: SeverityError,
+				Field:    stepName + ".assert",
+				Message:  "JQ syntax error: " + err.Error(),
+				Line:     line,
+				Col:      0,
+			})
+		}
+	}
+
+	return diags
+}
+
+// findValueInTextForAssertion finds the line where an assertion string appears
+func findValueInTextForAssertion(text, assertion string) int {
+	if text == "" || assertion == "" {
+		return -1
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		// Check if line contains the assertion (with possible quotes or dashes)
+		if strings.Contains(line, assertion) {
+			return i
+		}
+	}
+	return -1
+}
