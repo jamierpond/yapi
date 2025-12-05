@@ -97,7 +97,54 @@ headers:
   X-Request-ID: ${REQUEST_ID:-default_id}
 ```
 
-### 3\. JQ Filtering (Built-in\!)
+### 3\. Request Chaining
+
+Chain multiple requests together, referencing data from previous steps. Build authentication flows, integration tests, or multi-step workflows.
+
+```yaml
+yapi: v1
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+    expect:
+      status: 200
+      assert:
+        - .userId != null
+        - .id == 1
+
+  - name: get_user
+    url: https://jsonplaceholder.typicode.com/users/${get_todo.userId}
+    method: GET
+    expect:
+      status: 200
+      assert:
+        - .name != null
+```
+
+**Key features:**
+- Reference previous step data with `${step_name.field}` syntax
+- Access nested JSON properties: `${login.data.token}`
+- Assertions use JQ expressions that must evaluate to true
+- Chains stop on first failure (fail-fast)
+
+### 4\. Assertions & Expectations
+
+Validate responses inline with JQ-powered assertions. No separate test framework needed.
+
+```yaml
+yapi: v1
+url: https://api.example.com/users
+method: GET
+expect:
+  status: 200              # or [200, 201] for multiple valid codes
+  assert:
+    - . | length > 0       # array has items
+    - .[0].email != null   # first item has email
+    - .[] | .active == true # all items are active
+```
+
+### 5\. JQ Filtering (Built-in\!)
 
 Don't grep output. Filter it right in the config.
 
@@ -110,7 +157,7 @@ method: GET
 jq_filter: "[.[] | {name, email}] | sort_by(.name)"
 ```
 
-### 4\. gRPC (Reflection Support)
+### 6\. gRPC (Reflection Support)
 
 Stop hunting for `.proto` files. If your server supports reflection, **yapi** just works.
 
@@ -124,7 +171,7 @@ body:
   name: "yapi User"
 ```
 
-### 5\. GraphQL
+### 7\. GraphQL
 
 First-class support for queries and variables.
 
