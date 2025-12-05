@@ -423,3 +423,292 @@ headers:
 		}
 	}
 }
+
+// Tests for GraphQL variables vs environment variables detection
+
+func TestFindEnvVarRefs_GraphQLVariablesNotDetected(t *testing.T) {
+	// GraphQL $variables should NOT be detected as environment variables
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: |
+  query getUser($id: ID!, $includeEmail: Boolean) {
+    user(id: $id) {
+      name
+      email @include(if: $includeEmail)
+    }
+  }
+variables:
+  id: "123"
+  includeEmail: true`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// Should find NO env var refs - all $vars are GraphQL variables
+	for _, ref := range refs {
+		t.Errorf("unexpected env var detected: $%s at line %d (should be recognized as GraphQL variable)", ref.Name, ref.Line)
+	}
+}
+
+func TestFindEnvVarRefs_GraphQLBlockWithMultipleVariables(t *testing.T) {
+	yaml := `yapi: v1
+url: https://countries.trevorblades.com/graphql
+graphql: |
+  query getCountry($code: ID!) {
+    country(code: $code) {
+      name
+      native
+      capital
+      currency
+      languages {
+        name
+      }
+    }
+  }
+variables:
+  code: "GB"`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// Should find no env vars - $code is a GraphQL variable
+	if len(refs) > 0 {
+		for _, ref := range refs {
+			t.Errorf("GraphQL variable $%s incorrectly detected as env var at line %d", ref.Name, ref.Line)
+		}
+	}
+}
+
+func TestFindEnvVarRefs_MixedGraphQLAndEnvVars(t *testing.T) {
+	yaml := `yapi: v1
+url: $API_URL
+headers:
+  Authorization: Bearer $TOKEN
+graphql: |
+  query getUser($userId: ID!) {
+    user(id: $userId) {
+      name
+    }
+  }
+variables:
+  userId: $USER_ID`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// Should find API_URL, TOKEN, and USER_ID but NOT userId (GraphQL variable)
+	foundVars := make(map[string]bool)
+	for _, ref := range refs {
+		foundVars[ref.Name] = true
+	}
+
+	// These should be found (env vars)
+	expectedEnvVars := []string{"API_URL", "TOKEN", "USER_ID"}
+	for _, expected := range expectedEnvVars {
+		if !foundVars[expected] {
+			t.Errorf("expected env var $%s to be detected", expected)
+		}
+	}
+
+	// These should NOT be found (GraphQL variables)
+	unexpectedVars := []string{"userId"}
+	for _, unexpected := range unexpectedVars {
+		if foundVars[unexpected] {
+			t.Errorf("GraphQL variable $%s should not be detected as env var", unexpected)
+		}
+	}
+}
+
+func TestFindEnvVarRefs_GraphQLInlineQuery(t *testing.T) {
+	// Test with inline graphql (no multiline block indicator)
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: "query { user(id: $id) { name } }"
+variables:
+  id: "123"`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// The $id inside graphql should not be detected
+	for _, ref := range refs {
+		if ref.Name == "id" {
+			t.Errorf("GraphQL variable $id incorrectly detected as env var")
+		}
+	}
+}
+
+func TestFindEnvVarRefs_GraphQLWithFoldedStyle(t *testing.T) {
+	// Test with > folded style
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: >
+  query getUser($id: ID!) {
+    user(id: $id) { name }
+  }
+variables:
+  id: "123"`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// Should not detect $id as env var
+	for _, ref := range refs {
+		if ref.Name == "id" {
+			t.Errorf("GraphQL variable $id in folded block incorrectly detected as env var")
+		}
+	}
+}
+
+func TestFindEnvVarRefs_EnvVarAfterGraphQLBlock(t *testing.T) {
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: |
+  query { users { name } }
+headers:
+  X-Custom: $CUSTOM_HEADER`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// Should find CUSTOM_HEADER after the graphql block ends
+	found := false
+	for _, ref := range refs {
+		if ref.Name == "CUSTOM_HEADER" {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("expected env var $CUSTOM_HEADER to be detected after graphql block")
+	}
+}
+
+func TestFindEnvVarRefs_NoGraphQLBlock(t *testing.T) {
+	yaml := `yapi: v1
+url: $BASE_URL/api/users
+method: GET
+headers:
+  Authorization: Bearer $AUTH_TOKEN
+  X-Request-ID: $REQUEST_ID`
+
+	refs := FindEnvVarRefs(yaml)
+
+	expectedVars := []string{"BASE_URL", "AUTH_TOKEN", "REQUEST_ID"}
+	foundVars := make(map[string]bool)
+	for _, ref := range refs {
+		foundVars[ref.Name] = true
+	}
+
+	for _, expected := range expectedVars {
+		if !foundVars[expected] {
+			t.Errorf("expected env var $%s to be detected", expected)
+		}
+	}
+
+	if len(refs) != len(expectedVars) {
+		t.Errorf("expected %d env vars, found %d", len(expectedVars), len(refs))
+	}
+}
+
+func TestFindEnvVarRefs_BracedEnvVars(t *testing.T) {
+	yaml := `yapi: v1
+url: ${BASE_URL}/api
+headers:
+  Authorization: Bearer ${TOKEN}`
+
+	refs := FindEnvVarRefs(yaml)
+
+	expectedVars := []string{"BASE_URL", "TOKEN"}
+	foundVars := make(map[string]bool)
+	for _, ref := range refs {
+		foundVars[ref.Name] = true
+	}
+
+	for _, expected := range expectedVars {
+		if !foundVars[expected] {
+			t.Errorf("expected braced env var ${%s} to be detected", expected)
+		}
+	}
+}
+
+func TestFindEnvVarRefs_GraphQLMutation(t *testing.T) {
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: |
+  mutation createUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      name
+    }
+  }
+variables:
+  input:
+    name: "Test User"
+    email: "test@example.com"`
+
+	refs := FindEnvVarRefs(yaml)
+
+	// Should not detect $input as env var
+	for _, ref := range refs {
+		if ref.Name == "input" {
+			t.Errorf("GraphQL variable $input incorrectly detected as env var")
+		}
+	}
+}
+
+func TestFindEnvVarRefs_GraphQLFragment(t *testing.T) {
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: |
+  fragment UserFields on User {
+    id
+    name
+  }
+  query getUser($id: ID!) {
+    user(id: $id) {
+      ...UserFields
+    }
+  }
+variables:
+  id: "123"`
+
+	refs := FindEnvVarRefs(yaml)
+
+	for _, ref := range refs {
+		if ref.Name == "id" {
+			t.Errorf("GraphQL variable $id incorrectly detected as env var")
+		}
+	}
+}
+
+func TestFindEnvVarRefs_NestedGraphQLVariables(t *testing.T) {
+	yaml := `yapi: v1
+url: https://api.example.com/graphql
+graphql: |
+  query search($query: String!, $first: Int, $after: String) {
+    search(query: $query, first: $first, after: $after) {
+      edges {
+        node {
+          ... on User {
+            id
+            name
+          }
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+      }
+    }
+  }
+variables:
+  query: "test"
+  first: 10`
+
+	refs := FindEnvVarRefs(yaml)
+
+	graphqlVars := []string{"query", "first", "after"}
+	for _, ref := range refs {
+		for _, gqlVar := range graphqlVars {
+			if ref.Name == gqlVar {
+				t.Errorf("GraphQL variable $%s incorrectly detected as env var", gqlVar)
+			}
+		}
+	}
+}
