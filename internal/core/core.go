@@ -12,12 +12,12 @@ import (
 
 // Engine owns shared execution bits used by CLI, TUI, etc.
 type Engine struct {
-	Factory *executor.Factory
+	factory *executor.Factory
 }
 
 // NewEngine wires a single HTTP client and executor factory.
 func NewEngine(httpClient *http.Client) *Engine {
-	return &Engine{Factory: executor.NewFactory(httpClient)}
+	return &Engine{factory: executor.NewFactory(httpClient)}
 }
 
 // RunConfigResult contains the results of running a config
