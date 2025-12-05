@@ -16,6 +16,6 @@ echo "testing all example files in parallel..."
 
 find "$root_dir/examples" -type f \( -name "*.yml" -o -name "*.yaml" \) | \
   grep -v -e '/invalid/' -e '\.fail\.' -e '\.local\.' | sort | \
-  parallel --halt now,fail=1 --jobs 4 --tag 'yapi run {}'
+  parallel --halt now,fail=1 --jobs 25 --tag 'yapi run {}'
 
 echo "all examples tested successfully"
