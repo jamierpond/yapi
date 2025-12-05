@@ -199,6 +199,24 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		})
 	}
 
+	// Compiler parity check - run the compiler with mock resolver for additional validation
+	// Skip for chain configs (they require different handling)
+	if analysis.Request != nil && len(analysis.Chain) == 0 && !analysis.HasErrors() {
+		var resolver vars.Resolver = MockResolver
+		compiled := compiler.Compile(analysis.Base, resolver)
+		for _, err := range compiled.Errors {
+			diagnostics = append(diagnostics, protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: 0, Character: 0},
+					End:   protocol.Position{Line: 0, Character: 100},
+				},
+				Severity: ptr(protocol.DiagnosticSeverityError),
+				Source:   ptr("yapi-compiler"),
+				Message:  err.Error(),
+			})
+		}
+	}
+
 	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 		URI:         uri,
 		Diagnostics: diagnostics,
@@ -224,6 +242,23 @@ func severityToProtocol(s validation.Severity) protocol.DiagnosticSeverity {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+// MockResolver provides placeholder values for variable interpolation in LSP validation.
+// This allows the compiler to validate the config structure even without real env vars.
+func MockResolver(key string) (string, error) {
+	keyLower := strings.ToLower(key)
+	if strings.Contains(keyLower, "port") {
+		return "8080", nil
+	}
+	if strings.Contains(keyLower, "host") {
+		return "localhost", nil
+	}
+	if strings.Contains(keyLower, "url") {
+		return "http://localhost:8080", nil
+	}
+	// Return a placeholder for anything else - don't fail
+	return "PLACEHOLDER", nil
 }
 
 // valDesc represents a value with its description for completions

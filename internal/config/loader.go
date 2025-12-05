@@ -68,5 +68,5 @@ func parseV1(data []byte) (*ParseResult, error) {
 		return nil, err
 	}
 
-	return &ParseResult{Request: domainReq, Expect: v1.Expect}, nil
+	return &ParseResult{Request: domainReq, Expect: v1.Expect, Base: &v1}, nil
 }

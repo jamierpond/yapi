@@ -177,6 +177,7 @@ func analyzeParsed(text string, parseRes *config.ParseResult) *Analysis {
 		Diagnostics: diags,
 		Warnings:    parseRes.Warnings,
 		Expect:      parseRes.Expect,
+		Base:        parseRes.Base,
 	}
 }
 
