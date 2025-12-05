@@ -17,6 +17,7 @@ type ParseResult struct {
 	Request  *domain.Request
 	Warnings []string
 	Chain    []ChainStep // Chain steps if this is a chain config
+	Expect   Expectation // Expectations for single request validation
 }
 
 func Load(path string) (*ParseResult, error) {
@@ -66,5 +67,5 @@ func parseV1(data []byte) (*ParseResult, error) {
 		return nil, err
 	}
 
-	return &ParseResult{Request: domainReq}, nil
+	return &ParseResult{Request: domainReq, Expect: v1.Expect}, nil
 }

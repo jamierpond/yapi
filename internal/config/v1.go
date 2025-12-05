@@ -41,6 +41,7 @@ var knownV1Keys = map[string]bool{
 	"idle_timeout":     true,
 	"close_after_send": true,
 	"chain":            true,
+	"expect":           true,
 }
 
 // knownChainStepKeys is the set of valid keys for chain step entries.
@@ -100,6 +101,9 @@ type ConfigV1 struct {
 	ReadTimeout    int                    `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
 	IdleTimeout    int                    `yaml:"idle_timeout,omitempty"` // TCP idle timeout in milliseconds (default 500)
 	CloseAfterSend bool                   `yaml:"close_after_send,omitempty"`
+
+	// Expect defines assertions to run after the request
+	Expect Expectation `yaml:"expect,omitempty"`
 
 	// Chain allows executing multiple dependent requests
 	Chain []ChainStep `yaml:"chain,omitempty"`

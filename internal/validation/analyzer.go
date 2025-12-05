@@ -42,6 +42,7 @@ type Analysis struct {
 	Diagnostics []Diagnostic
 	Warnings    []string           // parsed-level warnings like missing yapi: v1
 	Chain       []config.ChainStep // Chain steps if this is a chain config
+	Expect      config.Expectation // Expectations for single request validation
 }
 
 // HasErrors returns true if there are any error-level diagnostics.
@@ -152,10 +153,16 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 	// 5. Environment variable validation
 	diags = append(diags, validateEnvVars(text)...)
 
+	// 6. Validate expect assertions
+	if len(parseRes.Expect.Assert) > 0 {
+		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert, "")...)
+	}
+
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
 		Warnings:    parseRes.Warnings,
+		Expect:      parseRes.Expect,
 	}, nil
 }
 
@@ -195,14 +202,14 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 
 	if readErr != nil {
 		// Fall back to analysis without line numbers
-		return analyzeRequest(parseRes.Request, "", parseRes.Warnings), nil
+		return analyzeRequest(parseRes.Request, "", parseRes.Warnings, parseRes.Expect), nil
 	}
 
-	return analyzeRequest(parseRes.Request, text, parseRes.Warnings), nil
+	return analyzeRequest(parseRes.Request, text, parseRes.Warnings, parseRes.Expect), nil
 }
 
 // analyzeRequest validates an already-parsed request.
-func analyzeRequest(req *domain.Request, text string, warnings []string) *Analysis {
+func analyzeRequest(req *domain.Request, text string, warnings []string, expect config.Expectation) *Analysis {
 	var diags []Diagnostic
 
 	// 1. Structural / semantic validation
@@ -228,10 +235,16 @@ func analyzeRequest(req *domain.Request, text string, warnings []string) *Analys
 	// 5. Environment variable validation
 	diags = append(diags, validateEnvVars(text)...)
 
+	// 6. Validate expect assertions
+	if len(expect.Assert) > 0 {
+		diags = append(diags, ValidateChainAssertions(text, expect.Assert, "")...)
+	}
+
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
 		Warnings:    warnings,
+		Expect:      expect,
 	}
 }
 

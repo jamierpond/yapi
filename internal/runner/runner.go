@@ -193,7 +193,7 @@ func RunChain(ctx context.Context, factory *executor.Factory, steps []config.Cha
 		}
 
 		// 5. Assert Expectations
-		if err := checkExpectations(step.Expect, result); err != nil {
+		if err := CheckExpectations(step.Expect, result); err != nil {
 			return nil, fmt.Errorf("step '%s' assertion failed: %w", step.Name, err)
 		}
 
@@ -234,8 +234,8 @@ func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[s
 	return result, nil
 }
 
-// checkExpectations validates the response against expected values
-func checkExpectations(expect config.Expectation, result *Result) error {
+// CheckExpectations validates the response against expected values
+func CheckExpectations(expect config.Expectation, result *Result) error {
 	// Status Check
 	if expect.Status != nil {
 		matched := false

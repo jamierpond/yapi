@@ -52,7 +52,18 @@ func (e *Engine) RunConfig(
 	}
 
 	result, err := runner.Run(ctx, exec, analysis.Request, analysis.Warnings, opts)
-	return analysis, result, err
+	if err != nil {
+		return analysis, result, err
+	}
+
+	// Check expectations if present
+	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert) > 0) {
+		if expectErr := runner.CheckExpectations(analysis.Expect, result); expectErr != nil {
+			return analysis, result, expectErr
+		}
+	}
+
+	return analysis, result, nil
 }
 
 // RunChain executes a chain configuration
