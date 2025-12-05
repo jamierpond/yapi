@@ -1,9 +1,0 @@
-# Test file with undefined env var
-yapi: v1
-chain:
-  - name: test_step
-    url: https://api.example.com/${UNDEFINED_VAR_123}/resource
-    headers:
-      Authorization: Bearer ${ANOTHER_UNDEFINED_TOKEN}
-    expect:
-      status: 200

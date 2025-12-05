@@ -54,7 +54,7 @@ func (e *Engine) RunConfig(
 		return &RunConfigResult{Analysis: analysis}
 	}
 
-	exec, err := e.Factory.Create(analysis.Request.Metadata["transport"])
+	exec, err := e.factory.Create(analysis.Request.Metadata["transport"])
 	if err != nil {
 		return &RunConfigResult{Analysis: analysis, Error: err}
 	}
@@ -83,5 +83,5 @@ func (e *Engine) RunChain(
 	chain []config.ChainStep,
 	opts runner.Options,
 ) (*runner.ChainResult, error) {
-	return runner.RunChain(ctx, e.Factory, base, chain, opts)
+	return runner.RunChain(ctx, e.factory, base, chain, opts)
 }
