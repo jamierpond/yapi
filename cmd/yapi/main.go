@@ -265,7 +265,9 @@ func (app *rootCommand) executeRun(ctx runContext) {
 	}
 
 	if runRes.Result != nil {
-		fmt.Println(output.Highlight(runRes.Result.Body, runRes.Result.ContentType, app.noColor))
+		// Trim trailing whitespace to avoid double newlines
+		body := strings.TrimRight(output.Highlight(runRes.Result.Body, runRes.Result.ContentType, app.noColor), "\n\r")
+		fmt.Println(body)
 		printResultMeta(runRes.Result)
 	}
 
