@@ -1,5 +1,6 @@
 # general todos
 
+- add fuzz testing
 - add color lib to dry out code.
 - add analytics
 - syntax highlighting in cli interactive preview (file selector)
