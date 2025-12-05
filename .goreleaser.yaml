@@ -40,7 +40,8 @@ homebrew_casks:
   - name: yapi
     description: "CLI-first, offline-first, git-friendly API client for HTTP, gRPC, and TCP"
     homepage: "https://github.com/jamierpond/yapi"
-    skip_upload: true
+    binaries:
+      - yapi
     directory: Casks
     hooks:
       post:

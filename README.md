@@ -13,6 +13,13 @@ Stop clicking through heavy Electron apps just to send a JSON body. **yapi** is 
 
 ## ⚡ Install
 
+**Using Homebrew (macOS):**
+
+```bash
+brew tap jamierpond/yapi
+brew install --cask yapi
+```
+
 **Using Go:**
 
 ```bash
