@@ -193,8 +193,9 @@ func RunChain(ctx context.Context, factory *executor.Factory, steps []config.Cha
 		}
 
 		// 5. Assert Expectations
-		if err := CheckExpectations(step.Expect, result); err != nil {
-			return nil, fmt.Errorf("step '%s' assertion failed: %w", step.Name, err)
+		expectRes := CheckExpectations(step.Expect, result)
+		if expectRes.Error != nil {
+			return nil, fmt.Errorf("step '%s' assertion failed: %w", step.Name, expectRes.Error)
 		}
 
 		// 6. Store Result
@@ -234,10 +235,29 @@ func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[s
 	return result, nil
 }
 
+// ExpectationResult contains the results of running expectations
+type ExpectationResult struct {
+	StatusPassed     bool
+	StatusChecked    bool
+	AssertionsPassed int
+	AssertionsTotal  int
+	Error            error
+}
+
+// AllPassed returns true if all expectations passed
+func (e *ExpectationResult) AllPassed() bool {
+	return e.Error == nil
+}
+
 // CheckExpectations validates the response against expected values
-func CheckExpectations(expect config.Expectation, result *Result) error {
+func CheckExpectations(expect config.Expectation, result *Result) *ExpectationResult {
+	res := &ExpectationResult{
+		AssertionsTotal: len(expect.Assert),
+	}
+
 	// Status Check
 	if expect.Status != nil {
+		res.StatusChecked = true
 		matched := false
 		switch v := expect.Status.(type) {
 		case int:
@@ -262,8 +282,10 @@ func CheckExpectations(expect config.Expectation, result *Result) error {
 				}
 			}
 		}
+		res.StatusPassed = matched
 		if !matched {
-			return fmt.Errorf("expected status %v, got %d", expect.Status, result.StatusCode)
+			res.Error = fmt.Errorf("expected status %v, got %d", expect.Status, result.StatusCode)
+			return res
 		}
 	}
 
@@ -271,12 +293,15 @@ func CheckExpectations(expect config.Expectation, result *Result) error {
 	for _, assertion := range expect.Assert {
 		passed, err := filter.EvalJQBool(result.Body, assertion)
 		if err != nil {
-			return fmt.Errorf("assertion failed: %w", err)
+			res.Error = fmt.Errorf("assertion failed: %w", err)
+			return res
 		}
 		if !passed {
-			return fmt.Errorf("assertion failed: %s", assertion)
+			res.Error = fmt.Errorf("assertion failed: %s", assertion)
+			return res
 		}
+		res.AssertionsPassed++
 	}
 
-	return nil
+	return res
 }
