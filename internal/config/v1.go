@@ -12,6 +12,7 @@ import (
 
 	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
+	"yapi.run/cli/internal/utils"
 )
 
 // knownV1Keys is the set of valid keys for v1 config files.
@@ -136,150 +137,60 @@ type ChainStep struct {
 // Merge creates a full ConfigV1 by applying step overrides to the base config.
 // Maps are deep copied to avoid polluting the shared base config between steps.
 func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
-	merged := *base
-	merged.Chain = nil
-	merged.Expect = step.Expect
+	m := *base
+	m.Chain = nil
+	m.Expect = step.Expect
 
-	// Deep copy maps from base to avoid reference pollution between steps
-	merged.Headers = copyStringMap(base.Headers)
-	merged.Query = copyStringMap(base.Query)
-	merged.Body = deepCopyMap(base.Body)
-	merged.Variables = deepCopyMap(base.Variables)
+	// Scalar overrides using Coalesce
+	m.URL = utils.Coalesce(step.URL, base.URL)
+	m.Path = utils.Coalesce(step.Path, base.Path)
+	m.Method = utils.Coalesce(step.Method, base.Method)
+	m.ContentType = utils.Coalesce(step.ContentType, base.ContentType)
+	m.JSON = utils.Coalesce(step.JSON, base.JSON)
+	m.Graphql = utils.Coalesce(step.Graphql, base.Graphql)
+	m.Service = utils.Coalesce(step.Service, base.Service)
+	m.RPC = utils.Coalesce(step.RPC, base.RPC)
+	m.Proto = utils.Coalesce(step.Proto, base.Proto)
+	m.ProtoPath = utils.Coalesce(step.ProtoPath, base.ProtoPath)
+	m.Data = utils.Coalesce(step.Data, base.Data)
+	m.Encoding = utils.Coalesce(step.Encoding, base.Encoding)
+	m.JQFilter = utils.Coalesce(step.JQFilter, base.JQFilter)
 
-	// Override string fields if step has non-zero values
-	if step.URL != "" {
-		merged.URL = step.URL
-	}
-	if step.Path != "" {
-		merged.Path = step.Path
-	}
-	if step.Method != "" {
-		merged.Method = step.Method
-	}
-	if step.ContentType != "" {
-		merged.ContentType = step.ContentType
-	}
-	if step.JSON != "" {
-		merged.JSON = step.JSON
-	}
-	if step.Graphql != "" {
-		merged.Graphql = step.Graphql
-	}
-	if step.Service != "" {
-		merged.Service = step.Service
-	}
-	if step.RPC != "" {
-		merged.RPC = step.RPC
-	}
-	if step.Proto != "" {
-		merged.Proto = step.Proto
-	}
-	if step.ProtoPath != "" {
-		merged.ProtoPath = step.ProtoPath
-	}
-	if step.Data != "" {
-		merged.Data = step.Data
-	}
-	if step.Encoding != "" {
-		merged.Encoding = step.Encoding
-	}
-	if step.JQFilter != "" {
-		merged.JQFilter = step.JQFilter
-	}
-
-	// Override bool/int fields if step has non-zero values
+	// Bool/Int overrides
 	if step.Insecure {
-		merged.Insecure = step.Insecure
+		m.Insecure = true
 	}
 	if step.Plaintext {
-		merged.Plaintext = step.Plaintext
-	}
-	if step.ReadTimeout != 0 {
-		merged.ReadTimeout = step.ReadTimeout
-	}
-	if step.IdleTimeout != 0 {
-		merged.IdleTimeout = step.IdleTimeout
+		m.Plaintext = true
 	}
 	if step.CloseAfterSend {
-		merged.CloseAfterSend = step.CloseAfterSend
+		m.CloseAfterSend = true
+	}
+	if step.ReadTimeout != 0 {
+		m.ReadTimeout = step.ReadTimeout
+	}
+	if step.IdleTimeout != 0 {
+		m.IdleTimeout = step.IdleTimeout
 	}
 
-	// Merge maps (step values add to or override base)
-	if len(step.Headers) > 0 {
-		if merged.Headers == nil {
-			merged.Headers = make(map[string]string)
-		}
-		for k, v := range step.Headers {
-			merged.Headers[k] = v
-		}
-	}
-	if len(step.Query) > 0 {
-		if merged.Query == nil {
-			merged.Query = make(map[string]string)
-		}
-		for k, v := range step.Query {
-			merged.Query[k] = v
-		}
-	}
+	// Generic map merging
+	m.Headers = utils.MergeMaps(base.Headers, step.Headers)
+	m.Query = utils.MergeMaps(base.Query, step.Query)
+
+	// Deep clone Body/Variables from base, then override if step has values
+	m.Body = utils.DeepCloneMap(base.Body)
 	if step.Body != nil {
-		merged.Body = step.Body
+		m.Body = step.Body
 	}
+
+	m.Variables = utils.DeepCloneMap(base.Variables)
 	if step.Variables != nil {
-		merged.Variables = step.Variables
+		m.Variables = step.Variables
 	}
 
-	return merged
+	return m
 }
 
-// copyStringMap creates a shallow copy of a string map
-func copyStringMap(m map[string]string) map[string]string {
-	if m == nil {
-		return nil
-	}
-	out := make(map[string]string, len(m))
-	for k, v := range m {
-		out[k] = v
-	}
-	return out
-}
-
-// deepCopyMap creates a deep copy of a map[string]interface{}
-func deepCopyMap(src map[string]interface{}) map[string]interface{} {
-	if src == nil {
-		return nil
-	}
-	dst := make(map[string]interface{}, len(src))
-	for k, v := range src {
-		switch val := v.(type) {
-		case map[string]interface{}:
-			dst[k] = deepCopyMap(val)
-		case []interface{}:
-			dst[k] = deepCopySlice(val)
-		default:
-			dst[k] = v
-		}
-	}
-	return dst
-}
-
-// deepCopySlice creates a deep copy of a []interface{}
-func deepCopySlice(src []interface{}) []interface{} {
-	if src == nil {
-		return nil
-	}
-	dst := make([]interface{}, len(src))
-	for i, v := range src {
-		switch val := v.(type) {
-		case map[string]interface{}:
-			dst[i] = deepCopyMap(val)
-		case []interface{}:
-			dst[i] = deepCopySlice(val)
-		default:
-			dst[i] = v
-		}
-	}
-	return dst
-}
 
 // Expectation defines assertions for a chain step
 type Expectation struct {

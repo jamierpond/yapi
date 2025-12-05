@@ -1,6 +1,10 @@
 package config
 
-import "testing"
+import (
+	"testing"
+
+	"yapi.run/cli/internal/utils"
+)
 
 func TestMerge_MapIsolation(t *testing.T) {
 	// This test ensures that modifying merged config doesn't pollute the base config
@@ -107,7 +111,7 @@ func TestMerge_BodyDeepCopy(t *testing.T) {
 	}
 }
 
-func TestDeepCopyMap(t *testing.T) {
+func TestDeepCloneMap(t *testing.T) {
 	src := map[string]interface{}{
 		"string": "value",
 		"number": 42,
@@ -120,7 +124,7 @@ func TestDeepCopyMap(t *testing.T) {
 		},
 	}
 
-	dst := deepCopyMap(src)
+	dst := utils.DeepCloneMap(src)
 
 	// Modify dst
 	dst["string"] = "changed"
