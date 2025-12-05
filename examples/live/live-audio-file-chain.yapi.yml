@@ -18,7 +18,12 @@ chain:
         file_path: "/Users/jamiepond/Downloads/yungchaiboy_after.wav"
         start_time: 400
         clip_name: "Hi Matt"
+    expect:
+      assert:
+        - '.result.name == "wrong!!!"'
+        - '.result.start_time == "alsowrong"'
 
 read_timeout: 10
 close_after_send: true
+
 
