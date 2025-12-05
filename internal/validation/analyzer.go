@@ -42,6 +42,7 @@ type Analysis struct {
 	Diagnostics []Diagnostic
 	Warnings    []string           // parsed-level warnings like missing yapi: v1
 	Chain       []config.ChainStep // Chain steps if this is a chain config
+	Base        *config.ConfigV1   // Base config for chain merging
 	Expect      config.Expectation // Expectations for single request validation
 }
 
@@ -118,11 +119,12 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 
 	// Check if it is a chain
 	if len(parseRes.Chain) > 0 {
-		diags = append(diags, validateChain(text, parseRes.Chain)...)
+		diags = append(diags, validateChain(text, parseRes.Base, parseRes.Chain)...)
 		diags = append(diags, validateEnvVars(text)...)
 		return &Analysis{
 			Request:     nil,
 			Chain:       parseRes.Chain,
+			Base:        parseRes.Base,
 			Diagnostics: diags,
 			Warnings:    parseRes.Warnings,
 		}, nil
@@ -191,10 +193,11 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 	// Check if it is a chain
 	if len(parseRes.Chain) > 0 {
 		var diags []Diagnostic
-		diags = append(diags, validateChain(text, parseRes.Chain)...)
+		diags = append(diags, validateChain(text, parseRes.Base, parseRes.Chain)...)
 		return &Analysis{
 			Request:     nil,
 			Chain:       parseRes.Chain,
+			Base:        parseRes.Base,
 			Diagnostics: diags,
 			Warnings:    parseRes.Warnings,
 		}, nil
@@ -323,7 +326,7 @@ func findValueInText(text, value string) int {
 }
 
 // validateChain validates chain configuration
-func validateChain(text string, chain []config.ChainStep) []Diagnostic {
+func validateChain(text string, base *config.ConfigV1, chain []config.ChainStep) []Diagnostic {
 	var diags []Diagnostic
 	definedSteps := make(map[string]bool)
 
@@ -348,12 +351,13 @@ func validateChain(text string, chain []config.ChainStep) []Diagnostic {
 			})
 		}
 
-		// 2. Check URL is present
-		if step.URL == "" {
+		// 2. Check URL is present (either in step or in base config)
+		hasURL := step.URL != "" || (base != nil && base.URL != "")
+		if !hasURL {
 			diags = append(diags, Diagnostic{
 				Severity: SeverityError,
 				Field:    step.Name,
-				Message:  fmt.Sprintf("step '%s' missing 'url'", step.Name),
+				Message:  fmt.Sprintf("step '%s' missing 'url' (not in step or base config)", step.Name),
 				Line:     stepLine,
 				Col:      0,
 			})

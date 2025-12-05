@@ -109,84 +109,133 @@ type ConfigV1 struct {
 	Chain []ChainStep `yaml:"chain,omitempty"`
 }
 
-// ChainStep represents a single step in a request chain
+// ChainStep represents a single step in a request chain.
+// All fields are optional overrides on top of the base ConfigV1.
 type ChainStep struct {
-	Name      string                 `yaml:"name"`
-	URL       string                 `yaml:"url"`
-	Method    string                 `yaml:"method,omitempty"`
-	Headers   map[string]string      `yaml:"headers,omitempty"`
-	Body      map[string]interface{} `yaml:"body,omitempty"`
-	JSON      string                 `yaml:"json,omitempty"`
-	Graphql   string                 `yaml:"graphql,omitempty"`
-	Variables map[string]interface{} `yaml:"variables,omitempty"`
+	Name string `yaml:"name"` // Required: unique step identifier
 
-	// Assertion logic
+	// All fields below override the base config if set
+	URL            string                 `yaml:"url,omitempty"`
+	Path           string                 `yaml:"path,omitempty"`
+	Method         string                 `yaml:"method,omitempty"`
+	ContentType    string                 `yaml:"content_type,omitempty"`
+	Headers        map[string]string      `yaml:"headers,omitempty"`
+	Body           map[string]interface{} `yaml:"body,omitempty"`
+	JSON           string                 `yaml:"json,omitempty"`
+	Query          map[string]string      `yaml:"query,omitempty"`
+	Graphql        string                 `yaml:"graphql,omitempty"`
+	Variables      map[string]interface{} `yaml:"variables,omitempty"`
+	Service        string                 `yaml:"service,omitempty"`
+	RPC            string                 `yaml:"rpc,omitempty"`
+	Proto          string                 `yaml:"proto,omitempty"`
+	ProtoPath      string                 `yaml:"proto_path,omitempty"`
+	Data           string                 `yaml:"data,omitempty"`
+	Encoding       string                 `yaml:"encoding,omitempty"`
+	JQFilter       string                 `yaml:"jq_filter,omitempty"`
+	Insecure       *bool                  `yaml:"insecure,omitempty"`
+	Plaintext      *bool                  `yaml:"plaintext,omitempty"`
+	ReadTimeout    *int                   `yaml:"read_timeout,omitempty"`
+	IdleTimeout    *int                   `yaml:"idle_timeout,omitempty"`
+	CloseAfterSend *bool                  `yaml:"close_after_send,omitempty"`
+
 	Expect Expectation `yaml:"expect,omitempty"`
+}
+
+// Merge creates a full ConfigV1 by applying step overrides to the base config.
+func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
+	merged := *base // Copy base
+	merged.Chain = nil // Don't copy chain into merged step
+	merged.Expect = step.Expect // Step expectations override base
+
+	// Override string fields if step has them
+	if step.URL != "" {
+		merged.URL = step.URL
+	}
+	if step.Path != "" {
+		merged.Path = step.Path
+	}
+	if step.Method != "" {
+		merged.Method = step.Method
+	}
+	if step.ContentType != "" {
+		merged.ContentType = step.ContentType
+	}
+	if step.JSON != "" {
+		merged.JSON = step.JSON
+	}
+	if step.Graphql != "" {
+		merged.Graphql = step.Graphql
+	}
+	if step.Service != "" {
+		merged.Service = step.Service
+	}
+	if step.RPC != "" {
+		merged.RPC = step.RPC
+	}
+	if step.Proto != "" {
+		merged.Proto = step.Proto
+	}
+	if step.ProtoPath != "" {
+		merged.ProtoPath = step.ProtoPath
+	}
+	if step.Data != "" {
+		merged.Data = step.Data
+	}
+	if step.Encoding != "" {
+		merged.Encoding = step.Encoding
+	}
+	if step.JQFilter != "" {
+		merged.JQFilter = step.JQFilter
+	}
+
+	// Override pointer fields (bools/ints that need explicit false/0)
+	if step.Insecure != nil {
+		merged.Insecure = *step.Insecure
+	}
+	if step.Plaintext != nil {
+		merged.Plaintext = *step.Plaintext
+	}
+	if step.ReadTimeout != nil {
+		merged.ReadTimeout = *step.ReadTimeout
+	}
+	if step.IdleTimeout != nil {
+		merged.IdleTimeout = *step.IdleTimeout
+	}
+	if step.CloseAfterSend != nil {
+		merged.CloseAfterSend = *step.CloseAfterSend
+	}
+
+	// Merge maps (step headers/query add to or override base)
+	if step.Headers != nil {
+		if merged.Headers == nil {
+			merged.Headers = make(map[string]string)
+		}
+		for k, v := range step.Headers {
+			merged.Headers[k] = v
+		}
+	}
+	if step.Query != nil {
+		if merged.Query == nil {
+			merged.Query = make(map[string]string)
+		}
+		for k, v := range step.Query {
+			merged.Query[k] = v
+		}
+	}
+	if step.Body != nil {
+		merged.Body = step.Body
+	}
+	if step.Variables != nil {
+		merged.Variables = step.Variables
+	}
+
+	return merged
 }
 
 // Expectation defines assertions for a chain step
 type Expectation struct {
 	Status interface{} `yaml:"status,omitempty"` // int or []int
 	Assert []string    `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
-}
-
-// ToDomain converts a ChainStep into a domain.Request.
-// Note: It does NOT expand env vars here; the runner does that to capture context.
-func (s *ChainStep) ToDomain() (*domain.Request, error) {
-	// Set default method
-	method := s.Method
-	if method == "" {
-		method = constants.MethodGET
-	}
-
-	// Prepare Body
-	var bodyReader io.Reader
-	var contentType string
-
-	if s.JSON != "" {
-		contentType = "application/json"
-		bodyReader = strings.NewReader(s.JSON)
-	} else if s.Body != nil {
-		contentType = "application/json"
-		bodyBytes, err := json.Marshal(s.Body)
-		if err != nil {
-			return nil, fmt.Errorf("step '%s': invalid json in body: %w", s.Name, err)
-		}
-		bodyReader = bytes.NewReader(bodyBytes)
-	}
-
-	req := &domain.Request{
-		URL:      s.URL,
-		Method:   constants.CanonicalizeMethod(method),
-		Headers:  s.Headers,
-		Body:     bodyReader,
-		Metadata: make(map[string]string),
-	}
-
-	if contentType != "" {
-		if req.Headers == nil {
-			req.Headers = make(map[string]string)
-		}
-		// Don't overwrite if user provided specific content type
-		if _, ok := req.Headers["Content-Type"]; !ok {
-			req.Headers["Content-Type"] = contentType
-		}
-	}
-
-	// Handle GraphQL Metadata
-	if s.Graphql != "" {
-		req.Metadata["transport"] = constants.TransportGraphQL
-		req.Metadata["graphql_query"] = s.Graphql
-		if s.Variables != nil {
-			vars, _ := json.Marshal(s.Variables)
-			req.Metadata["graphql_variables"] = string(vars)
-		}
-	} else {
-		// Default to HTTP
-		req.Metadata["transport"] = constants.TransportHTTP
-	}
-
-	return req, nil
 }
 
 // ToDomain converts V1 YAML to the Canonical Config

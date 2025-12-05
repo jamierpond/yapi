@@ -230,7 +230,7 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	// Check if this is a chain config
 	if runRes.Analysis != nil && len(runRes.Analysis.Chain) > 0 {
-		chainResult, err := app.engine.RunChain(context.Background(), runRes.Analysis.Chain, opts)
+		chainResult, err := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts)
 		if err != nil {
 			app.handleError(err, ctx.strict)
 			return

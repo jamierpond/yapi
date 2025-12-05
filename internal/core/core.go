@@ -79,8 +79,9 @@ func (e *Engine) RunConfig(
 // RunChain executes a chain configuration
 func (e *Engine) RunChain(
 	ctx context.Context,
+	base *config.ConfigV1,
 	chain []config.ChainStep,
 	opts runner.Options,
 ) (*runner.ChainResult, error) {
-	return runner.RunChain(ctx, e.Factory, chain, opts)
+	return runner.RunChain(ctx, e.Factory, base, chain, opts)
 }

@@ -1,9 +1,7 @@
 package runner
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +9,6 @@ import (
 	"time"
 
 	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/filter"
@@ -90,8 +87,8 @@ type ChainResult struct {
 	StepNames []string  // Names of each step
 }
 
-// RunChain executes a sequence of steps
-func RunChain(ctx context.Context, factory *executor.Factory, steps []config.ChainStep, opts Options) (*ChainResult, error) {
+// RunChain executes a sequence of steps, merging each step with the base config
+func RunChain(ctx context.Context, factory *executor.Factory, base *config.ConfigV1, steps []config.ChainStep, opts Options) (*ChainResult, error) {
 	chainCtx := NewChainContext()
 	chainResult := &ChainResult{
 		Results:   make([]*Result, 0, len(steps)),
@@ -101,111 +98,133 @@ func RunChain(ctx context.Context, factory *executor.Factory, steps []config.Cha
 	for i, step := range steps {
 		fmt.Fprintf(os.Stderr, "Running step %d: %s...\n", i+1, step.Name)
 
-		// 1. Interpolate Strings
-		finalURL, err := chainCtx.ExpandVariables(step.URL)
+		// 1. Merge step with base config to get full config
+		merged := base.Merge(step)
+
+		// 2. Interpolate variables in the merged config
+		interpolatedConfig, err := interpolateConfig(chainCtx, &merged)
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		finalHeaders := make(map[string]string)
-		for k, v := range step.Headers {
-			expanded, err := chainCtx.ExpandVariables(v)
-			if err != nil {
-				return nil, fmt.Errorf("step '%s' header '%s': %w", step.Name, k, err)
-			}
-			finalHeaders[k] = expanded
-		}
-
-		// Interpolate body if it contains string values
-		finalBody, err := interpolateBody(chainCtx, step.Body)
+		// 3. Convert to domain request (handles ALL transports: HTTP, TCP, gRPC, GraphQL)
+		req, err := interpolatedConfig.ToDomain()
 		if err != nil {
-			return nil, fmt.Errorf("step '%s' body: %w", step.Name, err)
+			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// Interpolate JSON string if present
-		finalJSON := step.JSON
-		if finalJSON != "" {
-			finalJSON, err = chainCtx.ExpandVariables(finalJSON)
-			if err != nil {
-				return nil, fmt.Errorf("step '%s' json: %w", step.Name, err)
-			}
-		}
-
-		// 2. Build request manually (don't use ToDomain as we've already interpolated)
-		method := step.Method
-		if method == "" {
-			method = constants.MethodGET
-		}
-
-		var bodyReader io.Reader
-		var contentType string
-
-		if finalJSON != "" {
-			contentType = "application/json"
-			bodyReader = strings.NewReader(finalJSON)
-		} else if finalBody != nil {
-			contentType = "application/json"
-			bodyBytes, err := json.Marshal(finalBody)
-			if err != nil {
-				return nil, fmt.Errorf("step '%s': invalid json in body: %w", step.Name, err)
-			}
-			bodyReader = bytes.NewReader(bodyBytes)
-		}
-
-		req := &domain.Request{
-			URL:      finalURL,
-			Method:   constants.CanonicalizeMethod(method),
-			Headers:  finalHeaders,
-			Body:     bodyReader,
-			Metadata: make(map[string]string),
-		}
-
-		if contentType != "" {
-			if req.Headers == nil {
-				req.Headers = make(map[string]string)
-			}
-			if _, ok := req.Headers["Content-Type"]; !ok {
-				req.Headers["Content-Type"] = contentType
-			}
-		}
-
-		// Handle GraphQL Metadata
-		if step.Graphql != "" {
-			req.Metadata["transport"] = constants.TransportGraphQL
-			req.Metadata["graphql_query"] = step.Graphql
-			if step.Variables != nil {
-				vars, _ := json.Marshal(step.Variables)
-				req.Metadata["graphql_variables"] = string(vars)
-			}
-		} else {
-			req.Metadata["transport"] = constants.TransportHTTP
-		}
-
-		// 3. Create executor for this step's transport
+		// 4. Create executor for this step's transport
 		exec, err := factory.Create(req.Metadata["transport"])
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 4. Execute
+		// 5. Execute
 		result, err := Run(ctx, exec, req, []string{}, opts)
 		if err != nil {
 			return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
 		}
 
-		// 5. Assert Expectations
+		// 6. Assert Expectations
 		expectRes := CheckExpectations(step.Expect, result)
 		if expectRes.Error != nil {
 			return nil, fmt.Errorf("step '%s' assertion failed: %w", step.Name, expectRes.Error)
 		}
 
-		// 6. Store Result
+		// 7. Store Result
 		chainCtx.AddResult(step.Name, result)
 		chainResult.Results = append(chainResult.Results, result)
 		chainResult.StepNames = append(chainResult.StepNames, step.Name)
 	}
 
 	return chainResult, nil
+}
+
+// interpolateConfig expands chain variables in a config
+func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.ConfigV1, error) {
+	result := *cfg // Copy
+
+	// Interpolate URL
+	if result.URL != "" {
+		expanded, err := chainCtx.ExpandVariables(result.URL)
+		if err != nil {
+			return nil, fmt.Errorf("url: %w", err)
+		}
+		result.URL = expanded
+	}
+
+	// Interpolate Path
+	if result.Path != "" {
+		expanded, err := chainCtx.ExpandVariables(result.Path)
+		if err != nil {
+			return nil, fmt.Errorf("path: %w", err)
+		}
+		result.Path = expanded
+	}
+
+	// Interpolate Headers
+	if result.Headers != nil {
+		newHeaders := make(map[string]string)
+		for k, v := range result.Headers {
+			expanded, err := chainCtx.ExpandVariables(v)
+			if err != nil {
+				return nil, fmt.Errorf("header '%s': %w", k, err)
+			}
+			newHeaders[k] = expanded
+		}
+		result.Headers = newHeaders
+	}
+
+	// Interpolate Query params
+	if result.Query != nil {
+		newQuery := make(map[string]string)
+		for k, v := range result.Query {
+			expanded, err := chainCtx.ExpandVariables(v)
+			if err != nil {
+				return nil, fmt.Errorf("query '%s': %w", k, err)
+			}
+			newQuery[k] = expanded
+		}
+		result.Query = newQuery
+	}
+
+	// Interpolate JSON
+	if result.JSON != "" {
+		expanded, err := chainCtx.ExpandVariables(result.JSON)
+		if err != nil {
+			return nil, fmt.Errorf("json: %w", err)
+		}
+		result.JSON = expanded
+	}
+
+	// Interpolate Data (TCP)
+	if result.Data != "" {
+		expanded, err := chainCtx.ExpandVariables(result.Data)
+		if err != nil {
+			return nil, fmt.Errorf("data: %w", err)
+		}
+		result.Data = expanded
+	}
+
+	// Interpolate Body
+	if result.Body != nil {
+		newBody, err := interpolateBody(chainCtx, result.Body)
+		if err != nil {
+			return nil, fmt.Errorf("body: %w", err)
+		}
+		result.Body = newBody
+	}
+
+	// Interpolate Variables (GraphQL)
+	if result.Variables != nil {
+		newVars, err := interpolateBody(chainCtx, result.Variables)
+		if err != nil {
+			return nil, fmt.Errorf("variables: %w", err)
+		}
+		result.Variables = newVars
+	}
+
+	return &result, nil
 }
 
 // interpolateBody recursively interpolates variables in body map

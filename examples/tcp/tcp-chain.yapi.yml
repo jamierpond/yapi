@@ -1,0 +1,19 @@
+yapi: v1
+# TCP chain example - tests that chains work with TCP transport
+url: tcp://tcpbin.com:4242
+read_timeout: 5
+idle_timeout: 500
+close_after_send: true
+
+chain:
+  - name: hello
+    data: "Hello from step 1\n"
+    encoding: text
+
+  - name: world
+    data: "World from step 2\n"
+    encoding: text
+
+  - name: goodbye
+    data: "Goodbye from step 3\n"
+    encoding: text
