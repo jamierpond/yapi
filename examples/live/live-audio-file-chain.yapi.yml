@@ -20,8 +20,8 @@ chain:
         clip_name: "Hi Matt"
     expect:
       assert:
-        - '.result.name == "wrong!!!"'
-        - '.result.start_time == "alsowrong"'
+        - '.result.name == "Hi Matt"'
+        - '.result.start_time == 400'
 
 read_timeout: 10
 close_after_send: true
