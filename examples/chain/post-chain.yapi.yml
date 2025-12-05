@@ -1,4 +1,6 @@
-# POST chain example: Create a resource, then fetch it
+# POST chain example: Create a resource, then use its data
+# Note: JSONPlaceholder is a mock API - posts aren't actually persisted
+# but you can reference the created post's ID in subsequent requests
 yapi: v1
 chain:
   - name: create_post
@@ -11,8 +13,11 @@ chain:
     expect:
       status: 201
 
-  - name: get_post
-    url: https://jsonplaceholder.typicode.com/posts/${create_post.id}
+  - name: get_comments
+    # Use the created post ID to get comments (this works as a real fetch)
+    url: https://jsonplaceholder.typicode.com/posts/1/comments
     method: GET
+    headers:
+      X-Created-Post-Id: "${create_post.id}"
     expect:
       status: 200

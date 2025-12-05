@@ -1,0 +1,10 @@
+# Invalid chain example - forward reference (should fail validation)
+yapi: v1
+chain:
+  - name: step1
+    url: https://example.com/${step2.token}
+    method: GET
+
+  - name: step2
+    url: https://example.com/auth
+    method: POST
