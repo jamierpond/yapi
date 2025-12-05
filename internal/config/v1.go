@@ -45,16 +45,33 @@ var knownV1Keys = map[string]bool{
 }
 
 // knownChainStepKeys is the set of valid keys for chain step entries.
+// Chain steps can use any ConfigV1 field plus "name".
 var knownChainStepKeys = map[string]bool{
-	"name":      true,
-	"url":       true,
-	"method":    true,
-	"headers":   true,
-	"body":      true,
-	"json":      true,
-	"graphql":   true,
-	"variables": true,
-	"expect":    true,
+	"name": true,
+	// Include all ConfigV1 keys except "yapi" and "chain"
+	"url":              true,
+	"path":             true,
+	"method":           true,
+	"content_type":     true,
+	"headers":          true,
+	"body":             true,
+	"json":             true,
+	"query":            true,
+	"graphql":          true,
+	"variables":        true,
+	"service":          true,
+	"rpc":              true,
+	"proto":            true,
+	"proto_path":       true,
+	"data":             true,
+	"encoding":         true,
+	"jq_filter":        true,
+	"insecure":         true,
+	"plaintext":        true,
+	"read_timeout":     true,
+	"idle_timeout":     true,
+	"close_after_send": true,
+	"expect":           true,
 }
 
 // knownExpectKeys is the set of valid keys for expect blocks.
@@ -110,65 +127,26 @@ type ConfigV1 struct {
 }
 
 // ChainStep represents a single step in a request chain.
-// All fields are optional overrides on top of the base ConfigV1.
+// It embeds ConfigV1 so all config fields are available as overrides.
 type ChainStep struct {
-	Name string `yaml:"name"` // Required: unique step identifier
-
-	// All fields below override the base config if set
-	URL            string                 `yaml:"url,omitempty"`
-	Path           string                 `yaml:"path,omitempty"`
-	Method         string                 `yaml:"method,omitempty"`
-	ContentType    string                 `yaml:"content_type,omitempty"`
-	Headers        map[string]string      `yaml:"headers,omitempty"`
-	Body           map[string]interface{} `yaml:"body,omitempty"`
-	JSON           string                 `yaml:"json,omitempty"`
-	Query          map[string]string      `yaml:"query,omitempty"`
-	Graphql        string                 `yaml:"graphql,omitempty"`
-	Variables      map[string]interface{} `yaml:"variables,omitempty"`
-	Service        string                 `yaml:"service,omitempty"`
-	RPC            string                 `yaml:"rpc,omitempty"`
-	Proto          string                 `yaml:"proto,omitempty"`
-	ProtoPath      string                 `yaml:"proto_path,omitempty"`
-	Data           string                 `yaml:"data,omitempty"`
-	Encoding       string                 `yaml:"encoding,omitempty"`
-	JQFilter       string                 `yaml:"jq_filter,omitempty"`
-	Insecure       *bool                  `yaml:"insecure,omitempty"`
-	Plaintext      *bool                  `yaml:"plaintext,omitempty"`
-	ReadTimeout    *int                   `yaml:"read_timeout,omitempty"`
-	IdleTimeout    *int                   `yaml:"idle_timeout,omitempty"`
-	CloseAfterSend *bool                  `yaml:"close_after_send,omitempty"`
-
-	Expect Expectation `yaml:"expect,omitempty"`
+	Name     string `yaml:"name"` // Required: unique step identifier
+	ConfigV1 `yaml:",inline"`     // All ConfigV1 fields available as overrides
 }
 
 // Merge creates a full ConfigV1 by applying step overrides to the base config.
 // Maps are deep copied to avoid polluting the shared base config between steps.
 func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
-	merged := *base // Shallow copy of scalar fields
-	merged.Chain = nil // Don't copy chain into merged step
-	merged.Expect = step.Expect // Step expectations override base
+	merged := *base
+	merged.Chain = nil
+	merged.Expect = step.Expect
 
 	// Deep copy maps from base to avoid reference pollution between steps
-	if base.Headers != nil {
-		merged.Headers = make(map[string]string, len(base.Headers))
-		for k, v := range base.Headers {
-			merged.Headers[k] = v
-		}
-	}
-	if base.Query != nil {
-		merged.Query = make(map[string]string, len(base.Query))
-		for k, v := range base.Query {
-			merged.Query[k] = v
-		}
-	}
-	if base.Body != nil {
-		merged.Body = deepCopyMap(base.Body)
-	}
-	if base.Variables != nil {
-		merged.Variables = deepCopyMap(base.Variables)
-	}
+	merged.Headers = copyStringMap(base.Headers)
+	merged.Query = copyStringMap(base.Query)
+	merged.Body = deepCopyMap(base.Body)
+	merged.Variables = deepCopyMap(base.Variables)
 
-	// Override string fields if step has them
+	// Override string fields if step has non-zero values
 	if step.URL != "" {
 		merged.URL = step.URL
 	}
@@ -209,25 +187,25 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 		merged.JQFilter = step.JQFilter
 	}
 
-	// Override pointer fields (bools/ints that need explicit false/0)
-	if step.Insecure != nil {
-		merged.Insecure = *step.Insecure
+	// Override bool/int fields if step has non-zero values
+	if step.Insecure {
+		merged.Insecure = step.Insecure
 	}
-	if step.Plaintext != nil {
-		merged.Plaintext = *step.Plaintext
+	if step.Plaintext {
+		merged.Plaintext = step.Plaintext
 	}
-	if step.ReadTimeout != nil {
-		merged.ReadTimeout = *step.ReadTimeout
+	if step.ReadTimeout != 0 {
+		merged.ReadTimeout = step.ReadTimeout
 	}
-	if step.IdleTimeout != nil {
-		merged.IdleTimeout = *step.IdleTimeout
+	if step.IdleTimeout != 0 {
+		merged.IdleTimeout = step.IdleTimeout
 	}
-	if step.CloseAfterSend != nil {
-		merged.CloseAfterSend = *step.CloseAfterSend
+	if step.CloseAfterSend {
+		merged.CloseAfterSend = step.CloseAfterSend
 	}
 
-	// Merge maps (step headers/query add to or override base)
-	if step.Headers != nil {
+	// Merge maps (step values add to or override base)
+	if len(step.Headers) > 0 {
 		if merged.Headers == nil {
 			merged.Headers = make(map[string]string)
 		}
@@ -235,7 +213,7 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 			merged.Headers[k] = v
 		}
 	}
-	if step.Query != nil {
+	if len(step.Query) > 0 {
 		if merged.Query == nil {
 			merged.Query = make(map[string]string)
 		}
@@ -251,6 +229,18 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 	}
 
 	return merged
+}
+
+// copyStringMap creates a shallow copy of a string map
+func copyStringMap(m map[string]string) map[string]string {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]string, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
 }
 
 // deepCopyMap creates a deep copy of a map[string]interface{}

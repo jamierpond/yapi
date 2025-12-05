@@ -21,8 +21,10 @@ func TestMerge_MapIsolation(t *testing.T) {
 	// Step 1 adds headers
 	step1 := ChainStep{
 		Name: "step1",
-		Headers: map[string]string{
-			"X-Step": "1",
+		ConfigV1: ConfigV1{
+			Headers: map[string]string{
+				"X-Step": "1",
+			},
 		},
 	}
 
