@@ -76,8 +76,10 @@ func main() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "yapi",
-		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
+		Use:           "yapi",
+		Short:         "yapi is a unified API client for HTTP, gRPC, and TCP",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			color.SetNoColor(app.noColor)
 		},
