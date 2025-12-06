@@ -1,0 +1,7 @@
+yapi: v1
+url: http://localhost:3000/sitemap.xml
+method: GET
+expect:
+  status: 200
+  assert:
+    - '.headers["content-type"] | test("xml")'
