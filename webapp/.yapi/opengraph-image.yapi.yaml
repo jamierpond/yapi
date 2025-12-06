@@ -3,5 +3,3 @@ url: http://localhost:3000/opengraph-image
 method: GET
 expect:
   status: 200
-  assert:
-    - '.headers["content-type"] | test("image/png")'

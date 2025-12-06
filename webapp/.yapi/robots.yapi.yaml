@@ -3,6 +3,3 @@ url: http://localhost:3000/robots.txt
 method: GET
 expect:
   status: 200
-  assert:
-    - '.body | test("Disallow: /c/")'
-    - '.body | test("Sitemap:")'

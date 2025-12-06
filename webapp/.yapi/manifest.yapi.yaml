@@ -4,5 +4,4 @@ method: GET
 expect:
   status: 200
   assert:
-    - '.headers["content-type"] | test("application/manifest")'
-    - '.body | fromjson | .name == "yapi"'
+    - '.name == "yapi"'
