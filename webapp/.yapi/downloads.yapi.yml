@@ -1,0 +1,4 @@
+yapi: v1
+url: http://localhost:3000
+method: GET
+path: /api/downloads
