@@ -17,6 +17,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: "yapi playground",
       description: preview,
+      robots: {
+        index: false,
+        follow: false,
+      },
       openGraph: {
         title: "yapi playground",
         description: preview,
@@ -28,10 +32,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description: preview,
       },
     };
-  } catch (e) {
+  } catch {
     return {
       title: "yapi playground",
-      description: "compiler explorer for APIs",
+      description: "Offline-first YAML API client for HTTP, gRPC, and TCP",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 }

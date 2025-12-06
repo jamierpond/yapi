@@ -5,6 +5,30 @@ import "./globals.css";
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from "@/app/lib/constants";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  url: SITE_URL,
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "macOS, Linux, Windows",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  featureList: [
+    "HTTP API client",
+    "gRPC client",
+    "TCP client",
+    "YAML configuration",
+    "Offline-first",
+    "Version control friendly",
+    "CLI and web playground",
+  ],
+};
+
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
@@ -76,6 +100,10 @@ export default function RootLayout({
       <body
         className={`${jetbrainsMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         {children}
       </body>
     </html>
