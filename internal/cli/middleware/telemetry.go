@@ -2,6 +2,8 @@
 package middleware
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"yapi.run/cli/internal/telemetry"
@@ -40,6 +42,8 @@ func WrapWithTelemetry(cmd *cobra.Command) {
 
 	// Wrap with telemetry
 	cmd.RunE = func(c *cobra.Command, args []string) error {
+		start := time.Now()
+
 		// Collect properties from flags
 		props := make(map[string]interface{})
 		cmd.Flags().Visit(func(f *pflag.Flag) {
@@ -47,15 +51,16 @@ func WrapWithTelemetry(cmd *cobra.Command) {
 		})
 		props["args_count"] = len(args)
 
-		// Start the trace
-		ctx := telemetry.WithContext(c.Context(), "cmd_"+cmd.Name(), props)
-		c.SetContext(ctx)
-
 		// Execute the original command
 		err := originalRunE(c, args)
 
-		// End the trace with success/failure
-		telemetry.EndFromContext(ctx, err)
+		// Track command execution
+		props["duration_ms"] = time.Since(start).Milliseconds()
+		props["success"] = err == nil
+		if err != nil {
+			props["error"] = err.Error()
+		}
+		telemetry.Track("cmd_"+cmd.Name(), props)
 
 		return err
 	}
