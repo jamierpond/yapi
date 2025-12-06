@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -123,7 +122,6 @@ func main() {
 func (app *rootCommand) runInteractive(cmd *cobra.Command, args []string) {
 	selectedPath, err := tui.FindConfigFileSingle()
 	if err != nil {
-		analytics.TrackFailure(err.Error())
 		analytics.Fatal("Failed to select config file: %v", err)
 	}
 	app.runConfigPath(selectedPath)
@@ -156,7 +154,6 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 			if interactive {
 				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
-					analytics.TrackFailure(err.Error())
 					analytics.Fatal("Failed to select config file: %v", err)
 				}
 				path = selectedPath
@@ -168,7 +165,6 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 
 			if usePretty {
 				if err := tui.RunWatch(path); err != nil {
-					analytics.TrackFailure(err.Error())
 					analytics.Fatal("Watch failed: %v", err)
 				}
 			} else {
@@ -186,7 +182,6 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 func (app *rootCommand) watchConfigPath(path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		analytics.TrackFailure(err.Error())
 		analytics.Fatal("Failed to resolve path: %v", err)
 	}
 
@@ -252,9 +247,8 @@ func (app *rootCommand) executeRun(ctx runContext) {
 	app.printErrors(runRes.Analysis, ctx.strict)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
-			if app.tracker != nil {
-				app.tracker.End(false, "validation errors")
-			}
+			analytics.TrackFailure("validation errors")
+			analytics.Close()
 			os.Exit(1)
 		}
 		return
@@ -291,9 +285,8 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
 		if ctx.strict {
-			if app.tracker != nil {
-				app.tracker.End(false, "invalid config")
-			}
+			analytics.TrackFailure("invalid config")
+			analytics.Close()
 			os.Exit(1)
 		}
 		return
@@ -323,9 +316,6 @@ func (app *rootCommand) executeRun(ctx runContext) {
 // handleError prints an error, optionally exiting for strict mode
 func (app *rootCommand) handleError(err error, strict bool) {
 	if strict {
-		if app.tracker != nil {
-			app.tracker.End(false, err.Error())
-		}
 		analytics.Fatal("%v", err)
 	} else {
 		fmt.Println(color.Red(err.Error()))
@@ -441,7 +431,6 @@ func newValidateCmd() *cobra.Command {
 					if jsonOutput {
 						outputValidateError(err)
 					} else {
-						analytics.TrackFailure(err.Error())
 						analytics.Fatal("Failed to read stdin: %v", err)
 					}
 					return
@@ -453,7 +442,6 @@ func newValidateCmd() *cobra.Command {
 					if jsonOutput {
 						outputValidateError(err)
 					} else {
-						analytics.TrackFailure(err.Error())
 						analytics.Fatal("Failed to read file: %v", err)
 					}
 					return
@@ -466,7 +454,6 @@ func newValidateCmd() *cobra.Command {
 				if jsonOutput {
 					outputValidateError(err)
 				} else {
-					analytics.TrackFailure(err.Error())
 					analytics.Fatal("Validation failed: %v", err)
 				}
 				return
@@ -515,6 +502,8 @@ func outputValidateText(analysis *validation.Analysis) {
 	}
 
 	if analysis.HasErrors() {
+		analytics.TrackFailure("validation errors")
+		analytics.Close()
 		os.Exit(1)
 	}
 }
