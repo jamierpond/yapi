@@ -16,9 +16,10 @@ const (
 )
 
 var (
-	client         posthog.Client
-	disabled       bool
-	printAnalytics bool
+	client          posthog.Client
+	disabled        bool
+	printAnalytics  bool
+	currentTracker  *CommandTracker
 )
 
 // CommandTracker tracks timing for a command execution.

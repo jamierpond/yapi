@@ -80,25 +80,25 @@ func main() {
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			color.SetNoColor(app.noColor)
-			// Start tracking command execution
+			// Start tracking command execution (skip meta commands only)
 			switch cmd.Name() {
-			case "history", "version", "lsp", "help", "yapi":
+			case "history", "version", "lsp", "help":
 				// Skip tracking meta commands
 			default:
 				app.tracker = analytics.StartCommand(cmd.Name(), version)
 			}
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			// End tracking - commands that reach here completed successfully
+			if app.tracker != nil {
+				app.tracker.End(true, "")
+			}
 			// Log command to history (skip meta commands)
 			switch cmd.Name() {
 			case "history", "version", "lsp", "help", "yapi":
 				return
 			}
 			logHistoryCmd(reconstructCommand(cmd, args))
-			// End tracking - commands that reach here completed successfully
-			if app.tracker != nil {
-				app.tracker.End(true, "")
-			}
 		},
 		Run: app.runInteractive,
 	}
