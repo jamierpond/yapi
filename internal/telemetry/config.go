@@ -11,13 +11,22 @@ type UserConfig struct {
 	TelemetryEnabled *bool `json:"telemetry_enabled,omitempty"`
 }
 
-// configPath returns the path to the user config file
-func configPath() (string, error) {
-	configDir, err := os.UserConfigDir()
+// yapiConfigDir returns the yapi config directory (~/.config/yapi)
+func yapiConfigDir() (string, error) {
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, "yapi", "config.json"), nil
+	return filepath.Join(home, ".config", "yapi"), nil
+}
+
+// configPath returns the path to the user config file
+func configPath() (string, error) {
+	dir, err := yapiConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "config.json"), nil
 }
 
 // LoadUserConfig loads the user config from disk

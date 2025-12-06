@@ -1,42 +1,25 @@
 package telemetry
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
-	"path/filepath"
-
-	"github.com/google/uuid"
 )
 
-// getMachineID returns a persistent unique identifier for this machine.
-// On first run, generates a UUID and saves it to ~/.config/yapi/machine_id.
-// Subsequent runs read the existing ID.
+// getMachineID returns a stable identifier for this machine.
+// It's a hash of the user's home directory and hostname.
 func getMachineID() string {
-	configDir, err := os.UserConfigDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return fallbackID()
+		home = "unknown-home"
 	}
 
-	idFile := filepath.Join(configDir, "yapi", "machine_id")
-
-	// Try reading existing ID
-	if data, err := os.ReadFile(idFile); err == nil && len(data) > 0 {
-		return string(data)
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown-host"
 	}
 
-	// Generate new ID
-	id := uuid.New().String()
-
-	// Best effort save (directory should exist since config lives there)
-	_ = os.MkdirAll(filepath.Dir(idFile), 0755)
-	_ = os.WriteFile(idFile, []byte(id), 0644)
-
-	return id
-}
-
-// fallbackID returns a fallback identifier when config dir is unavailable
-func fallbackID() string {
-	if hostname, err := os.Hostname(); err == nil && hostname != "" {
-		return hostname
-	}
-	return "unknown"
+	h := sha256.New()
+	h.Write([]byte(home + ":" + hostname))
+	return hex.EncodeToString(h.Sum(nil))[:16]
 }
