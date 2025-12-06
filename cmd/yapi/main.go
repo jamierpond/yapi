@@ -401,6 +401,13 @@ func newVersionCmd() *cobra.Command {
 			fmt.Printf("yapi %s\n", version)
 			fmt.Printf("  commit: %s\n", commit)
 			fmt.Printf("  built:  %s\n", date)
+			fmt.Println()
+			if telemetry.Enabled() {
+				fmt.Println("  telemetry: enabled")
+				fmt.Println("  disable with: export YAPI_NO_ANALYTICS=1")
+			} else {
+				fmt.Println("  telemetry: disabled")
+			}
 			return nil
 		},
 	}
