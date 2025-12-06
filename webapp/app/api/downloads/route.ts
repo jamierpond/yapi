@@ -37,7 +37,7 @@ export async function GET() {
 
         // Logic: The API inflates counts by 1.
         // We subtract 1, ensuring we don't go below zero.
-        const realCount = Math.max(0, asset.downloadCount - 1);
+        const realCount = Math.max(0, asset.download_count - 1);
 
         totalDownloads += realCount;
       });
