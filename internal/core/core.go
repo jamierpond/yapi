@@ -3,10 +3,12 @@ package core
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/runner"
+	"yapi.run/cli/internal/telemetry"
 	"yapi.run/cli/internal/validation"
 )
 
@@ -54,23 +56,39 @@ func (e *Engine) RunConfig(
 		return &RunConfigResult{Analysis: analysis}
 	}
 
+	// Extract config stats for telemetry
+	stats := telemetry.ExtractConfigStats(analysis)
+	start := time.Now()
+
 	exec, err := e.factory.Create(analysis.Request.Metadata["transport"])
 	if err != nil {
 		return &RunConfigResult{Analysis: analysis, Error: err}
 	}
 
-	result, err := runner.Run(ctx, exec, analysis.Request, analysis.Warnings, opts)
-	if err != nil {
-		return &RunConfigResult{Analysis: analysis, Result: result, Error: err}
-	}
+	result, runErr := runner.Run(ctx, exec, analysis.Request, analysis.Warnings, opts)
 
 	// Check expectations if present
 	var expectRes *runner.ExpectationResult
 	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert) > 0) {
 		expectRes = runner.CheckExpectations(analysis.Expect, result)
-		if expectRes.Error != nil {
-			return &RunConfigResult{Analysis: analysis, Result: result, ExpectRes: expectRes, Error: expectRes.Error}
-		}
+	}
+
+	// Track request execution
+	stats["duration_ms"] = time.Since(start).Milliseconds()
+	stats["success"] = runErr == nil && (expectRes == nil || expectRes.Error == nil)
+	if runErr != nil {
+		stats["error_type"] = "execution"
+	} else if expectRes != nil && expectRes.Error != nil {
+		stats["error_type"] = "assertion_failed"
+	}
+	telemetry.Track("request_executed", stats)
+
+	if runErr != nil {
+		return &RunConfigResult{Analysis: analysis, Result: result, Error: runErr}
+	}
+
+	if expectRes != nil && expectRes.Error != nil {
+		return &RunConfigResult{Analysis: analysis, Result: result, ExpectRes: expectRes, Error: expectRes.Error}
 	}
 
 	return &RunConfigResult{Analysis: analysis, Result: result, ExpectRes: expectRes}

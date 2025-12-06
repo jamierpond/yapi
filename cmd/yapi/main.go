@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,13 +16,14 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"yapi.run/cli/internal/analytics"
 	"yapi.run/cli/internal/cli/color"
+	"yapi.run/cli/internal/cli/middleware"
 	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/share"
+	"yapi.run/cli/internal/telemetry"
 	"yapi.run/cli/internal/tui"
 	"yapi.run/cli/internal/validation"
 )
@@ -57,17 +59,15 @@ func init() {
 }
 
 type rootCommand struct {
-	urlOverride    string
-	noColor        bool
-	httpClient     *http.Client
-	engine         *core.Engine
-	tracker        *analytics.CommandTracker
-	requestTracker *analytics.RequestTracker
+	urlOverride string
+	noColor     bool
+	httpClient  *http.Client
+	engine      *core.Engine
 }
 
 func main() {
-	analytics.Init()
-	defer analytics.Close()
+	telemetry.Init(version, commit)
+	defer telemetry.Close()
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	app := &rootCommand{
@@ -80,24 +80,8 @@ func main() {
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			color.SetNoColor(app.noColor)
-			// Start tracking command execution (skip meta commands only)
-			switch cmd.Name() {
-			case "history", "version", "lsp", "help":
-				// Skip tracking meta commands
-			default:
-				app.tracker = analytics.StartCommand(cmd.Name(), version)
-				app.requestTracker = analytics.NewRequestTracker()
-			}
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			// End request tracking
-			if app.requestTracker != nil {
-				app.requestTracker.Complete()
-			}
-			// End command tracking - commands that reach here completed successfully
-			if app.tracker != nil {
-				app.tracker.End(true, "")
-			}
 			// Log command to history (skip meta commands)
 			switch cmd.Name() {
 			case "history", "version", "lsp", "help", "yapi":
@@ -105,7 +89,7 @@ func main() {
 			}
 			logHistoryCmd(reconstructCommand(cmd, args))
 		},
-		Run: app.runInteractive,
+		RunE: app.runInteractiveE,
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&app.urlOverride, "url", "u", "", "Override the URL specified in the config file")
@@ -119,18 +103,20 @@ func main() {
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newShareCmd())
 
+	// Wrap all commands with telemetry middleware
+	middleware.WrapWithTelemetry(rootCmd)
+
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
 
-func (app *rootCommand) runInteractive(cmd *cobra.Command, args []string) {
+func (app *rootCommand) runInteractiveE(cmd *cobra.Command, args []string) error {
 	selectedPath, err := tui.FindConfigFileSingle()
 	if err != nil {
-		analytics.Fatal("Failed to select config file: %v", err)
+		return fmt.Errorf("failed to select config file: %w", err)
 	}
-	app.runConfigPath(selectedPath)
+	return app.runConfigPathE(selectedPath)
 }
 
 func (app *rootCommand) newRunCmd() *cobra.Command {
@@ -138,8 +124,8 @@ func (app *rootCommand) newRunCmd() *cobra.Command {
 		Use:   "run <file>",
 		Short: "Run a request defined in a yapi config file",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			app.runConfigPath(args[0])
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return app.runConfigPathE(args[0])
 		},
 	}
 	return cmd
@@ -153,14 +139,14 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 		Use:   "watch [file]",
 		Short: "Watch a yapi config file and re-run on changes",
 		Args:  cobra.MaximumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var path string
 			interactive := len(args) == 0
 
 			if interactive {
 				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
-					analytics.Fatal("Failed to select config file: %v", err)
+					return fmt.Errorf("failed to select config file: %w", err)
 				}
 				path = selectedPath
 			} else {
@@ -170,12 +156,9 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 			usePretty := pretty || (interactive && !noPretty)
 
 			if usePretty {
-				if err := tui.RunWatch(path); err != nil {
-					analytics.Fatal("Watch failed: %v", err)
-				}
-			} else {
-				app.watchConfigPath(path)
+				return tui.RunWatch(path)
 			}
+			return app.watchConfigPath(path)
 		},
 	}
 
@@ -185,10 +168,10 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 	return cmd
 }
 
-func (app *rootCommand) watchConfigPath(path string) {
+func (app *rootCommand) watchConfigPath(path string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		analytics.Fatal("Failed to resolve path: %v", err)
+		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
 	clearScreen()
@@ -209,6 +192,7 @@ func (app *rootCommand) watchConfigPath(path string) {
 			app.runConfigPathSafe(absPath)
 		}
 	}
+	return nil
 }
 
 func getModTime(path string) time.Time {
@@ -232,11 +216,12 @@ func printWatchHeader(path string) {
 // runContext holds options for executeRun
 type runContext struct {
 	path   string
-	strict bool // If true, os.Exit(1) on errors; if false, print and return
+	strict bool // If true, return error on failures; if false, print and return nil
 }
 
-// executeRun is the unified execution pipeline for both Run and Watch modes.
-func (app *rootCommand) executeRun(ctx runContext) {
+// executeRunE is the unified execution pipeline for both Run and Watch modes.
+// Returns error for middleware to capture.
+func (app *rootCommand) executeRunE(ctx runContext) error {
 	opts := runner.Options{
 		URLOverride: app.urlOverride,
 		NoColor:     app.noColor,
@@ -246,32 +231,19 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	// Handle validation/parse errors first
 	if runRes.Error != nil && runRes.Analysis == nil {
-		if app.requestTracker != nil {
-			app.requestTracker.SetError("parse")
+		if ctx.strict {
+			return runRes.Error
 		}
-		app.handleError(runRes.Error, ctx.strict)
-		return
-	}
-
-	// Collect stats from config if available
-	if runRes.Analysis != nil && runRes.Analysis.Base != nil && app.requestTracker != nil {
-		app.requestTracker.SetStats(runRes.Analysis.Base.CollectStats())
+		fmt.Println(color.Red(runRes.Error.Error()))
+		return nil
 	}
 
 	app.printErrors(runRes.Analysis, ctx.strict)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
-		if app.requestTracker != nil {
-			app.requestTracker.SetError("validation")
-		}
 		if ctx.strict {
-			if app.requestTracker != nil {
-				app.requestTracker.Complete()
-			}
-			analytics.TrackFailure("validation errors")
-			analytics.Close()
-			os.Exit(1)
+			return errors.New("validation errors")
 		}
-		return
+		return nil
 	}
 
 	// Check if this is a chain config
@@ -282,11 +254,9 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		if chainResult != nil {
 			for i, stepResult := range chainResult.Results {
 				fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
-				// Trim trailing whitespace to avoid double newlines (e.g. TCP responses with \n)
 				body := strings.TrimRight(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor), "\n\r")
 				fmt.Println(body)
 				printResultMeta(stepResult)
-				// Print expectation results for this step
 				if i < len(chainResult.ExpectationResults) {
 					printExpectationResult(chainResult.ExpectationResults[i])
 				}
@@ -294,79 +264,45 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		}
 
 		if chainErr != nil {
-			if app.requestTracker != nil {
-				app.requestTracker.SetError("execution")
+			if ctx.strict {
+				return chainErr
 			}
-			app.handleError(chainErr, ctx.strict)
-			return
+			fmt.Println(color.Red(chainErr.Error()))
+			return nil
 		}
 
-		if app.requestTracker != nil {
-			app.requestTracker.SetSuccess()
-		}
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 		app.printWarnings(runRes.Analysis, ctx.strict)
-		return
+		return nil
 	}
 
 	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
-		if app.requestTracker != nil {
-			app.requestTracker.SetError("invalid_config")
-		}
 		if ctx.strict {
-			if app.requestTracker != nil {
-				app.requestTracker.Complete()
-			}
-			analytics.TrackFailure("invalid config")
-			analytics.Close()
-			os.Exit(1)
+			return errors.New("invalid config")
 		}
-		return
+		return nil
 	}
 
 	if runRes.Result != nil {
-		// Trim trailing whitespace to avoid double newlines
 		body := strings.TrimRight(output.Highlight(runRes.Result.Body, runRes.Result.ContentType, app.noColor), "\n\r")
 		fmt.Println(body)
 		printResultMeta(runRes.Result)
 	}
 
-	// Print expectation results
 	if runRes.ExpectRes != nil {
 		printExpectationResult(runRes.ExpectRes)
 	}
 
-	// Handle errors after printing result
 	if runRes.Error != nil {
-		if app.requestTracker != nil {
-			// Distinguish between assertion failures and execution errors
-			if runRes.ExpectRes != nil && runRes.ExpectRes.Error != nil {
-				app.requestTracker.SetError("assertion_failed")
-			} else {
-				app.requestTracker.SetError("execution")
-			}
+		if ctx.strict {
+			return runRes.Error
 		}
-		app.handleError(runRes.Error, ctx.strict)
-		return
+		fmt.Println(color.Red(runRes.Error.Error()))
+		return nil
 	}
 
-	if app.requestTracker != nil {
-		app.requestTracker.SetSuccess()
-	}
 	app.printWarnings(runRes.Analysis, ctx.strict)
-}
-
-// handleError prints an error, optionally exiting for strict mode
-func (app *rootCommand) handleError(err error, strict bool) {
-	if strict {
-		// Complete request tracking before fatal exit
-		if app.requestTracker != nil {
-			app.requestTracker.Complete()
-		}
-		analytics.Fatal("%v", err)
-	} else {
-		fmt.Println(color.Red(err.Error()))
-	}
+	return nil
 }
 
 // formatDiagnostic formats a single diagnostic with color.
@@ -434,17 +370,23 @@ func (app *rootCommand) printWarnings(a *validation.Analysis, strict bool) {
 	})
 }
 
-// runConfigPathSafe runs a config file without exiting on error (for watch mode)
+// runConfigPathSafe runs a config file without returning error (for watch mode)
 func (app *rootCommand) runConfigPathSafe(path string) {
-	app.executeRun(runContext{path: path, strict: false})
+	_ = app.executeRunE(runContext{path: path, strict: false})
+}
+
+// runConfigPathE runs a config file in strict mode (returns error)
+func (app *rootCommand) runConfigPathE(path string) error {
+	return app.executeRunE(runContext{path: path, strict: true})
 }
 
 func newLSPCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "lsp",
 		Short: "Run the yapi language server over stdio",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			langserver.Run()
+			return nil
 		},
 	}
 }
@@ -453,10 +395,11 @@ func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("yapi %s\n", version)
 			fmt.Printf("  commit: %s\n", commit)
 			fmt.Printf("  built:  %s\n", date)
+			return nil
 		},
 	}
 }
@@ -469,7 +412,7 @@ func newValidateCmd() *cobra.Command {
 		Short: "Validate a yapi config file",
 		Long:  "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
 		Args:  cobra.MaximumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var text string
 
 			if len(args) == 0 || args[0] == "-" {
@@ -477,10 +420,9 @@ func newValidateCmd() *cobra.Command {
 				if err != nil {
 					if jsonOutput {
 						outputValidateError(err)
-					} else {
-						analytics.Fatal("Failed to read stdin: %v", err)
+						return nil
 					}
-					return
+					return fmt.Errorf("failed to read stdin: %w", err)
 				}
 				text = string(data)
 			} else {
@@ -488,10 +430,9 @@ func newValidateCmd() *cobra.Command {
 				if err != nil {
 					if jsonOutput {
 						outputValidateError(err)
-					} else {
-						analytics.Fatal("Failed to read file: %v", err)
+						return nil
 					}
-					return
+					return fmt.Errorf("failed to read file: %w", err)
 				}
 				text = string(data)
 			}
@@ -500,17 +441,17 @@ func newValidateCmd() *cobra.Command {
 			if err != nil {
 				if jsonOutput {
 					outputValidateError(err)
-				} else {
-					analytics.Fatal("Validation failed: %v", err)
+					return nil
 				}
-				return
+				return fmt.Errorf("validation failed: %w", err)
 			}
 
 			if jsonOutput {
 				json.NewEncoder(os.Stdout).Encode(analysis.ToJSON())
-			} else {
-				outputValidateText(analysis)
+				return nil
 			}
+
+			return outputValidateText(analysis)
 		},
 	}
 
@@ -533,7 +474,7 @@ func outputValidateError(err error) {
 	json.NewEncoder(os.Stdout).Encode(out)
 }
 
-func outputValidateText(analysis *validation.Analysis) {
+func outputValidateText(analysis *validation.Analysis) error {
 	hasOutput := len(analysis.Warnings) > 0 || len(analysis.Diagnostics) > 0
 
 	for _, w := range analysis.Warnings {
@@ -549,15 +490,9 @@ func outputValidateText(analysis *validation.Analysis) {
 	}
 
 	if analysis.HasErrors() {
-		analytics.TrackFailure("validation errors")
-		analytics.Close()
-		os.Exit(1)
+		return errors.New("validation errors")
 	}
-}
-
-// runConfigPath runs a config file in strict mode (exits on error)
-func (app *rootCommand) runConfigPath(path string) {
-	app.executeRun(runContext{path: path, strict: true})
+	return nil
 }
 
 func newShareCmd() *cobra.Command {
@@ -567,11 +502,11 @@ func newShareCmd() *cobra.Command {
 		Use:   "share <file>",
 		Short: "Generate a shareable yapi.run link for a config file",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			filename := args[0]
 			data, err := os.ReadFile(filename)
 			if err != nil {
-				analytics.Fatal("Failed to read file: %v", err)
+				return fmt.Errorf("failed to read file: %w", err)
 			}
 
 			content := string(data)
@@ -583,7 +518,7 @@ func newShareCmd() *cobra.Command {
 
 			encoded, err := share.Encode(content)
 			if err != nil {
-				analytics.Fatal("Failed to encode: %v", err)
+				return fmt.Errorf("failed to encode: %w", err)
 			}
 
 			url := "https://yapi.run/c/" + encoded
@@ -596,7 +531,7 @@ func newShareCmd() *cobra.Command {
 
 			// Fancy output to stderr
 			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, color.AccentBg(" 🐑 yapi share "))
+			fmt.Fprintln(os.Stderr, color.AccentBg(" yapi share "))
 			fmt.Fprintln(os.Stderr)
 
 			if hasErrors {
@@ -639,6 +574,7 @@ func newShareCmd() *cobra.Command {
 			if stat, _ := os.Stdout.Stat(); (stat.Mode() & os.ModeCharDevice) == 0 {
 				fmt.Println(url)
 			}
+			return nil
 		},
 	}
 
@@ -717,18 +653,18 @@ func newHistoryCmd() *cobra.Command {
 		Use:   "history [count]",
 		Short: "Show yapi command history (default: last 10)",
 		Args:  cobra.MaximumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			count := 10
 			if len(args) == 1 {
 				n, err := fmt.Sscanf(args[0], "%d", &count)
 				if err != nil || n != 1 || count < 1 {
-					analytics.Fatal("Invalid count: %s", args[0])
+					return fmt.Errorf("invalid count: %s", args[0])
 				}
 			}
 
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
-				analytics.Fatal("Failed to get home directory: %v", err)
+				return fmt.Errorf("failed to get home directory: %w", err)
 			}
 
 			historyFile := filepath.Join(homeDir, ".yapi_history")
@@ -736,15 +672,15 @@ func newHistoryCmd() *cobra.Command {
 			if err != nil {
 				if os.IsNotExist(err) {
 					fmt.Println("No history yet")
-					return
+					return nil
 				}
-				analytics.Fatal("Failed to read history: %v", err)
+				return fmt.Errorf("failed to read history: %w", err)
 			}
 
 			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
 			if len(lines) == 0 || (len(lines) == 1 && lines[0] == "") {
 				fmt.Println("No history yet")
-				return
+				return nil
 			}
 
 			start := len(lines) - count
@@ -755,6 +691,7 @@ func newHistoryCmd() *cobra.Command {
 			for _, line := range lines[start:] {
 				fmt.Println(line)
 			}
+			return nil
 		},
 	}
 	return cmd

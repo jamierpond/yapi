@@ -10,11 +10,9 @@ import (
 	"sort"
 	"strings"
 
-	"yapi.run/cli/internal/analytics"
 	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/utils"
-	"yapi.run/cli/internal/vars"
 )
 
 // knownV1Keys is the set of valid keys for v1 config files.
@@ -359,90 +357,3 @@ func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
 	return nil
 }
 
-// CollectStats gathers feature usage statistics from this config.
-func (c *ConfigV1) CollectStats() analytics.RequestStats {
-	stats := analytics.RequestStats{
-		Transport:       c.detectTransport(),
-		IsChain:         len(c.Chain) > 0,
-		ChainStepCount:  len(c.Chain),
-		HasExpectations: c.Expect.Status != nil || len(c.Expect.Assert) > 0,
-		AssertionCount:  len(c.Expect.Assert),
-		HasStatusCheck:  c.Expect.Status != nil,
-	}
-
-	// Count expectations across chain steps too
-	for _, step := range c.Chain {
-		if step.Expect.Status != nil || len(step.Expect.Assert) > 0 {
-			stats.HasExpectations = true
-		}
-		stats.AssertionCount += len(step.Expect.Assert)
-		if step.Expect.Status != nil {
-			stats.HasStatusCheck = true
-		}
-	}
-
-	// Scan all string fields for variable usage
-	allStrings := c.collectStrings()
-	for _, s := range allStrings {
-		if vars.HasChainVars(s) {
-			stats.UsesChainVars = true
-		}
-		if vars.HasEnvVars(s) {
-			stats.UsesEnvVars = true
-		}
-	}
-
-	return stats
-}
-
-// collectStrings gathers all string values from the config for variable detection.
-func (c *ConfigV1) collectStrings() []string {
-	strs := []string{c.URL, c.Path, c.Method, c.ContentType, c.JSON, c.Graphql, c.Service, c.RPC, c.Proto, c.ProtoPath, c.Data, c.Encoding, c.JQFilter}
-
-	for _, v := range c.Headers {
-		strs = append(strs, v)
-	}
-	for _, v := range c.Query {
-		strs = append(strs, v)
-	}
-
-	strs = append(strs, collectMapStrings(c.Body)...)
-	strs = append(strs, collectMapStrings(c.Variables)...)
-
-	// Collect from chain steps
-	for _, step := range c.Chain {
-		strs = append(strs, step.URL, step.Path, step.Method, step.ContentType, step.JSON, step.Graphql, step.Service, step.RPC, step.Proto, step.ProtoPath, step.Data, step.Encoding, step.JQFilter)
-		for _, v := range step.Headers {
-			strs = append(strs, v)
-		}
-		for _, v := range step.Query {
-			strs = append(strs, v)
-		}
-		strs = append(strs, collectMapStrings(step.Body)...)
-		strs = append(strs, collectMapStrings(step.Variables)...)
-	}
-
-	return strs
-}
-
-// collectMapStrings recursively extracts string values from a map.
-func collectMapStrings(m map[string]interface{}) []string {
-	var strs []string
-	for _, v := range m {
-		switch val := v.(type) {
-		case string:
-			strs = append(strs, val)
-		case map[string]interface{}:
-			strs = append(strs, collectMapStrings(val)...)
-		case []interface{}:
-			for _, elem := range val {
-				if s, ok := elem.(string); ok {
-					strs = append(strs, s)
-				} else if m, ok := elem.(map[string]interface{}); ok {
-					strs = append(strs, collectMapStrings(m)...)
-				}
-			}
-		}
-	}
-	return strs
-}
