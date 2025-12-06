@@ -17,6 +17,7 @@ type GraphQLResponse = {
   data: {
     repository: {
       releases: {
+        totalCount: number;
         nodes: Release[];
       };
     };
@@ -27,9 +28,10 @@ const query = `
   query {
     repository(owner: "jamierpond", name: "yapi") {
       releases(first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
+        totalCount
         nodes {
           name
-          releaseAssets(first: 20) {
+          releaseAssets(first: 100) {
             nodes {
               name
               downloadCount
@@ -67,12 +69,13 @@ export async function GET() {
     const { data }: GraphQLResponse = await res.json();
 
     if (!data?.repository) {
-      return NextResponse.json({ total_real_downloads: 0 });
+      return NextResponse.json({ total_downloads: 0, total_releases: 0 });
     }
 
+    const releases = data.repository.releases;
     let totalDownloads = 0;
 
-    data.repository.releases.nodes.forEach((release) => {
+    releases.nodes.forEach((release) => {
       release.releaseAssets.nodes.forEach((asset) => {
         if (asset.name === "checksums.txt") {
           return;
@@ -83,10 +86,8 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      total_real_downloads: totalDownloads,
-      meta: {
-        note: "Excludes checksums.txt and adjusts for API inflation (-1 per asset).",
-      },
+      total_downloads: totalDownloads,
+      total_releases: releases.totalCount,
     });
   } catch (error) {
     return NextResponse.json(
