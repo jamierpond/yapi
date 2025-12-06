@@ -25,8 +25,10 @@ func Init(version, commit string) {
 	}
 
 	// Check user's saved preference from config.json
-	if pref := GetTelemetryPreference(); pref != nil && !*pref {
-		return // User explicitly disabled telemetry
+	// Default to disabled unless user explicitly enabled
+	pref := GetTelemetryPreference()
+	if pref == nil || !*pref {
+		return // No preference or explicitly disabled = no telemetry
 	}
 
 	// Disable if keys not set at build time
