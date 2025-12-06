@@ -113,10 +113,7 @@ func Track(event string, props map[string]interface{}) {
 		phProps.Set(k, v)
 	}
 
-	distinctID, _ := os.Hostname()
-	if distinctID == "" {
-		distinctID = "unknown"
-	}
+	distinctID := getMachineID()
 
 	client.Enqueue(posthog.Capture{
 		DistinctId: distinctID,
