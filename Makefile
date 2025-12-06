@@ -4,7 +4,11 @@ NAME := yapi
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)
+POSTHOG_API_KEY ?= phc_5gccNEZpJamQIIdMx97VQA1wuuDvqgISlLcSwoAGoeX
+POSTHOG_API_HOST ?= https://us.i.posthog.com
+LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) \
+	-X github.com/jamiepond/yapi/internal/analytics.PosthogAPIKey=$(POSTHOG_API_KEY) \
+	-X github.com/jamiepond/yapi/internal/analytics.PosthogAPIHost=$(POSTHOG_API_HOST)
 
 install: build
 	@echo "Installing yapi to $$(go env GOPATH)/bin..."
