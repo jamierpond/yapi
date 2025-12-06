@@ -8,18 +8,36 @@ import (
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/runner"
-	"yapi.run/cli/internal/telemetry"
 	"yapi.run/cli/internal/validation"
 )
 
+// RequestHook is called after a request completes with stats about the execution.
+// This allows the caller (main.go) to wire telemetry without core knowing about it.
+type RequestHook func(stats map[string]interface{})
+
 // Engine owns shared execution bits used by CLI, TUI, etc.
 type Engine struct {
-	factory *executor.Factory
+	factory   *executor.Factory
+	onRequest RequestHook
+}
+
+// EngineOption configures an Engine
+type EngineOption func(*Engine)
+
+// WithRequestHook sets a hook to be called after each request
+func WithRequestHook(hook RequestHook) EngineOption {
+	return func(e *Engine) {
+		e.onRequest = hook
+	}
 }
 
 // NewEngine wires a single HTTP client and executor factory.
-func NewEngine(httpClient *http.Client) *Engine {
-	return &Engine{factory: executor.NewFactory(httpClient)}
+func NewEngine(httpClient *http.Client, opts ...EngineOption) *Engine {
+	e := &Engine{factory: executor.NewFactory(httpClient)}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
 }
 
 // RunConfigResult contains the results of running a config
@@ -56,8 +74,8 @@ func (e *Engine) RunConfig(
 		return &RunConfigResult{Analysis: analysis}
 	}
 
-	// Extract config stats for telemetry
-	stats := telemetry.ExtractConfigStats(analysis)
+	// Extract config stats for hook
+	stats := ExtractConfigStats(analysis)
 	start := time.Now()
 
 	exec, err := e.factory.Create(analysis.Request.Metadata["transport"])
@@ -73,15 +91,17 @@ func (e *Engine) RunConfig(
 		expectRes = runner.CheckExpectations(analysis.Expect, result)
 	}
 
-	// Track request execution
-	stats["duration_ms"] = time.Since(start).Milliseconds()
-	stats["success"] = runErr == nil && (expectRes == nil || expectRes.Error == nil)
-	if runErr != nil {
-		stats["error_type"] = "execution"
-	} else if expectRes != nil && expectRes.Error != nil {
-		stats["error_type"] = "assertion_failed"
+	// Call hook with request stats (if configured)
+	if e.onRequest != nil {
+		stats["duration_ms"] = time.Since(start).Milliseconds()
+		stats["success"] = runErr == nil && (expectRes == nil || expectRes.Error == nil)
+		if runErr != nil {
+			stats["error_type"] = "execution"
+		} else if expectRes != nil && expectRes.Error != nil {
+			stats["error_type"] = "assertion_failed"
+		}
+		e.onRequest(stats)
 	}
-	telemetry.Track("request_executed", stats)
 
 	if runErr != nil {
 		return &RunConfigResult{Analysis: analysis, Result: result, Error: runErr}

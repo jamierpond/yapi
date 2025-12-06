@@ -10,3 +10,4 @@ yapi
 .gitsecret/keys/random_seed
 !*.secret
 .posthog.env
+prompt.md

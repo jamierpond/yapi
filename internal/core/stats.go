@@ -1,4 +1,4 @@
-package telemetry
+package core
 
 import (
 	"yapi.run/cli/internal/config"
@@ -7,7 +7,7 @@ import (
 )
 
 // ExtractConfigStats extracts feature usage statistics from an analysis result.
-// This moves the stats collection logic out of ConfigV1, keeping the config as a dumb data struct.
+// This is used by telemetry hooks to gather request metadata.
 func ExtractConfigStats(analysis *validation.Analysis) map[string]interface{} {
 	stats := make(map[string]interface{})
 

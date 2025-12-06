@@ -69,10 +69,15 @@ func main() {
 	telemetry.Init(version, commit)
 	defer telemetry.Close()
 
+	// Wire telemetry hook - main.go is the composition root
+	requestHook := func(stats map[string]interface{}) {
+		telemetry.Track("request_executed", stats)
+	}
+
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	app := &rootCommand{
 		httpClient: httpClient,
-		engine:     core.NewEngine(httpClient),
+		engine:     core.NewEngine(httpClient, core.WithRequestHook(requestHook)),
 	}
 
 	rootCmd := &cobra.Command{
