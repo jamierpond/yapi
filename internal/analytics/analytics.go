@@ -80,12 +80,21 @@ func StartCommand(command, version string) *CommandTracker {
 }
 
 // TrackFailure ends the current command tracker with a failure.
-// Use this before log.Fatalf or os.Exit(1) in any command.
 func TrackFailure(errorMsg string) {
 	if currentTracker != nil {
 		currentTracker.End(false, errorMsg)
 		currentTracker = nil
 	}
+}
+
+// Fatal tracks the failure and exits with log.Fatalf.
+func Fatal(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	TrackFailure(msg)
+	// Ensure analytics are flushed before exit
+	Close()
+	fmt.Fprintf(os.Stderr, "%s\n", msg)
+	os.Exit(1)
 }
 
 // End completes the command tracking with success/failure status.

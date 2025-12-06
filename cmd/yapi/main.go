@@ -124,7 +124,7 @@ func (app *rootCommand) runInteractive(cmd *cobra.Command, args []string) {
 	selectedPath, err := tui.FindConfigFileSingle()
 	if err != nil {
 		analytics.TrackFailure(err.Error())
-		log.Fatalf("Failed to select config file: %v", err)
+		analytics.Fatal("Failed to select config file: %v", err)
 	}
 	app.runConfigPath(selectedPath)
 }
@@ -157,7 +157,7 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
 					analytics.TrackFailure(err.Error())
-					log.Fatalf("Failed to select config file: %v", err)
+					analytics.Fatal("Failed to select config file: %v", err)
 				}
 				path = selectedPath
 			} else {
@@ -169,7 +169,7 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 			if usePretty {
 				if err := tui.RunWatch(path); err != nil {
 					analytics.TrackFailure(err.Error())
-					log.Fatalf("Watch failed: %v", err)
+					analytics.Fatal("Watch failed: %v", err)
 				}
 			} else {
 				app.watchConfigPath(path)
@@ -187,7 +187,7 @@ func (app *rootCommand) watchConfigPath(path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		analytics.TrackFailure(err.Error())
-		log.Fatalf("Failed to resolve path: %v", err)
+		analytics.Fatal("Failed to resolve path: %v", err)
 	}
 
 	clearScreen()
@@ -326,7 +326,7 @@ func (app *rootCommand) handleError(err error, strict bool) {
 		if app.tracker != nil {
 			app.tracker.End(false, err.Error())
 		}
-		log.Fatalf("%v", err)
+		analytics.Fatal("%v", err)
 	} else {
 		fmt.Println(color.Red(err.Error()))
 	}
@@ -442,7 +442,7 @@ func newValidateCmd() *cobra.Command {
 						outputValidateError(err)
 					} else {
 						analytics.TrackFailure(err.Error())
-						log.Fatalf("Failed to read stdin: %v", err)
+						analytics.Fatal("Failed to read stdin: %v", err)
 					}
 					return
 				}
@@ -454,7 +454,7 @@ func newValidateCmd() *cobra.Command {
 						outputValidateError(err)
 					} else {
 						analytics.TrackFailure(err.Error())
-						log.Fatalf("Failed to read file: %v", err)
+						analytics.Fatal("Failed to read file: %v", err)
 					}
 					return
 				}
@@ -467,7 +467,7 @@ func newValidateCmd() *cobra.Command {
 					outputValidateError(err)
 				} else {
 					analytics.TrackFailure(err.Error())
-					log.Fatalf("Validation failed: %v", err)
+					analytics.Fatal("Validation failed: %v", err)
 				}
 				return
 			}
@@ -535,7 +535,7 @@ func newShareCmd() *cobra.Command {
 			filename := args[0]
 			data, err := os.ReadFile(filename)
 			if err != nil {
-				log.Fatalf("Failed to read file: %v", err)
+				analytics.Fatal("Failed to read file: %v", err)
 			}
 
 			content := string(data)
@@ -547,7 +547,7 @@ func newShareCmd() *cobra.Command {
 
 			encoded, err := share.Encode(content)
 			if err != nil {
-				log.Fatalf("Failed to encode: %v", err)
+				analytics.Fatal("Failed to encode: %v", err)
 			}
 
 			url := "https://yapi.run/c/" + encoded
@@ -686,13 +686,13 @@ func newHistoryCmd() *cobra.Command {
 			if len(args) == 1 {
 				n, err := fmt.Sscanf(args[0], "%d", &count)
 				if err != nil || n != 1 || count < 1 {
-					log.Fatalf("Invalid count: %s", args[0])
+					analytics.Fatal("Invalid count: %s", args[0])
 				}
 			}
 
 			homeDir, err := os.UserHomeDir()
 			if err != nil {
-				log.Fatalf("Failed to get home directory: %v", err)
+				analytics.Fatal("Failed to get home directory: %v", err)
 			}
 
 			historyFile := filepath.Join(homeDir, ".yapi_history")
@@ -702,7 +702,7 @@ func newHistoryCmd() *cobra.Command {
 					fmt.Println("No history yet")
 					return
 				}
-				log.Fatalf("Failed to read history: %v", err)
+				analytics.Fatal("Failed to read history: %v", err)
 			}
 
 			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
