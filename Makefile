@@ -1,4 +1,4 @@
-.PHONY: build run test fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all
+.PHONY: build run run-print-analytics test fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all
 
 NAME := yapi
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -24,6 +24,10 @@ build:
 run:
 	@echo "Running yapi CLI..."
 	@go run ./cmd/yapi
+
+run-print-analytics: build
+	@echo "Running yapi CLI with analytics printing..."
+	@YAPI_PRINT_ANALYTICS=1 ./bin/yapi
 
 test:
 	@echo "Running all tests..."

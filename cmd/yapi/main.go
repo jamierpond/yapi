@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"yapi.run/cli/internal/analytics"
 	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"
@@ -61,9 +62,13 @@ type rootCommand struct {
 	noColor     bool
 	httpClient  *http.Client
 	engine      *core.Engine
+	tracker     *analytics.CommandTracker
 }
 
 func main() {
+	analytics.Init()
+	defer analytics.Close()
+
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	app := &rootCommand{
 		httpClient: httpClient,
@@ -75,6 +80,13 @@ func main() {
 		Short: "yapi is a unified API client for HTTP, gRPC, and TCP",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			color.SetNoColor(app.noColor)
+			// Start tracking command execution
+			switch cmd.Name() {
+			case "history", "version", "lsp", "help", "yapi":
+				// Skip tracking meta commands
+			default:
+				app.tracker = analytics.StartCommand(cmd.Name(), version)
+			}
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			// Log command to history (skip meta commands)
@@ -83,6 +95,10 @@ func main() {
 				return
 			}
 			logHistoryCmd(reconstructCommand(cmd, args))
+			// End tracking - commands that reach here completed successfully
+			if app.tracker != nil {
+				app.tracker.End(true, "")
+			}
 		},
 		Run: app.runInteractive,
 	}
@@ -232,6 +248,9 @@ func (app *rootCommand) executeRun(ctx runContext) {
 	app.printErrors(runRes.Analysis, ctx.strict)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
+			if app.tracker != nil {
+				app.tracker.End(false, "validation errors")
+			}
 			os.Exit(1)
 		}
 		return
@@ -268,6 +287,9 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
 		if ctx.strict {
+			if app.tracker != nil {
+				app.tracker.End(false, "invalid config")
+			}
 			os.Exit(1)
 		}
 		return
@@ -297,6 +319,9 @@ func (app *rootCommand) executeRun(ctx runContext) {
 // handleError prints an error, optionally exiting for strict mode
 func (app *rootCommand) handleError(err error, strict bool) {
 	if strict {
+		if app.tracker != nil {
+			app.tracker.End(false, err.Error())
+		}
 		log.Fatalf("%v", err)
 	} else {
 		fmt.Println(color.Red(err.Error()))
