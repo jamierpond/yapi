@@ -69,6 +69,7 @@ func StartCommand(command, version string) *CommandTracker {
 		version:   version,
 		startTime: time.Now(),
 	}
+	currentTracker = ct
 
 	Track("command_started", map[string]interface{}{
 		"command": command,
@@ -76,6 +77,15 @@ func StartCommand(command, version string) *CommandTracker {
 	})
 
 	return ct
+}
+
+// TrackFailure ends the current command tracker with a failure.
+// Use this before log.Fatalf or os.Exit(1) in any command.
+func TrackFailure(errorMsg string) {
+	if currentTracker != nil {
+		currentTracker.End(false, errorMsg)
+		currentTracker = nil
+	}
 }
 
 // End completes the command tracking with success/failure status.

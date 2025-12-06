@@ -123,6 +123,7 @@ func main() {
 func (app *rootCommand) runInteractive(cmd *cobra.Command, args []string) {
 	selectedPath, err := tui.FindConfigFileSingle()
 	if err != nil {
+		analytics.TrackFailure(err.Error())
 		log.Fatalf("Failed to select config file: %v", err)
 	}
 	app.runConfigPath(selectedPath)
@@ -155,6 +156,7 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 			if interactive {
 				selectedPath, err := tui.FindConfigFileSingle()
 				if err != nil {
+					analytics.TrackFailure(err.Error())
 					log.Fatalf("Failed to select config file: %v", err)
 				}
 				path = selectedPath
@@ -166,6 +168,7 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 
 			if usePretty {
 				if err := tui.RunWatch(path); err != nil {
+					analytics.TrackFailure(err.Error())
 					log.Fatalf("Watch failed: %v", err)
 				}
 			} else {
@@ -183,6 +186,7 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 func (app *rootCommand) watchConfigPath(path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
+		analytics.TrackFailure(err.Error())
 		log.Fatalf("Failed to resolve path: %v", err)
 	}
 
@@ -437,6 +441,7 @@ func newValidateCmd() *cobra.Command {
 					if jsonOutput {
 						outputValidateError(err)
 					} else {
+						analytics.TrackFailure(err.Error())
 						log.Fatalf("Failed to read stdin: %v", err)
 					}
 					return
@@ -448,6 +453,7 @@ func newValidateCmd() *cobra.Command {
 					if jsonOutput {
 						outputValidateError(err)
 					} else {
+						analytics.TrackFailure(err.Error())
 						log.Fatalf("Failed to read file: %v", err)
 					}
 					return
@@ -460,6 +466,7 @@ func newValidateCmd() *cobra.Command {
 				if jsonOutput {
 					outputValidateError(err)
 				} else {
+					analytics.TrackFailure(err.Error())
 					log.Fatalf("Validation failed: %v", err)
 				}
 				return
