@@ -57,11 +57,12 @@ func init() {
 }
 
 type rootCommand struct {
-	urlOverride string
-	noColor     bool
-	httpClient  *http.Client
-	engine      *core.Engine
-	tracker     *analytics.CommandTracker
+	urlOverride    string
+	noColor        bool
+	httpClient     *http.Client
+	engine         *core.Engine
+	tracker        *analytics.CommandTracker
+	requestTracker *analytics.RequestTracker
 }
 
 func main() {
@@ -85,10 +86,15 @@ func main() {
 				// Skip tracking meta commands
 			default:
 				app.tracker = analytics.StartCommand(cmd.Name(), version)
+				app.requestTracker = analytics.NewRequestTracker()
 			}
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			// End tracking - commands that reach here completed successfully
+			// End request tracking
+			if app.requestTracker != nil {
+				app.requestTracker.Complete()
+			}
+			// End command tracking - commands that reach here completed successfully
 			if app.tracker != nil {
 				app.tracker.End(true, "")
 			}
@@ -231,15 +237,6 @@ type runContext struct {
 
 // executeRun is the unified execution pipeline for both Run and Watch modes.
 func (app *rootCommand) executeRun(ctx runContext) {
-	// Start request tracking
-	reqTracker := analytics.NewRequestTracker()
-	defer func() {
-		// Will be called with whatever success/errorType was set
-		if reqTracker != nil {
-			reqTracker.Complete(reqTracker.Stats.Success, reqTracker.Stats.ErrorType)
-		}
-	}()
-
 	opts := runner.Options{
 		URLOverride: app.urlOverride,
 		NoColor:     app.noColor,
@@ -249,20 +246,27 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	// Handle validation/parse errors first
 	if runRes.Error != nil && runRes.Analysis == nil {
-		reqTracker.Stats.ErrorType = "parse"
+		if app.requestTracker != nil {
+			app.requestTracker.SetError("parse")
+		}
 		app.handleError(runRes.Error, ctx.strict)
 		return
 	}
 
 	// Collect stats from config if available
-	if runRes.Analysis != nil && runRes.Analysis.Base != nil {
-		reqTracker.Stats = runRes.Analysis.Base.CollectStats()
+	if runRes.Analysis != nil && runRes.Analysis.Base != nil && app.requestTracker != nil {
+		app.requestTracker.SetStats(runRes.Analysis.Base.CollectStats())
 	}
 
 	app.printErrors(runRes.Analysis, ctx.strict)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
-		reqTracker.Stats.ErrorType = "validation"
+		if app.requestTracker != nil {
+			app.requestTracker.SetError("validation")
+		}
 		if ctx.strict {
+			if app.requestTracker != nil {
+				app.requestTracker.Complete()
+			}
 			analytics.TrackFailure("validation errors")
 			analytics.Close()
 			os.Exit(1)
@@ -290,20 +294,29 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		}
 
 		if chainErr != nil {
-			reqTracker.Stats.ErrorType = "execution"
+			if app.requestTracker != nil {
+				app.requestTracker.SetError("execution")
+			}
 			app.handleError(chainErr, ctx.strict)
 			return
 		}
 
-		reqTracker.Stats.Success = true
+		if app.requestTracker != nil {
+			app.requestTracker.SetSuccess()
+		}
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 		app.printWarnings(runRes.Analysis, ctx.strict)
 		return
 	}
 
 	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
-		reqTracker.Stats.ErrorType = "invalid_config"
+		if app.requestTracker != nil {
+			app.requestTracker.SetError("invalid_config")
+		}
 		if ctx.strict {
+			if app.requestTracker != nil {
+				app.requestTracker.Complete()
+			}
 			analytics.TrackFailure("invalid config")
 			analytics.Close()
 			os.Exit(1)
@@ -323,20 +336,33 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		printExpectationResult(runRes.ExpectRes)
 	}
 
-	// Handle expectation errors after printing result
+	// Handle errors after printing result
 	if runRes.Error != nil {
-		reqTracker.Stats.ErrorType = "assertion_failed"
+		if app.requestTracker != nil {
+			// Distinguish between assertion failures and execution errors
+			if runRes.ExpectRes != nil && runRes.ExpectRes.Error != nil {
+				app.requestTracker.SetError("assertion_failed")
+			} else {
+				app.requestTracker.SetError("execution")
+			}
+		}
 		app.handleError(runRes.Error, ctx.strict)
 		return
 	}
 
-	reqTracker.Stats.Success = true
+	if app.requestTracker != nil {
+		app.requestTracker.SetSuccess()
+	}
 	app.printWarnings(runRes.Analysis, ctx.strict)
 }
 
 // handleError prints an error, optionally exiting for strict mode
 func (app *rootCommand) handleError(err error, strict bool) {
 	if strict {
+		// Complete request tracking before fatal exit
+		if app.requestTracker != nil {
+			app.requestTracker.Complete()
+		}
 		analytics.Fatal("%v", err)
 	} else {
 		fmt.Println(color.Red(err.Error()))

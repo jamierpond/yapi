@@ -56,9 +56,25 @@ func NewRequestTracker() *RequestTracker {
 }
 
 // Complete finalizes the stats and sends the event.
-func (rt *RequestTracker) Complete(success bool, errorType string) {
-	rt.Stats.Success = success
-	rt.Stats.ErrorType = errorType
+func (rt *RequestTracker) Complete() {
 	rt.Stats.DurationMs = time.Since(rt.StartTime).Milliseconds()
 	TrackRequest(rt.Stats)
+}
+
+// SetSuccess marks the request as successful.
+func (rt *RequestTracker) SetSuccess() {
+	rt.Stats.Success = true
+}
+
+// SetError marks the request as failed with an error type.
+func (rt *RequestTracker) SetError(errorType string) {
+	rt.Stats.ErrorType = errorType
+}
+
+// SetStats sets the collected config stats.
+func (rt *RequestTracker) SetStats(stats RequestStats) {
+	// Preserve timing from tracker
+	startTime := rt.StartTime
+	rt.Stats = stats
+	rt.StartTime = startTime
 }
