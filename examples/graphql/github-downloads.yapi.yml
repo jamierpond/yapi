@@ -1,0 +1,25 @@
+yapi: v1
+# GraphQL - GitHub release download stats for yapi
+url: https://api.github.com/graphql
+
+headers:
+  Authorization: Bearer ${GITHUB_TOKEN}
+
+graphql: |
+  query {
+    repository(owner: "jamierpond", name: "yapi") {
+      releases(first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
+        nodes {
+          name
+          releaseAssets(first: 20) {
+            nodes {
+              name
+              downloadCount
+            }
+          }
+        }
+      }
+    }
+  }
+
+jq_filter: ".data.repository.releases.nodes | map({name, assets: .releaseAssets.nodes})"
