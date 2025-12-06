@@ -7,3 +7,6 @@ cli/yapi-test
 cli/yapi
 bin/yapi
 yapi
+.gitsecret/keys/random_seed
+!*.secret
+.posthog.env
