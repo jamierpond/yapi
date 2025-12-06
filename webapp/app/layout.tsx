@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from "@/app/lib/constants";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
@@ -71,6 +72,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <GoogleAnalytics gaId="G-RFYSX5CB3L" />
       <body
         className={`${jetbrainsMono.variable} antialiased`}
       >
