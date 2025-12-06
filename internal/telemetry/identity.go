@@ -21,5 +21,5 @@ func getMachineID() string {
 
 	h := sha256.New()
 	h.Write([]byte(home + ":" + hostname))
-	return hex.EncodeToString(h.Sum(nil))[:16]
+	return hex.EncodeToString(h.Sum(nil))
 }
