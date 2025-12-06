@@ -71,6 +71,11 @@ func Close() {
 	}
 }
 
+// Enabled returns true if telemetry is active.
+func Enabled() bool {
+	return !disabled
+}
+
 // Track sends an event to PostHog with the given properties.
 // This is a fire-and-forget function that never returns errors.
 func Track(event string, props map[string]interface{}) {
