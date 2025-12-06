@@ -31,7 +31,7 @@ run:
 
 run-print-analytics: build
 	@echo "Running yapi CLI with analytics printing..."
-	@YAPI_PRINT_ANALYTICS=1 ./bin/yapi
+	@YAPI_PRINT_ANALYTICS=1 ./bin/yapi $(RUN_ARGS)
 
 test:
 	@echo "Running all tests..."
