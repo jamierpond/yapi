@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"yapi.run/cli/internal/cli/color"
 )
 
 // RunWelcome displays the first-run welcome message and asks for telemetry consent.
@@ -22,20 +24,20 @@ func RunWelcome() bool {
 	}
 
 	fmt.Println()
-	fmt.Println("  Welcome to yapi!")
+	fmt.Println(color.AccentBg(" yapi "))
 	fmt.Println()
-	fmt.Println("  Hey Jamie here! Thank you SO MUCH for trying out yapi!")
-	fmt.Println("  I'd like to ask a HUGE favour and to enable anonymous analytics")
-	fmt.Println("  No personal data, request contents, or URLs are EVER collected.")
+	fmt.Println(color.Cyan("  Hey Jamie here! Thank you ") + color.Green("SO MUCH") + color.Cyan(" for trying out yapi!"))
+	fmt.Println("  I'd like to ask a HUGE favour and to enable " + color.Yellow("anonymous analytics"))
+	fmt.Println(color.Dim("  No personal data, request contents, or URLs are EVER collected."))
 	fmt.Println()
 	fmt.Println("  I want to make yapi as awesome and useful as I can, so seeing")
 	fmt.Println("  how real people are using it in the world would be super useful")
 	fmt.Println()
-	fmt.Println("  You can change this anytime:")
-	fmt.Println("    - Set YAPI_NO_ANALYTICS=1 in your environment")
-	fmt.Println("    - Edit ~/.config/yapi/config.json")
+	fmt.Println(color.Dim("  You can change this anytime:"))
+	fmt.Println(color.Dim("    - Set YAPI_NO_ANALYTICS=1 in your environment"))
+	fmt.Println(color.Dim("    - Edit ~/.config/yapi/config.json"))
 	fmt.Println()
-	fmt.Print("  Enable anonymous analytics? [Y/n]: ")
+	fmt.Print("  Enable analytics? " + color.Dim("[Y/n]: "))
 
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
@@ -54,10 +56,11 @@ func RunWelcome() bool {
 		fmt.Fprintf(os.Stderr, "  Warning: could not save preference: %v\n", err)
 	}
 
+	fmt.Println()
 	if enabled {
-		fmt.Println("  Thanks! Analytics enabled.")
+		fmt.Println(color.Green("  Analytics enabled. Thank you!"))
 	} else {
-		fmt.Println("  Analytics disabled.")
+		fmt.Println(color.Dim("  Analytics disabled."))
 	}
 	fmt.Println()
 

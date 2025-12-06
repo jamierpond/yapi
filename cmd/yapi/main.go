@@ -117,6 +117,7 @@ func main() {
 	middleware.WrapWithTelemetry(rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, color.Red(err.Error()))
 		os.Exit(1)
 	}
 }
