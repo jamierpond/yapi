@@ -9,6 +9,8 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.ShortCommit}}
       - -X main.date={{.Date}}
+      - -X yapi.run/cli/internal/telemetry.PosthogAPIKey={{ .Env.POSTHOG_API_KEY }}
+      - -X yapi.run/cli/internal/telemetry.PosthogAPIHost={{ .Env.POSTHOG_API_HOST }}
     goos:
       - linux
       - darwin
