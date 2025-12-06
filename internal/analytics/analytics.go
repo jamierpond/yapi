@@ -10,9 +10,11 @@ import (
 	"github.com/posthog/posthog-go"
 )
 
-const (
-	posthogAPIKey  = "phc_5gccNEZpJamQIIdMx97VQA1wuuDvqgISlLcSwoAGoeX"
-	posthogAPIHost = "https://us.i.posthog.com"
+// Set at build time via ldflags:
+// go build -ldflags "-X github.com/your/module/internal/analytics.PosthogAPIKey=... -X github.com/your/module/internal/analytics.PosthogAPIHost=..."
+var (
+	PosthogAPIKey  string
+	PosthogAPIHost string
 )
 
 var (
@@ -33,6 +35,12 @@ type CommandTracker struct {
 // Should be called once at startup.
 // Respects YAPI_NO_ANALYTICS to disable and YAPI_PRINT_ANALYTICS to print events.
 func Init() {
+	// Disable if keys not set at build time
+	if PosthogAPIKey == "" || PosthogAPIHost == "" {
+		disabled = true
+		return
+	}
+
 	// Check for opt-out
 	if os.Getenv("YAPI_NO_ANALYTICS") != "" {
 		disabled = true
@@ -45,8 +53,8 @@ func Init() {
 	}
 
 	var err error
-	client, err = posthog.NewWithConfig(posthogAPIKey, posthog.Config{
-		Endpoint: posthogAPIHost,
+	client, err = posthog.NewWithConfig(PosthogAPIKey, posthog.Config{
+		Endpoint: PosthogAPIHost,
 	})
 	if err != nil {
 		// Silently fail - analytics should never break the CLI
