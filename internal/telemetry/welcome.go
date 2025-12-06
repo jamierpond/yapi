@@ -39,7 +39,7 @@ func RunWelcome() bool {
 	fmt.Println(color.Dim("    - Set YAPI_NO_ANALYTICS=1 in your environment"))
 	fmt.Println(color.Dim("    - Edit ~/.config/yapi/config.json"))
 	fmt.Println()
-	fmt.Print("  Enable analytics? " + color.Dim("[Y/n]: "))
+	fmt.Print("  Enable analytics? " + color.Dim("[y/N]: "))
 
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
@@ -51,8 +51,8 @@ func RunWelcome() bool {
 
 	input = strings.TrimSpace(strings.ToLower(input))
 
-	// Default to yes (empty input or "y" or "yes")
-	enabled := input == "" || input == "y" || input == "yes"
+	// Default to no (only enable on explicit "y" or "yes")
+	enabled := input == "y" || input == "yes"
 
 	if err := SetTelemetryEnabled(enabled); err != nil {
 		fmt.Fprintf(os.Stderr, "  Warning: could not save preference: %v\n", err)
