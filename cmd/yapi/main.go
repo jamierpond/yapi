@@ -231,6 +231,15 @@ type runContext struct {
 
 // executeRun is the unified execution pipeline for both Run and Watch modes.
 func (app *rootCommand) executeRun(ctx runContext) {
+	// Start request tracking
+	reqTracker := analytics.NewRequestTracker()
+	defer func() {
+		// Will be called with whatever success/errorType was set
+		if reqTracker != nil {
+			reqTracker.Complete(reqTracker.Stats.Success, reqTracker.Stats.ErrorType)
+		}
+	}()
+
 	opts := runner.Options{
 		URLOverride: app.urlOverride,
 		NoColor:     app.noColor,
@@ -240,12 +249,19 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	// Handle validation/parse errors first
 	if runRes.Error != nil && runRes.Analysis == nil {
+		reqTracker.Stats.ErrorType = "parse"
 		app.handleError(runRes.Error, ctx.strict)
 		return
 	}
 
+	// Collect stats from config if available
+	if runRes.Analysis != nil && runRes.Analysis.Base != nil {
+		reqTracker.Stats = runRes.Analysis.Base.CollectStats()
+	}
+
 	app.printErrors(runRes.Analysis, ctx.strict)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
+		reqTracker.Stats.ErrorType = "validation"
 		if ctx.strict {
 			analytics.TrackFailure("validation errors")
 			analytics.Close()
@@ -274,16 +290,19 @@ func (app *rootCommand) executeRun(ctx runContext) {
 		}
 
 		if chainErr != nil {
+			reqTracker.Stats.ErrorType = "execution"
 			app.handleError(chainErr, ctx.strict)
 			return
 		}
 
+		reqTracker.Stats.Success = true
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 		app.printWarnings(runRes.Analysis, ctx.strict)
 		return
 	}
 
 	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
+		reqTracker.Stats.ErrorType = "invalid_config"
 		if ctx.strict {
 			analytics.TrackFailure("invalid config")
 			analytics.Close()
@@ -306,10 +325,12 @@ func (app *rootCommand) executeRun(ctx runContext) {
 
 	// Handle expectation errors after printing result
 	if runRes.Error != nil {
+		reqTracker.Stats.ErrorType = "assertion_failed"
 		app.handleError(runRes.Error, ctx.strict)
 		return
 	}
 
+	reqTracker.Stats.Success = true
 	app.printWarnings(runRes.Analysis, ctx.strict)
 }
 
