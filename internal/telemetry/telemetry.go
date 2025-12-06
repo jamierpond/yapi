@@ -15,13 +15,18 @@ var (
 
 // Init initializes the telemetry client.
 // Should be called once at startup with version info.
-// Respects YAPI_NO_ANALYTICS to disable and YAPI_PRINT_ANALYTICS to print events.
+// Respects YAPI_NO_ANALYTICS env var and user config preference.
 func Init(version, commit string) {
 	// impl defaults to NoopClient, so we only need to upgrade if conditions are met
 
-	// Check for opt-out first
+	// Environment variable opt-out takes highest priority
 	if os.Getenv("YAPI_NO_ANALYTICS") != "" {
 		return // impl stays NoopClient
+	}
+
+	// Check user's saved preference from config.json
+	if pref := GetTelemetryPreference(); pref != nil && !*pref {
+		return // User explicitly disabled telemetry
 	}
 
 	// Disable if keys not set at build time

@@ -66,6 +66,9 @@ type rootCommand struct {
 }
 
 func main() {
+	// Show welcome prompt on first run (asks for telemetry consent)
+	telemetry.RunWelcome()
+
 	telemetry.Init(version, commit)
 	defer telemetry.Close()
 
