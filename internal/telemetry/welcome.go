@@ -29,6 +29,7 @@ func RunWelcome() bool {
 	fmt.Println(color.Cyan("  Hey Jamie here! Thank you ") + color.Green("SO MUCH") + color.Cyan(" for trying out yapi!"))
 	fmt.Println("  I'd like to ask a HUGE favour and to enable " + color.Yellow("anonymous analytics"))
 	fmt.Println(color.Dim("  No personal data, request contents, or URLs are EVER collected."))
+	fmt.Println(color.Dim("  Don't trust me? Read the source! github.com/jamierpond/yapi"))
 	fmt.Println()
 	fmt.Println("  I want to make yapi as awesome and useful as I can, so seeing")
 	fmt.Println("  how real people are using it in the world would be super useful")
