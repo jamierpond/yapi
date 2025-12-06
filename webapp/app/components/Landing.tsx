@@ -3,7 +3,32 @@ import CopyInstallButton from "./CopyInstallButton";
 import LandingStyles from "./LandingStyles";
 import Navbar from "./Navbar";
 
+async function getStats() {
+  try {
+    const [downloadsRes, releasesRes] = await Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/downloads`, {
+        next: { revalidate: 3600 },
+      }),
+      fetch("https://api.github.com/repos/jamierpond/yapi/releases/latest", {
+        next: { revalidate: 3600 },
+      }),
+    ]);
+
+    const downloads = downloadsRes.ok ? await downloadsRes.json() : { total_downloads: 0, total_releases: 0 };
+    const release = releasesRes.ok ? await releasesRes.json() : { tag_name: null };
+
+    return {
+      totalDownloads: downloads.total_downloads || 0,
+      totalReleases: downloads.total_releases || 0,
+      latestVersion: release.tag_name || null,
+    };
+  } catch {
+    return { totalDownloads: 0, totalReleases: 0, latestVersion: null };
+  }
+}
+
 export default async function Landing() {
+  const stats = await getStats();
   return (
     <div className="min-h-screen flex flex-col bg-yapi-bg relative overflow-hidden font-sans text-yapi-fg selection:bg-yapi-accent selection:text-white">
       {/* --- Fun Layer: Background Grid & Noise --- */}
@@ -24,8 +49,23 @@ export default async function Landing() {
       {/* Hero Section */}
       <main className="flex-1 relative z-10 flex flex-col items-center pt-20 pb-32 px-6">
 
-        {/* The Badge */}
-        <div className="mb-8 animate-fade-in-up hover:scale-105 transition-transform duration-300">
+        {/* Stats Bar */}
+        <div className="mb-8 animate-fade-in-up flex flex-wrap justify-center gap-4">
+          {stats.latestVersion && (
+            <a
+              href="https://github.com/jamierpond/yapi/releases/latest"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm hover:border-yapi-accent/50 transition-colors"
+            >
+              <span className="text-xs font-mono text-yapi-accent">{stats.latestVersion}</span>
+            </a>
+          )}
+          {stats.totalDownloads > 0 && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
+              <span className="text-xs font-mono text-yapi-fg-muted">
+                {stats.totalDownloads.toLocaleString()} downloads
+              </span>
+            </div>
+          )}
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
             <div className="flex h-2 w-2 relative">
               <span className="relative inline-flex rounded-full h-2 w-2 bg-yapi-success"></span>

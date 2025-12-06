@@ -20,6 +20,32 @@ brew tap jamierpond/yapi
 brew install --cask yapi
 ```
 
+**Linux (from GitHub Releases):**
+
+```bash
+# For amd64
+curl -sL https://github.com/jamierpond/yapi/releases/latest/download/yapi_linux_amd64.tar.gz | tar xz
+sudo mv yapi /usr/local/bin/
+
+# For arm64
+curl -sL https://github.com/jamierpond/yapi/releases/latest/download/yapi_linux_arm64.tar.gz | tar xz
+sudo mv yapi /usr/local/bin/
+```
+
+**Windows (PowerShell):**
+
+```powershell
+# For amd64
+Invoke-WebRequest -Uri "https://github.com/jamierpond/yapi/releases/latest/download/yapi_windows_amd64.zip" -OutFile yapi.zip
+Expand-Archive yapi.zip -DestinationPath .
+Move-Item yapi.exe "$env:LOCALAPPDATA\Microsoft\WindowsApps\"
+
+# For arm64
+Invoke-WebRequest -Uri "https://github.com/jamierpond/yapi/releases/latest/download/yapi_windows_arm64.zip" -OutFile yapi.zip
+Expand-Archive yapi.zip -DestinationPath .
+Move-Item yapi.exe "$env:LOCALAPPDATA\Microsoft\WindowsApps\"
+```
+
 **Using Go:**
 
 ```bash
