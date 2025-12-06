@@ -19,6 +19,19 @@ var EnvOnly = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-
 // Resolver resolves a variable key to its value.
 type Resolver func(key string) (string, error)
 
+// ChainVar matches ${step.field} patterns (contains a dot).
+var ChainVar = regexp.MustCompile(`\$\{[^}]*\.[^}]+\}|\$[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-\.]+`)
+
+// HasChainVars returns true if the string contains chain variable references (${step.field}).
+func HasChainVars(s string) bool {
+	return ChainVar.MatchString(s)
+}
+
+// HasEnvVars returns true if the string contains environment variable references ($VAR or ${VAR}).
+func HasEnvVars(s string) bool {
+	return EnvOnly.MatchString(s)
+}
+
 // ExpandString replaces all $VAR and ${VAR} occurrences in input using the resolver.
 func ExpandString(input string, resolver Resolver) (string, error) {
 	var capturedErr error

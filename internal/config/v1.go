@@ -10,9 +10,11 @@ import (
 	"sort"
 	"strings"
 
+	"yapi.run/cli/internal/analytics"
 	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/utils"
+	"yapi.run/cli/internal/vars"
 )
 
 // knownV1Keys is the set of valid keys for v1 config files.
