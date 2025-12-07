@@ -24,4 +24,4 @@ sudo mv yapi /usr/local/bin/
 rm -rf "$TMPDIR"
 
 echo "yapi installed successfully!"
-yapi --version
+yapi version
