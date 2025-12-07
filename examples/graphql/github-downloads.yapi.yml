@@ -3,7 +3,7 @@ yapi: v1
 url: https://api.github.com/graphql
 
 headers:
-  Authorization: Bearer ${GITHUB_TOKEN}
+  Authorization: Bearer ${GITHUB_PAT}
 
 graphql: |
   query {
