@@ -68,8 +68,8 @@ ENV NODE_ENV=production \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 --home /home/nextjs --shell /bin/bash --ingroup nodejs nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --home /home/nextjs --shell /bin/bash --gid nodejs nextjs
 
 # --- Yapi CLI Integration ---
 # Copy the Go CLI binary
