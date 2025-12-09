@@ -56,9 +56,9 @@ jobs:
         shell: pwsh
         run: |
           & webapp/public/install/windows.ps1
-
-      - name: Verify installation
-        shell: pwsh
-        run: |
-          Get-Command yapi
-          yapi version
+          # Verify it installed correctly
+          $yapiPath = "$env:LOCALAPPDATA\yapi\yapi.exe"
+          if (-not (Test-Path $yapiPath)) {
+            throw "yapi.exe not found at $yapiPath"
+          }
+          & $yapiPath version
