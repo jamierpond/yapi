@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 
 type OS = 'mac' | 'linux' | 'windows';
 
+const OS_NAMES: Record<OS, string> = {
+  mac: 'macOS',
+  linux: 'Linux',
+  windows: 'Windows',
+};
+
 const COMMANDS: Record<OS, string> = {
   mac: 'curl -fsSL https://yapi.run/install/mac.sh | bash',
   linux: 'curl -fsSL https://yapi.run/install/linux.sh | bash',
@@ -34,21 +40,29 @@ export default function CopyInstallButton() {
   };
 
   if (!mounted) {
-    return <div className="h-[52px] w-full max-w-md bg-yapi-bg-elevated/20 rounded-lg animate-pulse" />;
+    return <div className="h-[108px] w-full max-w-xl bg-yapi-bg-elevated/20 rounded-lg animate-pulse" />;
   }
 
   return (
     <div className="w-full max-w-xl">
-      <div className="flex items-stretch rounded-lg border border-yapi-border bg-[#0a0a0a] overflow-hidden">
-        {/* Tabs */}
-        <div className="flex flex-col border-r border-yapi-border/50 bg-yapi-bg-elevated/30">
-          <TabButton active={activeTab === 'mac'} onClick={() => setActiveTab('mac')} label="mac" />
-          <TabButton active={activeTab === 'linux'} onClick={() => setActiveTab('linux')} label="linux" />
-          <TabButton active={activeTab === 'windows'} onClick={() => setActiveTab('windows')} label="win" />
-        </div>
-
+      <div className="flex items-center justify-center gap-2 mb-2">
+        {(['mac', 'linux', 'windows'] as OS[]).map((os) => (
+          <button
+            key={os}
+            onClick={() => setActiveTab(os)}
+            className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+              activeTab === os
+                ? 'bg-yapi-accent/10 text-yapi-accent'
+                : 'text-yapi-fg-muted hover:bg-yapi-bg-elevated'
+            }`}
+          >
+            {OS_NAMES[os]}
+          </button>
+        ))}
+      </div>
+      <div className="relative flex items-center rounded-lg border border-yapi-border bg-[#0a0a0a] overflow-hidden">
         {/* Command display */}
-        <div className="flex-1 flex items-center px-4 py-3 min-w-0">
+        <div className="flex-1 flex items-center bg-yapi-bg-elevated/10 px-4 py-3 min-w-0 h-[48px]">
           <span className="text-yapi-accent mr-2 select-none font-mono">
             {activeTab === 'windows' ? '>' : '$'}
           </span>
@@ -60,32 +74,23 @@ export default function CopyInstallButton() {
         {/* Copy button */}
         <button
           onClick={handleCopy}
-          className={`px-4 border-l border-yapi-border/50 transition-all font-medium text-sm
+          className={`px-4 border-l border-yapi-border/50 transition-colors font-medium text-sm flex items-center justify-center w-24 h-[48px] flex-shrink-0
             ${copied
               ? 'bg-yapi-success/10 text-yapi-success'
               : 'bg-yapi-bg-elevated/30 text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated'
             }
           `}
         >
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+              <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            'Copy'
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wide transition-colors
-        ${active
-          ? 'bg-yapi-accent/10 text-yapi-accent'
-          : 'text-yapi-fg-subtle hover:text-yapi-fg-muted hover:bg-white/5'
-        }
-      `}
-    >
-      {label}
-    </button>
-  );
-}

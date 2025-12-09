@@ -88,11 +88,11 @@ export default async function Landing() {
             Define API requests in YAML. Run them from your terminal. HTTP, gRPC, GraphQL. Commit to git. No Postman. No Insomnia.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-8 animate-fade-in-up delay-75">
+          <div className="flex flex-col justify-center items-center gap-4 pt-8 animate-fade-in-up delay-75 w-full max-w-xl mx-auto">
             <CopyInstallButton />
             <Link
               href="/playground"
-              className="px-8 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-bold hover:bg-yapi-bg-elevated hover:border-yapi-accent/50 transition-all active:scale-[0.98]"
+              className="px-8 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-bold hover:bg-yapi-bg-elevated hover:border-yapi-accent/50 transition-all active:scale-[0.98] w-full sm:w-auto text-center"
             >
               Try Online
             </Link>
