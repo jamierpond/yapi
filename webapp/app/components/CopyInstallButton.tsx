@@ -23,10 +23,14 @@ export default function CopyInstallButton() {
 
   useEffect(() => {
     setMounted(true);
-    const ua = window.navigator.userAgent.toLowerCase();
-    if (ua.includes('win')) setActiveTab('windows');
-    else if (ua.includes('linux')) setActiveTab('linux');
-    else setActiveTab('mac');
+    const platform = window.navigator.platform.toLowerCase();
+    if (platform.startsWith('mac')) {
+      setActiveTab('mac');
+    } else if (platform.startsWith('win')) {
+      setActiveTab('windows');
+    } else if (platform.includes('linux')) {
+      setActiveTab('linux');
+    }
   }, []);
 
   const handleCopy = async () => {
