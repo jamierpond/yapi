@@ -2,7 +2,7 @@ name: Installer Scripts
 
 on:
   push:
-    branches: [main, jp/just-show-total-downloads]
+    branches: [main]
     paths:
       - 'webapp/public/install/**'
       - '.github/workflows/installer-tests.yml'
