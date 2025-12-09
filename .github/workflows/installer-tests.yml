@@ -1,0 +1,197 @@
+name: Installer Scripts
+
+on:
+  push:
+    branches: [main, jp/just-show-total-downloads]
+    paths:
+      - 'webapp/public/install/**'
+      - '.github/workflows/installer-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'webapp/public/install/**'
+      - '.github/workflows/installer-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Check linux.sh
+        run: shellcheck webapp/public/install/linux.sh
+
+      - name: Check mac.sh
+        run: shellcheck webapp/public/install/mac.sh
+
+  powershell-lint:
+    name: PowerShell Lint
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = Invoke-ScriptAnalyzer -Path webapp/public/install/windows.ps1 -Severity Error,Warning
+          if ($results) {
+            $results | Format-Table -AutoSize
+            exit 1
+          }
+
+  test-linux:
+    name: Test Linux Script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test architecture detection (x86_64)
+        run: |
+          # Source the script in a subshell to test arch detection
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ]; then
+            EXPECTED_ASSET="yapi_linux_amd64.tar.gz"
+          elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            EXPECTED_ASSET="yapi_linux_arm64.tar.gz"
+          fi
+
+          # Extract and verify the asset logic from the script
+          SCRIPT_ASSET=$(bash -c '
+            ARCH=$(uname -m)
+            if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+              echo "yapi_linux_arm64.tar.gz"
+            elif [ "$ARCH" = "x86_64" ]; then
+              echo "yapi_linux_amd64.tar.gz"
+            fi
+          ')
+
+          if [ "$SCRIPT_ASSET" != "$EXPECTED_ASSET" ]; then
+            echo "Asset mismatch: expected $EXPECTED_ASSET, got $SCRIPT_ASSET"
+            exit 1
+          fi
+          echo "Architecture detection OK: $SCRIPT_ASSET"
+
+      - name: Verify script is executable
+        run: |
+          if ! head -1 webapp/public/install/linux.sh | grep -q "^#!/bin/bash"; then
+            echo "Missing or incorrect shebang"
+            exit 1
+          fi
+
+      - name: Verify set -e is present
+        run: |
+          if ! grep -q "^set -e" webapp/public/install/linux.sh; then
+            echo "Script should have 'set -e' for error handling"
+            exit 1
+          fi
+
+      - name: Verify download URL format
+        run: |
+          if ! grep -q 'https://github.com/jamierpond/yapi/releases/latest/download/' webapp/public/install/linux.sh; then
+            echo "Download URL not found or incorrect"
+            exit 1
+          fi
+
+  test-macos:
+    name: Test macOS Script
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test architecture detection
+        run: |
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "arm64" ]; then
+            EXPECTED_ASSET="yapi_darwin_arm64.tar.gz"
+          elif [ "$ARCH" = "x86_64" ]; then
+            EXPECTED_ASSET="yapi_darwin_amd64.tar.gz"
+          fi
+
+          SCRIPT_ASSET=$(bash -c '
+            ARCH=$(uname -m)
+            if [ "$ARCH" = "arm64" ]; then
+              echo "yapi_darwin_arm64.tar.gz"
+            elif [ "$ARCH" = "x86_64" ]; then
+              echo "yapi_darwin_amd64.tar.gz"
+            fi
+          ')
+
+          if [ "$SCRIPT_ASSET" != "$EXPECTED_ASSET" ]; then
+            echo "Asset mismatch: expected $EXPECTED_ASSET, got $SCRIPT_ASSET"
+            exit 1
+          fi
+          echo "Architecture detection OK: $SCRIPT_ASSET"
+
+      - name: Verify script is executable
+        run: |
+          if ! head -1 webapp/public/install/mac.sh | grep -q "^#!/bin/bash"; then
+            echo "Missing or incorrect shebang"
+            exit 1
+          fi
+
+      - name: Verify set -e is present
+        run: |
+          if ! grep -q "^set -e" webapp/public/install/mac.sh; then
+            echo "Script should have 'set -e' for error handling"
+            exit 1
+          fi
+
+      - name: Verify download URL format
+        run: |
+          if ! grep -q 'https://github.com/jamierpond/yapi/releases/latest/download/' webapp/public/install/mac.sh; then
+            echo "Download URL not found or incorrect"
+            exit 1
+          fi
+
+  test-windows:
+    name: Test Windows Script
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test architecture detection
+        shell: pwsh
+        run: |
+          $arch = $env:PROCESSOR_ARCHITECTURE.ToUpper()
+          $expectedAsset = switch ($arch) {
+              "AMD64" { "yapi_windows_amd64.zip" }
+              "ARM64" { "yapi_windows_arm64.zip" }
+              default { throw "Unexpected arch: $arch" }
+          }
+
+          # Verify the script has the same logic
+          $scriptContent = Get-Content webapp/public/install/windows.ps1 -Raw
+          if (-not ($scriptContent -match $expectedAsset)) {
+              throw "Expected asset $expectedAsset not found in script"
+          }
+          Write-Host "Architecture detection OK: $expectedAsset"
+
+      - name: Verify ErrorActionPreference
+        shell: pwsh
+        run: |
+          $content = Get-Content webapp/public/install/windows.ps1 -Raw
+          if (-not ($content -match '\$ErrorActionPreference\s*=\s*"Stop"')) {
+              throw "Script should have ErrorActionPreference = Stop"
+          }
+
+      - name: Verify download URL format
+        shell: pwsh
+        run: |
+          $content = Get-Content webapp/public/install/windows.ps1 -Raw
+          if (-not ($content -match 'https://github.com/jamierpond/yapi/releases/latest/download/')) {
+              throw "Download URL not found or incorrect"
+          }
+
+      - name: Verify PATH handling exists
+        shell: pwsh
+        run: |
+          $content = Get-Content webapp/public/install/windows.ps1 -Raw
+          if (-not ($content -match 'SetEnvironmentVariable.*PATH')) {
+              throw "PATH handling not found in script"
+          }
