@@ -7,7 +7,7 @@ package telemetry
 // - Initialization fails
 type NoopClient struct{}
 
-func (n *NoopClient) Track(event string, props map[string]interface{}) {
+func (n *NoopClient) Track(event string, props map[string]any) {
 	// Intentionally empty - the compiler will inline this
 }
 

@@ -187,7 +187,7 @@ func validateUnknownKeys(text string) []Diagnostic {
 		return nil
 	}
 
-	var raw map[string]interface{}
+	var raw map[string]any
 	if err := yaml.Unmarshal([]byte(text), &raw); err != nil {
 		return nil
 	}
@@ -322,21 +322,21 @@ func validateChain(text string, base *config.ConfigV1, chain []config.ChainStep)
 }
 
 // scanBodyForUndefinedRefs recursively scans a body map for undefined step references
-func scanBodyForUndefinedRefs(text string, body map[string]interface{}, definedSteps map[string]bool, currentStep, path string) []Diagnostic {
+func scanBodyForUndefinedRefs(text string, body map[string]any, definedSteps map[string]bool, currentStep, path string) []Diagnostic {
 	var diags []Diagnostic
 	for k, v := range body {
 		fieldPath := fmt.Sprintf("%s.%s", path, k)
 		switch val := v.(type) {
 		case string:
 			diags = append(diags, scanForUndefinedRefs(text, val, definedSteps, currentStep, fieldPath)...)
-		case map[string]interface{}:
+		case map[string]any:
 			diags = append(diags, scanBodyForUndefinedRefs(text, val, definedSteps, currentStep, fieldPath)...)
-		case []interface{}:
+		case []any:
 			for i, item := range val {
 				itemPath := fmt.Sprintf("%s[%d]", fieldPath, i)
 				if s, ok := item.(string); ok {
 					diags = append(diags, scanForUndefinedRefs(text, s, definedSteps, currentStep, itemPath)...)
-				} else if m, ok := item.(map[string]interface{}); ok {
+				} else if m, ok := item.(map[string]any); ok {
 					diags = append(diags, scanBodyForUndefinedRefs(text, m, definedSteps, currentStep, itemPath)...)
 				}
 			}

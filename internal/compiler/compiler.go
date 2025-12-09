@@ -212,12 +212,12 @@ func walkStringMap(m map[string]string, resolver vars.Resolver) (map[string]stri
 	return out, nil
 }
 
-// walkDeep recursively interpolates interface{} maps/slices.
-func walkDeep(v map[string]interface{}, resolver vars.Resolver) (map[string]interface{}, error) {
+// walkDeep recursively interpolates any maps/slices.
+func walkDeep(v map[string]any, resolver vars.Resolver) (map[string]any, error) {
 	if v == nil {
 		return nil, nil
 	}
-	out := make(map[string]interface{}, len(v))
+	out := make(map[string]any, len(v))
 	for k, sv := range v {
 		res, err := walkValue(sv, resolver)
 		if err != nil {
@@ -229,14 +229,14 @@ func walkDeep(v map[string]interface{}, resolver vars.Resolver) (map[string]inte
 }
 
 // walkValue recursively interpolates a single value.
-func walkValue(v interface{}, resolver vars.Resolver) (interface{}, error) {
+func walkValue(v any, resolver vars.Resolver) (any, error) {
 	switch val := v.(type) {
 	case string:
 		return vars.ExpandString(val, resolver)
-	case map[string]interface{}:
+	case map[string]any:
 		return walkDeep(val, resolver)
-	case []interface{}:
-		out := make([]interface{}, len(val))
+	case []any:
+		out := make([]any, len(val))
 		for i, sv := range val {
 			res, err := walkValue(sv, resolver)
 			if err != nil {

@@ -42,17 +42,17 @@ func MergeMaps[K comparable, V any](dst, src map[K]V) map[K]V {
 	return out
 }
 
-// DeepCloneMap creates a deep copy of a map[string]interface{}.
-func DeepCloneMap(src map[string]interface{}) map[string]interface{} {
+// DeepCloneMap creates a deep copy of a map[string]any.
+func DeepCloneMap(src map[string]any) map[string]any {
 	if src == nil {
 		return nil
 	}
-	dst := make(map[string]interface{}, len(src))
+	dst := make(map[string]any, len(src))
 	for k, v := range src {
 		switch val := v.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			dst[k] = DeepCloneMap(val)
-		case []interface{}:
+		case []any:
 			dst[k] = DeepCloneSlice(val)
 		default:
 			dst[k] = v
@@ -62,16 +62,16 @@ func DeepCloneMap(src map[string]interface{}) map[string]interface{} {
 }
 
 // DeepCloneSlice creates a deep copy of a slice of interfaces.
-func DeepCloneSlice(src []interface{}) []interface{} {
+func DeepCloneSlice(src []any) []any {
 	if src == nil {
 		return nil
 	}
-	dst := make([]interface{}, len(src))
+	dst := make([]any, len(src))
 	for i, v := range src {
 		switch val := v.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			dst[i] = DeepCloneMap(val)
-		case []interface{}:
+		case []any:
 			dst[i] = DeepCloneSlice(val)
 		default:
 			dst[i] = v

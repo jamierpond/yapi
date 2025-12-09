@@ -12,7 +12,7 @@ import (
 
 type StepResult struct {
 	BodyRaw    string
-	BodyJSON   map[string]interface{}
+	BodyJSON   map[string]any
 	Headers    map[string]string
 	StatusCode int
 }
@@ -39,7 +39,7 @@ func (c *ChainContext) AddResult(name string, result *Result) {
 		sr.Headers[k] = v
 	}
 
-	var data map[string]interface{}
+	var data map[string]any
 	// Try parsing JSON; ignore errors (BodyJSON stays nil)
 	if err := json.Unmarshal([]byte(result.Body), &data); err == nil {
 		sr.BodyJSON = data
@@ -146,11 +146,11 @@ func (c *ChainContext) resolveChainVar(key string) (string, error) {
 	return jsonPathLookup(res.BodyJSON, path)
 }
 
-func jsonPathLookup(data interface{}, path []string) (string, error) {
+func jsonPathLookup(data any, path []string) (string, error) {
 	current := data
 	for i, key := range path {
 		switch v := current.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			val, ok := v[key]
 			if !ok {
 				return "", fmt.Errorf("key '%s' not found at path '%s'", key, strings.Join(path[:i+1], "."))
@@ -186,7 +186,7 @@ func jsonPathLookup(data interface{}, path []string) (string, error) {
 
 // ResolveVariableRaw checks if input is a pure variable reference (e.g. "$step.field" or "${step.field}")
 // and returns the raw typed value. Returns (value, true) if resolved, (nil, false) otherwise.
-func (c *ChainContext) ResolveVariableRaw(input string) (interface{}, bool) {
+func (c *ChainContext) ResolveVariableRaw(input string) (any, bool) {
 	trimmed := strings.TrimSpace(input)
 
 	// Check if it's a pure reference (entire string is just the variable)
@@ -241,11 +241,11 @@ func (c *ChainContext) ResolveVariableRaw(input string) (interface{}, bool) {
 }
 
 // jsonPathLookupRaw returns the raw typed value at the given path
-func jsonPathLookupRaw(data interface{}, path []string) (interface{}, error) {
+func jsonPathLookupRaw(data any, path []string) (any, error) {
 	current := data
 	for i, key := range path {
 		switch v := current.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			val, ok := v[key]
 			if !ok {
 				return nil, fmt.Errorf("key '%s' not found at path '%s'", key, strings.Join(path[:i+1], "."))

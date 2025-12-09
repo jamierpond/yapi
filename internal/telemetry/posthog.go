@@ -33,9 +33,9 @@ func NewPostHogClient(apiKey, apiHost, version, commit string, printDebug bool) 
 	}, nil
 }
 
-func (p *PostHogClient) Track(event string, props map[string]interface{}) {
+func (p *PostHogClient) Track(event string, props map[string]any) {
 	// Build final properties with standard fields
-	finalProps := map[string]interface{}{
+	finalProps := map[string]any{
 		"os":      runtime.GOOS,
 		"arch":    runtime.GOARCH,
 		"version": p.version,
@@ -47,7 +47,7 @@ func (p *PostHogClient) Track(event string, props map[string]interface{}) {
 
 	// Print analytics event if debug enabled
 	if p.printDebug {
-		out := map[string]interface{}{
+		out := map[string]any{
 			"event":      event,
 			"properties": finalProps,
 		}

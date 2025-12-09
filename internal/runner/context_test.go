@@ -64,7 +64,7 @@ func TestChainContext_ExpandVariables_ChainRefs(t *testing.T) {
 	// Add a step result
 	ctx.Results["login"] = StepResult{
 		BodyRaw:    `{"access_token":"abc123","user":{"id":42,"name":"test"}}`,
-		BodyJSON:   map[string]interface{}{"access_token": "abc123", "user": map[string]interface{}{"id": float64(42), "name": "test"}},
+		BodyJSON:   map[string]any{"access_token": "abc123", "user": map[string]any{"id": float64(42), "name": "test"}},
 		Headers:    map[string]string{"Content-Type": "application/json", "X-Custom": "custom-value"},
 		StatusCode: 200,
 	}
@@ -192,11 +192,11 @@ func TestChainContext_AddResult_NonJSON(t *testing.T) {
 }
 
 func TestJsonPathLookup(t *testing.T) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"string":  "value",
 		"number":  float64(42),
 		"boolean": true,
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"deep": "nested_value",
 		},
 	}

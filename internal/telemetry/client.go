@@ -2,7 +2,7 @@ package telemetry
 
 // Client defines the behavior for any analytics backend
 type Client interface {
-	Track(event string, props map[string]interface{})
+	Track(event string, props map[string]any)
 	Close() error
 }
 
@@ -10,7 +10,7 @@ type Client interface {
 var impl Client = &NoopClient{}
 
 // Track is the public facade
-func Track(event string, props map[string]interface{}) {
+func Track(event string, props map[string]any) {
 	impl.Track(event, props)
 }
 

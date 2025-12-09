@@ -8,8 +8,8 @@ import (
 
 // ExtractConfigStats extracts feature usage statistics from an analysis result.
 // This is used by telemetry hooks to gather request metadata.
-func ExtractConfigStats(analysis *validation.Analysis) map[string]interface{} {
-	stats := make(map[string]interface{})
+func ExtractConfigStats(analysis *validation.Analysis) map[string]any {
+	stats := make(map[string]any)
 
 	if analysis == nil || analysis.Base == nil {
 		return stats
@@ -126,19 +126,19 @@ func collectStrings(base *config.ConfigV1, chain []config.ChainStep) []string {
 }
 
 // collectMapStrings recursively extracts string values from a map.
-func collectMapStrings(m map[string]interface{}) []string {
+func collectMapStrings(m map[string]any) []string {
 	var strs []string
 	for _, v := range m {
 		switch val := v.(type) {
 		case string:
 			strs = append(strs, val)
-		case map[string]interface{}:
+		case map[string]any:
 			strs = append(strs, collectMapStrings(val)...)
-		case []interface{}:
+		case []any:
 			for _, elem := range val {
 				if s, ok := elem.(string); ok {
 					strs = append(strs, s)
-				} else if m, ok := elem.(map[string]interface{}); ok {
+				} else if m, ok := elem.(map[string]any); ok {
 					strs = append(strs, collectMapStrings(m)...)
 				}
 			}
