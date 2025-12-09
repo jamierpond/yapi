@@ -88,15 +88,19 @@ export default async function Landing() {
             Define API requests in YAML. Run them from your terminal. HTTP, gRPC, GraphQL. Commit to git. No Postman. No Insomnia.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-8 animate-fade-in-up delay-75">
             <CopyInstallButton />
             <Link
               href="/playground"
-              className="px-8 py-4 w-full sm:w-auto rounded-xl bg-yapi-fg text-yapi-bg font-bold hover:bg-white transition-all shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+              className="px-8 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-bold hover:bg-yapi-bg-elevated hover:border-yapi-accent/50 transition-all active:scale-[0.98]"
             >
               Try Online
             </Link>
           </div>
+
+          <p className="mt-6 text-xs text-yapi-fg-subtle opacity-50 font-mono text-center">
+            Requires curl (macOS/Linux) or PowerShell (Windows)
+          </p>
         </div>
 
         {/* Hero Visual: The Split Pane Terminal */}
