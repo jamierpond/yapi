@@ -356,4 +356,3 @@ func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
 
 	return nil
 }
-
