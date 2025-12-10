@@ -274,10 +274,8 @@ func validateChain(text string, base *config.ConfigV1, chain []config.ChainStep)
 		}
 
 		// 2. Check URL is present (either in step or in base config)
-		// Sleep steps don't need a URL since they don't make requests
-		isSleepStep := step.Sleep != "" || (base != nil && base.Sleep != "")
 		hasURL := step.URL != "" || (base != nil && base.URL != "")
-		if !hasURL && !isSleepStep {
+		if !hasURL {
 			diags = append(diags, Diagnostic{
 				Severity: SeverityError,
 				Field:    step.Name,

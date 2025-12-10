@@ -137,41 +137,19 @@ func TestMerge_FlowControl(t *testing.T) {
 		t.Errorf("expected delay '5s', got '%s'", mergedOverride.Delay)
 	}
 
-	// Case 3: Step adds sleep
-	stepSleep := ChainStep{
-		Name: "sleep_step",
+	// Case 3: Step adds delay
+	baseNoDelay := &ConfigV1{
+		URL: "http://example.com",
+	}
+	stepWithDelay := ChainStep{
+		Name: "add_delay",
 		ConfigV1: ConfigV1{
-			Sleep: "10s",
+			Delay: "500ms",
 		},
 	}
-	mergedSleep := base.Merge(stepSleep)
-	if mergedSleep.Sleep != "10s" {
-		t.Errorf("expected sleep '10s', got '%s'", mergedSleep.Sleep)
-	}
-
-	// Case 4: Base has sleep, step inherits it
-	baseSleep := &ConfigV1{
-		URL:   "http://example.com",
-		Sleep: "2s",
-	}
-	stepNoSleep := ChainStep{
-		Name: "inherit_sleep",
-	}
-	mergedInheritSleep := baseSleep.Merge(stepNoSleep)
-	if mergedInheritSleep.Sleep != "2s" {
-		t.Errorf("expected sleep '2s', got '%s'", mergedInheritSleep.Sleep)
-	}
-
-	// Case 5: Step overrides sleep
-	stepOverrideSleep := ChainStep{
-		Name: "override_sleep",
-		ConfigV1: ConfigV1{
-			Sleep: "500ms",
-		},
-	}
-	mergedOverrideSleep := baseSleep.Merge(stepOverrideSleep)
-	if mergedOverrideSleep.Sleep != "500ms" {
-		t.Errorf("expected sleep '500ms', got '%s'", mergedOverrideSleep.Sleep)
+	mergedAddDelay := baseNoDelay.Merge(stepWithDelay)
+	if mergedAddDelay.Delay != "500ms" {
+		t.Errorf("expected delay '500ms', got '%s'", mergedAddDelay.Delay)
 	}
 }
 

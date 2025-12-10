@@ -93,7 +93,7 @@ func collectStrings(base *config.ConfigV1, chain []config.ChainStep) []string {
 		base.URL, base.Path, base.Method, base.ContentType,
 		base.JSON, base.Graphql, base.Service, base.RPC,
 		base.Proto, base.ProtoPath, base.Data, base.Encoding, base.JQFilter,
-		base.Sleep, base.Delay,
+		base.Delay,
 	}
 
 	for _, v := range base.Headers {
@@ -112,7 +112,7 @@ func collectStrings(base *config.ConfigV1, chain []config.ChainStep) []string {
 			step.URL, step.Path, step.Method, step.ContentType,
 			step.JSON, step.Graphql, step.Service, step.RPC,
 			step.Proto, step.ProtoPath, step.Data, step.Encoding, step.JQFilter,
-			step.Sleep, step.Delay,
+			step.Delay,
 		)
 		for _, v := range step.Headers {
 			strs = append(strs, v)

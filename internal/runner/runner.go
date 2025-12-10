@@ -249,15 +249,6 @@ func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.Co
 		result.Variables = newVars
 	}
 
-	// Interpolate Sleep
-	if result.Sleep != "" {
-		expanded, err := chainCtx.ExpandVariables(result.Sleep)
-		if err != nil {
-			return nil, fmt.Errorf("sleep: %w", err)
-		}
-		result.Sleep = expanded
-	}
-
 	// Interpolate Delay
 	if result.Delay != "" {
 		expanded, err := chainCtx.ExpandVariables(result.Delay)
