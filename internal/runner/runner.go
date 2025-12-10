@@ -114,7 +114,7 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 3. Handle Delay (Pre-execution wait)
+		// 3. Handle Delay (wait before executing step)
 		if interpolatedConfig.Delay != "" {
 			d, err := time.ParseDuration(interpolatedConfig.Delay)
 			if err != nil {
@@ -130,58 +130,28 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 			}
 		}
 
-		// 4. Handle Sleep Step (Skip Request)
-		if interpolatedConfig.Sleep != "" {
-			d, err := time.ParseDuration(interpolatedConfig.Sleep)
-			if err != nil {
-				return nil, fmt.Errorf("step '%s' invalid sleep '%s': %w", step.Name, interpolatedConfig.Sleep, err)
-			}
-
-			if d > 0 {
-				fmt.Fprintf(os.Stderr, "[INFO] Sleeping for %s...\n", d)
-				select {
-				case <-time.After(d):
-				case <-ctx.Done():
-					return nil, ctx.Err()
-				}
-			}
-
-			// Create a dummy result so the chain doesn't break
-			dummyRes := &Result{
-				StatusCode: 200,
-				Body:       fmt.Sprintf(`{"message": "slept for %s"}`, d),
-				Headers:    map[string]string{},
-				Duration:   d,
-			}
-			chainCtx.AddResult(step.Name, dummyRes)
-			chainResult.Results = append(chainResult.Results, dummyRes)
-			chainResult.StepNames = append(chainResult.StepNames, step.Name)
-			chainResult.ExpectationResults = append(chainResult.ExpectationResults, &ExpectationResult{})
-			continue
-		}
-
-		// 5. Convert to domain request (handles ALL transports: HTTP, TCP, gRPC, GraphQL)
+		// 4. Convert to domain request (handles ALL transports: HTTP, TCP, gRPC, GraphQL)
 		req, err := interpolatedConfig.ToDomain()
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 6. Create executor for this step's transport
+		// 5. Create executor for this step's transport
 		exec, err := factory.Create(req.Metadata["transport"])
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 7. Execute
+		// 6. Execute
 		result, err := Run(ctx, exec, req, []string{}, opts)
 		if err != nil {
 			return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
 		}
 
-		// 8. Assert Expectations
+		// 7. Assert Expectations
 		expectRes := CheckExpectations(step.Expect, result)
 
-		// 9. Store Result (including expectation result even if failed)
+		// 8. Store Result (including expectation result even if failed)
 		chainCtx.AddResult(step.Name, result)
 		chainResult.Results = append(chainResult.Results, result)
 		chainResult.StepNames = append(chainResult.StepNames, step.Name)

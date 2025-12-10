@@ -12,9 +12,6 @@ chain:
         - .userId != null
         - .id == 1
 
-  - name: wait_for_user
-    sleep: 5s  # Pause for 5 seconds (no HTTP request made)
-
   - name: get_user
     delay: 2s  # Wait 2 seconds, then make the request
     url: https://jsonplaceholder.typicode.com/users/${get_todo.userId}
