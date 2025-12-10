@@ -111,6 +111,70 @@ func TestMerge_BodyDeepCopy(t *testing.T) {
 	}
 }
 
+func TestMerge_FlowControl(t *testing.T) {
+	// Case 1: Base has delay, step inherits it
+	base := &ConfigV1{
+		URL:   "http://example.com",
+		Delay: "1s",
+	}
+	step := ChainStep{
+		Name: "inherit_delay",
+	}
+	merged := base.Merge(step)
+	if merged.Delay != "1s" {
+		t.Errorf("expected delay '1s', got '%s'", merged.Delay)
+	}
+
+	// Case 2: Step overrides delay
+	stepOverride := ChainStep{
+		Name: "override_delay",
+		ConfigV1: ConfigV1{
+			Delay: "5s",
+		},
+	}
+	mergedOverride := base.Merge(stepOverride)
+	if mergedOverride.Delay != "5s" {
+		t.Errorf("expected delay '5s', got '%s'", mergedOverride.Delay)
+	}
+
+	// Case 3: Step adds sleep
+	stepSleep := ChainStep{
+		Name: "sleep_step",
+		ConfigV1: ConfigV1{
+			Sleep: "10s",
+		},
+	}
+	mergedSleep := base.Merge(stepSleep)
+	if mergedSleep.Sleep != "10s" {
+		t.Errorf("expected sleep '10s', got '%s'", mergedSleep.Sleep)
+	}
+
+	// Case 4: Base has sleep, step inherits it
+	baseSleep := &ConfigV1{
+		URL:   "http://example.com",
+		Sleep: "2s",
+	}
+	stepNoSleep := ChainStep{
+		Name: "inherit_sleep",
+	}
+	mergedInheritSleep := baseSleep.Merge(stepNoSleep)
+	if mergedInheritSleep.Sleep != "2s" {
+		t.Errorf("expected sleep '2s', got '%s'", mergedInheritSleep.Sleep)
+	}
+
+	// Case 5: Step overrides sleep
+	stepOverrideSleep := ChainStep{
+		Name: "override_sleep",
+		ConfigV1: ConfigV1{
+			Sleep: "500ms",
+		},
+	}
+	mergedOverrideSleep := baseSleep.Merge(stepOverrideSleep)
+	if mergedOverrideSleep.Sleep != "500ms" {
+		t.Errorf("expected sleep '500ms', got '%s'", mergedOverrideSleep.Sleep)
+	}
+}
+
 func TestDeepCloneMap(t *testing.T) {
 	src := map[string]interface{}{
 		"string": "value",

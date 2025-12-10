@@ -1,4 +1,6 @@
-# Simple chain example: Get a todo, then get the user who created it
+# Example: Chain with sleep and delay flow control
+# - sleep: Pauses execution without making a request (useful for rate limiting)
+# - delay: Waits before executing the request (useful for timed sequences)
 yapi: v1
 chain:
   - name: get_todo
@@ -10,8 +12,11 @@ chain:
         - .userId != null
         - .id == 1
 
+  - name: wait_for_user
+    sleep: 5s  # Pause for 5 seconds (no HTTP request made)
+
   - name: get_user
-    delay: 2s
+    delay: 2s  # Wait 2 seconds, then make the request
     url: https://jsonplaceholder.typicode.com/users/${get_todo.userId}
     method: GET
     expect:

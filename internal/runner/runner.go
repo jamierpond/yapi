@@ -88,8 +88,13 @@ type ChainResult struct {
 	ExpectationResults []*ExpectationResult // Expectation results from each step
 }
 
+// ExecutorFactory is an interface for creating transport functions
+type ExecutorFactory interface {
+	Create(transport string) (executor.TransportFunc, error)
+}
+
 // RunChain executes a sequence of steps, merging each step with the base config
-func RunChain(ctx context.Context, factory *executor.Factory, base *config.ConfigV1, steps []config.ChainStep, opts Options) (*ChainResult, error) {
+func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV1, steps []config.ChainStep, opts Options) (*ChainResult, error) {
 	chainCtx := NewChainContext()
 	chainResult := &ChainResult{
 		Results:            make([]*Result, 0, len(steps)),
