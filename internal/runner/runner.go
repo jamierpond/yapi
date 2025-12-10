@@ -109,28 +109,74 @@ func RunChain(ctx context.Context, factory *executor.Factory, base *config.Confi
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 3. Convert to domain request (handles ALL transports: HTTP, TCP, gRPC, GraphQL)
+		// 3. Handle Delay (Pre-execution wait)
+		if interpolatedConfig.Delay != "" {
+			d, err := time.ParseDuration(interpolatedConfig.Delay)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s' invalid delay '%s': %w", step.Name, interpolatedConfig.Delay, err)
+			}
+			if d > 0 {
+				fmt.Fprintf(os.Stderr, "[INFO] Delaying for %s...\n", d)
+				select {
+				case <-time.After(d):
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+			}
+		}
+
+		// 4. Handle Sleep Step (Skip Request)
+		if interpolatedConfig.Sleep != "" {
+			d, err := time.ParseDuration(interpolatedConfig.Sleep)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s' invalid sleep '%s': %w", step.Name, interpolatedConfig.Sleep, err)
+			}
+
+			if d > 0 {
+				fmt.Fprintf(os.Stderr, "[INFO] Sleeping for %s...\n", d)
+				select {
+				case <-time.After(d):
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+			}
+
+			// Create a dummy result so the chain doesn't break
+			dummyRes := &Result{
+				StatusCode: 200,
+				Body:       fmt.Sprintf(`{"message": "slept for %s"}`, d),
+				Headers:    map[string]string{},
+				Duration:   d,
+			}
+			chainCtx.AddResult(step.Name, dummyRes)
+			chainResult.Results = append(chainResult.Results, dummyRes)
+			chainResult.StepNames = append(chainResult.StepNames, step.Name)
+			chainResult.ExpectationResults = append(chainResult.ExpectationResults, &ExpectationResult{})
+			continue
+		}
+
+		// 5. Convert to domain request (handles ALL transports: HTTP, TCP, gRPC, GraphQL)
 		req, err := interpolatedConfig.ToDomain()
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 4. Create executor for this step's transport
+		// 6. Create executor for this step's transport
 		exec, err := factory.Create(req.Metadata["transport"])
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 5. Execute
+		// 7. Execute
 		result, err := Run(ctx, exec, req, []string{}, opts)
 		if err != nil {
 			return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
 		}
 
-		// 6. Assert Expectations
+		// 8. Assert Expectations
 		expectRes := CheckExpectations(step.Expect, result)
 
-		// 7. Store Result (including expectation result even if failed)
+		// 9. Store Result (including expectation result even if failed)
 		chainCtx.AddResult(step.Name, result)
 		chainResult.Results = append(chainResult.Results, result)
 		chainResult.StepNames = append(chainResult.StepNames, step.Name)
@@ -226,6 +272,24 @@ func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.Co
 			return nil, fmt.Errorf("variables: %w", err)
 		}
 		result.Variables = newVars
+	}
+
+	// Interpolate Sleep
+	if result.Sleep != "" {
+		expanded, err := chainCtx.ExpandVariables(result.Sleep)
+		if err != nil {
+			return nil, fmt.Errorf("sleep: %w", err)
+		}
+		result.Sleep = expanded
+	}
+
+	// Interpolate Delay
+	if result.Delay != "" {
+		expanded, err := chainCtx.ExpandVariables(result.Delay)
+		if err != nil {
+			return nil, fmt.Errorf("delay: %w", err)
+		}
+		result.Delay = expanded
 	}
 
 	return &result, nil
