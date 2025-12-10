@@ -429,65 +429,6 @@ func (m *mockExecutorFactory) Create(transportType string) (executor.TransportFu
 	return m.transport, nil
 }
 
-func TestRunChain_Sleep(t *testing.T) {
-	// Test that sleep step actually pauses execution and skips the request
-	base := &config.ConfigV1{URL: "http://example.com"}
-	steps := []config.ChainStep{
-		{
-			Name: "sleep_step",
-			ConfigV1: config.ConfigV1{
-				Sleep: "100ms",
-			},
-		},
-	}
-
-	// Create a mock factory - the transport should NOT be called for sleep steps
-	transportCalled := false
-	mockTransport := func(ctx context.Context, req *domain.Request) (*domain.Response, error) {
-		transportCalled = true
-		return &domain.Response{
-			StatusCode: 200,
-			Headers:    map[string]string{"Content-Type": "application/json"},
-			Body:       io.NopCloser(strings.NewReader(`{"status": "ok"}`)),
-		}, nil
-	}
-
-	// We need to create a factory that uses our mock
-	// Since Factory.Create returns a TransportFunc, we'll use a custom approach
-	factory := &mockExecutorFactory{transport: mockTransport}
-
-	start := time.Now()
-	result, err := RunChain(context.Background(), factory, base, steps, Options{})
-	elapsed := time.Since(start)
-
-	if err != nil {
-		t.Fatalf("RunChain() returned unexpected error: %v", err)
-	}
-
-	// Verify timing - should have slept at least 100ms
-	if elapsed < 100*time.Millisecond {
-		t.Errorf("execution was too fast (%v), sleep didn't work", elapsed)
-	}
-
-	// Allow some buffer for test overhead
-	if elapsed > 500*time.Millisecond {
-		t.Errorf("execution was too slow (%v)", elapsed)
-	}
-
-	// Verify transport was NOT called (sleep skips request)
-	if transportCalled {
-		t.Error("transport should not be called for sleep steps")
-	}
-
-	// Verify we got a result with the dummy body
-	if len(result.Results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(result.Results))
-	}
-	if !strings.Contains(result.Results[0].Body, "slept for") {
-		t.Errorf("expected dummy body containing 'slept for', got: %s", result.Results[0].Body)
-	}
-}
-
 func TestRunChain_Delay(t *testing.T) {
 	// Test that delay waits before executing the request
 	base := &config.ConfigV1{URL: "http://example.com"}
@@ -540,37 +481,6 @@ func TestRunChain_Delay(t *testing.T) {
 	}
 }
 
-func TestRunChain_SleepInvalidDuration(t *testing.T) {
-	// Test error handling for invalid duration format
-	base := &config.ConfigV1{URL: "http://example.com"}
-	steps := []config.ChainStep{
-		{
-			Name: "bad_sleep",
-			ConfigV1: config.ConfigV1{
-				Sleep: "500", // Missing unit
-			},
-		},
-	}
-
-	mockTransport := func(ctx context.Context, req *domain.Request) (*domain.Response, error) {
-		return &domain.Response{
-			StatusCode: 200,
-			Headers:    map[string]string{},
-			Body:       io.NopCloser(strings.NewReader(`{}`)),
-		}, nil
-	}
-
-	factory := &mockExecutorFactory{transport: mockTransport}
-
-	_, err := RunChain(context.Background(), factory, base, steps, Options{})
-	if err == nil {
-		t.Error("expected error for invalid duration, got nil")
-	}
-	if !strings.Contains(err.Error(), "invalid sleep") {
-		t.Errorf("expected 'invalid sleep' error, got: %v", err)
-	}
-}
-
 func TestRunChain_DelayInvalidDuration(t *testing.T) {
 	// Test error handling for invalid delay duration format
 	base := &config.ConfigV1{URL: "http://example.com"}
@@ -603,14 +513,15 @@ func TestRunChain_DelayInvalidDuration(t *testing.T) {
 	}
 }
 
-func TestRunChain_SleepContextCancellation(t *testing.T) {
-	// Test that sleep respects context cancellation
+func TestRunChain_DelayContextCancellation(t *testing.T) {
+	// Test that delay respects context cancellation
 	base := &config.ConfigV1{URL: "http://example.com"}
 	steps := []config.ChainStep{
 		{
-			Name: "long_sleep",
+			Name: "long_delay",
 			ConfigV1: config.ConfigV1{
-				Sleep: "5s", // Long sleep
+				URL:   "http://example.com",
+				Delay: "5s", // Long delay
 			},
 		},
 	}
@@ -646,14 +557,15 @@ func TestRunChain_SleepContextCancellation(t *testing.T) {
 	}
 }
 
-func TestRunChain_NegativeDuration(t *testing.T) {
-	// Test that negative duration doesn't cause issues (should be skipped)
+func TestRunChain_NegativeDelay(t *testing.T) {
+	// Test that negative delay doesn't cause issues (should be skipped)
 	base := &config.ConfigV1{URL: "http://example.com"}
 	steps := []config.ChainStep{
 		{
-			Name: "negative_sleep",
+			Name: "negative_delay",
 			ConfigV1: config.ConfigV1{
-				Sleep: "-5s",
+				URL:   "http://example.com",
+				Delay: "-5s",
 			},
 		},
 	}
