@@ -1,6 +1,5 @@
-# Example: Chain with sleep and delay flow control
-# - sleep: Pauses execution without making a request (useful for rate limiting)
-# - delay: Waits before executing the request (useful for timed sequences)
+# Example: Chain with delay flow control
+# - delay: Waits before executing the step (useful for rate limiting, timed sequences)
 yapi: v1
 chain:
   - name: get_todo
