@@ -23,7 +23,7 @@ import (
 	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/share"
-	"yapi.run/cli/internal/telemetry"
+	"yapi.run/cli/internal/observability"
 	"yapi.run/cli/internal/tui"
 	"yapi.run/cli/internal/validation"
 )
