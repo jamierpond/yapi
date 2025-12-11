@@ -8,7 +8,7 @@ import (
 )
 
 // Log file name constant
-const LogFileName = "yapi.log"
+const LogFileName = ".yapi.log"
 
 // Default log file path
 var LogFilePath = filepath.Join(os.Getenv("HOME"), LogFileName)
