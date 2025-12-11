@@ -91,7 +91,7 @@ func main() {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			// Log command to history (skip meta commands)
 			switch cmd.Name() {
-			case "history", "version", "lsp", "help", "yapi", "telemetry":
+			case "history", "version", "lsp", "help", "yapi", "logging":
 				return
 			}
 			logHistoryCmd(reconstructCommand(cmd, args))
@@ -109,7 +109,7 @@ func main() {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newShareCmd())
-	rootCmd.AddCommand(newTelemetryCmd())
+	rootCmd.AddCommand(newLoggingCmd())
 
 	// Wrap all commands with observability middleware
 	middleware.WrapWithObservability(rootCmd)
@@ -412,7 +412,7 @@ func newVersionCmd() *cobra.Command {
 					"version":   version,
 					"commit":    commit,
 					"date":      date,
-					"telemetry": observability.IsEnabled(),
+					"logging": observability.IsEnabled(),
 				}
 				return json.NewEncoder(os.Stdout).Encode(info)
 			}
@@ -771,18 +771,18 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func newTelemetryCmd() *cobra.Command {
+func newLoggingCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "telemetry [on|off|status]",
+		Use:   "logging [on|off|status]",
 		Short: "Manage local usage logging",
 		Long: `Manage local usage logging for yapi.
 
 Usage stats are written to ~/` + observability.LogFileName + ` (nothing is uploaded).
 
 Examples:
-  yapi telemetry        Show current status
-  yapi telemetry on     Enable logging (default)
-  yapi telemetry off    Disable logging`,
+  yapi logging        Show current status
+  yapi logging on     Enable logging (default)
+  yapi logging off    Disable logging`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			action := "status"
@@ -793,24 +793,24 @@ Examples:
 			switch action {
 			case "status":
 				if observability.IsEnabled() {
-					fmt.Println("Telemetry: " + color.Green("on"))
-					fmt.Printf("Log file:  %s\n", observability.LogFilePath)
+					fmt.Println("Logging: " + color.Green("on"))
+					fmt.Printf("Log file: %s\n", observability.LogFilePath)
 				} else {
-					fmt.Println("Telemetry: " + color.Yellow("off"))
+					fmt.Println("Logging: " + color.Yellow("off"))
 				}
 
 			case "on":
 				if err := observability.SetEnabled(true); err != nil {
 					return fmt.Errorf("failed: %w", err)
 				}
-				fmt.Println(color.Green("Telemetry enabled."))
+				fmt.Println(color.Green("Logging enabled."))
 				fmt.Printf("Log file: %s\n", observability.LogFilePath)
 
 			case "off":
 				if err := observability.SetEnabled(false); err != nil {
 					return fmt.Errorf("failed: %w", err)
 				}
-				fmt.Println(color.Yellow("Telemetry disabled."))
+				fmt.Println(color.Yellow("Logging disabled."))
 
 			default:
 				return fmt.Errorf("unknown action: %s (use on, off, or status)", action)
