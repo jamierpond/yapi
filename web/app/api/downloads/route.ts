@@ -127,8 +127,7 @@ export async function GET() {
         if (asset.name === "checksums.txt") {
           return;
         }
-        const realCount = Math.max(0, asset.downloadCount - 1);
-        releaseDownloads += realCount;
+        releaseDownloads += asset.downloadCount;
       });
 
       allTimeDownloads += releaseDownloads;
