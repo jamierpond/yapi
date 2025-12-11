@@ -8,7 +8,6 @@ const VersionResponseSchema = z.object({
   version: z.string(),
   commit: z.string(),
   date: z.string(),
-  telemetry: z.boolean(),
 });
 
 export type VersionResponse = z.infer<typeof VersionResponseSchema>;

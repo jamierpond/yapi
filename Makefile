@@ -4,13 +4,7 @@ NAME := yapi
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-# PostHog keys - set via environment or CI/CD secrets
-# These are write-only project keys, but kept out of git history for cleanliness
-POSTHOG_API_KEY ?=
-POSTHOG_API_HOST ?= https://us.i.posthog.com
-LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) \
-	-X yapi.run/cli/internal/telemetry.PosthogAPIKey=$(POSTHOG_API_KEY) \
-	-X yapi.run/cli/internal/telemetry.PosthogAPIHost=$(POSTHOG_API_HOST)
+LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)
 
 install: build
 	@echo "Installing yapi to $$(go env GOPATH)/bin..."
