@@ -1,15 +1,15 @@
-name: Webapp Tests
+name: Web Tests
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'webapp/**'
+      - 'web/**'
       - '.github/workflows/webapp-tests.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'webapp/**'
+      - 'web/**'
       - '.github/workflows/webapp-tests.yml'
   workflow_dispatch:
 
@@ -21,29 +21,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
       with:
-        bun-version: latest
+        version: 9
 
-    - name: Cache dependencies
-      uses: actions/cache@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        path: |
-          webapp/node_modules
-          ~/.bun/install/cache
-        key: ${{ runner.os }}-bun-${{ hashFiles('webapp/bun.lockb', 'webapp/package.json') }}
-        restore-keys: |
-          ${{ runner.os }}-bun-
+        node-version: '20'
+        cache: 'pnpm'
 
     - name: Install dependencies
-      working-directory: webapp
-      run: bun install --frozen-lockfile
+      run: pnpm install --frozen-lockfile
 
     - name: Run tests
-      working-directory: webapp
-      run: bun run test
+      run: pnpm test
 
-    - name: Build webapp
-      working-directory: webapp
-      run: bun run build
+    - name: Build web
+      run: pnpm build:web
