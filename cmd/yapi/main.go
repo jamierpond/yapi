@@ -783,9 +783,21 @@ func fileExists(path string) bool {
 
 func newTelemetryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "telemetry [status|enable|disable]",
-		Short: "Manage anonymous usage statistics",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "telemetry [on|off|local|status]",
+		Short: "Manage telemetry mode",
+		Long: `Manage telemetry mode for yapi.
+
+Modes:
+  local   Collect telemetry locally only (default)
+  on      Upload anonymous stats to help improve yapi
+  off     Disable all telemetry
+
+Examples:
+  yapi telemetry          Show current status
+  yapi telemetry on       Enable uploads
+  yapi telemetry local    Local collection only
+  yapi telemetry off      Disable completely`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			action := "status"
 			if len(args) > 0 {
@@ -794,34 +806,42 @@ func newTelemetryCmd() *cobra.Command {
 
 			switch action {
 			case "status":
-				pref := observability.GetPosthogPreference()
-				isOn := pref != nil && *pref
-
-				status := color.Red("Disabled")
-				if isOn {
-					status = color.Green("Enabled")
+				mode := observability.GetMode()
+				fmt.Printf("Telemetry mode: %s\n", color.Accent(mode))
+				switch mode {
+				case observability.ModeLocal:
+					fmt.Println(color.Dim("Data is collected locally only."))
+					fmt.Printf("Local log: %s\n", observability.LogFilePath)
+				case observability.ModeOn:
+					fmt.Println(color.Dim("Anonymous usage statistics are being uploaded."))
+					fmt.Printf("Local log: %s\n", observability.LogFilePath)
+				case observability.ModeOff:
+					fmt.Println(color.Dim("Telemetry is completely disabled."))
 				}
-				fmt.Printf("Telemetry is currently: %s\n", status)
-				if isOn {
-					fmt.Println(color.Dim("Thanks for helping improve yapi!"))
-				}
 
-			case "enable":
-				if err := observability.SetPosthogEnabled(true); err != nil {
+			case "on":
+				if err := observability.SetMode(observability.ModeOn); err != nil {
 					return fmt.Errorf("failed: %w", err)
 				}
-				fmt.Println(color.Green("Telemetry enabled."))
-				fmt.Println(color.Dim("You're awesome. Thanks for helping!"))
+				fmt.Println(color.Green("Telemetry mode: on"))
+				fmt.Println(color.Dim("Thanks for helping improve yapi!"))
 
-			case "disable":
-				if err := observability.SetPosthogEnabled(false); err != nil {
+			case "local":
+				if err := observability.SetMode(observability.ModeLocal); err != nil {
 					return fmt.Errorf("failed: %w", err)
 				}
-				fmt.Println(color.Yellow("Telemetry disabled."))
-				fmt.Println(color.Dim("No hard feelings. Local logging remains active at ~/yapi-log.txt"))
+				fmt.Println(color.Yellow("Telemetry mode: local"))
+				fmt.Println(color.Dim("Data is collected locally at ~/yapi-log.txt"))
+
+			case "off":
+				if err := observability.SetMode(observability.ModeOff); err != nil {
+					return fmt.Errorf("failed: %w", err)
+				}
+				fmt.Println(color.Yellow("Telemetry mode: off"))
+				fmt.Println(color.Dim("All telemetry disabled."))
 
 			default:
-				return fmt.Errorf("unknown action: %s (use status, enable, or disable)", action)
+				return fmt.Errorf("unknown mode: %s (use on, off, local, or status)", action)
 			}
 			return nil
 		},
