@@ -15,15 +15,10 @@ var LogFilePath = filepath.Join(os.Getenv("HOME"), LogFileName)
 
 // Init initializes observability (file logging only).
 // Should be called once at startup with version info.
-// Respects YAPI_NO_ANALYTICS env var and user config.
+// Respects YAPI_NO_ANALYTICS env var.
 func Init(version, commit string) {
 	// Environment variable opt-out takes highest priority
 	if os.Getenv("YAPI_NO_ANALYTICS") != "" {
-		return
-	}
-
-	// Check user preference
-	if !IsEnabled() {
 		return
 	}
 
