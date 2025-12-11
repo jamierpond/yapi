@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Spawn yapi validate and pipe yaml to stdin
     const result = await new Promise<string>((resolve, reject) => {
-      const proc = spawn("yapi", ["validate", "--json", "-"], {
+      const proc = spawn(getYapiPath(), ["validate", "--json", "-"], {
         timeout: 5000,
       });
 
