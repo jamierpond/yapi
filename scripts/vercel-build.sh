@@ -49,7 +49,7 @@ cp ./bin/yapi /usr/local/bin/yapi
 chmod +x /usr/local/bin/yapi
 
 echo "yapi installed: $(which yapi)"
-yapi --version 2>/dev/null || true
+yapi version 2>/dev/null || true
 
 echo "Running pnpm build for web..."
 pnpm --filter web build
