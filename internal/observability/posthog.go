@@ -1,4 +1,4 @@
-package telemetry
+package observability
 
 import (
 	"encoding/json"
@@ -52,7 +52,7 @@ func (p *PostHogClient) Track(event string, props map[string]interface{}) {
 			"properties": finalProps,
 		}
 		jsonBytes, _ := json.MarshalIndent(out, "", "  ")
-		fmt.Fprintf(os.Stderr, "[telemetry] %s\n", jsonBytes)
+		fmt.Fprintf(os.Stderr, "[observability] %s\n", jsonBytes)
 	}
 
 	phProps := posthog.NewProperties()
