@@ -16,7 +16,7 @@ var (
 	PosthogAPIHost string
 )
 
-// Init initializes observability providers.
+// Init initializes observability providers based on the telemetry mode.
 // Should be called once at startup with version info.
 // Respects YAPI_NO_ANALYTICS env var and user config preferences.
 func Init(version, commit string) {
@@ -25,15 +25,22 @@ func Init(version, commit string) {
 		return
 	}
 
-	// Add file logger if enabled
-	if pref := GetFileLoggingPreference(); pref != nil && *pref {
+	mode := GetMode()
+
+	// Mode "off" disables all telemetry
+	if mode == ModeOff {
+		return
+	}
+
+	// File logging is enabled for both "local" and "on" modes
+	if mode == ModeLocal || mode == ModeOn {
 		if fileLogger, err := NewFileLoggerClient(LogFilePath, version, commit); err == nil {
 			AddProvider(fileLogger)
 		}
 	}
 
-	// Add PostHog if enabled and keys are set
-	if pref := GetPosthogPreference(); pref != nil && *pref {
+	// PostHog is only enabled when mode is "on"
+	if mode == ModeOn {
 		if PosthogAPIKey != "" && PosthogAPIHost != "" {
 			printDebug := os.Getenv("YAPI_PRINT_ANALYTICS") != ""
 			if posthog, err := NewPostHogClient(PosthogAPIKey, PosthogAPIHost, version, commit, printDebug); err == nil {
