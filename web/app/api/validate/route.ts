@@ -5,6 +5,7 @@ import {
   ValidateResponseSchema,
   type ValidateResponse,
 } from "@/app/types/api-contract";
+import { getYapiPath } from "@/app/lib/yapi-path";
 
 /**
  * POST /api/validate
