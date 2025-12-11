@@ -60,6 +60,14 @@ export default async function Navbar({ rightContent }: NavbarProps) {
               </>
             )}
           </a>
+          {downloads !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-yapi-fg-muted bg-yapi-bg-elevated/50 border border-yapi-border rounded-lg">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span className="text-xs font-semibold">{downloads.toLocaleString()}</span>
+            </div>
+          )}
           <Link
             href="/playground"
             className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
