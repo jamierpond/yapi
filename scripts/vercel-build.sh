@@ -29,7 +29,11 @@ echo "Go version: $(go version)"
 
 # Build variables
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
-COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "")
+if [ -z "$COMMIT" ] && [ -n "$VERCEL_GIT_COMMIT_SHA" ]; then
+    COMMIT="${VERCEL_GIT_COMMIT_SHA:0:7}"
+fi
+COMMIT="${COMMIT:-unknown}"
 DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}"
 
