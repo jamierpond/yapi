@@ -7,7 +7,7 @@ import (
 )
 
 // ExtractConfigStats extracts feature usage statistics from an analysis result.
-// This is used by telemetry hooks to gather request metadata.
+// This is used by observability hooks to gather request metadata.
 func ExtractConfigStats(analysis *validation.Analysis) map[string]interface{} {
 	stats := make(map[string]interface{})
 

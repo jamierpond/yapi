@@ -411,10 +411,10 @@ func newVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if jsonOutput {
 				info := map[string]interface{}{
-					"version":   version,
-					"commit":    commit,
-					"date":      date,
-					"telemetry": telemetry.Enabled(),
+					"version":      version,
+					"commit":       commit,
+					"date":         date,
+					"observability": observability.Enabled(),
 				}
 				return json.NewEncoder(os.Stdout).Encode(info)
 			}
@@ -423,11 +423,11 @@ func newVersionCmd() *cobra.Command {
 			fmt.Printf("  commit: %s\n", commit)
 			fmt.Printf("  built:  %s\n", date)
 			fmt.Println()
-			if telemetry.Enabled() {
-				fmt.Println("  telemetry: enabled")
+			if observability.Enabled() {
+				fmt.Println("  observability: enabled")
 				fmt.Println("  disable with: export YAPI_NO_ANALYTICS=1")
 			} else {
-				fmt.Println("  telemetry: disabled")
+				fmt.Println("  observability: disabled")
 			}
 			return nil
 		},
