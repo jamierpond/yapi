@@ -6,12 +6,3 @@ url: https://jsonplaceholder.typicode.com/users
 jq_filter: |
   [.[] | {name, company: .company.name}] | sort_by(.name)
 
-post_script: |
-  import * as fs from "fs";
-  const outputPath = "output/users_with_companies.json";
-  if (!fs.existsSync("output")) {
-    fs.mkdirSync("output");
-  }
-  fs.writeFileSync(outputPath, JSON.stringify(yapiResponse, null, 2));
-  console.log(`Filtered data saved to ${outputPath}`);
-
