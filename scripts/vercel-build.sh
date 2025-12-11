@@ -3,6 +3,11 @@ set -e
 
 echo "=== Vercel Build Script ==="
 
+# Working directory is the project root when called from vercel.json
+PROJECT_ROOT="$(pwd)"
+
+echo "Project root: $PROJECT_ROOT"
+
 # Install Go if not available
 if ! command -v go &> /dev/null; then
     echo "Installing Go..."
@@ -13,6 +18,8 @@ if ! command -v go &> /dev/null; then
 fi
 
 echo "Go version: $(go version)"
+
+# Already in project root
 
 # Build variables (matching Makefile)
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -40,9 +47,9 @@ chmod +x /usr/local/bin/yapi
 echo "yapi installed successfully: $(which yapi)"
 yapi --version 2>/dev/null || echo "yapi built (version flag may not be implemented)"
 
-# Run pnpm build for web
+# Run pnpm build for web (from web directory)
 echo "Running pnpm build..."
-cd web
+cd "$PROJECT_ROOT/web"
 pnpm install
 pnpm run build
 

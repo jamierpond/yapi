@@ -1,0 +1,12 @@
+{
+  "name": "yapi",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "bash ./scripts/vercel-build.sh",
+    "build:web": "pnpm --filter web build",
+    "dev": "pnpm --filter web dev",
+    "lint": "pnpm --filter web lint",
+    "test": "pnpm --filter web test"
+  }
+}
