@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   // Include the yapi binary in serverless function deployment
   outputFileTracingIncludes: {
-    "/api/*": ["../bin/yapi"],
+    "/api/**/*": ["../bin/yapi"],
   },
 };
 

@@ -2,24 +2,22 @@ import path from "path";
 import { existsSync } from "fs";
 
 export function getYapiPath(): string {
-  if (process.env.VERCEL) {
-    // Try multiple locations - cwd is /var/task (repo root)
-    const candidates = [
-      path.join(process.cwd(), "bin", "yapi"),
-      path.join(process.cwd(), "web", ".next", "server", "yapi"),
-      "/var/task/bin/yapi",
-      "/var/task/web/.next/server/yapi",
-    ];
-
-    for (const candidate of candidates) {
-      if (existsSync(candidate)) {
-        return candidate;
-      }
-    }
-
-    // Fallback - log what we tried
-    console.error("yapi not found in:", candidates);
-    return candidates[0];
+  // Development: use local env or system command
+  if (process.env.NODE_ENV === "development") {
+    return process.env.YAPI_PATH || "yapi";
   }
-  return process.env.YAPI_PATH || "yapi";
+
+  // Production (Vercel): binary traced to root/bin folder
+  const vercelPath = path.join(process.cwd(), "bin", "yapi");
+  if (existsSync(vercelPath)) {
+    return vercelPath;
+  }
+
+  // Fallback for monorepo root vs app root differences
+  const altPath = path.join(process.cwd(), "..", "bin", "yapi");
+  if (existsSync(altPath)) {
+    return altPath;
+  }
+
+  throw new Error(`yapi binary not found. Searched: ${vercelPath}, ${altPath}`);
 }
