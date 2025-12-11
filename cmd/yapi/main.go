@@ -125,6 +125,8 @@ func (app *rootCommand) runInteractiveE(cmd *cobra.Command, args []string) error
 	if err != nil {
 		return fmt.Errorf("failed to select config file: %w", err)
 	}
+	absPath, _ := filepath.Abs(selectedPath)
+	logHistoryFromTUI(fmt.Sprintf("yapi run %q", absPath))
 	return app.runConfigPathE(selectedPath)
 }
 
@@ -158,6 +160,8 @@ func (app *rootCommand) newWatchCmd() *cobra.Command {
 					return fmt.Errorf("failed to select config file: %w", err)
 				}
 				path = selectedPath
+				absPath, _ := filepath.Abs(selectedPath)
+				logHistoryFromTUI(fmt.Sprintf("yapi watch %q", absPath))
 			} else {
 				path = args[0]
 			}
@@ -758,6 +762,15 @@ func newHistoryCmd() *cobra.Command {
 
 // logHistoryCmd writes a command to history as JSON
 func logHistoryCmd(cmdStr string) {
+	logHistoryEntry(cmdStr, false)
+}
+
+// logHistoryFromTUI writes a TUI-selected command to history
+func logHistoryFromTUI(cmdStr string) {
+	logHistoryEntry(cmdStr, true)
+}
+
+func logHistoryEntry(cmdStr string, fromTUI bool) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
@@ -773,6 +786,7 @@ func logHistoryCmd(cmdStr string) {
 	entry := historyEntry{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Command:   cmdStr,
+		FromTUI:   fromTUI,
 	}
 	jsonBytes, _ := json.Marshal(entry)
 	fmt.Fprintln(f, string(jsonBytes))
