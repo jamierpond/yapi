@@ -8,7 +8,8 @@ import (
 
 // UserConfig holds user preferences stored in ~/.config/yapi/config.json
 type UserConfig struct {
-	ObservabilityEnabled *bool `json:"observability_enabled,omitempty"`
+	FileLoggingEnabled *bool `json:"file_logging_enabled,omitempty"`
+	PosthogEnabled     *bool `json:"posthog_enabled,omitempty"`
 }
 
 // yapiConfigDir returns the yapi config directory (~/.config/yapi)
@@ -73,31 +74,51 @@ func SaveUserConfig(cfg *UserConfig) error {
 }
 
 // IsFirstRun returns true if this is the first time yapi is being run
-// (no config file exists and observability preference hasn't been set)
+// (no config file exists and preferences haven't been set)
 func IsFirstRun() bool {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		return true
 	}
-	return cfg.ObservabilityEnabled == nil
+	return cfg.FileLoggingEnabled == nil && cfg.PosthogEnabled == nil
 }
 
-// SetObservabilityEnabled saves the user's observability preference
-func SetObservabilityEnabled(enabled bool) error {
+// SetFileLoggingEnabled saves the user's file logging preference
+func SetFileLoggingEnabled(enabled bool) error {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		cfg = &UserConfig{}
 	}
-	cfg.ObservabilityEnabled = &enabled
+	cfg.FileLoggingEnabled = &enabled
 	return SaveUserConfig(cfg)
 }
 
-// GetObservabilityPreference returns the user's observability preference.
+// SetPosthogEnabled saves the user's PostHog preference
+func SetPosthogEnabled(enabled bool) error {
+	cfg, err := LoadUserConfig()
+	if err != nil {
+		cfg = &UserConfig{}
+	}
+	cfg.PosthogEnabled = &enabled
+	return SaveUserConfig(cfg)
+}
+
+// GetFileLoggingPreference returns the user's file logging preference.
 // Returns nil if not yet set (first run).
-func GetObservabilityPreference() *bool {
+func GetFileLoggingPreference() *bool {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		return nil
 	}
-	return cfg.ObservabilityEnabled
+	return cfg.FileLoggingEnabled
+}
+
+// GetPosthogPreference returns the user's PostHog preference.
+// Returns nil if not yet set (first run).
+func GetPosthogPreference() *bool {
+	cfg, err := LoadUserConfig()
+	if err != nil {
+		return nil
+	}
+	return cfg.PosthogEnabled
 }
