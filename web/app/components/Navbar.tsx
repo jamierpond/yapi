@@ -33,7 +33,10 @@ interface NavbarProps {
 }
 
 export default async function Navbar({ rightContent }: NavbarProps) {
-  const stars = await getGitHubStars();
+  const [stars, downloads] = await Promise.all([
+    getGitHubStars(),
+    getTotalDownloads(),
+  ]);
 
   return (
     <nav className="relative z-50 px-6 py-4 border-b border-yapi-border/30 backdrop-blur-md bg-yapi-bg/50">
