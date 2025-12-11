@@ -2,4 +2,6 @@ packages:
   - web
 
 onlyBuiltDependencies:
+  - esbuild
   - sharp
+  - unrs-resolver
