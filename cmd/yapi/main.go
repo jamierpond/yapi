@@ -678,6 +678,7 @@ const historyFileName = ".yapi_history.json"
 type historyEntry struct {
 	Timestamp string `json:"timestamp"`
 	Command   string `json:"command"`
+	FromTUI   bool   `json:"from_tui,omitempty"`
 }
 
 func newHistoryCmd() *cobra.Command {
