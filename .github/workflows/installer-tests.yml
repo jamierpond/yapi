@@ -55,7 +55,7 @@ jobs:
       - name: Run installer script
         shell: pwsh
         run: |
-          & webapp/public/install/windows.ps1
+          & web/public/install/windows.ps1
           # Verify it installed correctly
           $yapiPath = "$env:LOCALAPPDATA\yapi\yapi.exe"
           if (-not (Test-Path $yapiPath)) {
