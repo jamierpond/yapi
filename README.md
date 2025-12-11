@@ -223,6 +223,25 @@ yapi
 
 This launches the **Interactive TUI**. You can fuzzy-search through all your `.yapi.yml` files in the current directory (and subdirectories) and execute them instantly.
 
+### Shell History Integration
+
+For a richer CLI experience, source the yapi shell helper in your `.zshrc`:
+
+```bash
+# Add to ~/.zshrc
+YAPI_ZSH="/path/to/yapi/bin/yapi.zsh"  # or wherever you installed yapi
+[ -f "$YAPI_ZSH" ] && source "$YAPI_ZSH"
+
+# Optional: short alias
+alias a="yapi"
+```
+
+This enables:
+- **TUI commands in shell history**: When you use the interactive TUI to select a file, the equivalent CLI command is added to your shell history. Press `↑` to re-run it instantly.
+- **Seamless workflow**: Select interactively once, then repeat with up-arrow forever.
+
+> **Note:** Requires `jq` to be installed.
+
 ### 👀 Watch Mode
 
 Tired of `Alt-Tab` -\> `Up Arrow` -\> `Enter`? Use watch mode to re-run the request every time you save the file.
