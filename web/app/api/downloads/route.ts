@@ -115,22 +115,41 @@ export async function GET() {
 
     const { nodes, totalCount } = await fetchAllReleases(process.env.GITHUB_PAT);
 
-    let totalDownloads = 0;
+    let allTimeDownloads = 0;
+    let latestReleaseDownloads = 0;
+
+    const latestReleaseName = nodes[0]?.name;
 
     nodes.forEach((release) => {
+      let releaseDownloads = 0;
+
       release.releaseAssets.nodes.forEach((asset) => {
         if (asset.name === "checksums.txt") {
           return;
         }
         const realCount = Math.max(0, asset.downloadCount - 1);
-        totalDownloads += realCount;
+        releaseDownloads += realCount;
       });
+
+      allTimeDownloads += releaseDownloads;
+
+      if (release.name === latestReleaseName) {
+        latestReleaseDownloads = releaseDownloads;
+      }
     });
 
-    return NextResponse.json({
-      total_downloads: totalDownloads,
-      total_releases: totalCount,
-    });
+    return NextResponse.json(
+      {
+        total_downloads: allTimeDownloads,
+        active_users_proxy: latestReleaseDownloads,
+        total_releases: totalCount,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=59",
+        },
+      }
+    );
   } catch (error) {
     console.error("Failed to fetch download stats:", error);
     return NextResponse.json(
