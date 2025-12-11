@@ -47,8 +47,8 @@ func PrintFirstRunBanner() {
 
 	// Print banner at the end in cyan (blue)
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, color.Cyan("yapi collects anonymous usage data locally to help with debugging."))
-	fmt.Fprintln(os.Stderr, color.Cyan("Run ")+color.Bold("yapi telemetry on")+color.Cyan(" to help improve yapi."))
+	fmt.Fprintln(os.Stderr, color.Cyan("yapi writes usage stats to ~/yapi-log.txt (nothing is uploaded)."))
+	fmt.Fprintln(os.Stderr, color.Cyan("Run ")+color.Bold("yapi telemetry on")+color.Cyan(" to share anonymous stats and help improve yapi."))
 }
 
 // shouldShowBanner returns true if we haven't shown the banner yet
