@@ -37,12 +37,6 @@ COMMIT="${COMMIT:-unknown}"
 DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}"
 
-if [ -n "$POSTHOG_API_KEY" ]; then
-    LDFLAGS="${LDFLAGS} -X yapi.run/cli/internal/telemetry.PosthogAPIKey=${POSTHOG_API_KEY}"
-fi
-if [ -n "$POSTHOG_API_HOST" ]; then
-    LDFLAGS="${LDFLAGS} -X yapi.run/cli/internal/telemetry.PosthogAPIHost=${POSTHOG_API_HOST}"
-fi
 
 echo "Building yapi CLI..."
 go build -ldflags "${LDFLAGS}" -o ./bin/yapi ./cmd/yapi
