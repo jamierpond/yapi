@@ -8,6 +8,7 @@ import (
 
 // UserConfig holds user preferences stored in ~/.config/yapi/config.json
 type UserConfig struct {
+	LoggingEnabled *bool `json:"logging_enabled,omitempty"`
 }
 
 // yapiConfigDir returns the yapi config directory (~/.config/yapi)
@@ -70,3 +71,21 @@ func SaveUserConfig(cfg *UserConfig) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+// IsEnabled returns true if logging is enabled (default: true)
+func IsEnabled() bool {
+	cfg, err := LoadUserConfig()
+	if err != nil || cfg.LoggingEnabled == nil {
+		return true // Default to enabled
+	}
+	return *cfg.LoggingEnabled
+}
+
+// SetEnabled saves the logging preference
+func SetEnabled(enabled bool) error {
+	cfg, err := LoadUserConfig()
+	if err != nil {
+		cfg = &UserConfig{}
+	}
+	cfg.LoggingEnabled = &enabled
+	return SaveUserConfig(cfg)
+}
