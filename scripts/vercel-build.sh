@@ -42,6 +42,7 @@ yapi --version 2>/dev/null || echo "yapi built (version flag may not be implemen
 
 # Run pnpm build for web
 echo "Running pnpm build..."
+cd web
 pnpm install
 pnpm run build
 
