@@ -11,9 +11,42 @@ echo "Project root: $PROJECT_ROOT"
 # Install Go if not available
 if ! command -v go &> /dev/null; then
     echo "Installing Go..."
-    curl -fsSL https://go.dev/dl/go1.23.4.linux-amd64.tar.gz -o /tmp/go.tar.gz
-    tar -C /usr/local -xzf /tmp/go.tar.gz
-    export PATH="/usr/local/go/bin:$PATH"
+
+    # Detect OS and architecture
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m)
+
+    # Map architecture names
+    case "$ARCH" in
+        x86_64) ARCH="amd64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+    esac
+
+    # Map OS names for Go download
+    case "$OS" in
+        darwin) GO_OS="darwin" ;;
+        linux) GO_OS="linux" ;;
+        *) echo "Unsupported OS: $OS"; exit 1 ;;
+    esac
+
+    GO_VERSION="1.23.4"
+    GO_URL="https://go.dev/dl/go${GO_VERSION}.${GO_OS}-${ARCH}.tar.gz"
+
+    echo "Downloading Go from: $GO_URL"
+    curl -fsSL "$GO_URL" -o /tmp/go.tar.gz
+
+    if [ "$OS" = "darwin" ]; then
+        # macOS - install to user directory if no sudo
+        GO_INSTALL_DIR="${HOME}/.local/go"
+        mkdir -p "$GO_INSTALL_DIR"
+        tar -C "$(dirname "$GO_INSTALL_DIR")" -xzf /tmp/go.tar.gz
+        export PATH="${GO_INSTALL_DIR}/bin:$PATH"
+    else
+        # Linux (Vercel) - install to /usr/local
+        tar -C /usr/local -xzf /tmp/go.tar.gz
+        export PATH="/usr/local/go/bin:$PATH"
+    fi
+
     rm /tmp/go.tar.gz
 fi
 
