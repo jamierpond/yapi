@@ -71,11 +71,12 @@ fi
 echo "Building yapi CLI..."
 go build -ldflags "${LDFLAGS}" -o ./bin/yapi ./cmd/yapi
 
-# Install to PATH
-echo "Installing yapi to /usr/local/bin..."
-mkdir -p /usr/local/bin
-cp ./bin/yapi /usr/local/bin/yapi
-chmod +x /usr/local/bin/yapi
+# Install to GOPATH/bin (same as Makefile)
+INSTALL_DIR="$(go env GOPATH)/bin"
+echo "Installing yapi to $INSTALL_DIR..."
+mkdir -p "$INSTALL_DIR"
+cp ./bin/yapi "$INSTALL_DIR/yapi"
+codesign --sign - --force "$INSTALL_DIR/yapi" 2>/dev/null || true
 
 echo "yapi installed successfully: $(which yapi)"
 yapi --version 2>/dev/null || echo "yapi built (version flag may not be implemented)"
