@@ -67,10 +67,23 @@ async function fetchAllReleases(token: string) {
     });
 
     if (!res.ok) {
-      throw new Error("Failed to fetch releases");
+      const errorBody = await res.text();
+      console.error(`GitHub API error: ${res.status} ${res.statusText}`, {
+        status: res.status,
+        statusText: res.statusText,
+        body: errorBody,
+        cursor,
+      });
+      throw new Error(`GitHub API returned ${res.status}: ${errorBody}`);
     }
 
-    const { data }: GraphQLResponse = await res.json();
+    const json = await res.json();
+    const { data } = json as GraphQLResponse;
+
+    if (json.errors) {
+      console.error("GitHub GraphQL errors:", json.errors);
+      throw new Error(`GitHub GraphQL errors: ${JSON.stringify(json.errors)}`);
+    }
 
     if (!data?.repository) {
       return { nodes: [], totalCount: 0 };
