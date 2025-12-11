@@ -1,4 +1,4 @@
-package telemetry
+package observability
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 
 // UserConfig holds user preferences stored in ~/.config/yapi/config.json
 type UserConfig struct {
-	TelemetryEnabled *bool `json:"telemetry_enabled,omitempty"`
+	ObservabilityEnabled *bool `json:"observability_enabled,omitempty"`
 }
 
 // yapiConfigDir returns the yapi config directory (~/.config/yapi)
@@ -73,31 +73,31 @@ func SaveUserConfig(cfg *UserConfig) error {
 }
 
 // IsFirstRun returns true if this is the first time yapi is being run
-// (no config file exists and telemetry preference hasn't been set)
+// (no config file exists and observability preference hasn't been set)
 func IsFirstRun() bool {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		return true
 	}
-	return cfg.TelemetryEnabled == nil
+	return cfg.ObservabilityEnabled == nil
 }
 
-// SetTelemetryEnabled saves the user's telemetry preference
-func SetTelemetryEnabled(enabled bool) error {
+// SetObservabilityEnabled saves the user's observability preference
+func SetObservabilityEnabled(enabled bool) error {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		cfg = &UserConfig{}
 	}
-	cfg.TelemetryEnabled = &enabled
+	cfg.ObservabilityEnabled = &enabled
 	return SaveUserConfig(cfg)
 }
 
-// GetTelemetryPreference returns the user's telemetry preference.
+// GetObservabilityPreference returns the user's observability preference.
 // Returns nil if not yet set (first run).
-func GetTelemetryPreference() *bool {
+func GetObservabilityPreference() *bool {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		return nil
 	}
-	return cfg.TelemetryEnabled
+	return cfg.ObservabilityEnabled
 }
