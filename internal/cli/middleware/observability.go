@@ -6,15 +6,15 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"yapi.run/cli/internal/telemetry"
+	"yapi.run/cli/internal/observability"
 )
 
-// WrapWithTelemetry recursively wraps all commands with telemetry instrumentation.
+// WrapWithObservability recursively wraps all commands with observability instrumentation.
 // This automatically captures command name, flags, args, timing, and success/failure.
-func WrapWithTelemetry(cmd *cobra.Command) {
+func WrapWithObservability(cmd *cobra.Command) {
 	// Recursively wrap all child commands first
 	for _, c := range cmd.Commands() {
-		WrapWithTelemetry(c)
+		WrapWithObservability(c)
 	}
 
 	// Skip noise commands (completion generates many internal calls)
@@ -40,7 +40,7 @@ func WrapWithTelemetry(cmd *cobra.Command) {
 	// Clear the Run field since we're using RunE
 	cmd.Run = nil
 
-	// Wrap with telemetry
+	// Wrap with observability
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		start := time.Now()
 
@@ -60,7 +60,7 @@ func WrapWithTelemetry(cmd *cobra.Command) {
 		if err != nil {
 			props["error"] = err.Error()
 		}
-		telemetry.Track("cmd_"+cmd.Name(), props)
+		observability.Track("cmd_"+cmd.Name(), props)
 
 		return err
 	}
