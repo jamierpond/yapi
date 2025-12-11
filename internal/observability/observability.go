@@ -16,6 +16,12 @@ const LogFileName = "log.json"
 // LogFilePath is the full path to the log file
 var LogFilePath = filepath.Join(LogDir, LogFileName)
 
+// HistoryFileName is the history file name
+const HistoryFileName = "history.json"
+
+// HistoryFilePath is the full path to the history file
+var HistoryFilePath = filepath.Join(LogDir, HistoryFileName)
+
 // Init initializes observability (file logging only).
 // Should be called once at startup with version info.
 // Respects YAPI_NO_ANALYTICS env var.

@@ -677,7 +677,6 @@ func formatBytes(b int) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
-const historyFileName = ".yapi_history.json"
 
 type historyEntry struct {
 	Timestamp string `json:"timestamp"`
@@ -701,13 +700,7 @@ func newHistoryCmd() *cobra.Command {
 				}
 			}
 
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("failed to get home directory: %w", err)
-			}
-
-			historyFile := filepath.Join(homeDir, historyFileName)
-			data, err := os.ReadFile(historyFile)
+			data, err := os.ReadFile(observability.HistoryFilePath)
 			if err != nil {
 				if os.IsNotExist(err) {
 					fmt.Println("No history yet")
@@ -771,13 +764,11 @@ func logHistoryFromTUI(cmdStr string) {
 }
 
 func logHistoryEntry(cmdStr string, fromTUI bool) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
+	if err := os.MkdirAll(observability.LogDir, 0755); err != nil {
 		return
 	}
 
-	historyFile := filepath.Join(homeDir, historyFileName)
-	f, err := os.OpenFile(historyFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(observability.HistoryFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
