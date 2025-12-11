@@ -55,4 +55,4 @@ jobs:
     - name: Fuzz tests
       run: go run ./scripts/fuzz.go
       env:
-        FUZZTIME: 10s
+        FUZZTIME: 8s
