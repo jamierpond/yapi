@@ -112,6 +112,7 @@ func main() {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newShareCmd())
+	rootCmd.AddCommand(newTelemetryCmd())
 
 	// Wrap all commands with observability middleware
 	middleware.WrapWithObservability(rootCmd)
@@ -778,4 +779,32 @@ func reconstructCommand(cmd *cobra.Command, args []string) string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func newTelemetryCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "telemetry <enable|disable>",
+		Short: "Enable or disable anonymous analytics (PostHog)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			switch args[0] {
+			case "enable":
+				if err := observability.SetPosthogEnabled(true); err != nil {
+					return fmt.Errorf("failed to enable telemetry: %w", err)
+				}
+				fmt.Println(color.Green("Telemetry enabled."))
+				fmt.Println(color.Dim("Anonymous analytics will be sent to PostHog."))
+				fmt.Println(color.Dim("You can audit what's sent at ~/yapi-log.txt"))
+			case "disable":
+				if err := observability.SetPosthogEnabled(false); err != nil {
+					return fmt.Errorf("failed to disable telemetry: %w", err)
+				}
+				fmt.Println(color.Dim("Telemetry disabled."))
+			default:
+				return fmt.Errorf("unknown argument: %s (use 'enable' or 'disable')", args[0])
+			}
+			return nil
+		},
+	}
+	return cmd
 }
