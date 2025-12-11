@@ -403,10 +403,22 @@ func newLSPCmd() *cobra.Command {
 }
 
 func newVersionCmd() *cobra.Command {
-	return &cobra.Command{
+	var jsonOutput bool
+
+	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if jsonOutput {
+				info := map[string]interface{}{
+					"version":   version,
+					"commit":    commit,
+					"date":      date,
+					"telemetry": telemetry.Enabled(),
+				}
+				return json.NewEncoder(os.Stdout).Encode(info)
+			}
+
 			fmt.Printf("yapi %s\n", version)
 			fmt.Printf("  commit: %s\n", commit)
 			fmt.Printf("  built:  %s\n", date)
@@ -420,6 +432,10 @@ func newVersionCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output version info as JSON")
+
+	return cmd
 }
 
 func newValidateCmd() *cobra.Command {
