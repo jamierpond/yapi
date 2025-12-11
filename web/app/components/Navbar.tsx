@@ -14,6 +14,20 @@ async function getGitHubStars(): Promise<number | null> {
   }
 }
 
+async function getTotalDownloads(): Promise<number | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/downloads`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.total_downloads;
+  } catch {
+    return null;
+  }
+}
+
 interface NavbarProps {
   rightContent?: React.ReactNode;
 }
