@@ -412,10 +412,10 @@ func newVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if jsonOutput {
 				info := map[string]any{
-					"version":      version,
-					"commit":       commit,
-					"date":         date,
-					"observability": observability.Enabled(),
+					"version":        version,
+					"commit":         commit,
+					"date":           date,
+					"telemetry_mode": observability.GetMode(),
 				}
 				return json.NewEncoder(os.Stdout).Encode(info)
 			}
@@ -424,12 +424,7 @@ func newVersionCmd() *cobra.Command {
 			fmt.Printf("  commit: %s\n", commit)
 			fmt.Printf("  built:  %s\n", date)
 			fmt.Println()
-			if observability.Enabled() {
-				fmt.Println("  observability: enabled")
-				fmt.Println("  disable with: export YAPI_NO_ANALYTICS=1")
-			} else {
-				fmt.Println("  observability: disabled")
-			}
+			fmt.Printf("  telemetry: %s\n", observability.GetMode())
 			return nil
 		},
 	}
