@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "# no, we're using the top level build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --config vitest.config.node.mts && vitest run --config vitest.config.browser.mts",
