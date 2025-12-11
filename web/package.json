@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "npm run cp:depends && next dev",
     "cp:depends": "cp ../.depends .",
-    "build": "next build",
+    "build": "# no, we're using the top level build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --config vitest.config.node.mts && vitest run --config vitest.config.browser.mts",
