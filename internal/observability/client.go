@@ -1,26 +1,34 @@
 package observability
 
-// Client defines the behavior for any observability backend
-type Client interface {
+// Provider defines the behavior for any observability backend
+type Provider interface {
 	Track(event string, props map[string]interface{})
 	Close() error
 }
 
-// Global instance defaults to Noop so it is ALWAYS safe to call
-var impl Client = &NoopClient{}
+// providers holds all registered observability backends
+var providers []Provider
 
-// Track is the public facade
+// Track sends an event to all registered providers
 func Track(event string, props map[string]interface{}) {
-	impl.Track(event, props)
+	for _, p := range providers {
+		p.Track(event, props)
+	}
 }
 
-// Close flushes the backend
+// Close flushes all providers
 func Close() {
-	_ = impl.Close()
+	for _, p := range providers {
+		_ = p.Close()
+	}
 }
 
-// Enabled returns true if observability is active (not using NoopClient)
+// Enabled returns true if any providers are registered
 func Enabled() bool {
-	_, isNoop := impl.(*NoopClient)
-	return !isNoop
+	return len(providers) > 0
+}
+
+// AddProvider registers a new observability provider
+func AddProvider(p Provider) {
+	providers = append(providers, p)
 }
