@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 )
 
+// Log file name constant
+const LogFileName = "yapi.log"
+
 // Default log file path
-var LogFilePath = filepath.Join(os.Getenv("HOME"), "yapi-log.txt")
+var LogFilePath = filepath.Join(os.Getenv("HOME"), LogFileName)
 
 // PostHog config - set at build time via ldflags
 var (

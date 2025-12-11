@@ -830,7 +830,7 @@ Examples:
 					return fmt.Errorf("failed: %w", err)
 				}
 				fmt.Println(color.Yellow("Telemetry mode: local"))
-				fmt.Println(color.Dim("Data is collected locally at ~/yapi-log.txt"))
+				fmt.Println(color.Dim("Data is collected locally at ~/yapi.log"))
 
 			case "off":
 				if err := observability.SetMode(observability.ModeOff); err != nil {
