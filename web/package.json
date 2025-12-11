@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run cp:depends && next dev",
-    "cp:depends": "cp ../.depends .",
+    "dev": "next dev",
     "build": "# no, we're using the top level build",
     "start": "next start",
     "lint": "eslint",
