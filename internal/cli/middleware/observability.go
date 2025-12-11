@@ -10,7 +10,7 @@ import (
 )
 
 // WrapWithObservability recursively wraps all commands with observability instrumentation.
-// This automatically captures command name, flags, args, timing, and success/failure.
+// This automatically captures command name, flags used (not values), args count, timing, and success/failure.
 func WrapWithObservability(cmd *cobra.Command) {
 	// Recursively wrap all child commands first
 	for _, c := range cmd.Commands() {
@@ -46,9 +46,14 @@ func WrapWithObservability(cmd *cobra.Command) {
 
 		// Collect properties from flags
 		props := make(map[string]any)
+
+		// Go vibe: Only record that the flag was used, NOT its value
+		// This avoids capturing sensitive data like URLs, tokens, etc.
 		cmd.Flags().Visit(func(f *pflag.Flag) {
-			props["flag_"+f.Name] = f.Value.String()
+			props["flag_used_"+f.Name] = true
 		})
+
+		// Only record args count, not the args themselves
 		props["args_count"] = len(args)
 
 		// Execute the original command
@@ -58,7 +63,8 @@ func WrapWithObservability(cmd *cobra.Command) {
 		props["duration_ms"] = time.Since(start).Milliseconds()
 		props["success"] = err == nil
 		if err != nil {
-			props["error"] = err.Error()
+			// Record error type, not the full message (which may contain sensitive paths)
+			props["has_error"] = true
 		}
 		observability.Track("cmd_"+cmd.Name(), props)
 
