@@ -2,14 +2,14 @@ name: Installer Scripts
 
 on:
   push:
-    branches: [main, jp/just-show-total-downloads]
+    branches: [main]
     paths:
-      - 'webapp/public/install/**'
+      - 'web/public/install/**'
       - '.github/workflows/installer-tests.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'webapp/public/install/**'
+      - 'web/public/install/**'
       - '.github/workflows/installer-tests.yml'
   workflow_dispatch:
 
@@ -22,8 +22,8 @@ jobs:
 
       - name: Run installer script
         run: |
-          chmod +x webapp/public/install/linux.sh
-          sudo bash webapp/public/install/linux.sh
+          chmod +x web/public/install/linux.sh
+          sudo bash web/public/install/linux.sh
 
       - name: Verify installation
         run: |
@@ -38,8 +38,8 @@ jobs:
 
       - name: Run installer script
         run: |
-          chmod +x webapp/public/install/mac.sh
-          sudo bash webapp/public/install/mac.sh
+          chmod +x web/public/install/mac.sh
+          sudo bash web/public/install/mac.sh
 
       - name: Verify installation
         run: |
