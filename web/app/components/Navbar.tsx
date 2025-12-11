@@ -1,32 +1,6 @@
 import Link from "next/link";
 import NavbarLogo from "./NavbarLogo";
-
-async function getGitHubStars(): Promise<number | null> {
-  try {
-    const res = await fetch("https://api.github.com/repos/jamierpond/yapi", {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.stargazers_count;
-  } catch {
-    return null;
-  }
-}
-
-async function getTotalDownloads(): Promise<number | null> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/downloads`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.total_downloads;
-  } catch {
-    return null;
-  }
-}
+import { getGitHubStars, getTotalDownloads } from "@/app/lib/github";
 
 interface NavbarProps {
   rightContent?: React.ReactNode;
