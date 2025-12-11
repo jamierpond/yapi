@@ -16,3 +16,5 @@ market-research/rest
 market-research/bru
 .vercel
 node_modules
+.opencode
+main.md
