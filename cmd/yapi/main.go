@@ -829,7 +829,7 @@ func newLoggingCmd() *cobra.Command {
 		Short: "Manage local usage logging",
 		Long: `Manage local usage logging for yapi.
 
-Usage stats are written to ~/` + observability.LogFileName + ` (nothing is uploaded).
+Usage stats are written to ~/.yapi/log.json (nothing is uploaded).
 
 Examples:
   yapi logging        Show current status

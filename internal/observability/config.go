@@ -11,13 +11,13 @@ type UserConfig struct {
 	LoggingEnabled *bool `json:"logging_enabled,omitempty"`
 }
 
-// yapiConfigDir returns the yapi config directory (~/.config/yapi)
+// yapiConfigDir returns the yapi config directory (~/.yapi)
 func yapiConfigDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "yapi"), nil
+	return filepath.Join(home, ".yapi"), nil
 }
 
 // configPath returns the path to the user config file

@@ -7,11 +7,8 @@ import (
 	"path/filepath"
 )
 
-// Log file name constant
-const LogFileName = ".yapi.log"
-
 // Default log file path
-var LogFilePath = filepath.Join(os.Getenv("HOME"), LogFileName)
+var LogFilePath = filepath.Join(os.Getenv("HOME"), ".yapi", "log.json")
 
 // Init initializes observability (file logging only).
 // Should be called once at startup with version info.
