@@ -6,16 +6,9 @@ import (
 	"path/filepath"
 )
 
-// Telemetry mode constants matching Go's philosophy
-const (
-	ModeOff   = "off"   // Completely disabled
-	ModeLocal = "local" // Default: write to file, do not upload
-	ModeOn    = "on"    // Upload enabled
-)
-
 // UserConfig holds user preferences stored in ~/.config/yapi/config.json
 type UserConfig struct {
-	TelemetryMode string `json:"telemetry_mode,omitempty"`
+	TelemetryEnabled *bool `json:"telemetry_enabled,omitempty"`
 }
 
 // yapiConfigDir returns the yapi config directory (~/.config/yapi)
@@ -53,7 +46,7 @@ func LoadUserConfig() (*UserConfig, error) {
 
 	var cfg UserConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return &UserConfig{}, nil // Return empty config on parse error
+		return &UserConfig{}, nil
 	}
 
 	return &cfg, nil
@@ -66,7 +59,6 @@ func SaveUserConfig(cfg *UserConfig) error {
 		return err
 	}
 
-	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
@@ -79,31 +71,21 @@ func SaveUserConfig(cfg *UserConfig) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// IsFirstRun returns true if this is the first time yapi is being run
-// (no config file exists or telemetry mode hasn't been set)
-func IsFirstRun() bool {
+// IsEnabled returns true if telemetry is enabled (default: true)
+func IsEnabled() bool {
 	cfg, err := LoadUserConfig()
-	if err != nil {
-		return true
+	if err != nil || cfg.TelemetryEnabled == nil {
+		return true // Default to enabled
 	}
-	return cfg.TelemetryMode == ""
+	return *cfg.TelemetryEnabled
 }
 
-// GetMode returns the current telemetry mode, defaulting to "local"
-func GetMode() string {
-	cfg, err := LoadUserConfig()
-	if err != nil || cfg.TelemetryMode == "" {
-		return ModeLocal // Go vibe: default to local collection
-	}
-	return cfg.TelemetryMode
-}
-
-// SetMode saves the user's telemetry mode preference
-func SetMode(mode string) error {
+// SetEnabled saves the telemetry preference
+func SetEnabled(enabled bool) error {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		cfg = &UserConfig{}
 	}
-	cfg.TelemetryMode = mode
+	cfg.TelemetryEnabled = &enabled
 	return SaveUserConfig(cfg)
 }
