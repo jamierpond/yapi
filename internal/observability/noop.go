@@ -1,9 +1,8 @@
-package telemetry
+package observability
 
 // NoopClient is the default client that does nothing.
 // Used when:
 // - The user sets YAPI_NO_ANALYTICS=1
-// - No API keys are present (clean fork)
 // - Initialization fails
 type NoopClient struct{}
 

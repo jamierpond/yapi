@@ -1,6 +1,6 @@
-package telemetry
+package observability
 
-// Client defines the behavior for any analytics backend
+// Client defines the behavior for any observability backend
 type Client interface {
 	Track(event string, props map[string]interface{})
 	Close() error
@@ -19,7 +19,7 @@ func Close() {
 	_ = impl.Close()
 }
 
-// Enabled returns true if telemetry is active (not using NoopClient)
+// Enabled returns true if observability is active (not using NoopClient)
 func Enabled() bool {
 	_, isNoop := impl.(*NoopClient)
 	return !isNoop
