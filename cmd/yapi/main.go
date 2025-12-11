@@ -783,25 +783,45 @@ func fileExists(path string) bool {
 
 func newTelemetryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "telemetry <enable|disable>",
-		Short: "Enable or disable anonymous analytics (PostHog)",
-		Args:  cobra.ExactArgs(1),
+		Use:   "telemetry [status|enable|disable]",
+		Short: "Manage anonymous usage statistics",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			switch args[0] {
+			action := "status"
+			if len(args) > 0 {
+				action = args[0]
+			}
+
+			switch action {
+			case "status":
+				pref := observability.GetPosthogPreference()
+				isOn := pref != nil && *pref
+
+				status := color.Red("Disabled")
+				if isOn {
+					status = color.Green("Enabled")
+				}
+				fmt.Printf("Telemetry is currently: %s\n", status)
+				if isOn {
+					fmt.Println(color.Dim("Thanks for helping improve yapi!"))
+				}
+
 			case "enable":
 				if err := observability.SetPosthogEnabled(true); err != nil {
-					return fmt.Errorf("failed to enable telemetry: %w", err)
+					return fmt.Errorf("failed: %w", err)
 				}
 				fmt.Println(color.Green("Telemetry enabled."))
-				fmt.Println(color.Dim("Anonymous analytics will be sent to PostHog."))
-				fmt.Println(color.Dim("You can audit what's sent at ~/yapi-log.txt"))
+				fmt.Println(color.Dim("You're awesome. Thanks for helping!"))
+
 			case "disable":
 				if err := observability.SetPosthogEnabled(false); err != nil {
-					return fmt.Errorf("failed to disable telemetry: %w", err)
+					return fmt.Errorf("failed: %w", err)
 				}
-				fmt.Println(color.Dim("Telemetry disabled."))
+				fmt.Println(color.Yellow("Telemetry disabled."))
+				fmt.Println(color.Dim("No hard feelings. Local logging remains active at ~/yapi-log.txt"))
+
 			default:
-				return fmt.Errorf("unknown argument: %s (use 'enable' or 'disable')", args[0])
+				return fmt.Errorf("unknown action: %s (use status, enable, or disable)", action)
 			}
 			return nil
 		},

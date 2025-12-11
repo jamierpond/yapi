@@ -26,6 +26,7 @@ var (
 	yellowSeq   = fmt.Sprintf("\033[38;2;%d;%d;%dm", yellowR, yellowG, yellowB)
 	cyanSeq     = fmt.Sprintf("\033[38;2;%d;%d;%dm", cyanR, cyanG, cyanB)
 	dimSeq      = "\033[2m"
+	boldSeq     = "\033[1m"
 	resetSeq    = "\033[0m"
 	accentBgSeq = fmt.Sprintf("\033[48;2;%d;%d;%dm\033[38;2;255;255;255m", accentR, accentG, accentB) // white on orange
 )
@@ -79,4 +80,9 @@ func Dim(text string) string {
 // AccentBg formats text with white on accent background
 func AccentBg(text string) string {
 	return wrap(accentBgSeq, text)
+}
+
+// Bold formats text with bold style
+func Bold(text string) string {
+	return wrap(boldSeq, text)
 }
