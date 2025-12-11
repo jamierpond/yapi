@@ -94,10 +94,14 @@ func main() {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			// Log command to history (skip meta commands)
 			switch cmd.Name() {
-			case "history", "version", "lsp", "help", "yapi":
-				return
+			case "history", "version", "lsp", "help", "yapi", "telemetry":
+				// Skip history logging for meta commands
+			default:
+				logHistoryCmd(reconstructCommand(cmd, args))
 			}
-			logHistoryCmd(reconstructCommand(cmd, args))
+
+			// Show first-run telemetry banner at the end of output
+			observability.PrintFirstRunBanner()
 		},
 		RunE: app.runInteractiveE,
 	}

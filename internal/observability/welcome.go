@@ -7,8 +7,8 @@ import (
 	"yapi.run/cli/internal/cli/color"
 )
 
-// RunWelcome displays a non-blocking first-run banner (Go toolchain style).
-// Does not prompt for input - defaults to local collection mode.
+// RunWelcome initializes telemetry mode on first run.
+// Does not prompt or print anything - just sets the safe default.
 func RunWelcome() {
 	if !IsFirstRun() {
 		return
@@ -16,17 +16,67 @@ func RunWelcome() {
 
 	// Initialize with "local" default immediately (Go vibe: safe default)
 	_ = SetMode(ModeLocal)
+}
 
-	// Non-interactive or CI: skip the banner entirely
+// PrintFirstRunBanner prints a non-blocking banner at the END of command execution.
+// Only prints on first run, in interactive mode, outside CI.
+func PrintFirstRunBanner() {
+	// Only show if mode was just set (first run indicator)
+	cfg, err := LoadUserConfig()
+	if err != nil {
+		return
+	}
+
+	// Check if this is a fresh "local" mode (first run state)
+	if cfg.TelemetryMode != ModeLocal {
+		return
+	}
+
+	// Check for the marker file that indicates we've shown the banner
+	if !shouldShowBanner() {
+		return
+	}
+
+	// Non-interactive or CI: skip the banner
 	if !isInteractive() || os.Getenv("CI") != "" {
 		return
 	}
 
-	// Print a non-intrusive banner (Go style)
+	// Mark that we've shown the banner
+	markBannerShown()
+
+	// Print banner at the end in cyan (blue)
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, color.Dim("yapi: telemetry is enabled (local only)"))
-	fmt.Fprintln(os.Stderr, color.Dim("yapi: to help improve yapi, run: ")+color.Bold("yapi telemetry on"))
-	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, color.Cyan("yapi collects anonymous usage data locally to help with debugging."))
+	fmt.Fprintln(os.Stderr, color.Cyan("Run ")+color.Bold("yapi telemetry on")+color.Cyan(" to help improve yapi."))
+}
+
+// shouldShowBanner returns true if we haven't shown the banner yet
+func shouldShowBanner() bool {
+	path, err := bannerMarkerPath()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(path)
+	return os.IsNotExist(err)
+}
+
+// markBannerShown creates a marker file so we don't show the banner again
+func markBannerShown() {
+	path, err := bannerMarkerPath()
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(path, []byte{}, 0644)
+}
+
+// bannerMarkerPath returns the path to the banner shown marker
+func bannerMarkerPath() (string, error) {
+	dir, err := yapiConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return dir + "/.banner_shown", nil
 }
 
 // isInteractive returns true if stdin is a terminal
