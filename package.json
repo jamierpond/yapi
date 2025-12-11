@@ -8,5 +8,8 @@
     "dev": "pnpm --filter web dev",
     "lint": "pnpm --filter web lint",
     "test": "pnpm --filter web test"
+  },
+  "devDependencies": {
+    "next": "^16.0.8"
   }
 }
