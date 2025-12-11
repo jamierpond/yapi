@@ -66,15 +66,15 @@ type rootCommand struct {
 }
 
 func main() {
-	// Show welcome prompt on first run (asks for telemetry consent)
-	telemetry.RunWelcome()
+	// Show welcome prompt on first run (asks for observability consent)
+	observability.RunWelcome()
 
-	telemetry.Init(version, commit)
-	defer telemetry.Close()
+	observability.Init(version, commit)
+	defer observability.Close()
 
-	// Wire telemetry hook - main.go is the composition root
+	// Wire observability hook - main.go is the composition root
 	requestHook := func(stats map[string]interface{}) {
-		telemetry.Track("request_executed", stats)
+		observability.Track("request_executed", stats)
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
@@ -113,8 +113,8 @@ func main() {
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newShareCmd())
 
-	// Wrap all commands with telemetry middleware
-	middleware.WrapWithTelemetry(rootCmd)
+	// Wrap all commands with observability middleware
+	middleware.WrapWithObservability(rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, color.Red(err.Error()))
