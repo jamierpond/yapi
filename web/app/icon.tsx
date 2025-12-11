@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { COLORS } from "@/app/lib/constants";
 
 export const runtime = "nodejs";
@@ -6,9 +8,9 @@ export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
 export default async function Icon() {
-  const jetBrainsMonoBold = await fetch(
-    new URL("https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2")
-  ).then((res) => res.arrayBuffer());
+  const jetBrainsMonoBold = await readFile(
+    join(process.cwd(), "public/fonts/JetBrains_Mono/static/JetBrainsMono-Bold.ttf")
+  );
 
   return new ImageResponse(
     (
