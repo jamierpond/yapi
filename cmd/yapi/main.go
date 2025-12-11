@@ -66,9 +66,6 @@ type rootCommand struct {
 }
 
 func main() {
-	// Show welcome prompt on first run (asks for observability consent)
-	observability.RunWelcome()
-
 	observability.Init(version, commit)
 	defer observability.Close()
 
