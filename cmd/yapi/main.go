@@ -677,7 +677,6 @@ func formatBytes(b int) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
-
 type historyEntry struct {
 	Timestamp string `json:"timestamp"`
 	Command   string `json:"command"`
