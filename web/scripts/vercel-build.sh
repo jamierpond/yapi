@@ -95,4 +95,16 @@ yapi --version 2>/dev/null || echo "yapi built (version flag may not be implemen
 echo "Running pnpm build for web..."
 pnpm --filter web build
 
+# Copy yapi binary into .next so it's included in the serverless function
+echo "Copying yapi into .next/server for serverless functions..."
+mkdir -p ./web/.next/server
+cp ./bin/yapi ./web/.next/server/yapi
+chmod +x ./web/.next/server/yapi
+
+# Add to node_modules/.bin so it's on PATH at runtime
+echo "Linking yapi to node_modules/.bin..."
+mkdir -p ./web/node_modules/.bin
+cp ./bin/yapi ./web/node_modules/.bin/yapi
+chmod +x ./web/node_modules/.bin/yapi
+
 echo "=== Build Complete ==="
