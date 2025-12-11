@@ -1,8 +1,25 @@
 import path from "path";
+import { existsSync } from "fs";
 
 export function getYapiPath(): string {
   if (process.env.VERCEL) {
-    return path.join(process.cwd(), ".next", "server", "yapi");
+    // Try multiple locations
+    const candidates = [
+      path.join(process.cwd(), "yapi"),
+      path.join(process.cwd(), ".next", "server", "yapi"),
+      "/var/task/yapi",
+      "/var/task/.next/server/yapi",
+    ];
+
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    // Fallback - log what we tried
+    console.error("yapi not found in:", candidates);
+    return candidates[0];
   }
   return process.env.YAPI_PATH || "yapi";
 }

@@ -95,16 +95,25 @@ yapi --version 2>/dev/null || echo "yapi built (version flag may not be implemen
 echo "Running pnpm build for web..."
 pnpm --filter web build
 
-# Copy yapi binary into .next so it's included in the serverless function
-echo "Copying yapi into .next/server for serverless functions..."
+# Copy yapi binary to multiple locations to ensure it's bundled
+echo "Copying yapi binary for serverless functions..."
+
+# Into .next/server
 mkdir -p ./web/.next/server
 cp ./bin/yapi ./web/.next/server/yapi
 chmod +x ./web/.next/server/yapi
 
-# Add to node_modules/.bin so it's on PATH at runtime
-echo "Linking yapi to node_modules/.bin..."
-mkdir -p ./web/node_modules/.bin
-cp ./bin/yapi ./web/node_modules/.bin/yapi
-chmod +x ./web/node_modules/.bin/yapi
+# Into .next/standalone (if exists)
+if [ -d "./web/.next/standalone" ]; then
+    cp ./bin/yapi ./web/.next/standalone/yapi
+    chmod +x ./web/.next/standalone/yapi
+fi
+
+# Into web root (will be at /var/task/yapi)
+cp ./bin/yapi ./web/yapi
+chmod +x ./web/yapi
+
+echo "yapi binary locations:"
+ls -la ./web/yapi ./web/.next/server/yapi 2>/dev/null || true
 
 echo "=== Build Complete ==="
