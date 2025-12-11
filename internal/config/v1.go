@@ -98,29 +98,29 @@ func FindUnknownKeys(raw map[string]any) []string {
 
 // ConfigV1 represents the v1 YAML schema
 type ConfigV1 struct {
-	Yapi           string                 `yaml:"yapi"` // The version tag
-	URL            string                 `yaml:"url"`
-	Path           string                 `yaml:"path,omitempty"`
-	Method         string                 `yaml:"method,omitempty"` // HTTP method (GET, POST, PUT, DELETE, etc.)
-	ContentType    string                 `yaml:"content_type,omitempty"`
-	Headers        map[string]string      `yaml:"headers,omitempty"`
-	Body           map[string]any `yaml:"body,omitempty"`
-	JSON           string                 `yaml:"json,omitempty"` // Raw JSON override
-	Query          map[string]string      `yaml:"query,omitempty"`
-	Graphql        string                 `yaml:"graphql,omitempty"`   // GraphQL query/mutation
-	Variables      map[string]any `yaml:"variables,omitempty"` // GraphQL variables
-	Service        string                 `yaml:"service,omitempty"`   // gRPC
-	RPC            string                 `yaml:"rpc,omitempty"`       // gRPC
-	Proto          string                 `yaml:"proto,omitempty"`     // gRPC
-	ProtoPath      string                 `yaml:"proto_path,omitempty"`
-	Data           string                 `yaml:"data,omitempty"`     // TCP raw data
-	Encoding       string                 `yaml:"encoding,omitempty"` // text, hex, base64
-	JQFilter       string                 `yaml:"jq_filter,omitempty"`
-	Insecure       bool                   `yaml:"insecure,omitempty"`     // For gRPC
-	Plaintext      bool                   `yaml:"plaintext,omitempty"`    // For gRPC
-	ReadTimeout    int                    `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
-	IdleTimeout    int                    `yaml:"idle_timeout,omitempty"` // TCP idle timeout in milliseconds (default 500)
-	CloseAfterSend bool                   `yaml:"close_after_send,omitempty"`
+	Yapi           string            `yaml:"yapi"` // The version tag
+	URL            string            `yaml:"url"`
+	Path           string            `yaml:"path,omitempty"`
+	Method         string            `yaml:"method,omitempty"` // HTTP method (GET, POST, PUT, DELETE, etc.)
+	ContentType    string            `yaml:"content_type,omitempty"`
+	Headers        map[string]string `yaml:"headers,omitempty"`
+	Body           map[string]any    `yaml:"body,omitempty"`
+	JSON           string            `yaml:"json,omitempty"` // Raw JSON override
+	Query          map[string]string `yaml:"query,omitempty"`
+	Graphql        string            `yaml:"graphql,omitempty"`   // GraphQL query/mutation
+	Variables      map[string]any    `yaml:"variables,omitempty"` // GraphQL variables
+	Service        string            `yaml:"service,omitempty"`   // gRPC
+	RPC            string            `yaml:"rpc,omitempty"`       // gRPC
+	Proto          string            `yaml:"proto,omitempty"`     // gRPC
+	ProtoPath      string            `yaml:"proto_path,omitempty"`
+	Data           string            `yaml:"data,omitempty"`     // TCP raw data
+	Encoding       string            `yaml:"encoding,omitempty"` // text, hex, base64
+	JQFilter       string            `yaml:"jq_filter,omitempty"`
+	Insecure       bool              `yaml:"insecure,omitempty"`     // For gRPC
+	Plaintext      bool              `yaml:"plaintext,omitempty"`    // For gRPC
+	ReadTimeout    int               `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
+	IdleTimeout    int               `yaml:"idle_timeout,omitempty"` // TCP idle timeout in milliseconds (default 500)
+	CloseAfterSend bool              `yaml:"close_after_send,omitempty"`
 
 	// Flow control
 	Delay string `yaml:"delay,omitempty"` // Wait before executing this step (e.g. "5s", "500ms")
@@ -199,8 +199,8 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 
 // Expectation defines assertions for a chain step
 type Expectation struct {
-	Status any `yaml:"status,omitempty"` // int or []int
-	Assert []string    `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
+	Status any      `yaml:"status,omitempty"` // int or []int
+	Assert []string `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
 }
 
 // ToDomain converts V1 YAML to the Canonical Config

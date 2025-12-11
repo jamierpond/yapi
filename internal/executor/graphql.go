@@ -11,7 +11,7 @@ import (
 
 // graphqlPayload represents the standard GraphQL JSON envelope
 type graphqlPayload struct {
-	Query     string                 `json:"query"`
+	Query     string         `json:"query"`
 	Variables map[string]any `json:"variables,omitempty"`
 }
 

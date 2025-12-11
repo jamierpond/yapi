@@ -20,10 +20,10 @@ import (
 	"yapi.run/cli/internal/cli/middleware"
 	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"
+	"yapi.run/cli/internal/observability"
 	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/share"
-	"yapi.run/cli/internal/observability"
 	"yapi.run/cli/internal/tui"
 	"yapi.run/cli/internal/validation"
 )
@@ -413,9 +413,9 @@ func newVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if jsonOutput {
 				info := map[string]any{
-					"version":   version,
-					"commit":    commit,
-					"date":      date,
+					"version": version,
+					"commit":  commit,
+					"date":    date,
 					"logging": observability.IsEnabled(),
 				}
 				return json.NewEncoder(os.Stdout).Encode(info)
