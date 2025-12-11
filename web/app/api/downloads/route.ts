@@ -106,6 +106,7 @@ async function fetchAllReleases(token: string) {
 export async function GET() {
   try {
     if (!process.env.GITHUB_PAT) {
+      console.error("GITHUB_PAT environment variable is not set");
       return NextResponse.json(
         { error: "Server misconfiguration" },
         { status: 500 }
