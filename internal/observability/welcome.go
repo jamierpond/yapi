@@ -36,16 +36,17 @@ func RunWelcome() {
 	fmt.Println("  You can audit exactly what would be sent before enabling analytics.")
 	fmt.Println()
 
-	// Ask about local file logging
-	fmt.Print("  Enable local logging? " + color.Dim("[y/N]: "))
+	// Ask about local file logging (default yes)
+	fmt.Print("  Enable local logging? " + color.Dim("[Y/n]: "))
 
 	input, err := reader.ReadString('\n')
 	if err != nil {
-		_ = SetFileLoggingEnabled(false)
+		_ = SetFileLoggingEnabled(true)
 		_ = SetPosthogEnabled(false)
 		return
 	}
-	fileLogging := strings.TrimSpace(strings.ToLower(input)) == "y" || strings.TrimSpace(strings.ToLower(input)) == "yes"
+	input = strings.TrimSpace(strings.ToLower(input))
+	fileLogging := input != "n" && input != "no"
 	_ = SetFileLoggingEnabled(fileLogging)
 
 	fmt.Println()
