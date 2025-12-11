@@ -5,7 +5,11 @@ export const runtime = "nodejs";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
-export default function Icon() {
+export default async function Icon() {
+  const jetBrainsMonoBold = await fetch(
+    new URL("https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2")
+  ).then((res) => res.arrayBuffer());
+
   return new ImageResponse(
     (
       <div
@@ -22,7 +26,8 @@ export default function Icon() {
         <span
           style={{
             fontSize: "22px",
-            fontWeight: "bold",
+            fontFamily: "JetBrains Mono",
+            fontWeight: 700,
             color: COLORS.accent,
           }}
         >
@@ -30,6 +35,16 @@ export default function Icon() {
         </span>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [
+        {
+          name: "JetBrains Mono",
+          data: jetBrainsMonoBold,
+          style: "normal",
+          weight: 700,
+        },
+      ],
+    }
   );
 }
