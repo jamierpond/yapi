@@ -3,10 +3,29 @@ import CopyInstallButton from "./CopyInstallButton";
 import LandingStyles from "./LandingStyles";
 import Navbar from "./Navbar";
 
+function getBaseUrl() {
+  // Explicit override
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  // In production on Vercel
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  // Local development only
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:3000";
+  }
+  // Production without proper config
+  console.error("No base URL configured for production. Set NEXT_PUBLIC_BASE_URL or deploy to Vercel.");
+  return "http://localhost:3000";
+}
+
 async function getStats() {
+  const baseUrl = getBaseUrl();
   try {
     const [downloadsRes, releasesRes] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/downloads`, {
+      fetch(`${baseUrl}/api/downloads`, {
         next: { revalidate: 3600 },
       }),
       fetch("https://api.github.com/repos/jamierpond/yapi/releases/latest", {
