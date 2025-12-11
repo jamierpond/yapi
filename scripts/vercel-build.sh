@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-# Only run on Linux (Vercel)
+IS_DARWIN=false
 if [ "$(uname -s)" = "Darwin" ]; then
-    echo "This script is for Vercel (Linux) only"
-    exit 0
+    IS_DARWIN=true
+    echo "Running on macOS - skipping Go build, only building web"
 fi
 
 echo "=== Vercel Build Script ==="
