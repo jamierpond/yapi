@@ -32,11 +32,12 @@ func RunWelcome() {
 	fmt.Println(color.Dim("  Just which commands you ran, which features you used, and if you hit any errors."))
 	fmt.Println(color.Dim("  No personal data, request contents, or URLs are EVER collected."))
 	fmt.Println()
+	fmt.Println("  Everything is logged locally to " + color.Yellow("~/yapi-log.txt") + " first.")
+	fmt.Println("  You can audit exactly what would be sent before enabling analytics.")
+	fmt.Println()
 
 	// Ask about local file logging
-	fmt.Println(color.Yellow("  1. Local file logging") + color.Dim(" - logs to ~/yapi-log.txt"))
-	fmt.Println(color.Dim("     Stays on your machine. You can review/delete anytime."))
-	fmt.Print("     Enable local logging? " + color.Dim("[y/N]: "))
+	fmt.Print("  Enable local logging? " + color.Dim("[y/N]: "))
 
 	input, err := reader.ReadString('\n')
 	if err != nil {
@@ -49,10 +50,10 @@ func RunWelcome() {
 
 	fmt.Println()
 
-	// Ask about PostHog
-	fmt.Println(color.Yellow("  2. Anonymous analytics") + color.Dim(" - sends to PostHog"))
-	fmt.Println(color.Dim("     Helps me see aggregate usage patterns across all users."))
-	fmt.Print("     Enable anonymous analytics? " + color.Dim("[y/N]: "))
+	// Ask about PostHog - emphasize it's the same data
+	fmt.Println("  Send the " + color.Yellow("same data") + " to PostHog so I can see aggregate patterns?")
+	fmt.Println(color.Dim("  (100% parity with ~/yapi-log.txt - nothing extra)"))
+	fmt.Print("  Enable anonymous analytics? " + color.Dim("[y/N]: "))
 
 	input, err = reader.ReadString('\n')
 	if err != nil {
