@@ -85,7 +85,7 @@ var knownExpectKeys = map[string]bool{
 
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
 // Returns a sorted slice of unknown key names.
-func FindUnknownKeys(raw map[string]interface{}) []string {
+func FindUnknownKeys(raw map[string]any) []string {
 	var unknown []string
 	for key := range raw {
 		if !knownV1Keys[key] {
@@ -104,11 +104,11 @@ type ConfigV1 struct {
 	Method         string                 `yaml:"method,omitempty"` // HTTP method (GET, POST, PUT, DELETE, etc.)
 	ContentType    string                 `yaml:"content_type,omitempty"`
 	Headers        map[string]string      `yaml:"headers,omitempty"`
-	Body           map[string]interface{} `yaml:"body,omitempty"`
+	Body           map[string]any `yaml:"body,omitempty"`
 	JSON           string                 `yaml:"json,omitempty"` // Raw JSON override
 	Query          map[string]string      `yaml:"query,omitempty"`
 	Graphql        string                 `yaml:"graphql,omitempty"`   // GraphQL query/mutation
-	Variables      map[string]interface{} `yaml:"variables,omitempty"` // GraphQL variables
+	Variables      map[string]any `yaml:"variables,omitempty"` // GraphQL variables
 	Service        string                 `yaml:"service,omitempty"`   // gRPC
 	RPC            string                 `yaml:"rpc,omitempty"`       // gRPC
 	Proto          string                 `yaml:"proto,omitempty"`     // gRPC
@@ -199,7 +199,7 @@ func (base *ConfigV1) Merge(step ChainStep) ConfigV1 {
 
 // Expectation defines assertions for a chain step
 type Expectation struct {
-	Status interface{} `yaml:"status,omitempty"` // int or []int
+	Status any `yaml:"status,omitempty"` // int or []int
 	Assert []string    `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
 }
 

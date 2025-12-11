@@ -30,11 +30,11 @@ func NewFileLoggerClient(path, version, commit string) (*FileLoggerClient, error
 	}, nil
 }
 
-func (f *FileLoggerClient) Track(event string, props map[string]interface{}) {
+func (f *FileLoggerClient) Track(event string, props map[string]any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	entry := map[string]interface{}{
+	entry := map[string]any{
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"event":     event,
 		"os":        runtime.GOOS,

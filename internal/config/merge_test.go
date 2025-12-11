@@ -88,8 +88,8 @@ func TestMerge_MapIsolation(t *testing.T) {
 func TestMerge_BodyDeepCopy(t *testing.T) {
 	base := &ConfigV1{
 		URL: "http://example.com",
-		Body: map[string]interface{}{
-			"nested": map[string]interface{}{
+		Body: map[string]any{
+			"nested": map[string]any{
 				"key": "value",
 			},
 		},
@@ -99,12 +99,12 @@ func TestMerge_BodyDeepCopy(t *testing.T) {
 	merged := base.Merge(step)
 
 	// Modify the nested map in merged
-	if nested, ok := merged.Body["nested"].(map[string]interface{}); ok {
+	if nested, ok := merged.Body["nested"].(map[string]any); ok {
 		nested["key"] = "modified"
 	}
 
 	// Base should NOT be affected
-	if baseNested, ok := base.Body["nested"].(map[string]interface{}); ok {
+	if baseNested, ok := base.Body["nested"].(map[string]any); ok {
 		if baseNested["key"] != "value" {
 			t.Error("base.Body nested map was polluted")
 		}
@@ -154,15 +154,15 @@ func TestMerge_FlowControl(t *testing.T) {
 }
 
 func TestDeepCloneMap(t *testing.T) {
-	src := map[string]interface{}{
+	src := map[string]any{
 		"string": "value",
 		"number": 42,
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"inner": "data",
 		},
-		"array": []interface{}{
+		"array": []any{
 			"a",
-			map[string]interface{}{"b": "c"},
+			map[string]any{"b": "c"},
 		},
 	}
 
@@ -170,12 +170,12 @@ func TestDeepCloneMap(t *testing.T) {
 
 	// Modify dst
 	dst["string"] = "changed"
-	if nested, ok := dst["nested"].(map[string]interface{}); ok {
+	if nested, ok := dst["nested"].(map[string]any); ok {
 		nested["inner"] = "changed"
 	}
-	if arr, ok := dst["array"].([]interface{}); ok {
+	if arr, ok := dst["array"].([]any); ok {
 		arr[0] = "changed"
-		if m, ok := arr[1].(map[string]interface{}); ok {
+		if m, ok := arr[1].(map[string]any); ok {
 			m["b"] = "changed"
 		}
 	}
@@ -184,16 +184,16 @@ func TestDeepCloneMap(t *testing.T) {
 	if src["string"] != "value" {
 		t.Error("src string was modified")
 	}
-	if nested, ok := src["nested"].(map[string]interface{}); ok {
+	if nested, ok := src["nested"].(map[string]any); ok {
 		if nested["inner"] != "data" {
 			t.Error("src nested map was modified")
 		}
 	}
-	if arr, ok := src["array"].([]interface{}); ok {
+	if arr, ok := src["array"].([]any); ok {
 		if arr[0] != "a" {
 			t.Error("src array element was modified")
 		}
-		if m, ok := arr[1].(map[string]interface{}); ok {
+		if m, ok := arr[1].(map[string]any); ok {
 			if m["b"] != "c" {
 				t.Error("src array nested map was modified")
 			}

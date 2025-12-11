@@ -39,13 +39,13 @@ func TestCheckExpectations_Status(t *testing.T) {
 		},
 		{
 			name:        "status in array matches",
-			expectation: config.Expectation{Status: []interface{}{float64(200), float64(201)}},
+			expectation: config.Expectation{Status: []any{float64(200), float64(201)}},
 			result:      &Result{StatusCode: 201},
 			wantErr:     false,
 		},
 		{
 			name:        "status not in array",
-			expectation: config.Expectation{Status: []interface{}{float64(200), float64(201)}},
+			expectation: config.Expectation{Status: []any{float64(200), float64(201)}},
 			result:      &Result{StatusCode: 404},
 			wantErr:     true,
 		},
@@ -143,8 +143,8 @@ func TestCheckExpectations_Assert(t *testing.T) {
 func TestResolveVariableRaw(t *testing.T) {
 	ctx := NewChainContext()
 	ctx.Results["step1"] = StepResult{
-		BodyJSON: map[string]interface{}{
-			"result": map[string]interface{}{
+		BodyJSON: map[string]any{
+			"result": map[string]any{
 				"index":   float64(7), // JSON numbers are float64
 				"enabled": true,
 				"ratio":   3.14,
@@ -157,7 +157,7 @@ func TestResolveVariableRaw(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		wantVal interface{}
+		wantVal any
 		wantOk  bool
 	}{
 		{
@@ -227,13 +227,13 @@ func TestResolveVariableRaw(t *testing.T) {
 func TestInterpolateBody(t *testing.T) {
 	ctx := NewChainContext()
 	ctx.Results["prev"] = StepResult{
-		BodyJSON:   map[string]interface{}{"token": "abc123"},
+		BodyJSON:   map[string]any{"token": "abc123"},
 		StatusCode: 200,
 	}
 	// Add step with typed values for type preservation tests
 	ctx.Results["step1"] = StepResult{
-		BodyJSON: map[string]interface{}{
-			"result": map[string]interface{}{
+		BodyJSON: map[string]any{
+			"result": map[string]any{
 				"index": float64(7),
 			},
 		},
@@ -242,8 +242,8 @@ func TestInterpolateBody(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		body     map[string]interface{}
-		expected map[string]interface{}
+		body     map[string]any
+		expected map[string]any
 		wantErr  bool
 	}{
 		{
@@ -254,21 +254,21 @@ func TestInterpolateBody(t *testing.T) {
 		},
 		{
 			name: "simple string interpolation",
-			body: map[string]interface{}{
+			body: map[string]any{
 				"auth": "${prev.token}",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"auth": "abc123",
 			},
 			wantErr: false,
 		},
 		{
 			name: "non-string values unchanged",
-			body: map[string]interface{}{
+			body: map[string]any{
 				"count": 42,
 				"flag":  true,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"count": 42,
 				"flag":  true,
 			},
@@ -276,13 +276,13 @@ func TestInterpolateBody(t *testing.T) {
 		},
 		{
 			name: "nested body",
-			body: map[string]interface{}{
-				"data": map[string]interface{}{
+			body: map[string]any{
+				"data": map[string]any{
 					"token": "${prev.token}",
 				},
 			},
-			expected: map[string]interface{}{
-				"data": map[string]interface{}{
+			expected: map[string]any{
+				"data": map[string]any{
 					"token": "abc123",
 				},
 			},
@@ -290,34 +290,34 @@ func TestInterpolateBody(t *testing.T) {
 		},
 		{
 			name: "type preservation - int",
-			body: map[string]interface{}{
+			body: map[string]any{
 				"track_index": "$step1.result.index",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"track_index": float64(7), // Preserved as number, not string
 			},
 			wantErr: false,
 		},
 		{
 			name: "mixed string stays string",
-			body: map[string]interface{}{
+			body: map[string]any{
 				"message": "Track $step1.result.index created",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"message": "Track 7 created", // Interpolated as string
 			},
 			wantErr: false,
 		},
 		{
 			name: "array with variable references",
-			body: map[string]interface{}{
-				"track_indices": []interface{}{
+			body: map[string]any{
+				"track_indices": []any{
 					"$step1.result.index",
 					"$prev.token",
 				},
 			},
-			expected: map[string]interface{}{
-				"track_indices": []interface{}{
+			expected: map[string]any{
+				"track_indices": []any{
 					float64(7),
 					"abc123",
 				},
@@ -326,16 +326,16 @@ func TestInterpolateBody(t *testing.T) {
 		},
 		{
 			name: "nested array in object",
-			body: map[string]interface{}{
-				"params": map[string]interface{}{
-					"indices": []interface{}{
+			body: map[string]any{
+				"params": map[string]any{
+					"indices": []any{
 						"$step1.result.index",
 					},
 				},
 			},
-			expected: map[string]interface{}{
-				"params": map[string]interface{}{
-					"indices": []interface{}{
+			expected: map[string]any{
+				"params": map[string]any{
+					"indices": []any{
 						float64(7),
 					},
 				},
@@ -368,16 +368,16 @@ func TestInterpolateBody(t *testing.T) {
 						continue
 					}
 					// Handle nested maps
-					if expectedNested, ok := expectedVal.(map[string]interface{}); ok {
-						actualNested, ok := actualVal.(map[string]interface{})
+					if expectedNested, ok := expectedVal.(map[string]any); ok {
+						actualNested, ok := actualVal.(map[string]any)
 						if !ok {
 							t.Errorf("key '%s' expected map, got %T", k, actualVal)
 							continue
 						}
 						for nk, nv := range expectedNested {
 							// Handle arrays in nested maps
-							if expectedArr, ok := nv.([]interface{}); ok {
-								actualArr, ok := actualNested[nk].([]interface{})
+							if expectedArr, ok := nv.([]any); ok {
+								actualArr, ok := actualNested[nk].([]any)
 								if !ok {
 									t.Errorf("nested key '%s.%s' expected array, got %T", k, nk, actualNested[nk])
 									continue
@@ -395,9 +395,9 @@ func TestInterpolateBody(t *testing.T) {
 								t.Errorf("nested key '%s.%s' = %v, want %v", k, nk, actualNested[nk], nv)
 							}
 						}
-					} else if expectedArr, ok := expectedVal.([]interface{}); ok {
+					} else if expectedArr, ok := expectedVal.([]any); ok {
 						// Handle arrays
-						actualArr, ok := actualVal.([]interface{})
+						actualArr, ok := actualVal.([]any)
 						if !ok {
 							t.Errorf("key '%s' expected array, got %T", k, actualVal)
 							continue

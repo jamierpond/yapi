@@ -177,7 +177,7 @@ json: '{"status":"active","code":42}'`,
 					t.Fatalf("Failed to read request body: %v", err)
 				}
 
-				var actual, expected interface{}
+				var actual, expected any
 				if err := json.Unmarshal(bodyBytes, &actual); err != nil {
 					t.Fatalf("Failed to unmarshal actual request body: %v, body: %s", err, string(bodyBytes))
 				}

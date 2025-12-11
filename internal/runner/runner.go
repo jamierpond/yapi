@@ -263,12 +263,12 @@ func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.Co
 
 // interpolateBody recursively interpolates variables in body map
 // It preserves types for pure variable references (e.g. $step.field returns int/bool, not string)
-func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[string]interface{}, error) {
+func interpolateBody(chainCtx *ChainContext, body map[string]any) (map[string]any, error) {
 	if body == nil {
 		return nil, nil
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	for k, v := range body {
 		interpolated, err := interpolateValue(chainCtx, v)
 		if err != nil {
@@ -280,7 +280,7 @@ func interpolateBody(chainCtx *ChainContext, body map[string]interface{}) (map[s
 }
 
 // interpolateValue recursively interpolates variables in any value
-func interpolateValue(chainCtx *ChainContext, v interface{}) (interface{}, error) {
+func interpolateValue(chainCtx *ChainContext, v any) (any, error) {
 	switch val := v.(type) {
 	case string:
 		// First, try to resolve as a pure variable reference (preserves type)
@@ -289,10 +289,10 @@ func interpolateValue(chainCtx *ChainContext, v interface{}) (interface{}, error
 		}
 		// Fall back to string interpolation
 		return chainCtx.ExpandVariables(val)
-	case map[string]interface{}:
+	case map[string]any:
 		return interpolateBody(chainCtx, val)
-	case []interface{}:
-		result := make([]interface{}, len(val))
+	case []any:
+		result := make([]any, len(val))
 		for i, elem := range val {
 			interpolated, err := interpolateValue(chainCtx, elem)
 			if err != nil {
@@ -348,7 +348,7 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 			if result.StatusCode == int(v) {
 				matched = true
 			}
-		case []interface{}: // YAML often parses arrays as []interface{}
+		case []any: // YAML often parses arrays as []any
 			for _, code := range v {
 				switch c := code.(type) {
 				case int:

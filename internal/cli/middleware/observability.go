@@ -45,7 +45,7 @@ func WrapWithObservability(cmd *cobra.Command) {
 		start := time.Now()
 
 		// Collect properties from flags
-		props := make(map[string]interface{})
+		props := make(map[string]any)
 		cmd.Flags().Visit(func(f *pflag.Flag) {
 			props["flag_"+f.Name] = f.Value.String()
 		})

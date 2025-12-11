@@ -73,7 +73,7 @@ func main() {
 	defer observability.Close()
 
 	// Wire observability hook - main.go is the composition root
-	requestHook := func(stats map[string]interface{}) {
+	requestHook := func(stats map[string]any) {
 		observability.Track("request_executed", stats)
 	}
 
@@ -411,7 +411,7 @@ func newVersionCmd() *cobra.Command {
 		Short: "Print version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if jsonOutput {
-				info := map[string]interface{}{
+				info := map[string]any{
 					"version":      version,
 					"commit":       commit,
 					"date":         date,

@@ -2,7 +2,7 @@ package observability
 
 // Provider defines the behavior for any observability backend
 type Provider interface {
-	Track(event string, props map[string]interface{})
+	Track(event string, props map[string]any)
 	Close() error
 }
 
@@ -10,7 +10,7 @@ type Provider interface {
 var providers []Provider
 
 // Track sends an event to all registered providers
-func Track(event string, props map[string]interface{}) {
+func Track(event string, props map[string]any) {
 	for _, p := range providers {
 		p.Track(event, props)
 	}
