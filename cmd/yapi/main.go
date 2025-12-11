@@ -92,13 +92,9 @@ func main() {
 			// Log command to history (skip meta commands)
 			switch cmd.Name() {
 			case "history", "version", "lsp", "help", "yapi", "telemetry":
-				// Skip history logging for meta commands
-			default:
-				logHistoryCmd(reconstructCommand(cmd, args))
+				return
 			}
-
-			// Show first-run telemetry banner at the end of output
-			observability.PrintFirstRunBanner()
+			logHistoryCmd(reconstructCommand(cmd, args))
 		},
 		RunE: app.runInteractiveE,
 	}
@@ -413,10 +409,10 @@ func newVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if jsonOutput {
 				info := map[string]any{
-					"version":        version,
-					"commit":         commit,
-					"date":           date,
-					"telemetry_mode": observability.GetMode(),
+					"version":   version,
+					"commit":    commit,
+					"date":      date,
+					"telemetry": observability.IsEnabled(),
 				}
 				return json.NewEncoder(os.Stdout).Encode(info)
 			}
@@ -424,8 +420,6 @@ func newVersionCmd() *cobra.Command {
 			fmt.Printf("yapi %s\n", version)
 			fmt.Printf("  commit: %s\n", commit)
 			fmt.Printf("  built:  %s\n", date)
-			fmt.Println()
-			fmt.Printf("  telemetry: %s\n", observability.GetMode())
 			return nil
 		},
 	}
