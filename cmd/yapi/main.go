@@ -673,7 +673,16 @@ func formatBytes(b int) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
+const historyFileName = ".yapi_history.json"
+
+type historyEntry struct {
+	Timestamp string `json:"timestamp"`
+	Command   string `json:"command"`
+}
+
 func newHistoryCmd() *cobra.Command {
+	var jsonOutput bool
+
 	cmd := &cobra.Command{
 		Use:   "history [count]",
 		Short: "Show yapi command history (default: last 10)",
@@ -692,7 +701,7 @@ func newHistoryCmd() *cobra.Command {
 				return fmt.Errorf("failed to get home directory: %w", err)
 			}
 
-			historyFile := filepath.Join(homeDir, ".yapi_history")
+			historyFile := filepath.Join(homeDir, historyFileName)
 			data, err := os.ReadFile(historyFile)
 			if err != nil {
 				if os.IsNotExist(err) {
@@ -713,31 +722,59 @@ func newHistoryCmd() *cobra.Command {
 				start = 0
 			}
 
-			for _, line := range lines[start:] {
-				fmt.Println(line)
+			entries := lines[start:]
+
+			if jsonOutput {
+				fmt.Println("[")
+				for i, line := range entries {
+					fmt.Print("  " + line)
+					if i < len(entries)-1 {
+						fmt.Println(",")
+					} else {
+						fmt.Println()
+					}
+				}
+				fmt.Println("]")
+				return nil
+			}
+
+			// Pretty print for humans
+			for _, line := range entries {
+				var entry historyEntry
+				if err := json.Unmarshal([]byte(line), &entry); err != nil {
+					continue
+				}
+				t, _ := time.Parse(time.RFC3339, entry.Timestamp)
+				fmt.Printf("%s  %s\n", color.Dim(t.Format("2006-01-02 15:04:05")), entry.Command)
 			}
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	return cmd
 }
 
-// logHistoryCmd writes a command string to history
+// logHistoryCmd writes a command to history as JSON
 func logHistoryCmd(cmdStr string) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
 
-	historyFile := filepath.Join(homeDir, ".yapi_history")
+	historyFile := filepath.Join(homeDir, historyFileName)
 	f, err := os.OpenFile(historyFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
 	defer f.Close()
 
-	line := fmt.Sprintf("%d | %s\n", time.Now().Unix(), cmdStr)
-	f.WriteString(line)
+	entry := historyEntry{
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Command:   cmdStr,
+	}
+	jsonBytes, _ := json.Marshal(entry)
+	fmt.Fprintln(f, string(jsonBytes))
 }
 
 // reconstructCommand builds the full command string from cobra command and args

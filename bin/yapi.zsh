@@ -6,12 +6,12 @@ function yapi() {
   local success=$?
   [ $success -ne 0 ] && return $success
 
-  local file="$HOME/.yapi_history"
+  local file="$HOME/.yapi_history.json"
   [ -f "$file" ] || return 0
 
   local recent_line=$(tail -n 1 "$file")
-  local cmd=$(echo "$recent_line" | cut -d '|' -f 2- | xargs)
-  print -s "$cmd" 2>/dev/null || history -s "$cmd" 2>/dev/null
+  local cmd=$(echo "$recent_line" | jq -r '.command' 2>/dev/null)
+  [ -n "$cmd" ] && { print -s "$cmd" 2>/dev/null || history -s "$cmd" 2>/dev/null; }
 }
 
 
