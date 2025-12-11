@@ -132,6 +132,7 @@ export async function GET() {
       total_releases: totalCount,
     });
   } catch (error) {
+    console.error("Failed to fetch download stats:", error);
     return NextResponse.json(
       { error: "Failed to calculate downloads" },
       { status: 500 }
