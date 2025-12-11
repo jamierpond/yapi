@@ -3,12 +3,12 @@ import { existsSync } from "fs";
 
 export function getYapiPath(): string {
   if (process.env.VERCEL) {
-    // Try multiple locations
+    // Try multiple locations - cwd is /var/task (repo root)
     const candidates = [
-      path.join(process.cwd(), "yapi"),
-      path.join(process.cwd(), ".next", "server", "yapi"),
-      "/var/task/yapi",
-      "/var/task/.next/server/yapi",
+      path.join(process.cwd(), "bin", "yapi"),
+      path.join(process.cwd(), "web", ".next", "server", "yapi"),
+      "/var/task/bin/yapi",
+      "/var/task/web/.next/server/yapi",
     ];
 
     for (const candidate of candidates) {
