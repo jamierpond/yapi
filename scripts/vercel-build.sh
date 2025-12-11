@@ -47,10 +47,8 @@ chmod +x /usr/local/bin/yapi
 echo "yapi installed successfully: $(which yapi)"
 yapi --version 2>/dev/null || echo "yapi built (version flag may not be implemented)"
 
-# Run pnpm build for web (from web directory)
-echo "Running pnpm build..."
-cd "$PROJECT_ROOT/web"
-pnpm install
-pnpm run build
+# Run pnpm build for web via workspace filter
+echo "Running pnpm build for web..."
+pnpm --filter web build
 
 echo "=== Build Complete ==="
