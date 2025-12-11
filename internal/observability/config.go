@@ -6,10 +6,16 @@ import (
 	"path/filepath"
 )
 
+// Telemetry mode constants matching Go's philosophy
+const (
+	ModeOff   = "off"   // Completely disabled
+	ModeLocal = "local" // Default: write to file, do not upload
+	ModeOn    = "on"    // Upload enabled
+)
+
 // UserConfig holds user preferences stored in ~/.config/yapi/config.json
 type UserConfig struct {
-	FileLoggingEnabled *bool `json:"file_logging_enabled,omitempty"`
-	PosthogEnabled     *bool `json:"posthog_enabled,omitempty"`
+	TelemetryMode string `json:"telemetry_mode,omitempty"`
 }
 
 // yapiConfigDir returns the yapi config directory (~/.config/yapi)
@@ -74,51 +80,30 @@ func SaveUserConfig(cfg *UserConfig) error {
 }
 
 // IsFirstRun returns true if this is the first time yapi is being run
-// (no config file exists and preferences haven't been set)
+// (no config file exists or telemetry mode hasn't been set)
 func IsFirstRun() bool {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		return true
 	}
-	return cfg.FileLoggingEnabled == nil && cfg.PosthogEnabled == nil
+	return cfg.TelemetryMode == ""
 }
 
-// SetFileLoggingEnabled saves the user's file logging preference
-func SetFileLoggingEnabled(enabled bool) error {
+// GetMode returns the current telemetry mode, defaulting to "local"
+func GetMode() string {
+	cfg, err := LoadUserConfig()
+	if err != nil || cfg.TelemetryMode == "" {
+		return ModeLocal // Go vibe: default to local collection
+	}
+	return cfg.TelemetryMode
+}
+
+// SetMode saves the user's telemetry mode preference
+func SetMode(mode string) error {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		cfg = &UserConfig{}
 	}
-	cfg.FileLoggingEnabled = &enabled
+	cfg.TelemetryMode = mode
 	return SaveUserConfig(cfg)
-}
-
-// SetPosthogEnabled saves the user's PostHog preference
-func SetPosthogEnabled(enabled bool) error {
-	cfg, err := LoadUserConfig()
-	if err != nil {
-		cfg = &UserConfig{}
-	}
-	cfg.PosthogEnabled = &enabled
-	return SaveUserConfig(cfg)
-}
-
-// GetFileLoggingPreference returns the user's file logging preference.
-// Returns nil if not yet set (first run).
-func GetFileLoggingPreference() *bool {
-	cfg, err := LoadUserConfig()
-	if err != nil {
-		return nil
-	}
-	return cfg.FileLoggingEnabled
-}
-
-// GetPosthogPreference returns the user's PostHog preference.
-// Returns nil if not yet set (first run).
-func GetPosthogPreference() *bool {
-	cfg, err := LoadUserConfig()
-	if err != nil {
-		return nil
-	}
-	return cfg.PosthogEnabled
 }
