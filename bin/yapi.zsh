@@ -4,7 +4,7 @@
 # then press up arrow to re-run the equivalent CLI command.
 
 function yapi() {
-  local file="$HOME/.yapi_history.json"
+  local file="$HOME/.yapi/history.json"
   local before_count=0
   [ -f "$file" ] && before_count=$(wc -l < "$file" | tr -d ' ')
 
