@@ -750,6 +750,13 @@ func newHistoryCmd() *cobra.Command {
 				t, _ := time.Parse(time.RFC3339, entry.Timestamp)
 				timeStr := color.Dim(t.Format("2006-01-02 15:04:05"))
 
+				// New merged format has Command field directly
+				if entry.Command != "" {
+					fmt.Printf("%s  %s\n", timeStr, entry.Command)
+					continue
+				}
+
+				// Legacy format uses Event field
 				switch entry.Event {
 				case "command":
 					fmt.Printf("%s  %s\n", timeStr, entry.Command)
