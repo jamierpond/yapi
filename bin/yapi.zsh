@@ -17,7 +17,7 @@ function yapi() {
   [ "$after_count" -gt "$before_count" ] || return $exit_code
 
   # Find the most recent command event and add to shell history
-  local cmd=$(tail -n 5 "$file" | jq -r 'select(.event == "command") | .command' 2>/dev/null | tail -n 1)
+  local cmd=$(tail -n 5 "$file" | jq -r 'select(.events | index("command")) | .command' 2>/dev/null | tail -n 1)
   [ -n "$cmd" ] && { print -s "$cmd" 2>/dev/null || history -s "$cmd" 2>/dev/null; }
 
   return $exit_code

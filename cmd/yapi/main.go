@@ -676,10 +676,11 @@ func formatBytes(b int) string {
 }
 
 type historyEntry struct {
-	Timestamp string `json:"timestamp"`
-	Event     string `json:"event"`
-	Command   string `json:"command,omitempty"`
-	FromTUI   bool   `json:"from_tui,omitempty"`
+	Timestamp string   `json:"timestamp"`
+	Event     string   `json:"event,omitempty"`  // legacy single event
+	Events    []string `json:"events,omitempty"` // new merged events
+	Command   string   `json:"command,omitempty"`
+	FromTUI   bool     `json:"from_tui,omitempty"`
 	// Fields from request tracking
 	OS      string         `json:"os,omitempty"`
 	Arch    string         `json:"arch,omitempty"`
