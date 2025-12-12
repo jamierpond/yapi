@@ -677,8 +677,15 @@ func formatBytes(b int) string {
 
 type historyEntry struct {
 	Timestamp string `json:"timestamp"`
-	Command   string `json:"command"`
+	Event     string `json:"event"`
+	Command   string `json:"command,omitempty"`
 	FromTUI   bool   `json:"from_tui,omitempty"`
+	// Fields from request tracking
+	OS      string         `json:"os,omitempty"`
+	Arch    string         `json:"arch,omitempty"`
+	Version string         `json:"version,omitempty"`
+	Commit  string         `json:"commit,omitempty"`
+	Props   map[string]any `json:"-"` // For parsing additional fields
 }
 
 func newHistoryCmd() *cobra.Command {
@@ -740,7 +747,25 @@ func newHistoryCmd() *cobra.Command {
 					continue
 				}
 				t, _ := time.Parse(time.RFC3339, entry.Timestamp)
-				fmt.Printf("%s  %s\n", color.Dim(t.Format("2006-01-02 15:04:05")), entry.Command)
+				timeStr := color.Dim(t.Format("2006-01-02 15:04:05"))
+
+				switch entry.Event {
+				case "command":
+					fmt.Printf("%s  %s\n", timeStr, entry.Command)
+				case "request_executed":
+					// Parse additional props for request details
+					var raw map[string]any
+					json.Unmarshal([]byte(line), &raw)
+					method, _ := raw["method"].(string)
+					url, _ := raw["url"].(string)
+					status, _ := raw["status_code"].(float64)
+					if method != "" && url != "" {
+						fmt.Printf("%s  %s %s %s\n", timeStr, color.Cyan(method), url, color.Dim(fmt.Sprintf("[%d]", int(status))))
+					}
+				default:
+					// Unknown event type, show raw
+					fmt.Printf("%s  %s\n", timeStr, entry.Event)
+				}
 			}
 			return nil
 		},
@@ -773,6 +798,7 @@ func logHistoryEntry(cmdStr string, fromTUI bool) {
 
 	entry := historyEntry{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Event:     "command",
 		Command:   cmdStr,
 		FromTUI:   fromTUI,
 	}

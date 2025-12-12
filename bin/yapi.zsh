@@ -11,13 +11,13 @@ function yapi() {
   command yapi "$@"
   local exit_code=$?
 
-  # Check if a new entry was added
+  # Check if new entries were added
   [ -f "$file" ] || return $exit_code
   local after_count=$(wc -l < "$file" | tr -d ' ')
   [ "$after_count" -gt "$before_count" ] || return $exit_code
 
-  # Add the new command to shell history
-  local cmd=$(tail -n 1 "$file" | jq -r '.command' 2>/dev/null)
+  # Find the most recent command event and add to shell history
+  local cmd=$(tail -n 5 "$file" | jq -r 'select(.event == "command") | .command' 2>/dev/null | tail -n 1)
   [ -n "$cmd" ] && { print -s "$cmd" 2>/dev/null || history -s "$cmd" 2>/dev/null; }
 
   return $exit_code
