@@ -786,24 +786,13 @@ func logHistoryFromTUI(cmdStr string) {
 }
 
 func logHistoryEntry(cmdStr string, fromTUI bool) {
-	if err := os.MkdirAll(observability.LogDir, 0755); err != nil {
-		return
+	props := map[string]any{
+		"command": cmdStr,
 	}
-
-	f, err := os.OpenFile(observability.HistoryFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	if fromTUI {
+		props["from_tui"] = true
 	}
-	defer f.Close()
-
-	entry := historyEntry{
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		Event:     "command",
-		Command:   cmdStr,
-		FromTUI:   fromTUI,
-	}
-	jsonBytes, _ := json.Marshal(entry)
-	fmt.Fprintln(f, string(jsonBytes))
+	observability.Track("command", props)
 }
 
 // reconstructCommand builds the full command string from cobra command and args

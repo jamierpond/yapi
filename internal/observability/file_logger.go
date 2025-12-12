@@ -16,6 +16,7 @@ type FileLoggerClient struct {
 	version string
 	commit  string
 	mu      sync.Mutex
+	events  []map[string]any
 }
 
 // NewFileLoggerClient creates a new file logger client
@@ -39,27 +40,54 @@ func (f *FileLoggerClient) Track(event string, props map[string]any) {
 	defer f.mu.Unlock()
 
 	entry := map[string]any{
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"event":     event,
-		"os":        runtime.GOOS,
-		"arch":      runtime.GOARCH,
-		"version":   f.version,
-		"commit":    f.commit,
+		"event": event,
 	}
 	for k, v := range props {
 		entry[k] = v
 	}
-
-	jsonBytes, err := json.Marshal(entry)
-	if err != nil {
-		return
-	}
-
-	fmt.Fprintln(f.file, string(jsonBytes))
+	f.events = append(f.events, entry)
 }
 
 func (f *FileLoggerClient) Close() error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
+	if len(f.events) == 0 {
+		return f.file.Close()
+	}
+
+	// Merge all events into a single entry
+	merged := map[string]any{
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+		"os":        runtime.GOOS,
+		"arch":      runtime.GOARCH,
+		"version":   f.version,
+		"commit":    f.commit,
+	}
+
+	// Merge props from all events (later events override earlier)
+	for _, ev := range f.events {
+		for k, v := range ev {
+			if k != "event" {
+				merged[k] = v
+			}
+		}
+	}
+
+	// Collect event names
+	var events []string
+	for _, ev := range f.events {
+		if name, ok := ev["event"].(string); ok {
+			events = append(events, name)
+		}
+	}
+	merged["events"] = events
+
+	jsonBytes, err := json.Marshal(merged)
+	if err != nil {
+		return f.file.Close()
+	}
+
+	fmt.Fprintln(f.file, string(jsonBytes))
 	return f.file.Close()
 }
