@@ -91,7 +91,7 @@ func main() {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			// Log command to history (skip meta commands)
 			switch cmd.Name() {
-			case "history", "version", "lsp", "help", "yapi", "logging":
+			case "history", "version", "lsp", "help", "yapi":
 				return
 			}
 			logHistoryCmd(reconstructCommand(cmd, args))
@@ -109,7 +109,6 @@ func main() {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newValidateCmd())
 	rootCmd.AddCommand(newShareCmd())
-	rootCmd.AddCommand(newLoggingCmd())
 
 	// Wrap all commands with observability middleware
 	middleware.WrapWithObservability(rootCmd)
@@ -416,7 +415,6 @@ func newVersionCmd() *cobra.Command {
 					"version": version,
 					"commit":  commit,
 					"date":    date,
-					"logging": observability.IsEnabled(),
 				}
 				return json.NewEncoder(os.Stdout).Encode(info)
 			}
@@ -811,54 +809,4 @@ func reconstructCommand(cmd *cobra.Command, args []string) string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
-}
-
-func newLoggingCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "logging [on|off|status]",
-		Short: "Manage local usage logging",
-		Long: `Manage local usage logging for yapi.
-
-Usage stats are written to ~/.yapi/` + observability.LogFileName + ` (nothing is uploaded).
-
-Examples:
-  yapi logging        Show current status
-  yapi logging on     Enable logging (default)
-  yapi logging off    Disable logging`,
-		Args: cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			action := "status"
-			if len(args) > 0 {
-				action = args[0]
-			}
-
-			switch action {
-			case "status":
-				if observability.IsEnabled() {
-					fmt.Println("Logging: " + color.Green("on"))
-					fmt.Printf("Log file: %s\n", observability.LogFilePath)
-				} else {
-					fmt.Println("Logging: " + color.Yellow("off"))
-				}
-
-			case "on":
-				if err := observability.SetEnabled(true); err != nil {
-					return fmt.Errorf("failed: %w", err)
-				}
-				fmt.Println(color.Green("Logging enabled."))
-				fmt.Printf("Log file: %s\n", observability.LogFilePath)
-
-			case "off":
-				if err := observability.SetEnabled(false); err != nil {
-					return fmt.Errorf("failed: %w", err)
-				}
-				fmt.Println(color.Yellow("Logging disabled."))
-
-			default:
-				return fmt.Errorf("unknown action: %s (use on, off, or status)", action)
-			}
-			return nil
-		},
-	}
-	return cmd
 }
