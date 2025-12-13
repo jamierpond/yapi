@@ -756,23 +756,18 @@ func newHistoryCmd() *cobra.Command {
 					continue
 				}
 
-				// Legacy format uses Event field
-				switch entry.Event {
-				case "command":
-					fmt.Printf("%s  %s\n", timeStr, entry.Command)
-				case "request_executed":
-					// Parse additional props for request details
+				// Legacy: request_executed entries had method/url
+				if entry.Event == "request_executed" {
 					var raw map[string]any
-					json.Unmarshal([]byte(line), &raw)
-					method, _ := raw["method"].(string)
-					url, _ := raw["url"].(string)
-					status, _ := raw["status_code"].(float64)
-					if method != "" && url != "" {
-						fmt.Printf("%s  %s %s %s\n", timeStr, color.Cyan(method), url, color.Dim(fmt.Sprintf("[%d]", int(status))))
+					if err := json.Unmarshal([]byte(line), &raw); err == nil {
+						method, _ := raw["method"].(string)
+						url, _ := raw["url"].(string)
+						status, _ := raw["status_code"].(float64)
+						if method != "" && url != "" {
+							fmt.Printf("%s  %s %s %s\n", timeStr, color.Cyan(method), url, color.Dim(fmt.Sprintf("[%d]", int(status))))
+							continue
+						}
 					}
-				default:
-					// Unknown event type, show raw
-					fmt.Printf("%s  %s\n", timeStr, entry.Event)
 				}
 			}
 			return nil
