@@ -120,6 +120,21 @@ func (e *Engine) RunChain(
 	base *config.ConfigV1,
 	chain []config.ChainStep,
 	opts runner.Options,
+	analysis *validation.Analysis,
 ) (*runner.ChainResult, error) {
-	return runner.RunChain(ctx, e.factory, base, chain, opts)
+	stats := ExtractConfigStats(analysis)
+	start := time.Now()
+
+	result, err := runner.RunChain(ctx, e.factory, base, chain, opts)
+
+	if e.onRequest != nil {
+		stats["duration_ms"] = time.Since(start).Milliseconds()
+		stats["success"] = err == nil
+		if err != nil {
+			stats["error_type"] = "chain_execution"
+		}
+		e.onRequest(stats)
+	}
+
+	return result, err
 }

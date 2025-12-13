@@ -260,7 +260,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 	// Check if this is a chain config
 	if runRes.Analysis != nil && len(runRes.Analysis.Chain) > 0 {
-		chainResult, chainErr := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts)
+		chainResult, chainErr := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts, runRes.Analysis)
 
 		// Print results from all completed steps (even if chain failed)
 		if chainResult != nil {
