@@ -22,7 +22,7 @@ func TestFileLoggerClient_MergesEvents(t *testing.T) {
 		"from_tui": true,
 	})
 	client.Track("cmd_run", map[string]any{
-		"args_count": 1,
+		"args_count":  1,
 		"duration_ms": 100,
 	})
 	client.Track("request_executed", map[string]any{
