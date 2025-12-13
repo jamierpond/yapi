@@ -1,3 +1,4 @@
+// Package executor provides transport implementations for HTTP, gRPC, TCP, and GraphQL.
 package executor
 
 import (
