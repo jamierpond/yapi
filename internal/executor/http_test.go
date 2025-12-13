@@ -14,14 +14,6 @@ import (
 	"yapi.run/cli/internal/executor"
 )
 
-type mockHTTPClient struct {
-	DoFunc func(req *http.Request) (*http.Response, error)
-}
-
-func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	return m.DoFunc(req)
-}
-
 func TestHTTPExecutor_URLBuilding(t *testing.T) {
 	tests := []struct {
 		name          string

@@ -7,15 +7,6 @@ import (
 	"yapi.run/cli/internal/domain"
 )
 
-// URL scheme constants
-const (
-	schemeHTTP  = "http://"
-	schemeHTTPS = "https://"
-	schemeGRPC  = "grpc://"
-	schemeGRPCS = "grpcs://"
-	schemeTCP   = "tcp://"
-)
-
 type Severity int
 
 const (

@@ -46,43 +46,6 @@ var knownV1Keys = map[string]bool{
 	"delay":            true,
 }
 
-// knownChainStepKeys is the set of valid keys for chain step entries.
-// Chain steps can use any ConfigV1 field plus "name".
-var knownChainStepKeys = map[string]bool{
-	"name": true,
-	// Include all ConfigV1 keys except "yapi" and "chain"
-	"url":              true,
-	"path":             true,
-	"method":           true,
-	"content_type":     true,
-	"headers":          true,
-	"body":             true,
-	"json":             true,
-	"query":            true,
-	"graphql":          true,
-	"variables":        true,
-	"service":          true,
-	"rpc":              true,
-	"proto":            true,
-	"proto_path":       true,
-	"data":             true,
-	"encoding":         true,
-	"jq_filter":        true,
-	"insecure":         true,
-	"plaintext":        true,
-	"read_timeout":     true,
-	"idle_timeout":     true,
-	"close_after_send": true,
-	"expect":           true,
-	"delay":            true,
-}
-
-// knownExpectKeys is the set of valid keys for expect blocks.
-var knownExpectKeys = map[string]bool{
-	"status": true,
-	"assert": true,
-}
-
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
 // Returns a sorted slice of unknown key names.
 func FindUnknownKeys(raw map[string]any) []string {
