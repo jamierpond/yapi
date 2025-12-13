@@ -21,10 +21,10 @@ type FileLoggerClient struct {
 
 // NewFileLoggerClient creates a new file logger client
 func NewFileLoggerClient(path, version, commit string) (*FileLoggerClient, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil { // #nosec G301 -- user config directory
 		return nil, err
 	}
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // #nosec G304 -- user-provided log path
 	if err != nil {
 		return nil, err
 	}
@@ -35,6 +35,7 @@ func NewFileLoggerClient(path, version, commit string) (*FileLoggerClient, error
 	}, nil
 }
 
+// Track records an event with properties to be written on Close.
 func (f *FileLoggerClient) Track(event string, props map[string]any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -48,6 +49,7 @@ func (f *FileLoggerClient) Track(event string, props map[string]any) {
 	f.events = append(f.events, entry)
 }
 
+// Close merges all tracked events and writes them to the log file.
 func (f *FileLoggerClient) Close() error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -88,6 +90,6 @@ func (f *FileLoggerClient) Close() error {
 		return f.file.Close()
 	}
 
-	fmt.Fprintln(f.file, string(jsonBytes))
+	_, _ = fmt.Fprintln(f.file, string(jsonBytes))
 	return f.file.Close()
 }

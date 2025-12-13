@@ -10,6 +10,7 @@ import (
 	"yapi.run/cli/internal/vars"
 )
 
+// StepResult holds the output of a single chain step.
 type StepResult struct {
 	BodyRaw    string
 	BodyJSON   map[string]any
@@ -17,16 +18,19 @@ type StepResult struct {
 	StatusCode int
 }
 
+// ChainContext tracks results from chain steps for variable interpolation.
 type ChainContext struct {
 	Results map[string]StepResult
 }
 
+// NewChainContext creates a new chain context for tracking step results.
 func NewChainContext() *ChainContext {
 	return &ChainContext{
 		Results: make(map[string]StepResult),
 	}
 }
 
+// AddResult stores a step result for later variable interpolation.
 func (c *ChainContext) AddResult(name string, result *Result) {
 	sr := StepResult{
 		BodyRaw:    result.Body,

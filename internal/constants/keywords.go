@@ -1,3 +1,4 @@
+// Package constants defines protocol and method constants.
 package constants
 
 import "strings"

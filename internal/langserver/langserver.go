@@ -29,6 +29,7 @@ type document struct {
 	Text string
 }
 
+// Run starts the yapi language server over stdio.
 func Run() {
 	commonlog.Configure(1, nil)
 

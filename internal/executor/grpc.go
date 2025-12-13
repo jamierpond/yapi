@@ -41,7 +41,7 @@ func GRPCTransport(ctx context.Context, req *domain.Request) (*domain.Response, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial gRPC target %s: %w", target, err)
 	}
-	defer cc.Close()
+	defer func() { _ = cc.Close() }()
 
 	// Determine descriptor source
 	var descSource grpcurl.DescriptorSource

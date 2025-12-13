@@ -7,8 +7,10 @@ import (
 	"yapi.run/cli/internal/domain"
 )
 
+// Severity indicates the level of a validation issue.
 type Severity int
 
+// Severity levels for validation issues.
 const (
 	SeverityInfo Severity = iota
 	SeverityWarning
@@ -26,6 +28,7 @@ func (s Severity) String() string {
 	}
 }
 
+// Issue represents a single validation problem.
 type Issue struct {
 	Severity Severity
 	Field    string // e.g. "url", "method", "service"

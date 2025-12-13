@@ -69,7 +69,7 @@ func TCPTransport(ctx context.Context, req *domain.Request) (*domain.Response, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial TCP target %s: %w", target, err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Write data if present
 	if len(sendData) > 0 {

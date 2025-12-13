@@ -29,7 +29,7 @@ func getTTY() (in, out *os.File, cleanup func()) {
 	if runtime.GOOS != "windows" {
 		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 		if err == nil {
-			return tty, tty, func() { tty.Close() }
+			return tty, tty, func() { _ = tty.Close() }
 		}
 	}
 
@@ -116,6 +116,7 @@ func findFiles() ([]string, error) {
 	return configFiles, nil
 }
 
+// FindConfigFileSingle prompts the user to select a single config file.
 func FindConfigFileSingle() (string, error) {
 	files, err := findFiles()
 	if err != nil {

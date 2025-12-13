@@ -36,7 +36,7 @@ func TestFileLoggerClient_MergesEvents(t *testing.T) {
 	}
 
 	// Read and parse the file
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- test temp file
 	if err != nil {
 		t.Fatalf("ReadFile: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestFileLoggerClient_NoEventsNoWrite(t *testing.T) {
 	}
 
 	// File should exist but be empty
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- test temp file
 	if err != nil {
 		t.Fatalf("ReadFile: %v", err)
 	}

@@ -1,3 +1,4 @@
+// Package utils provides generic utility functions.
 package utils
 
 // Map transforms a slice of T to a slice of U.

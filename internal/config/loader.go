@@ -13,6 +13,7 @@ type Envelope struct {
 	Yapi string `yaml:"yapi"`
 }
 
+// ParseResult holds the output of parsing a yapi config file.
 type ParseResult struct {
 	Request  *domain.Request
 	Warnings []string
@@ -21,14 +22,16 @@ type ParseResult struct {
 	Expect   Expectation // Expectations for single request validation
 }
 
+// Load reads and parses a yapi config file from the given path.
 func Load(path string) (*ParseResult, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is user-provided config file
 	if err != nil {
 		return nil, err
 	}
 	return LoadFromString(string(data))
 }
 
+// LoadFromString parses a yapi config from raw YAML data.
 func LoadFromString(data string) (*ParseResult, error) {
 	// 1. Peek at version
 	var env Envelope

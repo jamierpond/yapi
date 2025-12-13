@@ -1,3 +1,4 @@
+// Package domain defines core request and response types.
 package domain
 
 import (
@@ -5,6 +6,7 @@ import (
 	"time"
 )
 
+// Request represents an outgoing API request.
 type Request struct {
 	URL      string
 	Method   string
@@ -13,6 +15,7 @@ type Request struct {
 	Metadata map[string]string
 }
 
+// Response represents the result of an API request.
 type Response struct {
 	StatusCode int
 	Headers    map[string]string

@@ -353,7 +353,7 @@ func (app *rootCommand) printDiagnostics(
 		if !filter(d) {
 			continue
 		}
-		fmt.Fprintln(out, formatDiagnostic(d))
+		_, _ = fmt.Fprintln(out, formatDiagnostic(d))
 	}
 }
 
@@ -374,7 +374,7 @@ func (app *rootCommand) printWarnings(a *validation.Analysis, strict bool) {
 	}
 
 	for _, w := range a.Warnings {
-		fmt.Fprintln(out, color.Yellow("[WARN] "+w))
+		_, _ = fmt.Fprintln(out, color.Yellow("[WARN] "+w))
 	}
 
 	app.printDiagnostics(a, strict, func(d validation.Diagnostic) bool {

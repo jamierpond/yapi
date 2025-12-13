@@ -11,6 +11,7 @@ import (
 	"yapi.run/cli/internal/tui/theme"
 )
 
+// Model is the bubbletea model for the file selector.
 type Model struct {
 	files           []string
 	filteredFiles   []string
@@ -23,6 +24,7 @@ type Model struct {
 	maxVisibleFiles int
 }
 
+// New creates a new file selector model.
 func New(files []string, multi bool) Model {
 	ti := textinput.New()
 	ti.Placeholder = "Type to filter..."
@@ -64,10 +66,12 @@ func (m *Model) loadFileContent() {
 	m.viewport.SetContent("")
 }
 
+// Init implements tea.Model.
 func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+// Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -198,6 +202,7 @@ func visibleWindow(total, cursor, max int) (start, end int) {
 	return
 }
 
+// View implements tea.Model.
 func (m Model) View() string {
 	fileList := ""
 	maxVisible := m.maxVisibleFiles
@@ -280,6 +285,7 @@ func (m Model) View() string {
 	return theme.App.Render(content)
 }
 
+// SelectedList returns the list of selected file paths.
 func (m Model) SelectedList() []string {
 	out := make([]string, 0, len(m.selectedSet))
 	for f := range m.selectedSet {

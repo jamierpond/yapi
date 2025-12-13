@@ -133,6 +133,7 @@ func runYapiCmd(path string) tea.Cmd {
 	}
 }
 
+// NewWatchModel creates a new watch mode TUI model.
 func NewWatchModel(path string) watchModel {
 	return watchModel{
 		filepath:    path,
@@ -263,6 +264,7 @@ func (m watchModel) View() string {
 	)
 }
 
+// RunWatch starts watch mode TUI for the given config file.
 func RunWatch(path string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
