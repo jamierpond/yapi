@@ -9,16 +9,6 @@ func Map[T, U any](ts []T, f func(T) U) []U {
 	return us
 }
 
-// ContainsFunc returns true if any element satisfies f.
-func ContainsFunc[T any](ts []T, f func(T) bool) bool {
-	for _, t := range ts {
-		if f(t) {
-			return true
-		}
-	}
-	return false
-}
-
 // Coalesce returns the first non-zero value.
 func Coalesce[T comparable](vals ...T) T {
 	var zero T

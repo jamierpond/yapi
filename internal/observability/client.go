@@ -23,11 +23,6 @@ func Close() {
 	}
 }
 
-// Enabled returns true if any providers are registered
-func Enabled() bool {
-	return len(providers) > 0
-}
-
 // AddProvider registers a new observability provider
 func AddProvider(p Provider) {
 	providers = append(providers, p)

@@ -3,14 +3,15 @@ package validation
 import (
 	"strings"
 	"testing"
-
-	"yapi.run/cli/internal/utils"
 )
 
 func hasDiagnostic(diags []Diagnostic, substr string) bool {
-	return utils.ContainsFunc(diags, func(d Diagnostic) bool {
-		return strings.Contains(d.Message, substr)
-	})
+	for _, d := range diags {
+		if strings.Contains(d.Message, substr) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestAnalyzeConfig_ValidHTTP(t *testing.T) {

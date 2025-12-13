@@ -81,8 +81,3 @@ func Dim(text string) string {
 func AccentBg(text string) string {
 	return wrap(accentBgSeq, text)
 }
-
-// Bold formats text with bold style
-func Bold(text string) string {
-	return wrap(boldSeq, text)
-}

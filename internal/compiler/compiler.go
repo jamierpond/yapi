@@ -21,11 +21,6 @@ type CompiledRequest struct {
 	Errors  []error
 }
 
-// HasErrors returns true if compilation produced errors.
-func (c *CompiledRequest) HasErrors() bool {
-	return len(c.Errors) > 0
-}
-
 // Compile transforms ConfigV1 -> domain.Request via recursive interpolation + validation.
 func Compile(cfg *config.ConfigV1, resolver vars.Resolver) *CompiledRequest {
 	res := &CompiledRequest{}
