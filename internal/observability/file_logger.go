@@ -21,10 +21,10 @@ type FileLoggerClient struct {
 
 // NewFileLoggerClient creates a new file logger client
 func NewFileLoggerClient(path, version, commit string) (*FileLoggerClient, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil { // #nosec G301 -- user config directory
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil { //nolint:gosec // user config directory
 		return nil, err
 	}
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // #nosec G304 -- user-provided log path
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) //nolint:gosec // user-provided log path
 	if err != nil {
 		return nil, err
 	}

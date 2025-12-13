@@ -24,7 +24,7 @@ type ParseResult struct {
 
 // Load reads and parses a yapi config file from the given path.
 func Load(path string) (*ParseResult, error) {
-	data, err := os.ReadFile(path) // #nosec G304 -- path is user-provided config file
+	data, err := os.ReadFile(path) //nolint:gosec // user-provided config file
 	if err != nil {
 		return nil, err
 	}

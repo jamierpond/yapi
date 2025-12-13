@@ -1,3 +1,4 @@
+// Package filter provides JQ filtering for response bodies.
 package filter
 
 import (

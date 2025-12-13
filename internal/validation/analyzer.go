@@ -130,7 +130,7 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	data, _ := os.ReadFile(path)
+	data, _ := os.ReadFile(path) //nolint:gosec // user-provided config path
 	return analyzeParsed(string(data), parseRes), nil
 }
 

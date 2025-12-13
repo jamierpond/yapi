@@ -531,7 +531,7 @@ func newShareCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filename := args[0]
-			data, err := os.ReadFile(filename)
+			data, err := os.ReadFile(filename) //nolint:gosec // user-provided file path
 			if err != nil {
 				return fmt.Errorf("failed to read file: %w", err)
 			}

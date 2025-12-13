@@ -1,3 +1,4 @@
+// Package share provides URL encoding for sharing configs.
 package share
 
 import (

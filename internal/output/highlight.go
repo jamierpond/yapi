@@ -1,3 +1,4 @@
+// Package output provides response formatting and syntax highlighting.
 package output
 
 import (
