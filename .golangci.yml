@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
   modules-download-mode: readonly
@@ -5,83 +7,87 @@ run:
 linters:
   enable:
     # Default linters
-    - errcheck      # unchecked errors
-    - gosimple      # simplifications
-    - govet         # suspicious constructs
-    - ineffassign   # useless assignments
-    - staticcheck   # advanced analyzer (~150 checks)
-    - unused        # unused code
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
 
     # Style
-    - revive        # customizable style linter
-    - gofmt         # formatting
-    - goimports     # import cleanup
+    - revive
 
     # Complexity
-    - gocyclo       # cyclomatic complexity
+    - gocyclo
 
     # Security
-    - gosec         # security patterns (SAST)
+    - gosec
 
-linters-settings:
-  gocyclo:
-    min-complexity: 30  # allow some complexity in main functions
+  settings:
+    gocyclo:
+      min-complexity: 30
 
-  staticcheck:
-    checks:
-      - all
-      - -SA1019  # ignore deprecation warnings (fix later)
+    staticcheck:
+      checks:
+        - all
+        - -SA1019 # ignore deprecation warnings (fix later)
 
-  revive:
+    revive:
+      rules:
+        - name: blank-imports
+          disabled: true # allow blank imports with comments
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: increment-decrement
+        - name: var-naming
+        - name: package-comments
+          disabled: true
+        - name: range
+        - name: receiver-naming
+          disabled: true # allow different receiver names
+        - name: time-naming
+        - name: unexported-return
+          disabled: true # internal packages can return unexported types
+        - name: indent-error-flow
+        - name: errorf
+
+    gosec:
+      excludes:
+        - G104 # audit errors not checked (we use errcheck for this)
+        - G115 # integer overflow (false positives on protocol types)
+        - G204 # subprocess with variable (OK in scripts/)
+
+  exclusions:
     rules:
-      - name: blank-imports
-        disabled: true  # allow blank imports with comments
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: increment-decrement
-      - name: var-naming
-      - name: package-comments
-        disabled: true
-      - name: range
-      - name: receiver-naming
-        disabled: true  # allow different receiver names
-      - name: time-naming
-      - name: unexported-return
-        disabled: true  # internal packages can return unexported types
-      - name: indent-error-flow
-      - name: errorf
+      # Test files can have longer functions and unchecked errors
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
 
-  gosec:
-    excludes:
-      - G104  # audit errors not checked (we use errcheck for this)
-      - G115  # integer overflow (false positives on protocol types)
-      - G204  # subprocess with variable (OK in scripts/)
+      # Allow dot imports in tests
+      - path: _test\.go
+        linters:
+          - revive
+        text: "dot-imports"
 
-issues:
-  exclude-rules:
-    # Test files can have longer functions and unchecked errors
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
+      # Scripts can have subprocess calls
+      - path: ^scripts/
+        linters:
+          - gosec
 
-    # Allow dot imports in tests
-    - path: _test\.go
-      linters:
-        - revive
-      text: "dot-imports"
+      # Allow ConfigV1 naming (widespread convention)
+      - linters:
+          - revive
+        text: "type name will be used as config\\.ConfigV1"
 
-    # Scripts can have subprocess calls
-    - path: scripts/
-      linters:
-        - gosec
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
-    # Allow ConfigV1 naming (widespread convention)
-    - text: "type name will be used as config.ConfigV1"
-      linters:
-        - revive
