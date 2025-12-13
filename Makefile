@@ -21,7 +21,7 @@ fuzz-cover:
 # Install linting tools
 lint-install:
 	@echo "Installing linting tools..."
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 	go install golang.org/x/tools/cmd/deadcode@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
