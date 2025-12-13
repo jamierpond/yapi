@@ -1,6 +1,6 @@
+// Package tui provides terminal UI components for yapi.
 package tui
 
-// bump this file to rebuild ci
 import (
 	"fmt"
 	"os"

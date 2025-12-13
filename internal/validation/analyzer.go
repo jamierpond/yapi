@@ -1,3 +1,4 @@
+// Package validation provides config analysis and diagnostics.
 package validation
 
 import (

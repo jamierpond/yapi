@@ -1,3 +1,4 @@
+// Package config handles parsing and loading yapi config files.
 package config
 
 import (
