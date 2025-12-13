@@ -1,0 +1,66 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # unchecked errors
+    - gosimple      # simplifications
+    - govet         # suspicious constructs
+    - ineffassign   # useless assignments
+    - staticcheck   # advanced analyzer (~150 checks)
+    - unused        # unused code
+
+    # Style
+    - revive        # customizable style linter
+    - gofmt         # formatting
+    - goimports     # import cleanup
+
+    # Complexity
+    - gocyclo       # cyclomatic complexity
+
+    # Security
+    - gosec         # security patterns (SAST)
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: var-naming
+      - name: package-comments
+        disabled: true
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+
+  gosec:
+    excludes:
+      - G104  # audit errors not checked (we use errcheck for this)
+
+issues:
+  exclude-rules:
+    # Test files can have longer functions
+    - path: _test\.go
+      linters:
+        - gocyclo
+
+    # Allow dot imports in tests
+    - path: _test\.go
+      linters:
+        - revive
+      text: "dot-imports"
