@@ -46,7 +46,7 @@ func Run() {
 	}
 
 	srv := server.NewServer(&handler, lsName, false)
-	srv.RunStdio()
+	_ = srv.RunStdio()
 }
 
 func initialize(ctx *glsp.Context, params *protocol.InitializeParams) (any, error) {

@@ -89,9 +89,9 @@ func TCPTransport(ctx context.Context, req *domain.Request) (*domain.Response, e
 
 	// Set read deadline
 	if readTimeout > 0 {
-		conn.SetReadDeadline(time.Now().Add(time.Duration(readTimeout) * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(time.Duration(readTimeout) * time.Second))
 	} else if idleTimeout > 0 {
-		conn.SetReadDeadline(time.Now().Add(time.Duration(idleTimeout) * time.Millisecond))
+		_ = conn.SetReadDeadline(time.Now().Add(time.Duration(idleTimeout) * time.Millisecond))
 	}
 
 	_, err = io.Copy(&respBuf, conn)

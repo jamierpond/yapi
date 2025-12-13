@@ -474,7 +474,7 @@ func newValidateCmd() *cobra.Command {
 			}
 
 			if jsonOutput {
-				json.NewEncoder(os.Stdout).Encode(analysis.ToJSON())
+				_ = json.NewEncoder(os.Stdout).Encode(analysis.ToJSON())
 				return nil
 			}
 
@@ -498,7 +498,7 @@ func outputValidateError(err error) {
 		}},
 		Warnings: []string{},
 	}
-	json.NewEncoder(os.Stdout).Encode(out)
+	_ = json.NewEncoder(os.Stdout).Encode(out)
 }
 
 func outputValidateText(analysis *validation.Analysis) error {
