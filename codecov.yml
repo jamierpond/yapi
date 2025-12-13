@@ -1,0 +1,12 @@
+# codecov.yml
+coverage:
+  status:
+    project:
+      default:
+        # allow a drop of up to 5% without failing the check
+        threshold: 5%
+    patch:
+      default:
+        # allow a drop on the specific code changes in the PR
+        threshold: 2%
+
