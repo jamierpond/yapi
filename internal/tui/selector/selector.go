@@ -1,3 +1,4 @@
+// Package selector provides a TUI file picker component.
 package selector
 
 import (

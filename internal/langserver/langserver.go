@@ -1,3 +1,4 @@
+// Package langserver implements an LSP server for yapi config files.
 package langserver
 
 import (

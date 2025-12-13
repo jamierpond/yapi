@@ -1,3 +1,4 @@
+// Package core provides the main engine for executing yapi configs.
 package core
 
 import (

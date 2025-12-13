@@ -1,3 +1,4 @@
+// Package theme defines colors and styles for the TUI.
 package theme
 
 import "github.com/charmbracelet/lipgloss"

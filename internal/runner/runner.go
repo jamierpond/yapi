@@ -1,3 +1,4 @@
+// Package runner executes API requests and chains.
 package runner
 
 import (
