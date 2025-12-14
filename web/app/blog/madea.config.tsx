@@ -4,7 +4,7 @@ import type {
   FileBrowserViewProps,
   FileInfo,
 } from "madea-blog-core";
-import { stripTitle } from "madea-blog-core";
+import { stripTitle, generateArticleJsonLd } from "madea-blog-core";
 import { LocalFsDataProvider } from "madea-blog-core/providers/local-fs";
 import Link from "next/link";
 import Markdown from "react-markdown";
@@ -30,9 +30,22 @@ function BlogLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const BASE_URL = "https://yapi.run";
+
 function ArticleView({ article }: ArticleViewProps) {
+  const jsonLd = generateArticleJsonLd(article, {
+    baseUrl: BASE_URL,
+    blogPath: "/blog",
+    authorName: "yapi",
+    authorUrl: BASE_URL,
+  });
+
   return (
     <BlogLayout>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <article className="max-w-3xl w-full">
         <Link
           href="/blog"
