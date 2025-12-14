@@ -1,0 +1,8 @@
+yapi: v1
+# GitLab API - Get project information
+# This example fetches project details from a public GitLab repository
+url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab
+
+# For private repos, you would add:
+# headers:
+#   PRIVATE-TOKEN: ${GITLAB_TOKEN}

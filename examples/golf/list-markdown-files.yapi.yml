@@ -1,0 +1,14 @@
+yapi: v1
+# GitLab API Example - Golf Score Tracking
+# This example demonstrates accessing a public GitLab repository
+# that contains markdown files for tracking golf scores/notes
+
+# Example using GitLab's own repository (replace with actual golf repo)
+url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-docs/repository/tree
+
+params:
+  recursive: "true"
+  per_page: "100"
+
+# Filter to show only markdown files
+jq_filter: ".[] | select(.type == \"blob\" and (.name | endswith(\".md\"))) | {name, path, type} | select(.path | startswith(\"content\"))"

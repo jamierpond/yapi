@@ -1,0 +1,15 @@
+yapi: v1
+# GitLab API - Get file content
+# This example fetches a file's content from a GitLab repository
+# The file_path must be URL-encoded (use %2F for slashes)
+url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab/repository/files/README.md
+
+params:
+  ref: master
+
+# For private repos, you would add:
+# headers:
+#   PRIVATE-TOKEN: ${GITLAB_TOKEN}
+
+# The content is returned base64-encoded, you can decode it with jq
+jq_filter: ".content | @base64d | .[0:500]"
