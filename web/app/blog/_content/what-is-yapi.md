@@ -3,8 +3,7 @@
 
 > Yapi is the hacker's Postman, Insomnia or Bruno.
 
-It is a command line tool that makes it easy to interact with APIs from your
-terminal.
+Yapi is an OSS command line tool that makes it easy to test APIs from your terminal. Yapi speaks HTTP, gRPC, TCP, GraphQL (and more coming soon).
 
 ### Yapi speaks HTTP
 I wanted a fun way to make HTTP requests from the terminal (without massive, ad-hoc `curl` incantations).
