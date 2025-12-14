@@ -69,6 +69,22 @@ function ArticleView({ article }: ArticleViewProps) {
   );
 }
 
+function extractDescription(content: string): string {
+  // Get the first non-empty line after the title (## heading)
+  const lines = content.split('\n');
+  let foundTitle = false;
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      foundTitle = true;
+      continue;
+    }
+    if (foundTitle && line.trim() && !line.startsWith('```')) {
+      return line.trim();
+    }
+  }
+  return '';
+}
+
 function FileBrowserView({ articles }: FileBrowserViewProps) {
   return (
     <DocsLayout>
@@ -89,18 +105,26 @@ function FileBrowserView({ articles }: FileBrowserViewProps) {
             <p className="text-yapi-fg-muted">No docs yet. Run <code className="text-yapi-accent">go run scripts/gendocs.go</code> to generate.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {articles.map((article: FileInfo) => (
-              <Link
-                key={article.sha}
-                href={`/docs/${article.path.replace(/\.md$/, "")}`}
-                className="block group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all duration-300"
-              >
-                <h2 className="text-xl font-bold mb-3 group-hover:text-yapi-accent transition-colors font-mono">
-                  {article.title}
-                </h2>
-              </Link>
-            ))}
+          <div className="space-y-4">
+            {articles.map((article: FileInfo) => {
+              const description = extractDescription(article.content);
+              return (
+                <Link
+                  key={article.sha}
+                  href={`/docs/${article.path.replace(/\.md$/, "")}`}
+                  className="block group p-5 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all duration-300"
+                >
+                  <h2 className="text-lg font-bold group-hover:text-yapi-accent transition-colors font-mono">
+                    {article.title}
+                  </h2>
+                  {description && (
+                    <p className="text-sm text-yapi-fg-muted mt-1">
+                      {description}
+                    </p>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
