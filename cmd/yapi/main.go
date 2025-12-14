@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"yapi.run/cli/internal/cli/color"
+	"yapi.run/cli/internal/cli/commands"
 	"yapi.run/cli/internal/cli/middleware"
 	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"

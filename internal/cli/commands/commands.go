@@ -1,0 +1,154 @@
+package commands
+
+import (
+	"github.com/spf13/cobra"
+)
+
+// Config holds configuration for command execution
+type Config struct {
+	URLOverride string
+	NoColor     bool
+}
+
+// Handlers contains the callback functions for command execution
+type Handlers struct {
+	RunInteractive func(cmd *cobra.Command, args []string) error
+	Run            func(cmd *cobra.Command, args []string) error
+	Watch          func(cmd *cobra.Command, args []string) error
+	History        func(cmd *cobra.Command, args []string) error
+	LSP            func(cmd *cobra.Command, args []string) error
+	Version        func(cmd *cobra.Command, args []string) error
+	Validate       func(cmd *cobra.Command, args []string) error
+	Share          func(cmd *cobra.Command, args []string) error
+}
+
+// BuildRoot builds the root command tree with optional handlers.
+// If handlers is nil, commands are built without RunE functions (for doc generation).
+func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
+	if cfg == nil {
+		cfg = &Config{}
+	}
+
+	rootCmd := &cobra.Command{
+		Use:           "yapi",
+		Short:         "yapi is a unified API client for HTTP, gRPC, and TCP",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+	}
+
+	if handlers != nil && handlers.RunInteractive != nil {
+		rootCmd.RunE = handlers.RunInteractive
+	}
+
+	rootCmd.PersistentFlags().StringVarP(&cfg.URLOverride, "url", "u", "", "Override the URL specified in the config file")
+	rootCmd.PersistentFlags().BoolVar(&cfg.NoColor, "no-color", false, "Disable color output")
+
+	rootCmd.AddCommand(newRunCmd(handlers))
+	rootCmd.AddCommand(newWatchCmd(handlers))
+	rootCmd.AddCommand(newHistoryCmd(handlers))
+	rootCmd.AddCommand(newLSPCmd(handlers))
+	rootCmd.AddCommand(newVersionCmd(handlers))
+	rootCmd.AddCommand(newValidateCmd(handlers))
+	rootCmd.AddCommand(newShareCmd(handlers))
+
+	return rootCmd
+}
+
+func newRunCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run <file>",
+		Short: "Run a request defined in a yapi config file",
+		Args:  cobra.ExactArgs(1),
+	}
+	if h != nil && h.Run != nil {
+		cmd.RunE = h.Run
+	}
+	return cmd
+}
+
+func newWatchCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "watch [file]",
+		Short: "Watch a yapi config file and re-run on changes",
+		Args:  cobra.MaximumNArgs(1),
+	}
+	if h != nil && h.Watch != nil {
+		cmd.RunE = h.Watch
+	}
+
+	cmd.Flags().BoolP("pretty", "p", false, "Enable pretty TUI mode")
+	cmd.Flags().Bool("no-pretty", false, "Disable pretty TUI mode")
+
+	return cmd
+}
+
+func newHistoryCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "history [count]",
+		Short: "Show yapi command history (default: last 10)",
+		Args:  cobra.MaximumNArgs(1),
+	}
+	if h != nil && h.History != nil {
+		cmd.RunE = h.History
+	}
+
+	cmd.Flags().Bool("json", false, "Output as JSON")
+
+	return cmd
+}
+
+func newLSPCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "lsp",
+		Short: "Run the yapi language server over stdio",
+	}
+	if h != nil && h.LSP != nil {
+		cmd.RunE = h.LSP
+	}
+	return cmd
+}
+
+func newVersionCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print version information",
+	}
+	if h != nil && h.Version != nil {
+		cmd.RunE = h.Version
+	}
+
+	cmd.Flags().Bool("json", false, "Output version info as JSON")
+
+	return cmd
+}
+
+func newValidateCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "validate [file]",
+		Short: "Validate a yapi config file",
+		Long:  "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
+		Args:  cobra.MaximumNArgs(1),
+	}
+	if h != nil && h.Validate != nil {
+		cmd.RunE = h.Validate
+	}
+
+	cmd.Flags().Bool("json", false, "Output diagnostics as JSON")
+
+	return cmd
+}
+
+func newShareCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "share <file>",
+		Short: "Generate a shareable yapi.run link for a config file",
+		Args:  cobra.ExactArgs(1),
+	}
+	if h != nil && h.Share != nil {
+		cmd.RunE = h.Share
+	}
+
+	cmd.Flags().BoolP("copy", "c", false, "Copy URL to clipboard")
+
+	return cmd
+}
