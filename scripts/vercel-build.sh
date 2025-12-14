@@ -9,6 +9,10 @@ fi
 
 echo "=== Vercel Build Script ==="
 
+# Initialize git submodules (Vercel doesn't do this by default)
+echo "Initializing git submodules..."
+git submodule update --init --recursive
+
 # Install Go if not available
 if ! command -v go &> /dev/null; then
     echo "Installing Go..."
