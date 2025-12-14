@@ -81,35 +81,34 @@ func main() {
 		engine:     core.NewEngine(httpClient, core.WithRequestHook(requestHook)),
 	}
 
-	rootCmd := &cobra.Command{
-		Use:           "yapi",
-		Short:         "yapi is a unified API client for HTTP, gRPC, and TCP",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			color.SetNoColor(app.noColor)
-		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			// Log command to history (skip meta commands)
-			switch cmd.Name() {
-			case "history", "version", "lsp", "help", "yapi":
-				return
-			}
-			logHistoryCmd(reconstructCommand(cmd, args))
-		},
-		RunE: app.runInteractiveE,
+	cfg := &commands.Config{}
+	handlers := &commands.Handlers{
+		RunInteractive: app.runInteractiveE,
+		Run:            app.runE,
+		Watch:          app.watchE,
+		History:        historyE,
+		LSP:            lspE,
+		Version:        versionE,
+		Validate:       validateE,
+		Share:          shareE,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&app.urlOverride, "url", "u", "", "Override the URL specified in the config file")
-	rootCmd.PersistentFlags().BoolVar(&app.noColor, "no-color", false, "Disable color output")
+	rootCmd := commands.BuildRoot(cfg, handlers)
 
-	rootCmd.AddCommand(app.newRunCmd())
-	rootCmd.AddCommand(app.newWatchCmd())
-	rootCmd.AddCommand(newHistoryCmd())
-	rootCmd.AddCommand(newLSPCmd())
-	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newValidateCmd())
-	rootCmd.AddCommand(newShareCmd())
+	// Wire up the config to app after flags are parsed
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		app.urlOverride = cfg.URLOverride
+		app.noColor = cfg.NoColor
+		color.SetNoColor(app.noColor)
+	}
+	rootCmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		// Log command to history (skip meta commands)
+		switch cmd.Name() {
+		case "history", "version", "lsp", "help", "yapi":
+			return
+		}
+		logHistoryCmd(reconstructCommand(cmd, args))
+	}
 
 	// Wrap all commands with observability middleware
 	middleware.WrapWithObservability(rootCmd)
@@ -130,55 +129,35 @@ func (app *rootCommand) runInteractiveE(cmd *cobra.Command, args []string) error
 	return app.runConfigPathE(selectedPath)
 }
 
-func (app *rootCommand) newRunCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run <file>",
-		Short: "Run a request defined in a yapi config file",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return app.runConfigPathE(args[0])
-		},
-	}
-	return cmd
+func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
+	return app.runConfigPathE(args[0])
 }
 
-func (app *rootCommand) newWatchCmd() *cobra.Command {
-	var pretty bool
-	var noPretty bool
+func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
+	pretty, _ := cmd.Flags().GetBool("pretty")
+	noPretty, _ := cmd.Flags().GetBool("no-pretty")
 
-	cmd := &cobra.Command{
-		Use:   "watch [file]",
-		Short: "Watch a yapi config file and re-run on changes",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var path string
-			interactive := len(args) == 0
+	var path string
+	interactive := len(args) == 0
 
-			if interactive {
-				selectedPath, err := tui.FindConfigFileSingle()
-				if err != nil {
-					return fmt.Errorf("failed to select config file: %w", err)
-				}
-				path = selectedPath
-				absPath, _ := filepath.Abs(selectedPath)
-				logHistoryFromTUI(fmt.Sprintf("yapi watch %q", absPath))
-			} else {
-				path = args[0]
-			}
-
-			usePretty := pretty || (interactive && !noPretty)
-
-			if usePretty {
-				return tui.RunWatch(path)
-			}
-			return app.watchConfigPath(path)
-		},
+	if interactive {
+		selectedPath, err := tui.FindConfigFileSingle()
+		if err != nil {
+			return fmt.Errorf("failed to select config file: %w", err)
+		}
+		path = selectedPath
+		absPath, _ := filepath.Abs(selectedPath)
+		logHistoryFromTUI(fmt.Sprintf("yapi watch %q", absPath))
+	} else {
+		path = args[0]
 	}
 
-	cmd.Flags().BoolVarP(&pretty, "pretty", "p", false, "Enable pretty TUI mode")
-	cmd.Flags().BoolVar(&noPretty, "no-pretty", false, "Disable pretty TUI mode")
+	usePretty := pretty || (interactive && !noPretty)
 
-	return cmd
+	if usePretty {
+		return tui.RunWatch(path)
+	}
+	return app.watchConfigPath(path)
 }
 
 func (app *rootCommand) watchConfigPath(path string) error {
@@ -393,99 +372,70 @@ func (app *rootCommand) runConfigPathE(path string) error {
 	return app.executeRunE(runContext{path: path, strict: true})
 }
 
-func newLSPCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "lsp",
-		Short: "Run the yapi language server over stdio",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			langserver.Run()
-			return nil
-		},
-	}
+func lspE(cmd *cobra.Command, args []string) error {
+	langserver.Run()
+	return nil
 }
 
-func newVersionCmd() *cobra.Command {
-	var jsonOutput bool
+func versionE(cmd *cobra.Command, args []string) error {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
-	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print version information",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if jsonOutput {
-				info := map[string]any{
-					"version": version,
-					"commit":  commit,
-					"date":    date,
-				}
-				return json.NewEncoder(os.Stdout).Encode(info)
-			}
-
-			fmt.Printf("yapi %s\n", version)
-			fmt.Printf("  commit: %s\n", commit)
-			fmt.Printf("  built:  %s\n", date)
-			return nil
-		},
+	if jsonOutput {
+		info := map[string]any{
+			"version": version,
+			"commit":  commit,
+			"date":    date,
+		}
+		return json.NewEncoder(os.Stdout).Encode(info)
 	}
 
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output version info as JSON")
-
-	return cmd
+	fmt.Printf("yapi %s\n", version)
+	fmt.Printf("  commit: %s\n", commit)
+	fmt.Printf("  built:  %s\n", date)
+	return nil
 }
 
-func newValidateCmd() *cobra.Command {
-	var jsonOutput bool
+func validateE(cmd *cobra.Command, args []string) error {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+	var text string
 
-	cmd := &cobra.Command{
-		Use:   "validate [file]",
-		Short: "Validate a yapi config file",
-		Long:  "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var text string
-
-			if len(args) == 0 || args[0] == "-" {
-				data, err := io.ReadAll(os.Stdin)
-				if err != nil {
-					if jsonOutput {
-						outputValidateError(err)
-						return nil
-					}
-					return fmt.Errorf("failed to read stdin: %w", err)
-				}
-				text = string(data)
-			} else {
-				data, err := os.ReadFile(args[0])
-				if err != nil {
-					if jsonOutput {
-						outputValidateError(err)
-						return nil
-					}
-					return fmt.Errorf("failed to read file: %w", err)
-				}
-				text = string(data)
-			}
-
-			analysis, err := validation.AnalyzeConfigString(text)
-			if err != nil {
-				if jsonOutput {
-					outputValidateError(err)
-					return nil
-				}
-				return fmt.Errorf("validation failed: %w", err)
-			}
-
+	if len(args) == 0 || args[0] == "-" {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
 			if jsonOutput {
-				_ = json.NewEncoder(os.Stdout).Encode(analysis.ToJSON())
+				outputValidateError(err)
 				return nil
 			}
-
-			return outputValidateText(analysis)
-		},
+			return fmt.Errorf("failed to read stdin: %w", err)
+		}
+		text = string(data)
+	} else {
+		data, err := os.ReadFile(args[0])
+		if err != nil {
+			if jsonOutput {
+				outputValidateError(err)
+				return nil
+			}
+			return fmt.Errorf("failed to read file: %w", err)
+		}
+		text = string(data)
 	}
 
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output diagnostics as JSON")
+	analysis, err := validation.AnalyzeConfigString(text)
+	if err != nil {
+		if jsonOutput {
+			outputValidateError(err)
+			return nil
+		}
+		return fmt.Errorf("validation failed: %w", err)
+	}
 
-	return cmd
+	if jsonOutput {
+		_ = json.NewEncoder(os.Stdout).Encode(analysis.ToJSON())
+		return nil
+	}
+
+	return outputValidateText(analysis)
 }
 
 func outputValidateError(err error) {
@@ -523,92 +473,81 @@ func outputValidateText(analysis *validation.Analysis) error {
 	return nil
 }
 
-func newShareCmd() *cobra.Command {
-	var copyToClipboard bool
+func shareE(cmd *cobra.Command, args []string) error {
+	copyToClipboard, _ := cmd.Flags().GetBool("copy")
+	filename := args[0]
 
-	cmd := &cobra.Command{
-		Use:   "share <file>",
-		Short: "Generate a shareable yapi.run link for a config file",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			filename := args[0]
-			data, err := os.ReadFile(filename) //nolint:gosec // user-provided file path
-			if err != nil {
-				return fmt.Errorf("failed to read file: %w", err)
-			}
-
-			content := string(data)
-
-			// Validate the config
-			analysis, _ := validation.AnalyzeConfigString(content)
-			hasErrors := analysis != nil && analysis.HasErrors()
-			hasWarnings := analysis != nil && len(analysis.Warnings) > 0
-
-			encoded, err := share.Encode(content)
-			if err != nil {
-				return fmt.Errorf("failed to encode: %w", err)
-			}
-
-			url := "https://yapi.run/c/" + encoded
-
-			// Stats
-			originalSize := len(data)
-			compressedSize := len(encoded)
-			ratio := float64(compressedSize) / float64(originalSize) * 100
-			lines := strings.Count(content, "\n") + 1
-
-			// Fancy output to stderr
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, color.AccentBg(" yapi share "))
-			fmt.Fprintln(os.Stderr)
-
-			if hasErrors {
-				fmt.Fprintln(os.Stderr, "  "+color.Yellow("Heads up: this yap has validation errors!"))
-				fmt.Fprintln(os.Stderr)
-				for _, d := range analysis.Diagnostics {
-					if d.Severity == validation.SeverityError {
-						fmt.Fprintln(os.Stderr, "  "+color.Red(d.Message))
-					}
-				}
-				fmt.Fprintln(os.Stderr)
-			} else if hasWarnings {
-				fmt.Fprintln(os.Stderr, "  "+color.Yellow("Your yap has warnings, but it's ready to share!"))
-			} else {
-				fmt.Fprintln(os.Stderr, "  "+color.Green("Your yap is ready to share!"))
-			}
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, color.Dim("  file     ")+filepath.Base(filename))
-			fmt.Fprintln(os.Stderr, color.Dim("  lines    ")+fmt.Sprintf("%d", lines))
-			fmt.Fprintln(os.Stderr, color.Dim("  size     ")+fmt.Sprintf("%s -> %s (%.0f%%)", formatBytes(originalSize), formatBytes(compressedSize), ratio))
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, "  "+color.Cyan(url))
-			fmt.Fprintln(os.Stderr)
-
-			// Copy to clipboard if requested
-			if copyToClipboard {
-				if err := copyToClip(url); err != nil {
-					fmt.Fprintln(os.Stderr, color.Dim("  clipboard failed: "+err.Error()))
-				} else {
-					fmt.Fprintln(os.Stderr, "  "+color.Green("Copied to clipboard!"))
-				}
-				fmt.Fprintln(os.Stderr)
-			}
-
-			fmt.Fprintln(os.Stderr, color.Dim("  The entire request is encoded in the URL - just share it!"))
-			fmt.Fprintln(os.Stderr, color.Dim("  Tip: pipe to clipboard with: yapi share file.yapi | pbcopy"))
-			fmt.Fprintln(os.Stderr)
-
-			// Only print raw URL to stdout when piping (not a terminal)
-			if stat, _ := os.Stdout.Stat(); (stat.Mode() & os.ModeCharDevice) == 0 {
-				fmt.Println(url)
-			}
-			return nil
-		},
+	data, err := os.ReadFile(filename) //nolint:gosec // user-provided file path
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	cmd.Flags().BoolVarP(&copyToClipboard, "copy", "c", false, "Copy URL to clipboard")
+	content := string(data)
 
-	return cmd
+	// Validate the config
+	analysis, _ := validation.AnalyzeConfigString(content)
+	hasErrors := analysis != nil && analysis.HasErrors()
+	hasWarnings := analysis != nil && len(analysis.Warnings) > 0
+
+	encoded, err := share.Encode(content)
+	if err != nil {
+		return fmt.Errorf("failed to encode: %w", err)
+	}
+
+	url := "https://yapi.run/c/" + encoded
+
+	// Stats
+	originalSize := len(data)
+	compressedSize := len(encoded)
+	ratio := float64(compressedSize) / float64(originalSize) * 100
+	lines := strings.Count(content, "\n") + 1
+
+	// Fancy output to stderr
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, color.AccentBg(" yapi share "))
+	fmt.Fprintln(os.Stderr)
+
+	if hasErrors {
+		fmt.Fprintln(os.Stderr, "  "+color.Yellow("Heads up: this yap has validation errors!"))
+		fmt.Fprintln(os.Stderr)
+		for _, d := range analysis.Diagnostics {
+			if d.Severity == validation.SeverityError {
+				fmt.Fprintln(os.Stderr, "  "+color.Red(d.Message))
+			}
+		}
+		fmt.Fprintln(os.Stderr)
+	} else if hasWarnings {
+		fmt.Fprintln(os.Stderr, "  "+color.Yellow("Your yap has warnings, but it's ready to share!"))
+	} else {
+		fmt.Fprintln(os.Stderr, "  "+color.Green("Your yap is ready to share!"))
+	}
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, color.Dim("  file     ")+filepath.Base(filename))
+	fmt.Fprintln(os.Stderr, color.Dim("  lines    ")+fmt.Sprintf("%d", lines))
+	fmt.Fprintln(os.Stderr, color.Dim("  size     ")+fmt.Sprintf("%s -> %s (%.0f%%)", formatBytes(originalSize), formatBytes(compressedSize), ratio))
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "  "+color.Cyan(url))
+	fmt.Fprintln(os.Stderr)
+
+	// Copy to clipboard if requested
+	if copyToClipboard {
+		if err := copyToClip(url); err != nil {
+			fmt.Fprintln(os.Stderr, color.Dim("  clipboard failed: "+err.Error()))
+		} else {
+			fmt.Fprintln(os.Stderr, "  "+color.Green("Copied to clipboard!"))
+		}
+		fmt.Fprintln(os.Stderr)
+	}
+
+	fmt.Fprintln(os.Stderr, color.Dim("  The entire request is encoded in the URL - just share it!"))
+	fmt.Fprintln(os.Stderr, color.Dim("  Tip: pipe to clipboard with: yapi share file.yapi | pbcopy"))
+	fmt.Fprintln(os.Stderr)
+
+	// Only print raw URL to stdout when piping (not a terminal)
+	if stat, _ := os.Stdout.Stat(); (stat.Mode() & os.ModeCharDevice) == 0 {
+		fmt.Println(url)
+	}
+	return nil
 }
 
 func copyToClip(text string) error {
@@ -690,93 +629,83 @@ type historyEntry struct {
 	Props   map[string]any `json:"-"` // For parsing additional fields
 }
 
-func newHistoryCmd() *cobra.Command {
-	var jsonOutput bool
+func historyE(cmd *cobra.Command, args []string) error {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
-	cmd := &cobra.Command{
-		Use:   "history [count]",
-		Short: "Show yapi command history (default: last 10)",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			count := 10
-			if len(args) == 1 {
-				n, err := fmt.Sscanf(args[0], "%d", &count)
-				if err != nil || n != 1 || count < 1 {
-					return fmt.Errorf("invalid count: %s", args[0])
-				}
-			}
-
-			data, err := os.ReadFile(observability.HistoryFilePath)
-			if err != nil {
-				if os.IsNotExist(err) {
-					fmt.Println("No history yet")
-					return nil
-				}
-				return fmt.Errorf("failed to read history: %w", err)
-			}
-
-			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
-			if len(lines) == 0 || (len(lines) == 1 && lines[0] == "") {
-				fmt.Println("No history yet")
-				return nil
-			}
-
-			start := len(lines) - count
-			if start < 0 {
-				start = 0
-			}
-
-			entries := lines[start:]
-
-			if jsonOutput {
-				fmt.Println("[")
-				for i, line := range entries {
-					fmt.Print("  " + line)
-					if i < len(entries)-1 {
-						fmt.Println(",")
-					} else {
-						fmt.Println()
-					}
-				}
-				fmt.Println("]")
-				return nil
-			}
-
-			// Pretty print for humans
-			for _, line := range entries {
-				var entry historyEntry
-				if err := json.Unmarshal([]byte(line), &entry); err != nil {
-					continue
-				}
-				t, _ := time.Parse(time.RFC3339, entry.Timestamp)
-				timeStr := color.Dim(t.Format("2006-01-02 15:04:05"))
-
-				// New merged format has Command field directly
-				if entry.Command != "" {
-					fmt.Printf("%s  %s\n", timeStr, entry.Command)
-					continue
-				}
-
-				// Legacy: request_executed entries had method/url
-				if entry.Event == "request_executed" {
-					var raw map[string]any
-					if err := json.Unmarshal([]byte(line), &raw); err == nil {
-						method, _ := raw["method"].(string)
-						url, _ := raw["url"].(string)
-						status, _ := raw["status_code"].(float64)
-						if method != "" && url != "" {
-							fmt.Printf("%s  %s %s %s\n", timeStr, color.Cyan(method), url, color.Dim(fmt.Sprintf("[%d]", int(status))))
-							continue
-						}
-					}
-				}
-			}
-			return nil
-		},
+	count := 10
+	if len(args) == 1 {
+		n, err := fmt.Sscanf(args[0], "%d", &count)
+		if err != nil || n != 1 || count < 1 {
+			return fmt.Errorf("invalid count: %s", args[0])
+		}
 	}
 
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
-	return cmd
+	data, err := os.ReadFile(observability.HistoryFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("No history yet")
+			return nil
+		}
+		return fmt.Errorf("failed to read history: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) == 0 || (len(lines) == 1 && lines[0] == "") {
+		fmt.Println("No history yet")
+		return nil
+	}
+
+	start := len(lines) - count
+	if start < 0 {
+		start = 0
+	}
+
+	entries := lines[start:]
+
+	if jsonOutput {
+		fmt.Println("[")
+		for i, line := range entries {
+			fmt.Print("  " + line)
+			if i < len(entries)-1 {
+				fmt.Println(",")
+			} else {
+				fmt.Println()
+			}
+		}
+		fmt.Println("]")
+		return nil
+	}
+
+	// Pretty print for humans
+	for _, line := range entries {
+		var entry historyEntry
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			continue
+		}
+		t, _ := time.Parse(time.RFC3339, entry.Timestamp)
+		timeStr := color.Dim(t.Format("2006-01-02 15:04:05"))
+
+		// New merged format has Command field directly
+		if entry.Command != "" {
+			fmt.Printf("%s  %s\n", timeStr, entry.Command)
+			continue
+		}
+
+		// Legacy: request_executed entries had method/url
+		if entry.Event == "request_executed" {
+			var raw map[string]any
+			if err := json.Unmarshal([]byte(line), &raw); err == nil {
+				method, _ := raw["method"].(string)
+				url, _ := raw["url"].(string)
+				status, _ := raw["status_code"].(float64)
+				if method != "" && url != "" {
+					fmt.Printf("%s  %s %s %s\n", timeStr, color.Cyan(method), url, color.Dim(fmt.Sprintf("[%d]", int(status))))
+					continue
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // logHistoryCmd writes a command to history as JSON
