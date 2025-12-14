@@ -11,6 +11,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import path from "path";
+import fs from "fs";
 import Navbar from "@/app/components/Navbar";
 import "highlight.js/styles/github-dark.css";
 
@@ -138,6 +139,11 @@ function LandingView() {
 
 export function createDocsConfig(): Config {
   const contentDir = path.join(process.cwd(), "app/_docs");
+
+  // Ensure directory exists for LocalFsDataProvider (which uses simple-git)
+  if (!fs.existsSync(contentDir)) {
+    fs.mkdirSync(contentDir, { recursive: true });
+  }
 
   return {
     dataProvider: new LocalFsDataProvider({
