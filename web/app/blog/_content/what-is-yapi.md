@@ -76,74 +76,68 @@ yapi run create-issue.yapi.yml
   // ...blah blah blah
 }
 ```
-### Yapi speaks gRPC
+You can also do PUT, PATCH, DELETE and any other HTTP method.
 
-#### Unary RPC
-This request:
+### Yapi supports chaining requests between protocols
+#### Multi-protocol chaining
+Yapi makes it easy to chain requests and share data between them, even if they are different protocols.
 ```yaml
+# multi-protocol-chain.yapi.yml
 yapi: v1
-url: grpc://grpcb.in:9000
-service: hello.HelloService
-rpc: SayHello
-plaintext: true
-body:
-  greeting: "World"
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+
+  - name: tcp_echo
+    url: tcp://tcpbin.com:4242
+    data: "Todo: ${get_todo.title}\n"
+    encoding: text
+    read_timeout: 5
+    close_after_send: true
+
+  - name: grpc_hello
+    url: grpc://grpcb.in:9000
+    service: hello.HelloService
+    rpc: SayHello
+    plaintext: true
+    body:
+      greeting: $get_todo.title
+
+  - name: create_post
+    url: https://jsonplaceholder.typicode.com/posts
+    method: POST
+    headers:
+      Content-Type: application/json
+    body:
+      original_todo: $get_todo.title
+      grpc_reply: $grpc_hello.reply
+      userId: $get_todo.userId
+    expect:
+      status: 200
+      assert:
+        # run tests using jq assertions
+        - .userId == $get_todo.userId
 ```
-Gives you this response:
-```yaml
+
+And gives you this response:
+```json
+yapi run multi-protocol-chain.yapi.yml
 {
-  "reply": "hello World"
+  "completed": false,
+  "id": 1,
+  "title": "delectus aut autem",
+  "userId": 1
+}
+{
+  "reply": "hello delectus aut autem"
+}
+{
+  "grpc_reply": "hello delectus aut autem",
+  "id": 101,
+  "original_todo": "delectus aut autem",
+  "userId": 1
 }
 ```
 
 
-You can also do PUT, PATCH, DELETE and any other HTTP method.
-
-## Why make another API client?
-Well it started just from me chaining a few CLI tools together with bash.
-
-This was literally all yapi v0 was, feel free to go back in the git history and see for yourself!
-
-```bash
-#!/bin/bash
-set -e
-
-config="$1"
-url="$2"
-
-default_url="http://localhost:3000"
-usage_string="Usage: $0 <config> <url=$default_url>"
-if [ -z "$config" ]; then
-  echo "$usage_string"
-  exit 1
-fi
-
-if [ -z "$url" ]; then
-  url="$default_url"
-fi
-
-config_exists=$(yq e 'true' $config 2>/dev/null || echo "false")
-if [ "$config_exists" != "true" ]; then
-  echo "Config file $config does not exist or is not a valid YAML file."
-  exit 1
-fi
-
-endpoint=$(yq e '.endpoint' $config)
-json=$(yq e '.json' $config)
-method=$(yq e '.method' $config)
-
-url="${url%/}$endpoint"
-
-curl
-  -X "$method"
-  "$url"
-  -H "Content-Type: application/json"
-  -d "$json"
-  -s | jq
-```
-
-
-Then I wanted to add more ergonomics, like fuzzy finding your yapi files on disk...
-```bash
-
-```
