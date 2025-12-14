@@ -5,7 +5,7 @@ import type {
   FileInfo,
 } from "madea-blog-core";
 import { stripTitle, generateArticleJsonLd } from "madea-blog-core";
-import { LocalFsDataProvider } from "madea-blog-core/providers/local-fs";
+import { GitHubDataProvider } from "madea-blog-core/providers/github"
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -181,10 +181,10 @@ export function createBlogConfig(): Config {
   const contentDir = path.join(process.cwd(), "app/blog/_content");
 
   return {
-    dataProvider: new LocalFsDataProvider({
-      contentDir,
-      authorName: "yapi",
-      sourceUrl: "https://github.com/jamierpond/yapi",
+    dataProvider: new GitHubDataProvider({
+      username: "jamierpond",
+      repo: "madea.blog",
+      subDir: "yapi", // only the yapi folder in the repo
     }),
     username: "yapi",
     fileBrowserView: FileBrowserView,
