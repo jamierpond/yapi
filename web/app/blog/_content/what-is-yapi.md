@@ -15,7 +15,7 @@ yapi: v1
 method: GET
 url: https://api.github.com/search/repositories
 headers:
-  Authorization: Bearer ${GITHUB_PAT}
+  Authorization: Bearer ${GITHUB_PAT} # Reads from your environment
 query:
   q: yapi in:name, jamierpond in:owner
 jq_filter: |
