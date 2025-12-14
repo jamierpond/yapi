@@ -43,6 +43,12 @@ export default async function Navbar({ rightContent }: NavbarProps) {
             </div>
           )}
           <Link
+            href="/docs"
+            className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
+          >
+            Docs
+          </Link>
+          <Link
             href="/blog"
             className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
           >
