@@ -2,10 +2,7 @@ yapi: v1
 # GitLab API - Get specific markdown file from golf repository
 # This example shows how to fetch and display a markdown file
 
-url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-docs/repository/files/README.md
-
-params:
-  ref: main
+url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-docs/repository/files/README.md?ref=main
 
 # Decode the base64 content and display first 1000 characters
 jq_filter: ".content | @base64d | .[0:1000]"

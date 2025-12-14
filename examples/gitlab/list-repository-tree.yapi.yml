@@ -1,11 +1,7 @@
 yapi: v1
 # GitLab API - List repository tree
 # This example lists files in a GitLab repository recursively
-url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab/repository/tree
-
-params:
-  recursive: "true"
-  per_page: "100"
+url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab/repository/tree?recursive=true&per_page=100
 
 # For private repos, you would add:
 # headers:

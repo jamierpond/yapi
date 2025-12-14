@@ -1,11 +1,7 @@
 yapi: v1
 # GitLab API - Get commits for a file
 # This example fetches commit history for a specific file
-url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab/repository/commits
-
-params:
-  path: README.md
-  per_page: "5"
+url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab/repository/commits?path=README.md&per_page=5
 
 # For private repos, you would add:
 # headers:
