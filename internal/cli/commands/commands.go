@@ -34,6 +34,7 @@ func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
 		Short:         "yapi is a unified API client for HTTP, gRPC, and TCP",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Run:           func(cmd *cobra.Command, args []string) {},
 	}
 
 	if handlers != nil && handlers.RunInteractive != nil {
@@ -59,6 +60,7 @@ func newRunCmd(h *Handlers) *cobra.Command {
 		Use:   "run <file>",
 		Short: "Run a request defined in a yapi config file",
 		Args:  cobra.ExactArgs(1),
+		Run:   func(cmd *cobra.Command, args []string) {}, // no-op for doc generation
 	}
 	if h != nil && h.Run != nil {
 		cmd.RunE = h.Run
@@ -71,6 +73,7 @@ func newWatchCmd(h *Handlers) *cobra.Command {
 		Use:   "watch [file]",
 		Short: "Watch a yapi config file and re-run on changes",
 		Args:  cobra.MaximumNArgs(1),
+		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 	if h != nil && h.Watch != nil {
 		cmd.RunE = h.Watch
@@ -87,6 +90,7 @@ func newHistoryCmd(h *Handlers) *cobra.Command {
 		Use:   "history [count]",
 		Short: "Show yapi command history (default: last 10)",
 		Args:  cobra.MaximumNArgs(1),
+		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 	if h != nil && h.History != nil {
 		cmd.RunE = h.History
@@ -101,6 +105,7 @@ func newLSPCmd(h *Handlers) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "lsp",
 		Short: "Run the yapi language server over stdio",
+		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 	if h != nil && h.LSP != nil {
 		cmd.RunE = h.LSP
@@ -112,6 +117,7 @@ func newVersionCmd(h *Handlers) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
+		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 	if h != nil && h.Version != nil {
 		cmd.RunE = h.Version
@@ -128,6 +134,7 @@ func newValidateCmd(h *Handlers) *cobra.Command {
 		Short: "Validate a yapi config file",
 		Long:  "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
 		Args:  cobra.MaximumNArgs(1),
+		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 	if h != nil && h.Validate != nil {
 		cmd.RunE = h.Validate
@@ -143,6 +150,7 @@ func newShareCmd(h *Handlers) *cobra.Command {
 		Use:   "share <file>",
 		Short: "Generate a shareable yapi.run link for a config file",
 		Args:  cobra.ExactArgs(1),
+		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 	if h != nil && h.Share != nil {
 		cmd.RunE = h.Share
