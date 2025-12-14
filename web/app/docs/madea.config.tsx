@@ -11,6 +11,26 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import path from "path";
 import fs from "fs";
+import { execSync } from "child_process";
+
+// Get version info at build time
+function getVersionInfo(): { semver: string; commit: string } {
+  try {
+    const repoRoot = path.join(process.cwd(), "..");
+    const commit = execSync("git rev-parse --short HEAD", { cwd: repoRoot, encoding: "utf-8" }).trim();
+    let semver = "0.0.0";
+    try {
+      semver = execSync("git describe --tags --abbrev=0", { cwd: repoRoot, encoding: "utf-8" }).trim();
+    } catch {
+      // No tags found
+    }
+    return { semver, commit };
+  } catch {
+    return { semver: "0.0.0", commit: "unknown" };
+  }
+}
+
+const versionInfo = getVersionInfo();
 import Navbar from "@/app/components/Navbar";
 import "highlight.js/styles/github-dark.css";
 
@@ -103,8 +123,19 @@ function FileBrowserView({ articles }: FileBrowserViewProps) {
               CLI Documentation
             </span>
           </h1>
-          <p className="text-xl text-yapi-fg-muted max-w-xl mx-auto mb-6">
+          <p className="text-xl text-yapi-fg-muted max-w-xl mx-auto mb-4">
             Auto-generated documentation for yapi CLI commands
+          </p>
+          <p className="text-sm text-yapi-fg-muted">
+            Docs generated from{" "}
+            <a
+              href={`https://github.com/jamierpond/yapi/tree/${versionInfo.commit}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-yapi-accent hover:underline"
+            >
+              yapi v{versionInfo.semver}-{versionInfo.commit}
+            </a>
           </p>
         </header>
 
