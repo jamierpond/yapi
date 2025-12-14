@@ -58,15 +58,6 @@ function VersionFooter() {
 import Navbar from "@/app/components/Navbar";
 import "highlight.js/styles/github-dark.css";
 
-// Strip ## title from doc content (docs use h2 for titles, not h1)
-function stripDocTitle(content: string): string {
-  const lines = content.split('\n');
-  if (lines.length > 0 && lines[0].startsWith('## ')) {
-    return lines.slice(1).join('\n').trimStart();
-  }
-  return content;
-}
-
 function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-yapi-bg relative overflow-hidden font-sans text-yapi-fg selection:bg-yapi-accent selection:text-white">
@@ -83,7 +74,7 @@ function DocsLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ArticleView({ article }: ArticleViewProps) {
+function ArticleView({ title, body }: ArticleViewProps) {
   return (
     <DocsLayout>
       <article className="max-w-3xl w-full">
@@ -109,12 +100,12 @@ function ArticleView({ article }: ArticleViewProps) {
 
         <header className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            {article.title}
+            {title}
           </h1>
         </header>
 
         <div className="prose prose-invert prose-lg max-w-none prose-headings:text-yapi-fg prose-headings:font-bold prose-p:text-yapi-fg-muted prose-a:text-yapi-accent prose-a:no-underline hover:prose-a:underline prose-strong:text-yapi-fg prose-code:text-yapi-accent prose-code:bg-yapi-bg-elevated prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1e1e1e] prose-pre:border prose-pre:border-yapi-border prose-blockquote:border-l-yapi-accent prose-blockquote:text-yapi-fg-muted prose-li:text-yapi-fg-muted prose-li:marker:text-yapi-accent">
-          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{stripDocTitle(article.content)}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{body}</Markdown>
         </div>
 
         <footer className="mt-16 pt-8 border-t border-yapi-border">
