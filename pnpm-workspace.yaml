@@ -1,5 +1,6 @@
 packages:
   - web
+  - web/madea-blog-core/packages/madea-blog-core
 
 onlyBuiltDependencies:
   - esbuild

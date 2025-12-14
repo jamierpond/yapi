@@ -19,7 +19,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "ajv": "^8.17.1",
     "highlight.js": "^11.11.1",
-    "madea-blog-core": "file:./madea-blog-core/packages/madea-blog-core",
+    "madea-blog-core": "workspace:*",
     "monaco-editor": "^0.52.0",
     "monaco-yaml": "^5.4.0",
     "next": "16.0.7",
