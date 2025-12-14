@@ -37,6 +37,9 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
+    - name: Build madea-blog-core
+      run: pnpm --filter madea-blog-core build
+
     - name: Run tests
       run: pnpm test
 
