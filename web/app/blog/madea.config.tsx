@@ -2,7 +2,6 @@ import type {
   Config,
   ArticleViewProps,
   FileBrowserViewProps,
-  NoRepoFoundViewProps,
   FileInfo,
 } from "madea-blog-core";
 import { stripTitle } from "madea-blog-core";
