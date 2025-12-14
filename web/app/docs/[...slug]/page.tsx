@@ -1,5 +1,5 @@
 import { renderMadeaBlogPage } from "madea-blog-core";
-import { createDocsConfig } from "../madea.config";
+import { createDocsConfig, generateDocsArticleMetadata } from "../madea.config";
 
 export const dynamic = "force-static";
 
@@ -7,6 +7,11 @@ const CONFIG = createDocsConfig();
 
 interface PageProps {
   params: Promise<{ slug: string[] }>;
+}
+
+export async function generateMetadata({ params }: PageProps) {
+  const { slug } = await params;
+  return generateDocsArticleMetadata(slug);
 }
 
 export default async function DocArticlePage({ params }: PageProps) {

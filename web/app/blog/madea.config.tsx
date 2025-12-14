@@ -1,10 +1,10 @@
 import type {
-  Config,
+  MadeaConfigWithSeo,
   ArticleViewProps,
   FileBrowserViewProps,
   FileInfo,
 } from "madea-blog-core";
-import { stripTitle, generateArticleJsonLd } from "madea-blog-core";
+import { stripTitle, generateArticleJsonLd, generateMetadataForIndex, generateMetadataForArticle } from "madea-blog-core";
 import { GitHubDataProvider } from "madea-blog-core/providers/github"
 import Link from "next/link";
 import Markdown from "react-markdown";
@@ -235,7 +235,15 @@ export const blogDataProvider = new GitHubDataProvider({
   subDir: "yapi", // only the yapi folder in the repo
 });
 
-export function createBlogConfig(): Config {
+const SEO_CONFIG = {
+  baseUrl: BASE_URL,
+  siteName: "yapi",
+  defaultDescription: "Updates, tutorials, and thoughts about yapi - the API development toolkit",
+  authorName: "yapi",
+  authorUrl: BASE_URL,
+} as const;
+
+export function createBlogConfig(): MadeaConfigWithSeo {
   return {
     dataProvider: blogDataProvider,
     username: "yapi",
@@ -243,5 +251,21 @@ export function createBlogConfig(): Config {
     articleView: ArticleView,
     noRepoFoundView: NoRepoFoundView,
     landingView: LandingView,
+    seo: SEO_CONFIG,
+    basePath: "/blog",
   };
+}
+
+// Re-export helpers bound to config for use in pages
+export async function generateBlogMetadata() {
+  const config = createBlogConfig();
+  return generateMetadataForIndex(config, {
+    title: "Blog | yapi",
+    description: "Updates, tutorials, and thoughts about yapi",
+  });
+}
+
+export async function generateBlogArticleMetadata(slug: string[]) {
+  const config = createBlogConfig();
+  return generateMetadataForArticle(config, slug);
 }

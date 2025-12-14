@@ -1,10 +1,11 @@
 import type {
-  Config,
+  MadeaConfigWithSeo,
   ArticleViewProps,
   FileBrowserViewProps,
   FileInfo,
 } from "madea-blog-core";
 import { LocalFsDataProvider } from "madea-blog-core/providers/local-fs";
+import { generateMetadataForIndex, generateMetadataForArticle } from "madea-blog-core";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -230,7 +231,17 @@ export const docsDataProvider = new LocalFsDataProvider({
   sourceUrl: "https://github.com/jamierpond/yapi",
 });
 
-export function createDocsConfig(): Config {
+const BASE_URL = "https://yapi.run";
+
+const SEO_CONFIG = {
+  baseUrl: BASE_URL,
+  siteName: "yapi",
+  defaultDescription: "CLI documentation for yapi - the API development toolkit",
+  authorName: "yapi",
+  authorUrl: BASE_URL,
+} as const;
+
+export function createDocsConfig(): MadeaConfigWithSeo {
   return {
     dataProvider: docsDataProvider,
     username: "yapi",
@@ -238,5 +249,21 @@ export function createDocsConfig(): Config {
     articleView: ArticleView,
     noRepoFoundView: NoRepoFoundView,
     landingView: LandingView,
+    seo: SEO_CONFIG,
+    basePath: "/docs",
   };
+}
+
+// Re-export helpers bound to config for use in pages
+export async function generateDocsMetadata() {
+  const config = createDocsConfig();
+  return generateMetadataForIndex(config, {
+    title: "CLI Documentation | yapi",
+    description: "Auto-generated documentation for yapi CLI commands",
+  });
+}
+
+export async function generateDocsArticleMetadata(slug: string[]) {
+  const config = createDocsConfig();
+  return generateMetadataForArticle(config, slug);
 }
