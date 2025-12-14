@@ -178,8 +178,6 @@ function LandingView() {
 }
 
 export function createBlogConfig(): Config {
-  const contentDir = path.join(process.cwd(), "app/blog/_content");
-
   return {
     dataProvider: new GitHubDataProvider({
       username: "jamierpond",
