@@ -1,8 +1,8 @@
 yapi: v1
-# TCP with hex-encoded data
-url: tcp://tcpbin.com:4242
+method: GET
+url: https://api.github.com/search/repositories #?q=language:typescript+stars:>1000&sort=stars&order=de
+query:
+  q: yapi
+  sort: stars
+  order: desc
 
-# Send raw bytes as hex
-data: "48656c6c6f0a"
-encoding: hex
-read_timeout: 5

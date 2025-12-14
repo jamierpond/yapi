@@ -12,10 +12,10 @@ I wanted a fun way to make HTTP requests from the terminal (without massive `cur
 This request:
 ```yaml
 yapi: v1
+https://api.github.com/search/repositories #?q=language:typescript+stars:>1000&sort=stars&order=de
 url: https://api.github.com/repos/jamierpond/yapi
 method: GET
 jq_filter: '. | {stars: .stargazers_count, name: .name}'
-# todo show off query params here
 ```
 
 Gives you this response:
