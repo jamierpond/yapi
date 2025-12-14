@@ -1,3 +1,4 @@
+// Package commands defines the CLI command structure for the yapi application.
 package commands
 
 import (
