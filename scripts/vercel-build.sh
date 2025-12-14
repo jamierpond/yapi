@@ -49,6 +49,9 @@ chmod +x /usr/local/bin/yapi
 echo "yapi installed: $(which yapi)"
 yapi version 2>/dev/null || true
 
+echo "Generating CLI documentation..."
+go run scripts/gendocs.go
+
 echo "Building madea-blog-core..."
 pnpm --filter madea-blog-core build
 
