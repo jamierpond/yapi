@@ -1,5 +1,5 @@
 import { renderMadeaBlogPage } from "madea-blog-core";
-import { createBlogConfig } from "@/app/blog/madea.config";
+import { createBlogConfig } from "../madea.config";
 
 export const dynamic = "force-dynamic";
 
