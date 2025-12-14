@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"yapi.run/cli/internal/filter"
-
 	"codeberg.org/derat/htmlpretty"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/formatters"
@@ -124,17 +122,7 @@ func prettyPrintJSON(raw string) string {
 			break
 		}
 
-		pretty, err := json.MarshalIndent(v, "", "  ")
-		if err != nil {
-			// If marshal fails, try jq for this object
-			if objJSON, err := json.Marshal(v); err == nil {
-				if result, err := filter.ApplyJQ(string(objJSON), "."); err == nil {
-					results = append(results, result)
-					continue
-				}
-			}
-			continue
-		}
+		pretty, _ := json.MarshalIndent(v, "", "  ")
 		results = append(results, string(pretty))
 	}
 
