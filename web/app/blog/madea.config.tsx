@@ -259,13 +259,43 @@ export function createBlogConfig(): MadeaConfigWithSeo {
 // Re-export helpers bound to config for use in pages
 export async function generateBlogMetadata() {
   const config = createBlogConfig();
-  return generateMetadataForIndex(config, {
+  const metadata = await generateMetadataForIndex(config, {
     title: "Blog | yapi",
     description: "Updates, tutorials, and thoughts about yapi",
   });
+  return {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      images: [`${BASE_URL}/og/blog?title=${encodeURIComponent("Blog")}`],
+    },
+  };
 }
 
 export async function generateBlogArticleMetadata(slug: string[]) {
   const config = createBlogConfig();
-  return generateMetadataForArticle(config, slug);
+  const metadata = await generateMetadataForArticle(config, slug);
+  const title = typeof metadata.title === "string" ? metadata.title : slug.join("/");
+
+  // Fetch article data for author and date
+  const slugWithExtension = [...slug];
+  slugWithExtension[slugWithExtension.length - 1] += ".md";
+  const article = await blogDataProvider.getFileContent(slugWithExtension.join("/"));
+
+  const params = new URLSearchParams({ title });
+  if (article?.commitInfo?.authorName) params.set("author", article.commitInfo.authorName);
+  if (article?.commitInfo?.date) {
+    const date = new Date(article.commitInfo.date).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
+    });
+    params.set("date", date);
+  }
+
+  return {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      images: [`${BASE_URL}/og/blog?${params.toString()}`],
+    },
+  };
 }

@@ -248,13 +248,28 @@ export function createDocsConfig(): MadeaConfigWithSeo {
 // Re-export helpers bound to config for use in pages
 export async function generateDocsMetadata() {
   const config = createDocsConfig();
-  return generateMetadataForIndex(config, {
+  const metadata = await generateMetadataForIndex(config, {
     title: "CLI Documentation | yapi",
     description: "Auto-generated documentation for yapi CLI commands",
   });
+  return {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      images: [`${BASE_URL}/og/docs?title=${encodeURIComponent("CLI Documentation")}`],
+    },
+  };
 }
 
 export async function generateDocsArticleMetadata(slug: string[]) {
   const config = createDocsConfig();
-  return generateMetadataForArticle(config, slug);
+  const metadata = await generateMetadataForArticle(config, slug);
+  const title = typeof metadata.title === "string" ? metadata.title : slug.join("/");
+  return {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      images: [`${BASE_URL}/og/docs?title=${encodeURIComponent(title)}`],
+    },
+  };
 }
