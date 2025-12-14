@@ -1,15 +1,6 @@
 yapi: v1
-# POST request with JSON body
 url: https://httpbin.org/post
 method: POST
-content_type: application/json
-
 body:
   title: "Hello from yapi"
-  content: "This is a test post"
-  tags:
-    - testing
-    - api
-  metadata:
-    source: yapi
-    version: "1.0"
+jq_filter: ".json"

@@ -1,17 +1,21 @@
 # What is yapi?
 ## Yapi is the API client that runs in your terminal.
 
-Yapi is the hackers Postman, Insomnia, Bruno.
+Yapi is the hacker's Postman, Insomnia, Bruno.
 
-It is a command line tool that makes it easy to interact with APIs from your terminal.
+It is a command line tool that makes it easy to interact with APIs from your
+terminal.
 
-
+### Yapi speaks HTTP
+I wanted a fun way to make HTTP requests from the terminal (without massive `curl` incantations).
+#### GET
 This request:
 ```yaml
 yapi: v1
 url: https://api.github.com/repos/jamierpond/yapi
 method: GET
 jq_filter: '. | {stars: .stargazers_count, name: .name}'
+# todo show off query params here
 ```
 
 Gives you this response:
@@ -21,6 +25,45 @@ Gives you this response:
   "stars": 420,
 }
 ```
+
+#### POST
+This request:
+```yaml
+yapi: v1
+url: https://httpbin.org/post
+method: POST
+body:
+  title: "Hello from yapi"
+jq_filter: ".json"
+```
+Gives you this response:
+```json
+{
+  "title": "Hello from yapi"
+}
+```
+### Yapi speaks gRPC
+
+#### Unary RPC
+This request:
+```yaml
+yapi: v1
+url: grpc://grpcb.in:9000
+service: hello.HelloService
+rpc: SayHello
+plaintext: true
+body:
+  greeting: "World"
+```
+Gives you this response:
+```yaml
+{
+  "reply": "hello World"
+}
+```
+
+
+You can also do PUT, PATCH, DELETE and any other HTTP method.
 
 ## Why make another API client?
 Well it started just from me chaining a few CLI tools together with bash.
