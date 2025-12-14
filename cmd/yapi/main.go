@@ -15,7 +15,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"golang.design/x/clipboard"
 	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/cli/commands"
 	"yapi.run/cli/internal/cli/middleware"
@@ -508,7 +507,6 @@ func outputValidateText(analysis *validation.Analysis) error {
 }
 
 func shareE(cmd *cobra.Command, args []string) error {
-	noCopy, _ := cmd.Flags().GetBool("no-copy")
 	filename := args[0]
 
 	data, err := os.ReadFile(filename) //nolint:gosec // user-provided file path
@@ -565,17 +563,6 @@ func shareE(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "  "+color.Cyan(url))
 	fmt.Fprintln(os.Stderr)
-
-	// Copy to clipboard unless --no-copy is set
-	if !noCopy {
-		if err := copyToClip(url); err != nil {
-			fmt.Fprintln(os.Stderr, color.Dim("  clipboard: "+err.Error()))
-		} else {
-			fmt.Fprintln(os.Stderr, "  "+color.Green("Copied to clipboard!"))
-		}
-		fmt.Fprintln(os.Stderr)
-	}
-
 	fmt.Fprintln(os.Stderr, color.Dim("  The entire request is encoded in the URL - just share it!"))
 	fmt.Fprintln(os.Stderr)
 
@@ -583,14 +570,6 @@ func shareE(cmd *cobra.Command, args []string) error {
 	if stat, _ := os.Stdout.Stat(); (stat.Mode() & os.ModeCharDevice) == 0 {
 		fmt.Println(url)
 	}
-	return nil
-}
-
-func copyToClip(text string) error {
-	if err := clipboard.Init(); err != nil {
-		return fmt.Errorf("clipboard not available: %w", err)
-	}
-	clipboard.Write(clipboard.FmtText, []byte(text))
 	return nil
 }
 

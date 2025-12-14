@@ -157,7 +157,5 @@ func newShareCmd(h *Handlers) *cobra.Command {
 		cmd.RunE = h.Share
 	}
 
-	cmd.Flags().Bool("no-copy", false, "Don't copy URL to clipboard (copy is enabled by default)")
-
 	return cmd
 }
