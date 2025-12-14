@@ -6,5 +6,6 @@ yapi: v1
 # Example using GitLab's own repository (replace with actual golf repo)
 url: https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-docs/repository/tree?recursive=true&per_page=100
 
-# Filter to show only markdown files
-jq_filter: ".[] | select(.type == \"blob\" and (.name | endswith(\".md\"))) | {name, path, type} | select(.path | startswith(\"content\"))"
+# Filter to show only markdown files (customize the path filter as needed)
+# This filters for files in the 'content' directory - remove '| select(.path | startswith("content"))' to see all .md files
+jq_filter: ".[] | select(.type == \"blob\" and (.name | endswith(\".md\"))) | {name, path, type}"
