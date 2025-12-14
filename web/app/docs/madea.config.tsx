@@ -37,6 +37,23 @@ function tryExec(cmd: string): string | null {
 }
 
 const versionInfo = getVersionInfo();
+
+function VersionFooter() {
+  return (
+    <p className="text-sm text-yapi-fg-muted">
+      Docs generated from{" "}
+      <a
+        href={`https://github.com/jamierpond/yapi/tree/${versionInfo.commit}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-yapi-accent hover:underline"
+      >
+        yapi v{versionInfo.semver}-{versionInfo.commit}
+      </a>
+    </p>
+  );
+}
+
 import Navbar from "@/app/components/Navbar";
 import "highlight.js/styles/github-dark.css";
 
@@ -98,6 +115,10 @@ function ArticleView({ article }: ArticleViewProps) {
         <div className="prose prose-invert prose-lg max-w-none prose-headings:text-yapi-fg prose-headings:font-bold prose-p:text-yapi-fg-muted prose-a:text-yapi-accent prose-a:no-underline hover:prose-a:underline prose-strong:text-yapi-fg prose-code:text-yapi-accent prose-code:bg-yapi-bg-elevated prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1e1e1e] prose-pre:border prose-pre:border-yapi-border prose-blockquote:border-l-yapi-accent prose-blockquote:text-yapi-fg-muted prose-li:text-yapi-fg-muted prose-li:marker:text-yapi-accent">
           <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{stripDocTitle(article.content)}</Markdown>
         </div>
+
+        <footer className="mt-16 pt-8 border-t border-yapi-border">
+          <VersionFooter />
+        </footer>
       </article>
     </DocsLayout>
   );
@@ -132,17 +153,7 @@ function FileBrowserView({ articles }: FileBrowserViewProps) {
           <p className="text-xl text-yapi-fg-muted max-w-xl mx-auto mb-4">
             Auto-generated documentation for yapi CLI commands
           </p>
-          <p className="text-sm text-yapi-fg-muted">
-            Docs generated from{" "}
-            <a
-              href={`https://github.com/jamierpond/yapi/tree/${versionInfo.commit}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-yapi-accent hover:underline"
-            >
-              yapi v{versionInfo.semver}-{versionInfo.commit}
-            </a>
-          </p>
+          <VersionFooter />
         </header>
 
         {articles.length === 0 ? (
