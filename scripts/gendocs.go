@@ -5,6 +5,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra/doc"
 	"yapi.run/cli/internal/cli/commands"
@@ -23,7 +24,12 @@ func main() {
 	// Build command tree without handlers (for doc generation only)
 	rootCmd := commands.BuildRoot(nil, nil)
 
-	if err := doc.GenMarkdownTree(rootCmd, outputDir); err != nil {
+	// Custom link handler to strip .md extension for web routes
+	linkHandler := func(name string) string {
+		return strings.TrimSuffix(name, ".md")
+	}
+
+	if err := doc.GenMarkdownTreeCustom(rootCmd, outputDir, func(string) string { return "" }, linkHandler); err != nil {
 		log.Fatalf("failed to generate docs: %v", err)
 	}
 
