@@ -1,4 +1,4 @@
-# Hello World
+# What is yapi?
 
 Welcome to the yapi blog. This is where we'll share updates, tutorials, and thoughts about yapi development.
 
