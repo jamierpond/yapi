@@ -7,7 +7,7 @@ It is a command line tool that makes it easy to interact with APIs from your
 terminal.
 
 ### Yapi speaks HTTP
-I wanted a fun way to make HTTP requests from the terminal (without massive `curl` incantations).
+I wanted a fun way to make HTTP requests from the terminal (without massive, ad-hoc `curl` incantations).
 #### GET
 This request:
 ```yaml
