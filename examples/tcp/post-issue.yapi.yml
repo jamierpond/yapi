@@ -1,0 +1,10 @@
+yapi: v1
+method: POST
+url: https://api.github.com/repos/jamierpond/yapi/issues
+headers:
+  Accept: application/vnd.github+json
+  Authorization: Bearer ${GITHUB_PAT}
+body:
+  title: Help yapi made me too productive.
+  body: |
+    Now I can't stop YAPPIN' about yapi!

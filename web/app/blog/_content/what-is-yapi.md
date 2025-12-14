@@ -1,7 +1,7 @@
 # What is yapi?
 ## Yapi is the API client that runs in your terminal.
 
-Yapi is the hacker's Postman, Insomnia, Bruno.
+> Yapi is the hacker's Postman, Insomnia or Bruno.
 
 It is a command line tool that makes it easy to interact with APIs from your
 terminal.
@@ -11,6 +11,7 @@ I wanted a fun way to make HTTP requests from the terminal (without massive, ad-
 #### GET
 This request:
 ```yaml
+# search.yapi.yml
 yapi: v1
 method: GET
 url: https://api.github.com/search/repositories
@@ -28,6 +29,7 @@ jq_filter: |
 
 Gives you this response:
 ```json
+yapi run search.yapi.yml
 {
   "name": "yapi",
   "stars": 5, // at time of writing!
@@ -48,17 +50,31 @@ Gives you this response:
 #### POST
 This request:
 ```yaml
+# create-issue.yapi.yml
 yapi: v1
-url: https://httpbin.org/post
 method: POST
+url: https://api.github.com/repos/jamierpond/yapi/issues
+headers:
+  Accept: application/vnd.github+json
+  Authorization: Bearer ${GITHUB_PAT}
 body:
-  title: "Hello from yapi"
-jq_filter: ".json"
+  title: Help yapi made me too productive.
+  body: |
+    Now I can't stop YAPPIN' about yapi!
 ```
 Gives you this response:
 ```json
+yapi run create-issue.yapi.yml
 {
-  "title": "Hello from yapi"
+  "active_lock_reason": null,
+  "assignee": null,
+  "assignees": [],
+  "author_association": "OWNER",
+  "body": "Now I can't stop YAPPIN' about yapi!\n",
+  "closed_at": null,
+  "closed_by": null,
+  "comments": 0,
+  // ...blah blah blah
 }
 ```
 ### Yapi speaks gRPC
