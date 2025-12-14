@@ -9,15 +9,6 @@ fi
 
 echo "=== Vercel Build Script ==="
 
-# Initialize git submodules (Vercel doesn't do this by default)
-echo "Initializing git submodules..."
-git submodule update --init --recursive
-
-# Re-run pnpm install now that submodule exists
-# (Vercel's install step runs before submodules are available)
-echo "Re-installing dependencies with submodule available..."
-pnpm install
-
 # Install Go if not available
 if ! command -v go &> /dev/null; then
     echo "Installing Go..."
