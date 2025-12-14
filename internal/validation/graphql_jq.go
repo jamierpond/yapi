@@ -1,11 +1,13 @@
 package validation
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
 	"github.com/itchyny/gojq"
+	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/domain"
 )
 
@@ -65,16 +67,63 @@ func ValidateJQSyntax(fullYaml string, req *domain.Request) []Diagnostic {
 }
 
 // findFieldLine finds the line number (0-based) of a YAML field.
+// Uses YAML parsing for accurate position, with regex fallback.
 // Returns -1 if not found or if text is empty.
 func findFieldLine(text, field string) int {
 	if field == "" || text == "" {
 		return -1
 	}
 
+	// Try YAML node parsing first for accuracy
+	var node yaml.Node
+	if err := yaml.Unmarshal([]byte(text), &node); err == nil {
+		if line := findFieldInNode(&node, field); line >= 0 {
+			return line
+		}
+	}
+
+	// Fallback: use regex to match field as a complete word followed by colon
+	// This handles cases where YAML parsing succeeds but field is nested differently
+	pattern := regexp.MustCompile(`(?m)^\s*` + regexp.QuoteMeta(field) + `\s*:`)
 	lines := strings.Split(text, "\n")
 	for i, line := range lines {
-		if strings.HasPrefix(strings.TrimSpace(line), field+":") {
+		if pattern.MatchString(line) {
 			return i
+		}
+	}
+	return -1
+}
+
+// findFieldInNode recursively searches a YAML node tree for a field name.
+func findFieldInNode(node *yaml.Node, field string) int {
+	if node == nil {
+		return -1
+	}
+
+	switch node.Kind {
+	case yaml.DocumentNode:
+		for _, child := range node.Content {
+			if line := findFieldInNode(child, field); line >= 0 {
+				return line
+			}
+		}
+	case yaml.MappingNode:
+		// Content alternates between keys and values
+		for i := 0; i < len(node.Content)-1; i += 2 {
+			keyNode := node.Content[i]
+			if keyNode.Value == field {
+				return keyNode.Line - 1 // yaml.Node lines are 1-based
+			}
+			// Also search in the value node (for nested fields)
+			if line := findFieldInNode(node.Content[i+1], field); line >= 0 {
+				return line
+			}
+		}
+	case yaml.SequenceNode:
+		for _, child := range node.Content {
+			if line := findFieldInNode(child, field); line >= 0 {
+				return line
+			}
 		}
 	}
 	return -1

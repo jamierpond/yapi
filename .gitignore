@@ -20,3 +20,5 @@ node_modules
 main.md
 coverage.txt
 fuzz.cov
+core.md
+test.md

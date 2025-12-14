@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.design/x/clipboard"
 	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/cli/commands"
 	"yapi.run/cli/internal/cli/middleware"
@@ -64,6 +64,27 @@ type rootCommand struct {
 	noColor     bool
 	httpClient  *http.Client
 	engine      *core.Engine
+}
+
+// ValidationError provides specific information about validation failures.
+type ValidationError struct {
+	Diagnostics []validation.Diagnostic
+}
+
+func (e *ValidationError) Error() string {
+	var errMsgs []string
+	for _, d := range e.Diagnostics {
+		if d.Severity == validation.SeverityError {
+			errMsgs = append(errMsgs, d.Message)
+		}
+	}
+	if len(errMsgs) == 0 {
+		return "validation failed"
+	}
+	if len(errMsgs) == 1 {
+		return errMsgs[0]
+	}
+	return fmt.Sprintf("%d validation errors: %s", len(errMsgs), strings.Join(errMsgs, "; "))
 }
 
 func main() {
@@ -170,13 +191,21 @@ func (app *rootCommand) watchConfigPath(path string) error {
 	printWatchHeader(absPath)
 	app.runConfigPathSafe(absPath)
 
-	lastMod := getModTime(absPath)
+	lastMod, err := getModTime(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
 
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		currentMod := getModTime(absPath)
+		currentMod, err := getModTime(absPath)
+		if err != nil {
+			// File became inaccessible - print error and continue watching
+			fmt.Fprintf(os.Stderr, "%s\n", color.Red("file inaccessible: "+err.Error()))
+			continue
+		}
 		if currentMod != lastMod {
 			lastMod = currentMod
 			clearScreen()
@@ -187,12 +216,12 @@ func (app *rootCommand) watchConfigPath(path string) error {
 	return nil
 }
 
-func getModTime(path string) time.Time {
+func getModTime(path string) (time.Time, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return time.Time{}
+		return time.Time{}, err
 	}
-	return info.ModTime()
+	return info.ModTime(), nil
 }
 
 func clearScreen() {
@@ -209,6 +238,18 @@ func printWatchHeader(path string) {
 type runContext struct {
 	path   string
 	strict bool // If true, return error on failures; if false, print and return nil
+}
+
+// printResult outputs a single result with optional expectation.
+func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult) {
+	if result != nil {
+		body := strings.TrimRight(output.Highlight(result.Body, result.ContentType, app.noColor), "\n\r")
+		fmt.Println(body)
+		printResultMeta(result)
+	}
+	if expectRes != nil {
+		printExpectationResult(expectRes)
+	}
 }
 
 // executeRunE is the unified execution pipeline for both Run and Watch modes.
@@ -233,7 +274,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	app.printErrors(runRes.Analysis, ctx.strict)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
-			return errors.New("validation errors")
+			return &ValidationError{Diagnostics: runRes.Analysis.Diagnostics}
 		}
 		return nil
 	}
@@ -246,12 +287,11 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		if chainResult != nil {
 			for i, stepResult := range chainResult.Results {
 				fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
-				body := strings.TrimRight(output.Highlight(stepResult.Body, stepResult.ContentType, app.noColor), "\n\r")
-				fmt.Println(body)
-				printResultMeta(stepResult)
+				var expectRes *runner.ExpectationResult
 				if i < len(chainResult.ExpectationResults) {
-					printExpectationResult(chainResult.ExpectationResults[i])
+					expectRes = chainResult.ExpectationResults[i]
 				}
+				app.printResult(stepResult, expectRes)
 			}
 		}
 
@@ -275,15 +315,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
-	if runRes.Result != nil {
-		body := strings.TrimRight(output.Highlight(runRes.Result.Body, runRes.Result.ContentType, app.noColor), "\n\r")
-		fmt.Println(body)
-		printResultMeta(runRes.Result)
-	}
-
-	if runRes.ExpectRes != nil {
-		printExpectationResult(runRes.ExpectRes)
-	}
+	app.printResult(runRes.Result, runRes.ExpectRes)
 
 	if runRes.Error != nil {
 		if ctx.strict {
@@ -353,13 +385,15 @@ func (app *rootCommand) printWarnings(a *validation.Analysis, strict bool) {
 		out = os.Stderr
 	}
 
+	// Print legacy warnings (from parser level) and non-error diagnostics in one pass
 	for _, w := range a.Warnings {
 		_, _ = fmt.Fprintln(out, color.Yellow("[WARN] "+w))
 	}
-
-	app.printDiagnostics(a, strict, func(d validation.Diagnostic) bool {
-		return d.Severity != validation.SeverityError
-	})
+	for _, d := range a.Diagnostics {
+		if d.Severity != validation.SeverityError {
+			_, _ = fmt.Fprintln(out, formatDiagnostic(d))
+		}
+	}
 }
 
 // runConfigPathSafe runs a config file without returning error (for watch mode)
@@ -474,7 +508,7 @@ func outputValidateText(analysis *validation.Analysis) error {
 }
 
 func shareE(cmd *cobra.Command, args []string) error {
-	copyToClipboard, _ := cmd.Flags().GetBool("copy")
+	noCopy, _ := cmd.Flags().GetBool("no-copy")
 	filename := args[0]
 
 	data, err := os.ReadFile(filename) //nolint:gosec // user-provided file path
@@ -485,7 +519,10 @@ func shareE(cmd *cobra.Command, args []string) error {
 	content := string(data)
 
 	// Validate the config
-	analysis, _ := validation.AnalyzeConfigString(content)
+	analysis, analysisErr := validation.AnalyzeConfigString(content)
+	if analysisErr != nil {
+		return fmt.Errorf("failed to analyze config: %w", analysisErr)
+	}
 	hasErrors := analysis != nil && analysis.HasErrors()
 	hasWarnings := analysis != nil && len(analysis.Warnings) > 0
 
@@ -529,10 +566,10 @@ func shareE(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(os.Stderr, "  "+color.Cyan(url))
 	fmt.Fprintln(os.Stderr)
 
-	// Copy to clipboard if requested
-	if copyToClipboard {
+	// Copy to clipboard unless --no-copy is set
+	if !noCopy {
 		if err := copyToClip(url); err != nil {
-			fmt.Fprintln(os.Stderr, color.Dim("  clipboard failed: "+err.Error()))
+			fmt.Fprintln(os.Stderr, color.Dim("  clipboard: "+err.Error()))
 		} else {
 			fmt.Fprintln(os.Stderr, "  "+color.Green("Copied to clipboard!"))
 		}
@@ -540,7 +577,6 @@ func shareE(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintln(os.Stderr, color.Dim("  The entire request is encoded in the URL - just share it!"))
-	fmt.Fprintln(os.Stderr, color.Dim("  Tip: pipe to clipboard with: yapi share file.yapi | pbcopy"))
 	fmt.Fprintln(os.Stderr)
 
 	// Only print raw URL to stdout when piping (not a terminal)
@@ -551,9 +587,11 @@ func shareE(cmd *cobra.Command, args []string) error {
 }
 
 func copyToClip(text string) error {
-	cmd := exec.Command("pbcopy")
-	cmd.Stdin = strings.NewReader(text)
-	return cmd.Run()
+	if err := clipboard.Init(); err != nil {
+		return fmt.Errorf("clipboard not available: %w", err)
+	}
+	clipboard.Write(clipboard.FmtText, []byte(text))
+	return nil
 }
 
 // printExpectationResult prints expectation results to stderr
