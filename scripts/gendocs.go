@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	outputDir := "./docs/cli"
+	outputDir := "./web/app/_docs"
 	if len(os.Args) > 1 {
 		outputDir = os.Args[1]
 	}
