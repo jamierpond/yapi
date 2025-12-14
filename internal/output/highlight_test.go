@@ -122,6 +122,25 @@ func TestPrettyPrintJSON_Invalid(t *testing.T) {
 	}
 }
 
+func TestPrettyPrintJSON_MultipleObjects(t *testing.T) {
+	raw := `{"name":"foo"}
+{"name":"bar"}
+{"name":"baz"}`
+	result := prettyPrintJSON(raw)
+	expected := `{
+  "name": "foo"
+}
+{
+  "name": "bar"
+}
+{
+  "name": "baz"
+}`
+	if result != expected {
+		t.Errorf("prettyPrintJSON with multiple objects:\ngot:\n%s\n\nexpected:\n%s", result, expected)
+	}
+}
+
 func TestHighlightWithChroma(t *testing.T) {
 	// Test that valid JSON gets some highlighting (contains ANSI codes)
 	raw := `{"key": "value"}`

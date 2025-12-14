@@ -185,6 +185,30 @@ func TestApplyJQ_EmptyResult(t *testing.T) {
 	}
 }
 
+func TestApplyJQ_MultipleResults(t *testing.T) {
+	input := `{"items":[{"name":"foo","stars":1},{"name":"bar","stars":2},{"name":"baz","stars":3}]}`
+	filter := ".items[] | {name: .name, stars: .stars}"
+	result, err := ApplyJQ(input, filter)
+	if err != nil {
+		t.Fatalf("ApplyJQ() error = %v", err)
+	}
+	expected := `{
+  "name": "foo",
+  "stars": 1
+}
+{
+  "name": "bar",
+  "stars": 2
+}
+{
+  "name": "baz",
+  "stars": 3
+}`
+	if result != expected {
+		t.Errorf("ApplyJQ with multiple results:\ngot:\n%s\n\nexpected:\n%s", result, expected)
+	}
+}
+
 func FuzzApplyJQ(f *testing.F) {
 	// Seed with valid JSON + jq filter pairs
 	f.Add(`{"foo": "bar"}`, ".foo")
