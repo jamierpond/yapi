@@ -229,13 +229,15 @@ function LandingView() {
   );
 }
 
+export const blogDataProvider = new GitHubDataProvider({
+  username: "jamierpond",
+  repo: "madea.blog",
+  subDir: "yapi", // only the yapi folder in the repo
+});
+
 export function createBlogConfig(): Config {
   return {
-    dataProvider: new GitHubDataProvider({
-      username: "jamierpond",
-      repo: "madea.blog",
-      subDir: "yapi", // only the yapi folder in the repo
-    }),
+    dataProvider: blogDataProvider,
     username: "yapi",
     fileBrowserView: FileBrowserView,
     articleView: ArticleView,

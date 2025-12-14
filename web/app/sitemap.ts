@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { generateBlogSitemap } from "madea-blog-core";
-import { GitHubDataProvider } from "madea-blog-core/providers/github";
-import { LocalFsDataProvider } from "madea-blog-core/providers/local-fs";
-import path from "path";
+import { blogDataProvider } from "./blog/madea.config";
+import { docsDataProvider } from "./docs/madea.config";
 
 const BASE_URL = "https://yapi.run";
 
@@ -22,26 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Generate blog sitemap entries (from GitHub)
-  const blogProvider = new GitHubDataProvider({
-    username: "jamierpond",
-    repo: "madea.blog",
-    subDir: "yapi",
-  });
-
-  const blogEntries = await generateBlogSitemap(blogProvider, {
+  const blogEntries = await generateBlogSitemap(blogDataProvider, {
     baseUrl: BASE_URL,
     blogPath: "/blog",
   });
 
-  // Generate docs sitemap entries (from local filesystem)
-  const docsProvider = new LocalFsDataProvider({
-    contentDir: path.join(process.cwd(), "app/_docs"),
-    authorName: "yapi",
-    sourceUrl: "https://github.com/jamierpond/yapi",
-  });
-
-  const docsEntries = await generateBlogSitemap(docsProvider, {
+  const docsEntries = await generateBlogSitemap(docsDataProvider, {
     baseUrl: BASE_URL,
     blogPath: "/docs",
   });

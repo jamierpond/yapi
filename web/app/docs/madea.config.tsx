@@ -169,20 +169,22 @@ function LandingView() {
   );
 }
 
+const contentDir = path.join(process.cwd(), "app/_docs");
+
+// Ensure directory exists for LocalFsDataProvider (which uses simple-git)
+if (!fs.existsSync(contentDir)) {
+  fs.mkdirSync(contentDir, { recursive: true });
+}
+
+export const docsDataProvider = new LocalFsDataProvider({
+  contentDir,
+  authorName: "yapi",
+  sourceUrl: "https://github.com/jamierpond/yapi",
+});
+
 export function createDocsConfig(): Config {
-  const contentDir = path.join(process.cwd(), "app/_docs");
-
-  // Ensure directory exists for LocalFsDataProvider (which uses simple-git)
-  if (!fs.existsSync(contentDir)) {
-    fs.mkdirSync(contentDir, { recursive: true });
-  }
-
   return {
-    dataProvider: new LocalFsDataProvider({
-      contentDir,
-      authorName: "yapi",
-      sourceUrl: "https://github.com/jamierpond/yapi",
-    }),
+    dataProvider: docsDataProvider,
     username: "yapi",
     fileBrowserView: FileBrowserView,
     articleView: ArticleView,
