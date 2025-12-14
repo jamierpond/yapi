@@ -16,7 +16,7 @@ git submodule update --init --recursive
 # Re-run pnpm install now that submodule exists
 # (Vercel's install step runs before submodules are available)
 echo "Re-installing dependencies with submodule available..."
-pnpm install --frozen-lockfile
+pnpm install
 
 # Install Go if not available
 if ! command -v go &> /dev/null; then
