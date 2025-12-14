@@ -13,20 +13,25 @@ import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
 
-// Get version info at build time
+// Get version info at build time (uses Vercel env vars, falls back to git for local dev)
 function getVersionInfo(): { semver: string; commit: string } {
+  // Vercel provides VERCEL_GIT_COMMIT_SHA
+  const commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
+    ?? tryExec("git rev-parse --short HEAD")
+    ?? "unknown";
+
+  // For semver, try git tags (Vercel doesn't provide this)
+  const semver = tryExec("git describe --tags --abbrev=0") ?? "0.0.0";
+
+  return { semver, commit };
+}
+
+function tryExec(cmd: string): string | null {
   try {
     const repoRoot = path.join(process.cwd(), "..");
-    const commit = execSync("git rev-parse --short HEAD", { cwd: repoRoot, encoding: "utf-8" }).trim();
-    let semver = "0.0.0";
-    try {
-      semver = execSync("git describe --tags --abbrev=0", { cwd: repoRoot, encoding: "utf-8" }).trim();
-    } catch {
-      // No tags found
-    }
-    return { semver, commit };
+    return execSync(cmd, { cwd: repoRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] }).trim();
   } catch {
-    return { semver: "0.0.0", commit: "unknown" };
+    return null;
   }
 }
 
