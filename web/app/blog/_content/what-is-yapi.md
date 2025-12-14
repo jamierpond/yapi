@@ -12,17 +12,36 @@ I wanted a fun way to make HTTP requests from the terminal (without massive `cur
 This request:
 ```yaml
 yapi: v1
-https://api.github.com/search/repositories #?q=language:typescript+stars:>1000&sort=stars&order=de
-url: https://api.github.com/repos/jamierpond/yapi
 method: GET
-jq_filter: '. | {stars: .stargazers_count, name: .name}'
+url: https://api.github.com/search/repositories
+headers:
+  Authorization: Bearer ${GITHUB_PAT}
+query:
+  q: yapi in:name, jamierpond in:owner
+jq_filter: |
+    .items[] | {
+      name: .name,
+      stars: .stargazers_count,
+      url: .html_url
+    }
 ```
 
 Gives you this response:
 ```json
 {
-  "name": "yapi"
-  "stars": 420,
+  "name": "yapi",
+  "stars": 5, // at time of writing!
+  "url": "https://github.com/jamierpond/yapi"
+}
+{
+  "name": "yapi-blog",
+  "stars": 0,
+  "url": "https://github.com/jamierpond/yapi-blog"
+}
+{
+  "name": "homebrew-yapi",
+  "stars": 0,
+  "url": "https://github.com/jamierpond/homebrew-yapi"
 }
 ```
 
