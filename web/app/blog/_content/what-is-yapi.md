@@ -1,4 +1,4 @@
-# What is yapi?
+# (Draft) What is yapi?
 ## Yapi is the API client that runs in your terminal.
 
 > Yapi is the hacker's Postman, Insomnia or Bruno.
