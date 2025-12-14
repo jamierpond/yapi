@@ -1,4 +1,4 @@
-.PHONY: build run run-print-analytics test fuzz fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all lint lint-install lint-quick lint-full
+.PHONY: build run run-print-analytics test fuzz fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all lint lint-install lint-quick lint-full gen-docs
 
 NAME := yapi
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -100,3 +100,7 @@ release:
 	@TAG=$$(git describe --tags --abbrev=0); \
 	echo "Pushing $$TAG to origin..."; \
 	git push origin "$$TAG"
+
+gen-docs:
+	@echo "Generating CLI documentation..."
+	@go run scripts/gendocs.go
