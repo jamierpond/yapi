@@ -23,6 +23,12 @@ func main() {
 	// Build command tree without handlers (for doc generation only)
 	rootCmd := commands.BuildRoot(nil, nil)
 
+	log.Printf("Root: %s", rootCmd.Use)
+	log.Printf("Subcommands: %d", len(rootCmd.Commands()))
+	for _, sub := range rootCmd.Commands() {
+		log.Printf("  - %s", sub.Use)
+	}
+
 	if err := doc.GenMarkdownTree(rootCmd, outputDir); err != nil {
 		log.Fatalf("failed to generate docs: %v", err)
 	}
