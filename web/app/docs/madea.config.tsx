@@ -21,7 +21,8 @@ function getVersionInfo(): { semver: string; commit: string } {
     ?? "unknown";
 
   // For semver, try git tags (Vercel doesn't provide this)
-  const semver = tryExec("git describe --tags --abbrev=0") ?? "0.0.0";
+  const tag = tryExec("git describe --tags --abbrev=0") ?? "0.0.0";
+  const semver = tag.replace(/^v/, "");
 
   return { semver, commit };
 }
