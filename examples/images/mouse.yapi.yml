@@ -1,7 +1,12 @@
 yapi: v1
 url: https://3000.pond.audio/og/blog
 method: GET
+
+# never cache
+headers:
+  Cache-Control: no-cache
+
 query:
-  title: lemondade
+  title: c
   author: pond
   date: 2024-06-15

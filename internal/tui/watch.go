@@ -13,13 +13,19 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"yapi.run/cli/internal/core"
+	"yapi.run/cli/internal/imageprinter"
 	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/tui/theme"
 	"yapi.run/cli/internal/validation"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+	Transport: &http.Transport{
+		DisableKeepAlives: true, // Force fresh connections on each request
+	},
+}
 var engine = core.NewEngine(httpClient)
 
 type watchModel struct {
@@ -66,11 +72,18 @@ func checkFileCmd(path string, lastMod time.Time) tea.Cmd {
 
 func runYapiCmd(path string) tea.Cmd {
 	return func() tea.Msg {
+		// DEBUG: Read file content to verify it's fresh
+		data, _ := os.ReadFile(path)
+		fmt.Fprintf(os.Stderr, "[DEBUG] File content:\n%s\n", string(data))
+
 		runRes := engine.RunConfig(
 			context.Background(),
 			path,
 			runner.Options{NoColor: false},
 		)
+		if runRes.Analysis != nil && runRes.Analysis.Request != nil {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Request URL: %s\n", runRes.Analysis.Request.URL)
+		}
 
 		if runRes.Error != nil && runRes.Analysis == nil {
 			return runResultMsg{err: runRes.Error}
@@ -104,8 +117,24 @@ func runYapiCmd(path string) tea.Cmd {
 			b.WriteString("\n")
 		}
 
-		out := output.Highlight(runRes.Result.Body, runRes.Result.ContentType, false)
-		b.WriteString(out)
+		// Handle image responses
+		if output.IsImageContentType(runRes.Result.ContentType) {
+			// Print image directly (renders via sixel/kitty outside TUI viewport)
+			if err := imageprinter.Print(runRes.Result.RawBody, imageprinter.Config{}); err != nil {
+				b.WriteString(theme.Error.Render(fmt.Sprintf("image display failed: %v", err)))
+			}
+			// Add metadata
+			if runRes.Result.RequestURL != "" {
+				b.WriteString(theme.Info.Render(fmt.Sprintf("URL: %s", runRes.Result.RequestURL)))
+				b.WriteString("\n")
+			}
+			b.WriteString(theme.Info.Render(fmt.Sprintf("Time: %s", runRes.Result.Duration)))
+			b.WriteString("\n")
+			b.WriteString(theme.Info.Render(fmt.Sprintf("Size: %d bytes", runRes.Result.BodyBytes)))
+		} else {
+			out := output.Highlight(runRes.Result.Body, runRes.Result.ContentType, false)
+			b.WriteString(out)
+		}
 
 		// Add expectation result if present
 		if runRes.ExpectRes != nil && (runRes.ExpectRes.AssertionsTotal > 0 || runRes.ExpectRes.StatusChecked) {

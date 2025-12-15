@@ -97,7 +97,12 @@ func main() {
 		observability.Track("request_executed", stats)
 	}
 
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	}
 	app := &rootCommand{
 		httpClient: httpClient,
 		engine:     core.NewEngine(httpClient, core.WithRequestHook(requestHook)),
