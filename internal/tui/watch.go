@@ -119,19 +119,14 @@ func runYapiCmd(path string) tea.Cmd {
 
 		// Handle image responses
 		if output.IsImageContentType(runRes.Result.ContentType) {
-			// Print image directly (renders via sixel/kitty outside TUI viewport)
+			// Print image and return - nothing should print after the image
 			if err := imgcat.Print(runRes.Result.RawBody, imgcat.PrintConfig{}); err != nil {
-				b.WriteString(theme.Error.Render(fmt.Sprintf("image display failed: %v", err)))
+				return runResultMsg{err: err}
 			}
-			// Add metadata
-			if runRes.Result.RequestURL != "" {
-				b.WriteString(theme.Info.Render(fmt.Sprintf("URL: %s", runRes.Result.RequestURL)))
-				b.WriteString("\n")
-			}
-			b.WriteString(theme.Info.Render(fmt.Sprintf("Time: %s", runRes.Result.Duration)))
-			b.WriteString("\n")
-			b.WriteString(theme.Info.Render(fmt.Sprintf("Size: %d bytes", runRes.Result.BodyBytes)))
-		} else {
+			return runResultMsg{duration: runRes.Result.Duration}
+		}
+
+		{
 			out := output.Highlight(runRes.Result.Body, runRes.Result.ContentType, false)
 			b.WriteString(out)
 		}

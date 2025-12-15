@@ -23,6 +23,32 @@ import (
 	_ "image/gif"
 )
 
+// --- Helper for Yapi Main ---
+
+// PrintConfig is a simplified config for the Print helper used by yapi main.go
+type PrintConfig struct {
+	Width  int // Max width in cells
+	Height int // Max height in cells
+}
+
+// Print is a helper to quickly print an image buffer.
+// This matches the signature expected by cmd/yapi/main.go
+func Print(data []byte, cfg PrintConfig) error {
+	c := NewConfig()
+	c.Reader = bytes.NewReader(data)
+
+	// Yapi passes integers (likely cell counts) for max width/height.
+	// We map them to our internal ITermDimension.
+	if cfg.Width > 0 {
+		c.Width = ITermDimension{Value: float64(cfg.Width), Unit: UnitCells}
+	}
+	if cfg.Height > 0 {
+		c.Height = ITermDimension{Value: float64(cfg.Height), Unit: UnitCells}
+	}
+
+	return c.Run()
+}
+
 // --- Enums and Types ---
 
 type Unit int
@@ -266,7 +292,7 @@ type Config struct {
 	Reader   io.Reader
 
 	// Output (Optional, defaults to os.Stdout)
-	Writer   io.Writer
+	Writer io.Writer
 }
 
 func NewConfig() *Config {
@@ -417,8 +443,12 @@ func (c *Config) getImageData() ([]byte, imageInfo, error) {
 
 		targetW := int(float64(info.Width) / dimScale)
 		targetH := int(float64(info.Height) / dimScale)
-		if targetW < 1 { targetW = 1 }
-		if targetH < 1 { targetH = 1 }
+		if targetW < 1 {
+			targetW = 1
+		}
+		if targetH < 1 {
+			targetH = 1
+		}
 
 		data, info, err = c.resizeImage(data, targetW, targetH, info, stderr)
 		if err != nil {
@@ -454,13 +484,21 @@ func getScreenSize() (screenSize, error) {
 func (c *Config) computeImageCellDimensions(info imageInfo, termSize screenSize) (int, int) {
 	cellW := termSize.XPixel / termSize.Cols
 	cellH := termSize.YPixel / termSize.Rows
-	if cellW == 0 { cellW = 10 }
-	if cellH == 0 { cellH = 20 }
+	if cellW == 0 {
+		cellW = 10
+	}
+	if cellH == 0 {
+		cellH = 20
+	}
 
 	pixelWidthLimit := float64(termSize.XPixel)
 	pixelHeightLimit := float64(termSize.YPixel)
-	if pixelWidthLimit == 0 { pixelWidthLimit = float64(termSize.Cols * cellW) }
-	if pixelHeightLimit == 0 { pixelHeightLimit = float64(termSize.Rows * cellH) }
+	if pixelWidthLimit == 0 {
+		pixelWidthLimit = float64(termSize.Cols * cellW)
+	}
+	if pixelHeightLimit == 0 {
+		pixelHeightLimit = float64(termSize.Rows * cellH)
+	}
 
 	targetW := c.Width.ToPixels(cellW, termSize.Cols)
 	targetH := c.Height.ToPixels(cellH, termSize.Rows)
@@ -474,7 +512,9 @@ func (c *Config) computeImageCellDimensions(info imageInfo, termSize screenSize)
 			xScale := pixelWidthLimit / w
 			yScale := pixelHeightLimit / h
 			scale := xScale
-			if yScale < xScale { scale = yScale }
+			if yScale < xScale {
+				scale = yScale
+			}
 			finalW = w * scale
 			finalH = h * scale
 		} else {
@@ -499,8 +539,12 @@ func (c *Config) computeImageCellDimensions(info imageInfo, termSize screenSize)
 	cols := int(math.Ceil(finalW / float64(cellW)))
 	rows := int(math.Ceil(finalH / float64(cellH)))
 
-	if cols < 1 { cols = 1 }
-	if rows < 1 { rows = 1 }
+	if cols < 1 {
+		cols = 1
+	}
+	if rows < 1 {
+		rows = 1
+	}
 	return cols, rows
 }
 
@@ -530,9 +574,9 @@ func (c *Config) Run() error {
 		termSize = screenSize{Cols: 80, Rows: 24, XPixel: 800, YPixel: 480}
 	}
 
-	isTmux := os.Getenv("TMUX") != ""
 	isConpty := os.PathSeparator == '\\' // simplistic windows check
-	needsForceCursorMove := !c.NoMoveCursor && c.Position == nil && (isTmux || isConpty) && (termSize.XPixel != 0 && termSize.YPixel != 0)
+	// Only force cursor move for conpty (Windows); tmux passthrough handles it correctly
+	needsForceCursorMove := !c.NoMoveCursor && c.Position == nil && isConpty && (termSize.XPixel != 0 && termSize.YPixel != 0)
 
 	saveCursor := "\x1b7"
 	restoreCursor := "\x1b8"
@@ -574,12 +618,21 @@ func (c *Config) Run() error {
 	oscBuilder.WriteString("\a")
 
 	encoded := c.TmuxPassthru.Encode(oscBuilder.String())
-	fmt.Fprintln(out, encoded)
+	fmt.Fprint(out, encoded)
 
 	if needsForceCursorMove {
-		fmt.Fprintf(out, "\x1b[%dB", rows)
+		// Space was pre-allocated above; image protocol moves cursor, so nothing more needed
 	} else if c.Position != nil {
 		fmt.Fprint(out, restoreCursor)
+	} else if !c.NoMoveCursor {
+		// Standard Terminal Case
+		// Print explicit newlines to reserve vertical space for the image.
+		// This prevents the shell prompt from overwriting the image
+		// and ensures the image remains in the scrollback history.
+		fmt.Fprint(out, strings.Repeat("\n", rows))
+	} else {
+		// Finish the OSC line cleanly if cursor movement is disabled
+		fmt.Fprintln(out, "")
 	}
 
 	if c.Hold {
