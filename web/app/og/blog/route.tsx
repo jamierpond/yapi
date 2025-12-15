@@ -11,8 +11,22 @@ export async function GET(request: Request) {
 
   return createImageResponse(
     <OgContainer>
-      <div style={{ display: "flex", marginBottom: "32px" }}>
+      <div style={{ display: "flex", marginBottom: "24px" }}>
         <YapiLogo size="small" />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          padding: "8px 20px",
+          backgroundColor: COLORS.accent,
+          borderRadius: "6px",
+          marginBottom: "32px",
+        }}
+      >
+        <span style={{ fontSize: "24px", color: "#fff", textTransform: "uppercase", letterSpacing: "2px" }}>
+          Blog
+        </span>
       </div>
 
       <div
@@ -24,7 +38,7 @@ export async function GET(request: Request) {
           textAlign: "center",
           lineHeight: 1.2,
           maxWidth: "90%",
-          marginBottom: "40px",
+          marginBottom: (author || date) ? "32px" : "0",
         }}
       >
         {title}
@@ -35,22 +49,16 @@ export async function GET(request: Request) {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "16px",
-            padding: "16px 32px",
-            backgroundColor: COLORS.bgElevated,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: "9999px",
+            gap: "12px",
+            fontSize: "24px",
+            color: COLORS.fgMuted,
           }}
         >
-          {author && (
-            <span style={{ fontSize: "28px", color: COLORS.fgMuted }}>{author}</span>
-          )}
+          {author && <span>{author}</span>}
           {author && date && (
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: COLORS.border, display: "flex" }} />
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: COLORS.fgSubtle, display: "flex" }} />
           )}
-          {date && (
-            <span style={{ fontSize: "28px", color: COLORS.fgMuted }}>{date}</span>
-          )}
+          {date && <span>{date}</span>}
         </div>
       )}
     </OgContainer>,

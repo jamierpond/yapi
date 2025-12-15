@@ -84,6 +84,7 @@ export const metadata: Metadata = {
     title: `${SITE_TITLE} - YAML API Client`,
     description: "Offline-first YAML API client for HTTP, gRPC, and TCP",
     creator: "@jamierpond",
+    images: [`${OG_BASE_URL}/og`],
   },
   alternates: {
     canonical: SITE_URL,
