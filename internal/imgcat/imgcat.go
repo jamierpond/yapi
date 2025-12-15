@@ -19,7 +19,7 @@ import (
 	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 
-	// Register decoders
+	// Register generic image decoders
 	_ "image/gif"
 )
 
@@ -34,12 +34,13 @@ const (
 	UnitAuto
 )
 
-type Dimension struct {
+// ITermDimension implements flag.Value
+type ITermDimension struct {
 	Value float64
 	Unit  Unit
 }
 
-func (d *Dimension) String() string {
+func (d *ITermDimension) String() string {
 	switch d.Unit {
 	case UnitPixels:
 		return fmt.Sprintf("%gpx", d.Value)
@@ -52,7 +53,7 @@ func (d *Dimension) String() string {
 	}
 }
 
-func (d *Dimension) Set(s string) error {
+func (d *ITermDimension) Set(s string) error {
 	if s == "auto" {
 		d.Unit = UnitAuto
 		return nil
@@ -84,7 +85,7 @@ func (d *Dimension) Set(s string) error {
 	return nil
 }
 
-func (d Dimension) ToPixels(cellSize, limit int) float64 {
+func (d ITermDimension) ToPixels(cellSize, limit int) float64 {
 	switch d.Unit {
 	case UnitPixels:
 		return d.Value
@@ -93,19 +94,20 @@ func (d Dimension) ToPixels(cellSize, limit int) float64 {
 	case UnitCells:
 		return d.Value * float64(cellSize)
 	default:
-		return 0
+		return 0 // Auto
 	}
 }
 
-type Position struct {
+// ImagePosition implements flag.Value
+type ImagePosition struct {
 	X, Y int
 }
 
-func (p *Position) String() string {
+func (p *ImagePosition) String() string {
 	return fmt.Sprintf("%d,%d", p.X, p.Y)
 }
 
-func (p *Position) Set(s string) error {
+func (p *ImagePosition) Set(s string) error {
 	parts := strings.Split(s, ",")
 	if len(parts) != 2 {
 		return errors.New("expected x,y")
@@ -123,15 +125,16 @@ func (p *Position) Set(s string) error {
 	return nil
 }
 
-type Size struct {
+// ImageDimension implements flag.Value
+type ImageDimension struct {
 	Width, Height int
 }
 
-func (d *Size) String() string {
+func (d *ImageDimension) String() string {
 	return fmt.Sprintf("%dx%d", d.Width, d.Height)
 }
 
-func (d *Size) Set(s string) error {
+func (d *ImageDimension) Set(s string) error {
 	parts := strings.Split(s, "x")
 	if len(parts) != 2 {
 		return errors.New("expected WxH")
@@ -149,6 +152,7 @@ func (d *Size) Set(s string) error {
 	return nil
 }
 
+// TmuxPassthru implements flag.Value
 type TmuxPassthru string
 
 const (
@@ -158,7 +162,6 @@ const (
 )
 
 func (t *TmuxPassthru) String() string { return string(*t) }
-
 func (t *TmuxPassthru) Set(s string) error {
 	val := TmuxPassthru(strings.ToLower(s))
 	switch val {
@@ -199,6 +202,7 @@ func (t TmuxPassthru) Encode(content string) string {
 	return content
 }
 
+// ResampleFormat implements flag.Value
 type ResampleFormat string
 
 const (
@@ -208,7 +212,6 @@ const (
 )
 
 func (f *ResampleFormat) String() string { return string(*f) }
-
 func (f *ResampleFormat) Set(s string) error {
 	val := ResampleFormat(strings.ToLower(s))
 	switch val {
@@ -219,6 +222,7 @@ func (f *ResampleFormat) Set(s string) error {
 	return errors.New("must be png, jpeg, or input")
 }
 
+// ResampleFilter implements flag.Value
 type ResampleFilter string
 
 const (
@@ -230,7 +234,6 @@ const (
 )
 
 func (f *ResampleFilter) String() string { return string(*f) }
-
 func (f *ResampleFilter) Set(s string) error {
 	val := ResampleFilter(strings.ToLower(s))
 	switch val {
@@ -241,13 +244,13 @@ func (f *ResampleFilter) Set(s string) error {
 	return errors.New("unknown filter type")
 }
 
-// --- Configuration ---
+// --- Configuration Struct ---
 
 type Config struct {
-	Width                 Dimension
-	Height                Dimension
+	Width                 ITermDimension
+	Height                ITermDimension
 	NoPreserveAspectRatio bool
-	Position              *Position
+	Position              *ImagePosition
 	NoMoveCursor          bool
 	Hold                  bool
 	TmuxPassthru          TmuxPassthru
@@ -255,36 +258,35 @@ type Config struct {
 	NoResample            bool
 	ResampleFormat        ResampleFormat
 	ResampleFilter        ResampleFilter
-	Resize                *Size
+	Resize                *ImageDimension
 	ShowResampleTiming    bool
-	FileName              string
+
+	// Input (Set one of these)
+	FileName string
+	Reader   io.Reader
+
+	// Output (Optional, defaults to os.Stdout)
+	Writer   io.Writer
 }
 
 func NewConfig() *Config {
 	return &Config{
 		TmuxPassthru:   TmuxDetect,
-		MaxPixels:      25000000,
+		MaxPixels:      25_000_000,
 		ResampleFormat: FormatInput,
 		ResampleFilter: FilterCatmullRom,
+		Width:          ITermDimension{Unit: UnitAuto},
+		Height:         ITermDimension{Unit: UnitAuto},
 	}
 }
 
-// --- Internal Types ---
+// --- Internal Logic ---
 
 type imageInfo struct {
 	Width  int
 	Height int
 	Format string
 }
-
-type screenSize struct {
-	Cols   int
-	Rows   int
-	XPixel int
-	YPixel int
-}
-
-// --- Logic ---
 
 func getImageDimensions(data []byte) (imageInfo, error) {
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
@@ -305,20 +307,20 @@ func (c *Config) getScaler() draw.Interpolator {
 	case FilterGaussian:
 		return draw.ApproxBiLinear
 	case FilterLanczos3:
-		return draw.CatmullRom
+		return draw.CatmullRom // Approximation for Go
 	default:
 		return draw.CatmullRom
 	}
 }
 
-func (c *Config) resizeImage(data []byte, targetW, targetH int, info imageInfo) ([]byte, imageInfo, error) {
+func (c *Config) resizeImage(data []byte, targetW, targetH int, info imageInfo, stderr io.Writer) ([]byte, imageInfo, error) {
 	start := time.Now()
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, imageInfo{}, fmt.Errorf("decoding image: %w", err)
 	}
 	if c.ShowResampleTiming {
-		fmt.Fprintf(os.Stderr, "loading image took %v for %d bytes\n", time.Since(start), len(data))
+		fmt.Fprintf(stderr, "loading image took %v for %d bytes\n", time.Since(start), len(data))
 	}
 
 	start = time.Now()
@@ -327,7 +329,7 @@ func (c *Config) resizeImage(data []byte, targetW, targetH int, info imageInfo) 
 	scaler.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
 
 	if c.ShowResampleTiming {
-		fmt.Fprintf(os.Stderr, "resizing took %v\n", time.Since(start))
+		fmt.Fprintf(stderr, "resizing took %v\n", time.Since(start))
 	}
 
 	start = time.Now()
@@ -365,7 +367,7 @@ func (c *Config) resizeImage(data []byte, targetW, targetH int, info imageInfo) 
 	}
 
 	if c.ShowResampleTiming {
-		fmt.Fprintf(os.Stderr, "encoding took %v to produce %d bytes -> %+v\n", time.Since(start), outBuf.Len(), newInfo)
+		fmt.Fprintf(stderr, "encoding took %v to produce %d bytes -> %+v\n", time.Since(start), outBuf.Len(), newInfo)
 	}
 
 	return outBuf.Bytes(), newInfo, nil
@@ -375,16 +377,23 @@ func (c *Config) getImageData() ([]byte, imageInfo, error) {
 	var data []byte
 	var err error
 
-	if c.FileName != "" {
+	// Determine Stderr for diagnostics
+	stderr := c.Writer
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+
+	if c.Reader != nil {
+		data, err = io.ReadAll(c.Reader)
+	} else if c.FileName != "" {
 		data, err = os.ReadFile(c.FileName)
-		if err != nil {
-			return nil, imageInfo{}, fmt.Errorf("reading file %s: %w", c.FileName, err)
-		}
 	} else {
+		// Default to stdin
 		data, err = io.ReadAll(os.Stdin)
-		if err != nil {
-			return nil, imageInfo{}, fmt.Errorf("reading stdin: %w", err)
-		}
+	}
+
+	if err != nil {
+		return nil, imageInfo{}, fmt.Errorf("reading image data: %w", err)
 	}
 
 	info, err := getImageDimensions(data)
@@ -392,13 +401,15 @@ func (c *Config) getImageData() ([]byte, imageInfo, error) {
 		return nil, imageInfo{}, err
 	}
 
+	// 1. Explicit Resize
 	if c.Resize != nil {
-		data, info, err = c.resizeImage(data, c.Resize.Width, c.Resize.Height, info)
+		data, info, err = c.resizeImage(data, c.Resize.Width, c.Resize.Height, info, stderr)
 		if err != nil {
 			return nil, imageInfo{}, err
 		}
 	}
 
+	// 2. Max Pixels limit
 	totalPixels := info.Width * info.Height
 	if !c.NoResample && totalPixels > c.MaxPixels {
 		scale := float64(totalPixels) / float64(c.MaxPixels)
@@ -406,14 +417,10 @@ func (c *Config) getImageData() ([]byte, imageInfo, error) {
 
 		targetW := int(float64(info.Width) / dimScale)
 		targetH := int(float64(info.Height) / dimScale)
-		if targetW < 1 {
-			targetW = 1
-		}
-		if targetH < 1 {
-			targetH = 1
-		}
+		if targetW < 1 { targetW = 1 }
+		if targetH < 1 { targetH = 1 }
 
-		data, info, err = c.resizeImage(data, targetW, targetH, info)
+		data, info, err = c.resizeImage(data, targetW, targetH, info, stderr)
 		if err != nil {
 			return nil, imageInfo{}, err
 		}
@@ -422,8 +429,17 @@ func (c *Config) getImageData() ([]byte, imageInfo, error) {
 	return data, info, nil
 }
 
+type screenSize struct {
+	Cols   int
+	Rows   int
+	XPixel int
+	YPixel int
+}
+
 func getScreenSize() (screenSize, error) {
-	ws, err := unix.IoctlGetWinsize(int(os.Stdout.Fd()), unix.TIOCGWINSZ)
+	// We prefer the file descriptor of the output if available
+	fd := int(os.Stdout.Fd())
+	ws, err := unix.IoctlGetWinsize(fd, unix.TIOCGWINSZ)
 	if err != nil {
 		return screenSize{}, err
 	}
@@ -438,40 +454,27 @@ func getScreenSize() (screenSize, error) {
 func (c *Config) computeImageCellDimensions(info imageInfo, termSize screenSize) (int, int) {
 	cellW := termSize.XPixel / termSize.Cols
 	cellH := termSize.YPixel / termSize.Rows
-	if cellW == 0 {
-		cellW = 10
-	}
-	if cellH == 0 {
-		cellH = 20
-	}
+	if cellW == 0 { cellW = 10 }
+	if cellH == 0 { cellH = 20 }
 
 	pixelWidthLimit := float64(termSize.XPixel)
 	pixelHeightLimit := float64(termSize.YPixel)
-	if pixelWidthLimit == 0 {
-		pixelWidthLimit = float64(termSize.Cols * cellW)
-	}
-	if pixelHeightLimit == 0 {
-		pixelHeightLimit = float64(termSize.Rows * cellH)
-	}
+	if pixelWidthLimit == 0 { pixelWidthLimit = float64(termSize.Cols * cellW) }
+	if pixelHeightLimit == 0 { pixelHeightLimit = float64(termSize.Rows * cellH) }
 
 	targetW := c.Width.ToPixels(cellW, termSize.Cols)
 	targetH := c.Height.ToPixels(cellH, termSize.Rows)
 
 	aspect := float64(info.Width) / float64(info.Height)
-
 	var finalW, finalH float64
 
 	if c.Width.Unit == UnitAuto && c.Height.Unit == UnitAuto {
-		w := float64(info.Width)
-		h := float64(info.Height)
-
+		w, h := float64(info.Width), float64(info.Height)
 		if w > pixelWidthLimit || h > pixelHeightLimit {
 			xScale := pixelWidthLimit / w
 			yScale := pixelHeightLimit / h
 			scale := xScale
-			if yScale < xScale {
-				scale = yScale
-			}
+			if yScale < xScale { scale = yScale }
 			finalW = w * scale
 			finalH = h * scale
 		} else {
@@ -492,58 +495,58 @@ func (c *Config) computeImageCellDimensions(info imageInfo, termSize screenSize)
 		}
 	}
 
-	cols := int(finalW / float64(cellW))
-	rows := int(finalH / float64(cellH))
-	if cols < 1 {
-		cols = 1
-	}
-	if rows < 1 {
-		rows = 1
-	}
+	// Fix: Round UP to reserve full text lines
+	cols := int(math.Ceil(finalW / float64(cellW)))
+	rows := int(math.Ceil(finalH / float64(cellH)))
+
+	if cols < 1 { cols = 1 }
+	if rows < 1 { rows = 1 }
 	return cols, rows
 }
 
+// Run executes the imgcat logic.
 func (c *Config) Run() error {
+	out := c.Writer
+	if out == nil {
+		out = os.Stdout
+	}
+
 	data, info, err := c.getImageData()
 	if err != nil {
 		return err
 	}
-	return c.render(data, info)
-}
 
-func (c *Config) render(data []byte, info imageInfo) error {
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		oldState, err = term.MakeRaw(int(os.Stdout.Fd()))
-	}
-	if err == nil {
-		term.Restore(int(os.Stdin.Fd()), oldState)
-		term.Restore(int(os.Stdout.Fd()), oldState)
+	// Toggle Raw mode to get size if needed, though IOCTL usually works without it
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+		if err == nil {
+			term.Restore(int(os.Stdin.Fd()), oldState)
+		}
 	}
 
 	termSize, err := getScreenSize()
 	if err != nil {
-		return fmt.Errorf("failed to get terminal size: %w", err)
+		// Fallback size if we can't detect
+		termSize = screenSize{Cols: 80, Rows: 24, XPixel: 800, YPixel: 480}
 	}
 
 	isTmux := os.Getenv("TMUX") != ""
-	isConpty := os.PathSeparator == '\\'
-
+	isConpty := os.PathSeparator == '\\' // simplistic windows check
 	needsForceCursorMove := !c.NoMoveCursor && c.Position == nil && (isTmux || isConpty) && (termSize.XPixel != 0 && termSize.YPixel != 0)
 
 	saveCursor := "\x1b7"
 	restoreCursor := "\x1b8"
 
 	if c.Position != nil {
-		fmt.Printf("%s\x1b[%d;%dH", saveCursor, c.Position.Y+1, c.Position.X+1)
+		fmt.Fprintf(out, "%s\x1b[%d;%dH", saveCursor, c.Position.Y+1, c.Position.X+1)
 	}
 
 	_, rows := c.computeImageCellDimensions(info, termSize)
 
 	if needsForceCursorMove {
-		fmt.Print(strings.Repeat("\n", rows))
-		fmt.Printf("\x1b[%dA", rows)
-		fmt.Print("\r")
+		fmt.Fprint(out, strings.Repeat("\n", rows))
+		fmt.Fprintf(out, "\x1b[%dA", rows)
+		fmt.Fprint(out, "\r")
 	}
 
 	var oscBuilder strings.Builder
@@ -562,7 +565,6 @@ func (c *Config) render(data []byte, info imageInfo) error {
 	} else {
 		oscBuilder.WriteString(";preserveAspectRatio=1")
 	}
-
 	if c.NoMoveCursor {
 		oscBuilder.WriteString(";doNotMoveCursor=1")
 	}
@@ -572,19 +574,22 @@ func (c *Config) render(data []byte, info imageInfo) error {
 	oscBuilder.WriteString("\a")
 
 	encoded := c.TmuxPassthru.Encode(oscBuilder.String())
-	fmt.Println(encoded)
+	fmt.Fprintln(out, encoded)
 
 	if needsForceCursorMove {
-		fmt.Printf("\x1b[%dB", rows)
+		fmt.Fprintf(out, "\x1b[%dB", rows)
 	} else if c.Position != nil {
-		fmt.Print(restoreCursor)
+		fmt.Fprint(out, restoreCursor)
 	}
 
 	if c.Hold {
+		// To hold, we really need a TTY.
+		// If input was pipe, this part will be tricky, but we try opening TTY directly.
 		ttyFile, err := os.Open("/dev/tty")
 		fd := int(os.Stdin.Fd())
 		if err == nil {
 			fd = int(ttyFile.Fd())
+			defer ttyFile.Close()
 		}
 
 		state, err := term.MakeRaw(fd)
@@ -601,7 +606,6 @@ func (c *Config) render(data []byte, info imageInfo) error {
 			} else {
 				n, _ = os.Stdin.Read(buf)
 			}
-
 			if n > 0 {
 				b := buf[0]
 				if b == 3 || b == 4 || b == 27 || b == 13 {
@@ -612,53 +616,4 @@ func (c *Config) render(data []byte, info imageInfo) error {
 	}
 
 	return nil
-}
-
-// PrintConfig is a simplified config for programmatic image printing.
-type PrintConfig struct {
-	Width  int // Display width in terminal cells (0 = auto)
-	Height int // Display height in terminal cells (0 = auto)
-}
-
-// Print renders image data to the terminal using iTerm2 inline image protocol.
-// This is a convenience function for programmatic use.
-func Print(data []byte, cfg PrintConfig) error {
-	info, err := getImageDimensions(data)
-	if err != nil {
-		return err
-	}
-
-	c := NewConfig()
-
-	if cfg.Width > 0 {
-		c.Width.Value = float64(cfg.Width)
-		c.Width.Unit = UnitCells
-	}
-	if cfg.Height > 0 {
-		c.Height.Value = float64(cfg.Height)
-		c.Height.Unit = UnitCells
-	}
-
-	// Process resampling if needed
-	totalPixels := info.Width * info.Height
-	if totalPixels > c.MaxPixels {
-		scale := float64(totalPixels) / float64(c.MaxPixels)
-		dimScale := math.Sqrt(scale)
-
-		targetW := int(float64(info.Width) / dimScale)
-		targetH := int(float64(info.Height) / dimScale)
-		if targetW < 1 {
-			targetW = 1
-		}
-		if targetH < 1 {
-			targetH = 1
-		}
-
-		data, info, err = c.resizeImage(data, targetW, targetH, info)
-		if err != nil {
-			return err
-		}
-	}
-
-	return c.render(data, info)
 }
