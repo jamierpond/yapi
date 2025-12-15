@@ -289,7 +289,7 @@ func shouldPrintImage(contentType string, cfg *config.DisplayConfig) bool {
 
 // printImage renders image data to the terminal.
 func printImage(data []byte, cfg *config.DisplayConfig) error {
-	imgCfg := imgcat.Config{}
+	imgCfg := imgcat.PrintConfig{}
 	if cfg != nil {
 		imgCfg.Width = cfg.MaxWidth
 		imgCfg.Height = cfg.MaxHeight

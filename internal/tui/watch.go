@@ -120,7 +120,7 @@ func runYapiCmd(path string) tea.Cmd {
 		// Handle image responses
 		if output.IsImageContentType(runRes.Result.ContentType) {
 			// Print image directly (renders via sixel/kitty outside TUI viewport)
-			if err := imgcat.Print(runRes.Result.RawBody, imgcat.Config{}); err != nil {
+			if err := imgcat.Print(runRes.Result.RawBody, imgcat.PrintConfig{}); err != nil {
 				b.WriteString(theme.Error.Render(fmt.Sprintf("image display failed: %v", err)))
 			}
 			// Add metadata

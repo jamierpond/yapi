@@ -508,7 +508,10 @@ func (c *Config) Run() error {
 	if err != nil {
 		return err
 	}
+	return c.render(data, info)
+}
 
+func (c *Config) render(data []byte, info imageInfo) error {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		oldState, err = term.MakeRaw(int(os.Stdout.Fd()))
@@ -609,4 +612,53 @@ func (c *Config) Run() error {
 	}
 
 	return nil
+}
+
+// PrintConfig is a simplified config for programmatic image printing.
+type PrintConfig struct {
+	Width  int // Display width in terminal cells (0 = auto)
+	Height int // Display height in terminal cells (0 = auto)
+}
+
+// Print renders image data to the terminal using iTerm2 inline image protocol.
+// This is a convenience function for programmatic use.
+func Print(data []byte, cfg PrintConfig) error {
+	info, err := getImageDimensions(data)
+	if err != nil {
+		return err
+	}
+
+	c := NewConfig()
+
+	if cfg.Width > 0 {
+		c.Width.Value = float64(cfg.Width)
+		c.Width.Unit = UnitCells
+	}
+	if cfg.Height > 0 {
+		c.Height.Value = float64(cfg.Height)
+		c.Height.Unit = UnitCells
+	}
+
+	// Process resampling if needed
+	totalPixels := info.Width * info.Height
+	if totalPixels > c.MaxPixels {
+		scale := float64(totalPixels) / float64(c.MaxPixels)
+		dimScale := math.Sqrt(scale)
+
+		targetW := int(float64(info.Width) / dimScale)
+		targetH := int(float64(info.Height) / dimScale)
+		if targetW < 1 {
+			targetW = 1
+		}
+		if targetH < 1 {
+			targetH = 1
+		}
+
+		data, info, err = c.resizeImage(data, targetW, targetH, info)
+		if err != nil {
+			return err
+		}
+	}
+
+	return c.render(data, info)
 }
