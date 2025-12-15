@@ -55,7 +55,10 @@ func Print(data []byte, cfg Config) error {
 	if os.Getenv("YAPI_DEBUG_IMG") != "" {
 		protocols := termimg.DetermineProtocols()
 		detected := termimg.DetectProtocol()
+		features := termimg.QueryTerminalFeatures()
 		fmt.Fprintf(os.Stderr, "[imageprinter] available_protocols=%v detected=%s\n", protocols, detected)
+		fmt.Fprintf(os.Stderr, "[imageprinter] font=%dx%d term=%s program=%s tmux=%v\n",
+			features.FontWidth, features.FontHeight, features.TermName, features.TermProgram, features.IsTmux)
 		renderer, err := img.GetRenderer()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[imageprinter] GetRenderer error: %v\n", err)
@@ -64,7 +67,16 @@ func Print(data []byte, cfg Config) error {
 		}
 	}
 
-	return img.Print()
+	err = img.Print()
+	if err != nil {
+		return err
+	}
+
+	// Print a newline after the image to ensure cursor is on a new line
+	// This matches wezterm's imgcat behavior and prevents screen corruption
+	fmt.Println()
+
+	return nil
 }
 
 // PrintFile renders an image from a file path to stdout.
@@ -92,7 +104,15 @@ func PrintFile(path string, cfg Config) error {
 	// Let go-termimg auto-detect the best protocol
 	img = img.Protocol(termimg.Auto)
 
-	return img.Print()
+	err = img.Print()
+	if err != nil {
+		return err
+	}
+
+	// Print a newline after the image to ensure cursor is on a new line
+	fmt.Println()
+
+	return nil
 }
 
 // IsSupported returns true if the terminal supports image rendering.
