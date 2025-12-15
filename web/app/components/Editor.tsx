@@ -173,25 +173,46 @@ export default function Editor({ value, onChange, onRun, examples, onLoadExample
       monaco.Uri.parse("file:///example.yaml")
     );
 
+    // Detect if mobile device
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
     // Create the editor instance
     editorRef.current = monaco.editor.create(container, {
       model,
       automaticLayout: true,
       minimap: { enabled: false },
       theme: "vs-dark",
-      fontSize: 14,
+      fontSize: isMobile ? 16 : 14,
       fontFamily: "var(--font-jetbrains-mono)",
       lineNumbers: "on",
       scrollBeyondLastLine: false,
       wordWrap: "on",
-      padding: { top: 16, bottom: 16 },
+      padding: { top: isMobile ? 12 : 16, bottom: isMobile ? 12 : 16 },
       renderLineHighlight: "all",
       cursorBlinking: "smooth",
+      lineHeight: isMobile ? 24 : 21,
       // ensure IntelliSense is on
       quickSuggestions: { other: true, comments: false, strings: true },
       suggestOnTriggerCharacters: true,
       acceptSuggestionOnEnter: "on",
       tabCompletion: "on",
+      // Enable smooth scrolling for mobile
+      smoothScrolling: true,
+      // Improve mobile/touch scrolling behavior
+      scrollbar: {
+        useShadows: false,
+        vertical: 'auto',
+        horizontal: 'auto',
+        verticalScrollbarSize: isMobile ? 14 : 10,
+        horizontalScrollbarSize: isMobile ? 14 : 10,
+      },
+      // Mobile-friendly options
+      mouseWheelZoom: false,
+      contextmenu: !isMobile,
+      links: true,
+      // Better touch selection
+      selectionHighlight: true,
+      occurrencesHighlight: 'off',
     });
 
     // Listen to content changes and trigger validation
@@ -282,11 +303,11 @@ export default function Editor({ value, onChange, onRun, examples, onLoadExample
   return (
     <div className="h-full flex flex-col bg-yapi-bg relative overflow-visible">
       {/* Editor Toolbar */}
-      <div className="relative z-20 flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
+      <div className="relative z-20 flex items-center justify-between px-4 md:px-6 h-14 md:h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
         {/* Subtle gradient accent */}
         <div className="absolute inset-0 bg-gradient-to-r from-yapi-accent/5 via-transparent to-transparent opacity-50"></div>
 
-        <div className="relative flex items-center gap-4">
+        <div className="relative flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
             <h2 className="text-xs font-semibold text-yapi-fg tracking-wider">
@@ -335,7 +356,7 @@ export default function Editor({ value, onChange, onRun, examples, onLoadExample
         <button
           onClick={handleRunClick}
           disabled={hasErrors}
-          className={`group relative px-5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center gap-2.5 overflow-hidden ${
+          className={`group relative px-4 md:px-5 py-2 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center gap-2.5 overflow-hidden ${
             hasErrors
               ? "bg-yapi-bg-subtle text-yapi-fg-subtle cursor-not-allowed opacity-50"
               : "bg-gradient-to-r from-yapi-accent to-yapi-accent hover:from-yapi-accent hover:to-orange-500 text-white shadow-lg hover:shadow-xl hover:shadow-yapi-accent/30 hover:scale-105 active:scale-95"
@@ -346,7 +367,7 @@ export default function Editor({ value, onChange, onRun, examples, onLoadExample
           )}
           <span className="relative flex items-center gap-2">
             <span>Run</span>
-            <kbd className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded border border-white/10 font-mono">
+            <kbd className="hidden md:inline-block text-[10px] bg-black/30 px-1.5 py-0.5 rounded border border-white/10 font-mono">
               ⌘↵
             </kbd>
           </span>

@@ -193,10 +193,10 @@ export default function Playground() {
       </div>
 
       {/* Main Content - Split Pane */}
-      <div className="flex-1 flex overflow-hidden relative z-0">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-0">
         {/* Left Panel - Editor */}
-        <div className="w-1/2 relative group z-10">
-          <div className="absolute -right-px top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-yapi-border-strong to-transparent"></div>
+        <div className="w-full h-1/2 md:w-1/2 md:h-full relative group z-10">
+          <div className="absolute -right-px top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-yapi-border-strong to-transparent hidden md:block"></div>
           <Editor
             value={yaml}
             onChange={handleYamlChange}
@@ -211,7 +211,7 @@ export default function Playground() {
         </div>
 
         {/* Right Panel - Output */}
-        <div className="w-1/2 relative">
+        <div className="w-full h-1/2 md:w-1/2 md:h-full relative">
           <OutputPanel result={result} isLoading={isLoading} />
         </div>
       </div>
@@ -233,6 +233,11 @@ export default function Playground() {
 
         .animation-delay-4000 {
           animation-delay: 4s;
+        }
+
+        /* Enable momentum scrolling on mobile */
+        * {
+          -webkit-overflow-scrolling: touch;
         }
       `}</style>
     </div>
