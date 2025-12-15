@@ -13,7 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"yapi.run/cli/internal/core"
-	"yapi.run/cli/internal/imageprinter"
+	"yapi.run/cli/internal/imgcat"
 	"yapi.run/cli/internal/output"
 	"yapi.run/cli/internal/runner"
 	"yapi.run/cli/internal/tui/theme"
@@ -120,7 +120,7 @@ func runYapiCmd(path string) tea.Cmd {
 		// Handle image responses
 		if output.IsImageContentType(runRes.Result.ContentType) {
 			// Print image directly (renders via sixel/kitty outside TUI viewport)
-			if err := imageprinter.Print(runRes.Result.RawBody, imageprinter.Config{}); err != nil {
+			if err := imgcat.Print(runRes.Result.RawBody, imgcat.Config{}); err != nil {
 				b.WriteString(theme.Error.Render(fmt.Sprintf("image display failed: %v", err)))
 			}
 			// Add metadata

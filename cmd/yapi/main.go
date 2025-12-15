@@ -20,7 +20,7 @@ import (
 	"yapi.run/cli/internal/cli/middleware"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/core"
-	"yapi.run/cli/internal/imageprinter"
+	"yapi.run/cli/internal/imgcat"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/observability"
 	"yapi.run/cli/internal/output"
@@ -289,12 +289,12 @@ func shouldPrintImage(contentType string, cfg *config.DisplayConfig) bool {
 
 // printImage renders image data to the terminal.
 func printImage(data []byte, cfg *config.DisplayConfig) error {
-	imgCfg := imageprinter.Config{}
+	imgCfg := imgcat.Config{}
 	if cfg != nil {
-		imgCfg.MaxWidth = cfg.MaxWidth
-		imgCfg.MaxHeight = cfg.MaxHeight
+		imgCfg.Width = cfg.MaxWidth
+		imgCfg.Height = cfg.MaxHeight
 	}
-	return imageprinter.Print(data, imgCfg)
+	return imgcat.Print(data, imgCfg)
 }
 
 // executeRunE is the unified execution pipeline for both Run and Watch modes.
