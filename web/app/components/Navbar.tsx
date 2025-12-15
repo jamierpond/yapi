@@ -16,13 +16,11 @@ export default async function Navbar({ rightContent }: NavbarProps) {
   return (
     <nav className="relative z-50 px-6 py-4 border-b border-yapi-border/30 backdrop-blur-md bg-yapi-bg/50">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           <NavbarLogo />
-          <span className="px-2 py-0.5 text-xs font-bold text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded">
-            Early Alpha
-          </span>
+          <span className="inline-block px-2 py-1 text-xs font-bold text-center leading-none text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded">Early Alpha</span>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 sm:gap-3 md:gap-4 items-center">
           <a
             href="https://github.com/jamierpond/yapi"
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-yapi-fg-muted hover:text-yapi-fg bg-yapi-bg-elevated/50 border border-yapi-border rounded-lg hover:border-yapi-accent/50 transition-all"
@@ -50,19 +48,19 @@ export default async function Navbar({ rightContent }: NavbarProps) {
           )}
           <Link
             href="/docs"
-            className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
+            className="hidden md:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
           >
             Docs
           </Link>
           <Link
             href="/blog"
-            className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
+            className="hidden md:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
           >
             Blog
           </Link>
           <Link
             href="/playground"
-            className="hidden sm:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
+            className="hidden md:block px-4 py-1.5 text-sm font-semibold rounded-lg bg-yapi-bg-elevated border border-yapi-border hover:border-yapi-accent hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all duration-300"
           >
             Playground
           </Link>
