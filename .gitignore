@@ -22,3 +22,5 @@ coverage.txt
 fuzz.cov
 core.md
 test.md
+imgcat
+cmd/imgcat/imgcat
