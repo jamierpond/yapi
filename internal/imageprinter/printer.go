@@ -34,7 +34,18 @@ func inKitty() bool {
 
 // inGhostty returns true if running in Ghostty.
 func inGhostty() bool {
-	return os.Getenv("TERM_PROGRAM") == "ghostty" || os.Getenv("GHOSTTY_RESOURCES_DIR") != ""
+	if os.Getenv("TERM_PROGRAM") == "ghostty" {
+		return true
+	}
+	if os.Getenv("GHOSTTY_RESOURCES_DIR") != "" {
+		return true
+	}
+	// Check TERM for ghostty (works inside tmux if TERM is preserved)
+	term := os.Getenv("TERM")
+	if strings.Contains(term, "ghostty") {
+		return true
+	}
+	return false
 }
 
 // Print renders an image from raw bytes to stdout.
@@ -61,6 +72,18 @@ func Print(data []byte, cfg Config) error {
 		img = img.Protocol(termimg.Kitty)
 	case inITerm2():
 		img = img.Protocol(termimg.ITerm2)
+	}
+
+	// Debug: show which protocol is being used
+	if os.Getenv("YAPI_DEBUG_IMG") != "" {
+		fmt.Fprintf(os.Stderr, "[imageprinter] kitty=%v ghostty=%v iterm2=%v TERM_PROGRAM=%q GHOSTTY_RESOURCES_DIR=%q TERM=%q\n",
+			inKitty(), inGhostty(), inITerm2(), os.Getenv("TERM_PROGRAM"), os.Getenv("GHOSTTY_RESOURCES_DIR"), os.Getenv("TERM"))
+		renderer, err := img.GetRenderer()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[imageprinter] GetRenderer error: %v\n", err)
+		} else if renderer != nil {
+			fmt.Fprintf(os.Stderr, "[imageprinter] protocol=%s\n", renderer.Protocol())
+		}
 	}
 
 	return img.Print()
