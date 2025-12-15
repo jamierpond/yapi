@@ -18,8 +18,8 @@ type Config struct {
 
 // Default size constraints (in terminal cells)
 const (
-	DefaultMaxWidth  = 60
-	DefaultMaxHeight = 20
+	DefaultMaxWidth  = 80
+	DefaultMaxHeight = 30
 )
 
 // Print renders an image from raw bytes to stdout.
@@ -39,8 +39,8 @@ func Print(data []byte, cfg Config) error {
 		h = DefaultMaxHeight
 	}
 
-	// Force halfblocks for most reliable cross-terminal output
-	img = img.Width(w).Height(h).Scale(termimg.ScaleFit).Protocol(termimg.Halfblocks)
+	// Auto-detect best protocol (iTerm2, Kitty, Sixel, or fallback to halfblocks)
+	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
 	return img.Print()
 }
