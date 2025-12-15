@@ -10,7 +10,6 @@ import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import path from "path";
 import Navbar from "@/app/components/Navbar";
 import "highlight.js/styles/github-dark.css";
 
@@ -275,7 +274,7 @@ export function createBlogConfig(): MadeaConfigWithSeo {
 // Re-export helpers bound to config for use in pages
 export async function generateBlogMetadata() {
   const config = createBlogConfig();
-  const metadata = await generateMetadataForIndex(config, {
+  const metadata = generateMetadataForIndex(config, {
     title: "Blog | yapi",
     description: "Updates, tutorials, and thoughts about yapi",
   });
