@@ -233,6 +233,7 @@ export const blogDataProvider = new GitHubDataProvider({
   username: "jamierpond",
   repo: "madea.blog",
   subDir: "yapi", // only the yapi folder in the repo
+  token: process.env.GITHUB_TOKEN || process.env.GITHUB_PAT,
 });
 
 const SEO_CONFIG = {
@@ -280,7 +281,7 @@ export async function generateBlogArticleMetadata(slug: string[]) {
   // Fetch article data for author and date
   const slugWithExtension = [...slug];
   slugWithExtension[slugWithExtension.length - 1] += ".md";
-  const article = await blogDataProvider.getFileContent(slugWithExtension.join("/"));
+  const article = await blogDataProvider.getArticle(slugWithExtension.join("/"));
 
   const params = new URLSearchParams({ title });
   if (article?.commitInfo?.authorName) params.set("author", article.commitInfo.authorName);
