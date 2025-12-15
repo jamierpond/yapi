@@ -45,7 +45,7 @@ export default async function Landing() {
       <Navbar />
 
       {/* Hero Section */}
-      <main className="flex-1 relative z-10 flex flex-col items-center pt-20 pb-32 px-6">
+      <main className="flex-1 relative z-10 flex flex-col items-center pt-20 pb-16 px-6">
 
         {/* Stats Bar */}
         <div className="mb-8 animate-fade-in-up flex flex-wrap justify-center gap-4">
@@ -177,7 +177,7 @@ export default async function Landing() {
         </div>
 
         {/* Feature Grid */}
-        <div className="max-w-6xl w-full mx-auto grid md:grid-cols-3 gap-8 mt-32">
+        <div className="max-w-6xl w-full mx-auto grid md:grid-cols-3 gap-8 mt-16">
           <FeatureCard
             icon="⚡"
             title="Go Native Speed"
@@ -196,7 +196,7 @@ export default async function Landing() {
         </div>
 
         {/* Advanced Feature Highlight */}
-        <div className="max-w-4xl w-full mx-auto mt-32 mb-16 border-t border-yapi-border/50 pt-16">
+        <div className="max-w-4xl w-full mx-auto mt-12 mb-16 border-t border-yapi-border/50 pt-12">
            <div className="flex flex-col md:flex-row gap-12 items-center">
               <div className="flex-1 space-y-4">
                 <div className="inline-block px-3 py-1 rounded bg-yapi-success/10 text-yapi-success text-xs font-bold uppercase tracking-wider">
