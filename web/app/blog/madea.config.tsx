@@ -34,7 +34,7 @@ import { OG_BASE_URL } from "@/app/lib/constants";
 
 const BASE_URL = "https://yapi.run";
 
-function ArticleView({ article, title, body }: ArticleViewProps) {
+function ArticleView({ article }: ArticleViewProps) {
   const jsonLd = generateArticleJsonLd(article, {
     baseUrl: BASE_URL,
     blogPath: "/blog",
@@ -71,7 +71,7 @@ function ArticleView({ article, title, body }: ArticleViewProps) {
 
         <header className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            {title}
+            {article.title}
           </h1>
           <div className="flex items-center gap-4 text-sm text-yapi-fg-muted">
             {article.commitInfo.authorAvatarUrl && (
@@ -113,7 +113,7 @@ function ArticleView({ article, title, body }: ArticleViewProps) {
         </header>
 
         <div className="prose prose-invert prose-lg max-w-none prose-headings:text-yapi-fg prose-headings:font-bold prose-p:text-yapi-fg-muted prose-a:text-yapi-accent prose-a:no-underline hover:prose-a:underline prose-strong:text-yapi-fg prose-code:text-yapi-accent prose-code:bg-yapi-bg-elevated prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1e1e1e] prose-pre:border prose-pre:border-yapi-border prose-blockquote:border-l-yapi-accent prose-blockquote:text-yapi-fg-muted prose-li:text-yapi-fg-muted prose-li:marker:text-yapi-accent">
-          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{body}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{article.content}</Markdown>
         </div>
       </article>
     </BlogLayout>
