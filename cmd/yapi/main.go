@@ -18,7 +18,9 @@ import (
 	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/cli/commands"
 	"yapi.run/cli/internal/cli/middleware"
+	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/core"
+	"yapi.run/cli/internal/imageprinter"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/observability"
 	"yapi.run/cli/internal/output"
@@ -240,8 +242,23 @@ type runContext struct {
 }
 
 // printResult outputs a single result with optional expectation.
-func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult) {
+func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult, displayCfg *config.DisplayConfig) {
 	if result != nil {
+		// Check if we should print as image
+		if shouldPrintImage(result.ContentType, displayCfg) {
+			if err := printImage(result.RawBody, displayCfg); err != nil {
+				// Fall back to text if image printing fails
+				fmt.Fprintf(os.Stderr, "image display failed: %v\n", err)
+			} else {
+				printResultMeta(result)
+				if expectRes != nil {
+					printExpectationResult(expectRes)
+				}
+				return
+			}
+		}
+
+		// Normal text output
 		body := strings.TrimRight(output.Highlight(result.Body, result.ContentType, app.noColor), "\n\r")
 		fmt.Println(body)
 		printResultMeta(result)
@@ -249,6 +266,30 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 	if expectRes != nil {
 		printExpectationResult(expectRes)
 	}
+}
+
+// shouldPrintImage determines if the response should be displayed as an image.
+func shouldPrintImage(contentType string, cfg *config.DisplayConfig) bool {
+	// Explicit disable
+	if cfg != nil && cfg.Enabled != nil && !*cfg.Enabled {
+		return false
+	}
+	// Explicit enable
+	if cfg != nil && cfg.Enabled != nil && *cfg.Enabled {
+		return true
+	}
+	// Auto-detect from Content-Type
+	return output.IsImageContentType(contentType)
+}
+
+// printImage renders image data to the terminal.
+func printImage(data []byte, cfg *config.DisplayConfig) error {
+	imgCfg := imageprinter.Config{}
+	if cfg != nil {
+		imgCfg.MaxWidth = cfg.MaxWidth
+		imgCfg.MaxHeight = cfg.MaxHeight
+	}
+	return imageprinter.Print(data, imgCfg)
 }
 
 // executeRunE is the unified execution pipeline for both Run and Watch modes.
@@ -290,7 +331,13 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 				if i < len(chainResult.ExpectationResults) {
 					expectRes = chainResult.ExpectationResults[i]
 				}
-				app.printResult(stepResult, expectRes)
+				// Get display config from the merged step config
+				var displayCfg *config.DisplayConfig
+				if i < len(runRes.Analysis.Chain) {
+					merged := runRes.Analysis.Base.Merge(runRes.Analysis.Chain[i])
+					displayCfg = merged.Display
+				}
+				app.printResult(stepResult, expectRes, displayCfg)
 			}
 		}
 
@@ -314,7 +361,12 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
-	app.printResult(runRes.Result, runRes.ExpectRes)
+	// Get display config from the base config
+	var displayCfg *config.DisplayConfig
+	if runRes.Analysis.Base != nil {
+		displayCfg = runRes.Analysis.Base.Display
+	}
+	app.printResult(runRes.Result, runRes.ExpectRes, displayCfg)
 
 	if runRes.Error != nil {
 		if ctx.strict {

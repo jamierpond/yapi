@@ -43,6 +43,11 @@ func isTerminal() bool {
 	return (fi.Mode() & os.ModeCharDevice) != 0
 }
 
+// IsImageContentType returns true if the content type indicates an image.
+func IsImageContentType(contentType string) bool {
+	return strings.HasPrefix(strings.ToLower(contentType), "image/")
+}
+
 // detectLanguage determines the syntax highlighting language based on content type and content.
 func detectLanguage(raw string, contentType string) string {
 	// Check content type header

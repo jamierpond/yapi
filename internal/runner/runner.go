@@ -18,6 +18,7 @@ import (
 // Result holds the output of a yapi execution
 type Result struct {
 	Body        string
+	RawBody     []byte // Raw bytes for binary responses (images)
 	ContentType string
 	StatusCode  int
 	Warnings    []string
@@ -70,6 +71,7 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 
 	return &Result{
 		Body:        body,
+		RawBody:     bodyBytes,
 		ContentType: resp.Headers["Content-Type"],
 		StatusCode:  resp.StatusCode,
 		Warnings:    warnings,

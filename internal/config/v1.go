@@ -44,6 +44,7 @@ var knownV1Keys = map[string]bool{
 	"chain":            true,
 	"expect":           true,
 	"delay":            true,
+	"display":          true,
 }
 
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
@@ -93,6 +94,9 @@ type ConfigV1 struct {
 
 	// Chain allows executing multiple dependent requests
 	Chain []ChainStep `yaml:"chain,omitempty"`
+
+	// Display controls inline image printing for image responses
+	Display *DisplayConfig `yaml:"display,omitempty"`
 }
 
 // ChainStep represents a single step in a request chain.
@@ -157,6 +161,11 @@ func (c *ConfigV1) Merge(step ChainStep) ConfigV1 {
 		m.Variables = step.Variables
 	}
 
+	// Display override
+	if step.Display != nil {
+		m.Display = step.Display
+	}
+
 	return m
 }
 
@@ -164,6 +173,16 @@ func (c *ConfigV1) Merge(step ChainStep) ConfigV1 {
 type Expectation struct {
 	Status any      `yaml:"status,omitempty"` // int or []int
 	Assert []string `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
+}
+
+// DisplayConfig controls inline image printing for image responses.
+// If omitted, images are automatically displayed when Content-Type is image/*.
+type DisplayConfig struct {
+	Enabled   *bool  `yaml:"enabled,omitempty"`    // nil = auto-detect, true = force, false = disable
+	Source    string `yaml:"source,omitempty"`     // "body" (default) or "file"
+	Path      string `yaml:"path,omitempty"`       // Required if source: "file"
+	MaxWidth  int    `yaml:"max_width,omitempty"`  // 0 = fill terminal width
+	MaxHeight int    `yaml:"max_height,omitempty"` // 0 = fill terminal height
 }
 
 // ToDomain converts V1 YAML to the Canonical Config
