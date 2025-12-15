@@ -4,7 +4,6 @@ package imageprinter
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -13,9 +12,15 @@ import (
 
 // Config controls how images are rendered.
 type Config struct {
-	MaxWidth  int // 0 = fill terminal
-	MaxHeight int // 0 = fill terminal
+	MaxWidth  int // 0 = use default
+	MaxHeight int // 0 = use default
 }
+
+// Default size constraints (in terminal cells)
+const (
+	DefaultMaxWidth  = 60
+	DefaultMaxHeight = 20
+)
 
 // Print renders an image from raw bytes to stdout.
 func Print(data []byte, cfg Config) error {
@@ -24,16 +29,18 @@ func Print(data []byte, cfg Config) error {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	// Apply size constraints if specified
-	if cfg.MaxWidth > 0 {
-		img = img.Width(cfg.MaxWidth)
+	// Use defaults if not specified
+	w := cfg.MaxWidth
+	if w == 0 {
+		w = DefaultMaxWidth
 	}
-	if cfg.MaxHeight > 0 {
-		img = img.Height(cfg.MaxHeight)
+	h := cfg.MaxHeight
+	if h == 0 {
+		h = DefaultMaxHeight
 	}
 
-	// Scale to fit within bounds while preserving aspect ratio
-	img = img.Scale(termimg.ScaleFit)
+	// Force halfblocks for most reliable cross-terminal output
+	img = img.Width(w).Height(h).Scale(termimg.ScaleFit).Protocol(termimg.Halfblocks)
 
 	return img.Print()
 }
@@ -42,50 +49,31 @@ func Print(data []byte, cfg Config) error {
 func PrintFile(path string, cfg Config) error {
 	img, err := termimg.Open(path)
 	if err != nil {
-		return fmt.Errorf("failed to open image file: %w", err)
+		return fmt.Errorf("failed to open image: %w", err)
 	}
 
-	if cfg.MaxWidth > 0 {
-		img = img.Width(cfg.MaxWidth)
+	w := cfg.MaxWidth
+	if w == 0 {
+		w = DefaultMaxWidth
 	}
-	if cfg.MaxHeight > 0 {
-		img = img.Height(cfg.MaxHeight)
-	}
-
-	img = img.Scale(termimg.ScaleFit)
-
-	return img.Print()
-}
-
-// PrintReader renders an image from a reader to stdout.
-func PrintReader(r io.Reader, cfg Config) error {
-	img, err := termimg.From(r)
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
+	h := cfg.MaxHeight
+	if h == 0 {
+		h = DefaultMaxHeight
 	}
 
-	if cfg.MaxWidth > 0 {
-		img = img.Width(cfg.MaxWidth)
-	}
-	if cfg.MaxHeight > 0 {
-		img = img.Height(cfg.MaxHeight)
-	}
-
-	img = img.Scale(termimg.ScaleFit)
+	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
 	return img.Print()
 }
 
 // IsSupported returns true if the terminal supports any image protocol.
 func IsSupported() bool {
-	// Check for known terminal image protocol support
 	if os.Getenv("KITTY_WINDOW_ID") != "" {
 		return true
 	}
 	if os.Getenv("ITERM_SESSION_ID") != "" || os.Getenv("LC_TERMINAL") == "iTerm2" {
 		return true
 	}
-	// Halfblocks fallback always works in any terminal
 	return true
 }
 

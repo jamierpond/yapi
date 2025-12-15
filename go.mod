@@ -5,6 +5,7 @@ go 1.25.1
 require (
 	codeberg.org/derat/htmlpretty v0.0.0-20241226124600-6358d6878bd9
 	github.com/alecthomas/chroma/v2 v2.20.0
+	github.com/blacktop/go-termimg v0.1.24
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -31,7 +32,6 @@ require (
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/blacktop/go-termimg v0.1.24 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/charmbracelet/colorprofile v0.3.3 // indirect
 	github.com/charmbracelet/x/ansi v0.11.0 // indirect
@@ -84,6 +84,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/image v0.32.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
