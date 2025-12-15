@@ -2,7 +2,7 @@ import "monaco-editor/min/vs/editor/editor.main.css";
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from "@/app/lib/constants";
+import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, OG_BASE_URL } from "@/app/lib/constants";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 const jsonLd = {
@@ -77,6 +77,7 @@ export const metadata: Metadata = {
     siteName: SITE_TITLE,
     title: `${SITE_TITLE} - YAML API Client`,
     description: "Offline-first YAML API client for HTTP, gRPC, and TCP",
+    images: [`${OG_BASE_URL}/og`],
   },
   twitter: {
     card: "summary_large_image",

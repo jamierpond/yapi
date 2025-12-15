@@ -30,6 +30,8 @@ function BlogLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { OG_BASE_URL } from "@/app/lib/constants";
+
 const BASE_URL = "https://yapi.run";
 
 function ArticleView({ article, title, body }: ArticleViewProps) {
@@ -268,7 +270,7 @@ export async function generateBlogMetadata() {
     ...metadata,
     openGraph: {
       ...metadata.openGraph,
-      images: [`${BASE_URL}/og/blog?title=${encodeURIComponent("Blog")}`],
+      images: [`${OG_BASE_URL}/og/blog?title=${encodeURIComponent("Blog")}`],
     },
   };
 }
@@ -305,7 +307,7 @@ export async function generateBlogArticleMetadata(slug: string[]) {
     openGraph: {
       ...metadata.openGraph,
       title: formattedTitle,
-      images: [`${BASE_URL}/og/blog?${params.toString()}`],
+      images: [`${OG_BASE_URL}/og/blog?${params.toString()}`],
     },
   };
 }

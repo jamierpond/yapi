@@ -222,6 +222,8 @@ export const docsDataProvider = new LocalFsDataProvider({
   sourceUrl: "https://github.com/jamierpond/yapi",
 });
 
+import { OG_BASE_URL } from "@/app/lib/constants";
+
 const BASE_URL = "https://yapi.run";
 
 const SEO_CONFIG = {
@@ -256,7 +258,7 @@ export async function generateDocsMetadata() {
     ...metadata,
     openGraph: {
       ...metadata.openGraph,
-      images: [`${BASE_URL}/og/docs?title=${encodeURIComponent("CLI Documentation")}`],
+      images: [`${OG_BASE_URL}/og/docs?title=${encodeURIComponent("CLI Documentation")}`],
     },
   };
 }
@@ -275,7 +277,7 @@ export async function generateDocsArticleMetadata(slug: string[]) {
     openGraph: {
       ...metadata?.openGraph,
       title,
-      images: [`${BASE_URL}/og/docs?title=${encodeURIComponent(title)}`],
+      images: [`${OG_BASE_URL}/og/docs?title=${encodeURIComponent(title)}`],
     },
   };
 }
