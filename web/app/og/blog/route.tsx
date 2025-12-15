@@ -1,5 +1,8 @@
 import { COLORS, OgContainer, YapiLogo, loadFont, createImageResponse } from "../_lib/shared";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get("title") || "Blog";
