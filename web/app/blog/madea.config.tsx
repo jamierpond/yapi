@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import path from "path";
 import Navbar from "@/app/components/Navbar";
+import { OG_IMAGE_SIZE } from "@/app/lib/constants";
 import "highlight.js/styles/github-dark.css";
 
 function BlogLayout({ children }: { children: React.ReactNode }) {
@@ -266,8 +267,15 @@ export async function generateBlogMetadata() {
   return {
     ...metadata,
     openGraph: {
-      ...metadata.openGraph,
-      images: [`${BASE_URL}/og/blog?title=${encodeURIComponent("Blog")}`],
+      title: "Blog | yapi",
+      description: "Updates, tutorials, and thoughts about yapi",
+      url: `${BASE_URL}/blog`,
+      siteName: "yapi",
+      images: [{
+        url: `${BASE_URL}/og/blog?title=${encodeURIComponent("Blog")}`,
+        width: OG_IMAGE_SIZE.width,
+        height: OG_IMAGE_SIZE.height,
+      }],
     },
   };
 }
@@ -276,26 +284,38 @@ export async function generateBlogArticleMetadata(slug: string[]) {
   const config = createBlogConfig();
   const metadata = await generateMetadataForArticle(config, slug);
   const title = typeof metadata.title === "string" ? metadata.title : slug.join("/");
-
-  // Fetch article data for author and date
-  const slugWithExtension = [...slug];
-  slugWithExtension[slugWithExtension.length - 1] += ".md";
-  const article = await blogDataProvider.getFileContent(slugWithExtension.join("/"));
+  const description = typeof metadata.description === "string" ? metadata.description : "";
 
   const params = new URLSearchParams({ title });
-  if (article?.commitInfo?.authorName) params.set("author", article.commitInfo.authorName);
-  if (article?.commitInfo?.date) {
-    const date = new Date(article.commitInfo.date).toLocaleDateString("en-US", {
-      year: "numeric", month: "short", day: "numeric",
-    });
-    params.set("date", date);
+
+  // Try to fetch article data for author and date
+  try {
+    const slugWithExtension = [...slug];
+    slugWithExtension[slugWithExtension.length - 1] += ".md";
+    const article = await blogDataProvider.getFileContent(slugWithExtension.join("/"));
+    if (article?.commitInfo?.authorName) params.set("author", article.commitInfo.authorName);
+    if (article?.commitInfo?.date) {
+      params.set("date", new Date(article.commitInfo.date).toLocaleDateString("en-US", {
+        year: "numeric", month: "short", day: "numeric",
+      }));
+    }
+  } catch {
+    // If fetch fails, just use title-only OG image
   }
 
   return {
     ...metadata,
     openGraph: {
-      ...metadata.openGraph,
-      images: [`${BASE_URL}/og/blog?${params.toString()}`],
+      title,
+      description,
+      url: `${BASE_URL}/blog/${slug.join("/")}`,
+      siteName: "yapi",
+      type: "article",
+      images: [{
+        url: `${BASE_URL}/og/blog?${params.toString()}`,
+        width: OG_IMAGE_SIZE.width,
+        height: OG_IMAGE_SIZE.height,
+      }],
     },
   };
 }

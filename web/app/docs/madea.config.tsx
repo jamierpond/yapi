@@ -13,6 +13,7 @@ import rehypeHighlight from "rehype-highlight";
 import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
+import { OG_IMAGE_SIZE } from "@/app/lib/constants";
 
 // Get version info at build time (uses Vercel env vars, falls back to git for local dev)
 function getVersionInfo(): { semver: string; commit: string } {
@@ -255,8 +256,15 @@ export async function generateDocsMetadata() {
   return {
     ...metadata,
     openGraph: {
-      ...metadata.openGraph,
-      images: [`${BASE_URL}/og/docs?title=${encodeURIComponent("CLI Documentation")}`],
+      title: "CLI Documentation | yapi",
+      description: "Auto-generated documentation for yapi CLI commands",
+      url: `${BASE_URL}/docs`,
+      siteName: "yapi",
+      images: [{
+        url: `${BASE_URL}/og/docs?title=${encodeURIComponent("CLI Documentation")}`,
+        width: OG_IMAGE_SIZE.width,
+        height: OG_IMAGE_SIZE.height,
+      }],
     },
   };
 }
@@ -265,11 +273,20 @@ export async function generateDocsArticleMetadata(slug: string[]) {
   const config = createDocsConfig();
   const metadata = await generateMetadataForArticle(config, slug);
   const title = typeof metadata.title === "string" ? metadata.title : slug.join("/");
+  const description = typeof metadata.description === "string" ? metadata.description : "";
   return {
     ...metadata,
     openGraph: {
-      ...metadata.openGraph,
-      images: [`${BASE_URL}/og/docs?title=${encodeURIComponent(title)}`],
+      title,
+      description,
+      url: `${BASE_URL}/docs/${slug.join("/")}`,
+      siteName: "yapi",
+      type: "article",
+      images: [{
+        url: `${BASE_URL}/og/docs?title=${encodeURIComponent(title)}`,
+        width: OG_IMAGE_SIZE.width,
+        height: OG_IMAGE_SIZE.height,
+      }],
     },
   };
 }

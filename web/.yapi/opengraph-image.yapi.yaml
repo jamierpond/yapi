@@ -1,5 +1,5 @@
 yapi: v1
-url: http://localhost:3000/opengraph-image
+url: https://localhost:3000/og/blog
 method: GET
-expect:
-  status: 200
+query:
+  title: (Draft) What is yapi? | yapi
