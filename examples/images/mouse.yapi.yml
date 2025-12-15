@@ -1,3 +1,7 @@
 yapi: v1
-url: https://github.com/mzurilla.png
+url: https://3000.pond.audio/og/blog
 method: GET
+query:
+  title: lemondade
+  author: pond
+  date: 2024-06-15
