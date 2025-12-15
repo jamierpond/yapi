@@ -251,16 +251,11 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 	if result != nil {
 		// Check if we should print as image
 		if shouldPrintImage(result.ContentType, displayCfg) {
+			// Image must be the final output - print nothing after
 			if err := printImage(result.RawBody, displayCfg); err != nil {
-				// Fall back to text if image printing fails
 				fmt.Fprintf(os.Stderr, "image display failed: %v\n", err)
-			} else {
-				printResultMeta(result)
-				if expectRes != nil {
-					printExpectationResult(expectRes)
-				}
-				return
 			}
+			return
 		}
 
 		// Normal text output

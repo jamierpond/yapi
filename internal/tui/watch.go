@@ -126,10 +126,8 @@ func runYapiCmd(path string) tea.Cmd {
 			return runResultMsg{duration: runRes.Result.Duration}
 		}
 
-		{
-			out := output.Highlight(runRes.Result.Body, runRes.Result.ContentType, false)
-			b.WriteString(out)
-		}
+		out := output.Highlight(runRes.Result.Body, runRes.Result.ContentType, false)
+		b.WriteString(out)
 
 		// Add expectation result if present
 		if runRes.ExpectRes != nil && (runRes.ExpectRes.AssertionsTotal > 0 || runRes.ExpectRes.StatusChecked) {
