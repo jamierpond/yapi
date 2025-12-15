@@ -42,6 +42,9 @@ func Print(data []byte, cfg Config) error {
 	// Auto-detect best protocol (iTerm2, Kitty, Sixel, or fallback to halfblocks)
 	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
+	// Debug: print detected protocol
+	fmt.Fprintf(os.Stderr, "termimg protocol: %v\n", img.Protocol())
+
 	return img.Print()
 }
 
