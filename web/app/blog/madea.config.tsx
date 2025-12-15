@@ -276,14 +276,16 @@ export async function generateBlogMetadata() {
 export async function generateBlogArticleMetadata(slug: string[]) {
   const config = createBlogConfig();
   const metadata = await generateMetadataForArticle(config, slug);
-  const title = typeof metadata.title === "string" ? metadata.title : slug.join("/");
 
   // Fetch article data for author and date
   const slugWithExtension = [...slug];
   slugWithExtension[slugWithExtension.length - 1] += ".md";
   const article = await blogDataProvider.getArticle(slugWithExtension.join("/"));
 
-  const params = new URLSearchParams({ title });
+  const articleTitle = article?.title || slug.join("/");
+  const formattedTitle = `yapi Blog | ${articleTitle}`;
+
+  const params = new URLSearchParams({ title: articleTitle });
   if (article?.commitInfo?.authorName) params.set("author", article.commitInfo.authorName);
   if (article?.commitInfo?.date) {
     const date = new Date(article.commitInfo.date).toLocaleDateString("en-US", {
@@ -294,8 +296,10 @@ export async function generateBlogArticleMetadata(slug: string[]) {
 
   return {
     ...metadata,
+    title: formattedTitle,
     openGraph: {
       ...metadata.openGraph,
+      title: formattedTitle,
       images: [`${BASE_URL}/og/blog?${params.toString()}`],
     },
   };
