@@ -43,7 +43,7 @@ func Print(data []byte, cfg Config) error {
 	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
 	// Debug: print detected protocol
-	fmt.Fprintf(os.Stderr, "termimg protocol: %v\n", img.Protocol())
+	fmt.Fprintf(os.Stderr, "termimg protocol: %v\n", termimg.DetectProtocol())
 
 	return img.Print()
 }
