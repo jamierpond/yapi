@@ -294,6 +294,11 @@ export async function generateBlogArticleMetadata(slug: string[]) {
     params.set("date", date);
   }
 
+  if (!metadata) {
+    return {
+      title: formattedTitle,
+    }
+  }
   return {
     ...metadata,
     title: formattedTitle,

@@ -264,11 +264,17 @@ export async function generateDocsMetadata() {
 export async function generateDocsArticleMetadata(slug: string[]) {
   const config = createDocsConfig();
   const metadata = await generateMetadataForArticle(config, slug);
-  const title = typeof metadata.title === "string" ? metadata.title : slug.join("/");
+  const title =
+    (metadata?.title && typeof metadata.title === "string"
+      ? metadata.title
+      : null) ?? slug.join("/");
+
   return {
     ...metadata,
+    title,
     openGraph: {
-      ...metadata.openGraph,
+      ...metadata?.openGraph,
+      title,
       images: [`${BASE_URL}/og/docs?title=${encodeURIComponent(title)}`],
     },
   };

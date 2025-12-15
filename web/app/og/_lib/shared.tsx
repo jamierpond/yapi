@@ -1,9 +1,9 @@
 import { ImageResponse } from "next/og";
-import { COLORS, OG_IMAGE_SIZE } from "@/app/lib/constants";
+import { COLORS, OG_IMAGE_SIZE, OG_ALT } from "@/app/lib/constants";
 import fs from "fs/promises";
 import path from "path";
 
-export { COLORS, OG_IMAGE_SIZE };
+export { COLORS, OG_IMAGE_SIZE, OG_ALT };
 
 export async function loadFont() {
   return fs.readFile(
