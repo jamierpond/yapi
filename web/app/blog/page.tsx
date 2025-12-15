@@ -2,6 +2,7 @@ import { renderMadeaBlogPage } from "madea-blog-core";
 import { createBlogConfig, generateBlogMetadata } from "./madea.config";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const generateMetadata = generateBlogMetadata;
 
