@@ -15,7 +15,12 @@ export default async function Navbar({ rightContent }: NavbarProps) {
   return (
     <nav className="relative z-50 px-6 py-4 border-b border-yapi-border/30 backdrop-blur-md bg-yapi-bg/50">
       <div className="flex items-center justify-between">
-        <NavbarLogo />
+        <div className="flex items-center gap-2">
+          <NavbarLogo />
+          <span className="px-2 py-0.5 text-xs font-bold text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded">
+            Early Alpha
+          </span>
+        </div>
         <div className="flex gap-4 items-center">
           <a
             href="https://github.com/jamierpond/yapi"
