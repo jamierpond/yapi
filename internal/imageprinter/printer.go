@@ -12,8 +12,9 @@ import (
 
 // Config controls how images are rendered.
 type Config struct {
-	MaxWidth  int // 0 = use default
-	MaxHeight int // 0 = use default
+	MaxWidth  int  // 0 = use default
+	MaxHeight int  // 0 = use default
+	Dither    bool // Enable dithering (useful for halfblocks/sixel)
 }
 
 // Default size constraints (in terminal cells)
@@ -22,33 +23,9 @@ const (
 	DefaultMaxHeight = 30
 )
 
-// inITerm2 returns true if running in iTerm2.
-func inITerm2() bool {
-	return os.Getenv("ITERM_SESSION_ID") != "" || os.Getenv("LC_TERMINAL") == "iTerm2"
-}
-
-// inKitty returns true if running in Kitty.
-func inKitty() bool {
-	return os.Getenv("KITTY_WINDOW_ID") != ""
-}
-
-// inGhostty returns true if running in Ghostty.
-func inGhostty() bool {
-	if os.Getenv("TERM_PROGRAM") == "ghostty" {
-		return true
-	}
-	if os.Getenv("GHOSTTY_RESOURCES_DIR") != "" {
-		return true
-	}
-	// Check TERM for ghostty (works inside tmux if TERM is preserved)
-	term := os.Getenv("TERM")
-	if strings.Contains(term, "ghostty") {
-		return true
-	}
-	return false
-}
-
 // Print renders an image from raw bytes to stdout.
+// Uses go-termimg's auto-detection to find the best protocol:
+// Kitty > iTerm2 > Sixel > Halfblocks (universal fallback)
 func Print(data []byte, cfg Config) error {
 	img, err := termimg.From(bytes.NewReader(data))
 	if err != nil {
@@ -66,23 +43,24 @@ func Print(data []byte, cfg Config) error {
 
 	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
-	// Force protocol based on terminal
-	switch {
-	case inKitty(), inGhostty():
-		img = img.Protocol(termimg.Kitty)
-	case inITerm2():
-		img = img.Protocol(termimg.ITerm2)
+	if cfg.Dither {
+		img = img.Dither(true)
 	}
+
+	// Let go-termimg auto-detect the best protocol
+	// This supports: Kitty, iTerm2, Sixel, and Halfblocks (universal fallback)
+	img = img.Protocol(termimg.Auto)
 
 	// Debug: show which protocol is being used
 	if os.Getenv("YAPI_DEBUG_IMG") != "" {
-		fmt.Fprintf(os.Stderr, "[imageprinter] kitty=%v ghostty=%v iterm2=%v TERM_PROGRAM=%q GHOSTTY_RESOURCES_DIR=%q TERM=%q\n",
-			inKitty(), inGhostty(), inITerm2(), os.Getenv("TERM_PROGRAM"), os.Getenv("GHOSTTY_RESOURCES_DIR"), os.Getenv("TERM"))
+		protocols := termimg.DetermineProtocols()
+		detected := termimg.DetectProtocol()
+		fmt.Fprintf(os.Stderr, "[imageprinter] available_protocols=%v detected=%s\n", protocols, detected)
 		renderer, err := img.GetRenderer()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[imageprinter] GetRenderer error: %v\n", err)
 		} else if renderer != nil {
-			fmt.Fprintf(os.Stderr, "[imageprinter] protocol=%s\n", renderer.Protocol())
+			fmt.Fprintf(os.Stderr, "[imageprinter] using_protocol=%s\n", renderer.Protocol())
 		}
 	}
 
@@ -107,19 +85,37 @@ func PrintFile(path string, cfg Config) error {
 
 	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
-	switch {
-	case inKitty(), inGhostty():
-		img = img.Protocol(termimg.Kitty)
-	case inITerm2():
-		img = img.Protocol(termimg.ITerm2)
+	if cfg.Dither {
+		img = img.Dither(true)
 	}
+
+	// Let go-termimg auto-detect the best protocol
+	img = img.Protocol(termimg.Auto)
 
 	return img.Print()
 }
 
-// IsSupported returns true if the terminal likely supports image rendering.
+// IsSupported returns true if the terminal supports image rendering.
+// With halfblocks fallback, this is always true - images can be displayed
+// in any terminal that supports Unicode.
 func IsSupported() bool {
-	return inKitty() || inGhostty() || inITerm2()
+	// Halfblocks is always available as a fallback, so we always support images
+	return true
+}
+
+// DetectedProtocol returns the protocol that will be used for image rendering.
+func DetectedProtocol() string {
+	return termimg.DetectProtocol().String()
+}
+
+// AvailableProtocols returns all protocols supported by the current terminal.
+func AvailableProtocols() []string {
+	protocols := termimg.DetermineProtocols()
+	result := make([]string, len(protocols))
+	for i, p := range protocols {
+		result[i] = p.String()
+	}
+	return result
 }
 
 // IsImageContentType returns true if the content type indicates an image.
