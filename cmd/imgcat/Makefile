@@ -5,11 +5,11 @@ TARGET = imgcat
 
 build:
 	@echo "Building $(TARGET)..."
-	@go build -o $(TARGET) ./cmd
+	@go build -o $(TARGET) .
 
 install:
 	@echo "Installing $(TARGET) to $(GOBIN)..."
-	@go install ./cmd
+	@go install .
 
 clean:
 	@echo "Cleaning..."
