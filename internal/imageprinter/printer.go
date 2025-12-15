@@ -27,6 +27,16 @@ func inITerm2() bool {
 	return os.Getenv("ITERM_SESSION_ID") != "" || os.Getenv("LC_TERMINAL") == "iTerm2"
 }
 
+// inKitty returns true if running in Kitty.
+func inKitty() bool {
+	return os.Getenv("KITTY_WINDOW_ID") != ""
+}
+
+// inGhostty returns true if running in Ghostty.
+func inGhostty() bool {
+	return os.Getenv("TERM_PROGRAM") == "ghostty" || os.Getenv("GHOSTTY_RESOURCES_DIR") != ""
+}
+
 // Print renders an image from raw bytes to stdout.
 func Print(data []byte, cfg Config) error {
 	img, err := termimg.From(bytes.NewReader(data))
@@ -45,13 +55,14 @@ func Print(data []byte, cfg Config) error {
 
 	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
-	// Force iTerm2 protocol when in iTerm2 - Kitty placement is experimental
-	// and causes cursor/prompt issues especially in tmux
-	if inITerm2() {
+	// Force protocol based on terminal
+	switch {
+	case inKitty(), inGhostty():
+		img = img.Protocol(termimg.Kitty)
+	case inITerm2():
 		img = img.Protocol(termimg.ITerm2)
 	}
 
-	// With tmux's allow-passthrough on, sequences pass through automatically.
 	return img.Print()
 }
 
@@ -73,22 +84,19 @@ func PrintFile(path string, cfg Config) error {
 
 	img = img.Width(w).Height(h).Scale(termimg.ScaleFit)
 
-	if inITerm2() {
+	switch {
+	case inKitty(), inGhostty():
+		img = img.Protocol(termimg.Kitty)
+	case inITerm2():
 		img = img.Protocol(termimg.ITerm2)
 	}
 
 	return img.Print()
 }
 
-// IsSupported returns true if the terminal supports any image protocol.
+// IsSupported returns true if the terminal likely supports image rendering.
 func IsSupported() bool {
-	if os.Getenv("KITTY_WINDOW_ID") != "" {
-		return true
-	}
-	if inITerm2() {
-		return true
-	}
-	return true
+	return inKitty() || inGhostty() || inITerm2()
 }
 
 // IsImageContentType returns true if the content type indicates an image.
