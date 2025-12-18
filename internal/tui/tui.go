@@ -107,8 +107,9 @@ func findFiles() ([]string, error) {
 			relPath = path
 		}
 
-		// Must be in a subdirectory and match .yapi.y[a]ml
-		if yapiFilePattern.MatchString(relPath) {
+		// Match .yapi.yml files or yapi.config.yml files
+		base := filepath.Base(relPath)
+		if yapiFilePattern.MatchString(relPath) || base == "yapi.config.yml" || base == "yapi.config.yaml" {
 			configFiles = append(configFiles, relPath)
 		}
 	}

@@ -122,9 +122,10 @@ var cmdManifest = []CommandSpec{
 		},
 	},
 	{
-		Use:   "list [directory]",
-		Short: "List all yapi config files in the current directory or project",
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "list [directory]",
+		Aliases: []string{"ls"},
+		Short:   "List all yapi config files in the current directory or project",
+		Args:    cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "json", Type: "bool", Default: false, Usage: "Output as JSON"},
 		},
