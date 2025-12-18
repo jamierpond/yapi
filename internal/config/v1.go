@@ -60,6 +60,11 @@ func FindUnknownKeys(raw map[string]any) []string {
 	return unknown
 }
 
+// IsKnownKey returns true if the key is a valid top-level config key.
+func IsKnownKey(key string) bool {
+	return knownV1Keys[key]
+}
+
 // ConfigV1 represents the v1 YAML schema
 type ConfigV1 struct {
 	Yapi           string            `yaml:"yapi"` // The version tag
