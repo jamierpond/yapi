@@ -1,9 +1,31 @@
 package config
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"testing"
 )
+
+// load is a test helper that reads and parses a yapi config file from the given path.
+// If path is "-", reads from stdin.
+func load(path string) (*ParseResult, error) {
+	var data []byte
+	var err error
+
+	if path == "-" {
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read from stdin: %w", err)
+		}
+	} else {
+		data, err = os.ReadFile(path) //nolint:gosec // user-provided config file
+		if err != nil {
+			return nil, err
+		}
+	}
+	return LoadFromString(string(data))
+}
 
 func TestLoadFromString(t *testing.T) {
 	tests := []struct {
@@ -65,23 +87,23 @@ method: GET`
 		t.Fatal(err)
 	}
 
-	// Test Load function
-	result, err := Load(tmpfile.Name())
+	// Test load function
+	result, err := load(tmpfile.Name())
 	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
+		t.Fatalf("load() failed: %v", err)
 	}
 
 	if result == nil {
-		t.Fatal("Load() returned nil result")
+		t.Fatal("load() returned nil result")
 	}
 
 	if result.Request == nil {
-		t.Fatal("Load() returned nil request")
+		t.Fatal("load() returned nil request")
 	}
 
 	// Verify the config was loaded successfully
 	if result.Request.URL != "https://example.com" {
-		t.Errorf("Load() URL = %v, want https://example.com", result.Request.URL)
+		t.Errorf("load() URL = %v, want https://example.com", result.Request.URL)
 	}
 }
 
