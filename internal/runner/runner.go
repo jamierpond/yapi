@@ -36,6 +36,8 @@ type Options struct {
 	NoColor      bool
 	BinaryOutput bool
 	EnvOverrides map[string]string // Environment variables from project config
+	ProjectRoot  string            // Path to project root (for validation)
+	ProjectEnv   string            // Selected environment name (for validation)
 }
 
 // Run executes a yapi request and returns the result.

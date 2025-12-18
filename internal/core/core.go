@@ -57,7 +57,30 @@ func (e *Engine) RunConfig(
 	path string,
 	opts runner.Options,
 ) *RunConfigResult {
-	analysis, err := validation.AnalyzeConfigFile(path)
+	// Load project config if available for validation
+	var project *config.ProjectConfigV1
+	if opts.ProjectRoot != "" {
+		var err error
+		project, err = config.LoadProject(opts.ProjectRoot)
+		if err != nil {
+			// Ignore project load errors during validation - still run the config
+			project = nil
+		}
+	}
+
+	// Analyze with project context if available
+	var analysis *validation.Analysis
+	var err error
+	if project != nil {
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return &RunConfigResult{Error: readErr}
+		}
+		analysis, err = validation.AnalyzeConfigStringWithProject(string(data), project, opts.ProjectRoot)
+	} else {
+		analysis, err = validation.AnalyzeConfigFile(path)
+	}
+
 	if err != nil {
 		return &RunConfigResult{Error: err}
 	}

@@ -305,6 +305,8 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 			fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("Failed to load project config: %v", err)))
 			return nil
 		}
+		// Set project root for validation
+		opts.ProjectRoot = projectRoot
 	}
 
 	// Determine which environment to use
@@ -365,6 +367,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 			}
 
 			opts.EnvOverrides = envVars
+			opts.ProjectEnv = envName
 		}
 	} else if envName != "" {
 		// --env flag specified but no project config found
