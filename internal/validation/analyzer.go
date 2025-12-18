@@ -494,6 +494,25 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 	for lineNum, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
+		// Skip YAML comments
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		// Strip inline comments (everything after # that's not in a string)
+		// Simple heuristic: find # that's not inside quotes
+		lineWithoutComment := line
+		if idx := strings.Index(line, "#"); idx != -1 {
+			// Check if the # is inside quotes by counting quotes before it
+			beforeHash := line[:idx]
+			doubleQuotes := strings.Count(beforeHash, "\"") - strings.Count(beforeHash, "\\\"")
+			singleQuotes := strings.Count(beforeHash, "'") - strings.Count(beforeHash, "\\'")
+			// If even number of quotes before #, it's not inside a string
+			if doubleQuotes%2 == 0 && singleQuotes%2 == 0 {
+				lineWithoutComment = line[:idx]
+			}
+		}
+
 		// Check for graphql: field start
 		if strings.HasPrefix(trimmed, "graphql:") {
 			inGraphQLBlock = true
@@ -520,25 +539,25 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 			}
 		}
 
-		matches := vars.EnvOnly.FindAllStringSubmatchIndex(line, -1)
+		matches := vars.EnvOnly.FindAllStringSubmatchIndex(lineWithoutComment, -1)
 		for _, match := range matches {
 			// match[0:2] = full match, match[2:4] = ${VAR} capture, match[4:6] = $VAR capture
 			fullStart, fullEnd := match[0], match[1]
-			fullMatch := line[fullStart:fullEnd]
+			fullMatch := lineWithoutComment[fullStart:fullEnd]
 
 			// Skip if this looks like a chain reference (contains a dot after the var name)
 			// Check the character after the match
-			if fullEnd < len(line) && line[fullEnd] == '.' {
+			if fullEnd < len(lineWithoutComment) && lineWithoutComment[fullEnd] == '.' {
 				continue
 			}
 
 			var varName string
 			if match[2] != -1 {
 				// ${VAR} style
-				varName = line[match[2]:match[3]]
+				varName = lineWithoutComment[match[2]:match[3]]
 			} else if match[4] != -1 {
 				// $VAR style
-				varName = line[match[4]:match[5]]
+				varName = lineWithoutComment[match[4]:match[5]]
 			}
 
 			if varName == "" {
