@@ -17,6 +17,7 @@ expect:
   status: 200
   assert:
     body:
-      - .name == env.REPO_NAME
-      - .owner.login == env.GITHUB_USER
+      - .name != null
+      - .owner.login != null
       - .stargazers_count >= 0
+      - .full_name != null

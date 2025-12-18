@@ -58,6 +58,37 @@ yapi run .yapi/authenticated-request.yapi.yml --env prod
 - Environment-specific secrets
 - Combined inline + file variables
 
+### Example 3: Real API with GitHub
+
+**Location:** `examples/project/example3/`
+
+Working example using the GitHub API to query different users/organizations.
+
+```bash
+# View the config
+cat examples/project/example3/yapi.config.yml
+
+# Query Anthropic org (default)
+cd examples/project/example3
+yapi run .yapi/get-user.yapi.yml
+
+# Query Torvalds repos
+yapi run .yapi/list-repos.yapi.yml --env personal
+
+# Get Linux kernel info
+yapi run .yapi/get-repo.yapi.yml --env personal
+
+# Query Octocat
+yapi run .yapi/get-user.yapi.yml --env example
+```
+
+**Key features:**
+- Real API integration (GitHub)
+- No authentication required
+- Multiple environments for different users/orgs
+- JQ assertions on real data
+- Default environment auto-selection
+
 ## Configuration Schema
 
 ### `yapi.config.yml` Structure
