@@ -67,27 +67,6 @@ type rootCommand struct {
 	engine       *core.Engine
 }
 
-// ValidationError provides specific information about validation failures.
-type ValidationError struct {
-	Diagnostics []validation.Diagnostic
-}
-
-func (e *ValidationError) Error() string {
-	var errMsgs []string
-	for _, d := range e.Diagnostics {
-		if d.Severity == validation.SeverityError {
-			errMsgs = append(errMsgs, d.Message)
-		}
-	}
-	if len(errMsgs) == 0 {
-		return "validation failed"
-	}
-	if len(errMsgs) == 1 {
-		return errMsgs[0]
-	}
-	return fmt.Sprintf("%d validation errors: %s", len(errMsgs), strings.Join(errMsgs, "; "))
-}
-
 func main() {
 	observability.Init(version, commit)
 	defer observability.Close()
@@ -292,10 +271,14 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
-	app.printErrors(runRes.Analysis, ctx.strict)
+	out := os.Stdout
+	if ctx.strict {
+		out = os.Stderr
+	}
+	validation.PrintErrors(runRes.Analysis, out, app.noColor)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
-			return &ValidationError{Diagnostics: runRes.Analysis.Diagnostics}
+			return &validation.ValidationError{Diagnostics: runRes.Analysis.Diagnostics}
 		}
 		return nil
 	}
@@ -325,7 +308,11 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		}
 
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
-		app.printWarnings(runRes.Analysis, ctx.strict)
+		out = os.Stdout
+		if ctx.strict {
+			out = os.Stderr
+		}
+		validation.PrintWarnings(runRes.Analysis, out, app.noColor)
 		return nil
 	}
 
@@ -346,75 +333,12 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
-	app.printWarnings(runRes.Analysis, ctx.strict)
+	out = os.Stdout
+	if ctx.strict {
+		out = os.Stderr
+	}
+	validation.PrintWarnings(runRes.Analysis, out, app.noColor)
 	return nil
-}
-
-// formatDiagnostic formats a single diagnostic with color.
-func formatDiagnostic(d validation.Diagnostic) string {
-	lineInfo := ""
-	if d.Line >= 0 {
-		lineInfo = fmt.Sprintf(" (line %d)", d.Line+1)
-	}
-
-	switch d.Severity {
-	case validation.SeverityError:
-		return color.Red("[ERROR]" + lineInfo + " " + d.Message)
-	case validation.SeverityWarning:
-		return color.Yellow("[WARN]" + lineInfo + " " + d.Message)
-	default:
-		return color.Cyan("[INFO]" + lineInfo + " " + d.Message)
-	}
-}
-
-// printDiagnostics prints diagnostics filtered by a predicate.
-func (app *rootCommand) printDiagnostics(
-	analysis *validation.Analysis,
-	strict bool,
-	filter func(validation.Diagnostic) bool,
-) {
-	if analysis == nil {
-		return
-	}
-
-	out := os.Stdout
-	if strict {
-		out = os.Stderr
-	}
-
-	for _, d := range analysis.Diagnostics {
-		if !filter(d) {
-			continue
-		}
-		_, _ = fmt.Fprintln(out, formatDiagnostic(d))
-	}
-}
-
-func (app *rootCommand) printErrors(a *validation.Analysis, strict bool) {
-	app.printDiagnostics(a, strict, func(d validation.Diagnostic) bool {
-		return d.Severity == validation.SeverityError
-	})
-}
-
-func (app *rootCommand) printWarnings(a *validation.Analysis, strict bool) {
-	if a == nil {
-		return
-	}
-
-	out := os.Stdout
-	if strict {
-		out = os.Stderr
-	}
-
-	// Print legacy warnings (from parser level) and non-error diagnostics in one pass
-	for _, w := range a.Warnings {
-		_, _ = fmt.Fprintln(out, color.Yellow("[WARN] "+w))
-	}
-	for _, d := range a.Diagnostics {
-		if d.Severity != validation.SeverityError {
-			_, _ = fmt.Fprintln(out, formatDiagnostic(d))
-		}
-	}
 }
 
 // runConfigPathSafe runs a config file without returning error (for watch mode)
@@ -510,15 +434,10 @@ func outputValidateError(err error) {
 func outputValidateText(analysis *validation.Analysis) error {
 	hasOutput := len(analysis.Warnings) > 0 || len(analysis.Diagnostics) > 0
 
-	for _, w := range analysis.Warnings {
-		fmt.Println(color.Yellow("[WARN] " + w))
-	}
-
-	for _, d := range analysis.Diagnostics {
-		fmt.Println(formatDiagnostic(d))
-	}
-
-	if !hasOutput {
+	if hasOutput {
+		// Use the consolidated validation formatter
+		validation.PrintWarnings(analysis, os.Stdout, false)
+	} else {
 		fmt.Println(color.Green("Valid"))
 	}
 

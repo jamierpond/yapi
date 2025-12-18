@@ -21,6 +21,35 @@ func Coalesce[T comparable](vals ...T) T {
 	return zero
 }
 
+// Filter returns a new slice containing only elements that satisfy the predicate.
+func Filter[T any](ts []T, predicate func(T) bool) []T {
+	result := make([]T, 0, len(ts))
+	for _, t := range ts {
+		if predicate(t) {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+// Keys returns all keys from a map as a slice.
+func Keys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// Values returns all values from a map as a slice.
+func Values[K comparable, V any](m map[K]V) []V {
+	values := make([]V, 0, len(m))
+	for _, v := range m {
+		values = append(values, v)
+	}
+	return values
+}
+
 // MergeMaps merges src into dst. Keys in src overwrite dst. Returns new map.
 func MergeMaps[K comparable, V any](dst, src map[K]V) map[K]V {
 	out := make(map[K]V, len(dst)+len(src))

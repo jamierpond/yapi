@@ -61,121 +61,120 @@ func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
 }
 
 func newRunCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run [file]",
-		Short: "Run a request defined in a yapi config file (reads from stdin if no file specified)",
-		Args:  cobra.MaximumNArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {}, // no-op for doc generation
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.Run
 	}
-	if h != nil && h.Run != nil {
-		cmd.RunE = h.Run
-	}
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "run [file]",
+		Short:   "Run a request defined in a yapi config file (reads from stdin if no file specified)",
+		Args:    cobra.MaximumNArgs(1),
+		Handler: handler,
+	})
 }
 
 func newWatchCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "watch [file]",
-		Short: "Watch a yapi config file and re-run on changes",
-		Args:  cobra.MaximumNArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.Watch
 	}
-	if h != nil && h.Watch != nil {
-		cmd.RunE = h.Watch
-	}
-
-	cmd.Flags().BoolP("pretty", "p", false, "Enable pretty TUI mode")
-	cmd.Flags().Bool("no-pretty", false, "Disable pretty TUI mode")
-
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "watch [file]",
+		Short:   "Watch a yapi config file and re-run on changes",
+		Args:    cobra.MaximumNArgs(1),
+		Handler: handler,
+		Flags: []FlagSpec{
+			{Name: "pretty", Shorthand: "p", Type: "bool", Default: false, Usage: "Enable pretty TUI mode"},
+			{Name: "no-pretty", Type: "bool", Default: false, Usage: "Disable pretty TUI mode"},
+		},
+	})
 }
 
 func newHistoryCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "history [count]",
-		Short: "Show yapi command history (default: last 10)",
-		Args:  cobra.MaximumNArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.History
 	}
-	if h != nil && h.History != nil {
-		cmd.RunE = h.History
-	}
-
-	cmd.Flags().Bool("json", false, "Output as JSON")
-
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "history [count]",
+		Short:   "Show yapi command history (default: last 10)",
+		Args:    cobra.MaximumNArgs(1),
+		Handler: handler,
+		Flags: []FlagSpec{
+			{Name: "json", Type: "bool", Default: false, Usage: "Output as JSON"},
+		},
+	})
 }
 
 func newLSPCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "lsp",
-		Short: "Run the yapi language server over stdio",
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.LSP
 	}
-	if h != nil && h.LSP != nil {
-		cmd.RunE = h.LSP
-	}
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "lsp",
+		Short:   "Run the yapi language server over stdio",
+		Handler: handler,
+	})
 }
 
 func newVersionCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print version information",
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.Version
 	}
-	if h != nil && h.Version != nil {
-		cmd.RunE = h.Version
-	}
-
-	cmd.Flags().Bool("json", false, "Output version info as JSON")
-
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "version",
+		Short:   "Print version information",
+		Handler: handler,
+		Flags: []FlagSpec{
+			{Name: "json", Type: "bool", Default: false, Usage: "Output version info as JSON"},
+		},
+	})
 }
 
 func newValidateCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "validate [file]",
-		Short: "Validate a yapi config file",
-		Long:  "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
-		Args:  cobra.MaximumNArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.Validate
 	}
-	if h != nil && h.Validate != nil {
-		cmd.RunE = h.Validate
-	}
-
-	cmd.Flags().Bool("json", false, "Output diagnostics as JSON")
-
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "validate [file]",
+		Short:   "Validate a yapi config file",
+		Long:    "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
+		Args:    cobra.MaximumNArgs(1),
+		Handler: handler,
+		Flags: []FlagSpec{
+			{Name: "json", Type: "bool", Default: false, Usage: "Output diagnostics as JSON"},
+		},
+	})
 }
 
 func newShareCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "share <file>",
-		Short: "Generate a shareable yapi.run link for a config file",
-		Args:  cobra.ExactArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.Share
 	}
-	if h != nil && h.Share != nil {
-		cmd.RunE = h.Share
-	}
-
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "share <file>",
+		Short:   "Generate a shareable yapi.run link for a config file",
+		Args:    cobra.ExactArgs(1),
+		Handler: handler,
+	})
 }
 
 func newTestCmd(h *Handlers) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "test [directory]",
-		Short: "Run all *.test.yapi.yml files in the current directory or specified directory",
-		Args:  cobra.MaximumNArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {},
+	var handler func(*cobra.Command, []string) error
+	if h != nil {
+		handler = h.Test
 	}
-	if h != nil && h.Test != nil {
-		cmd.RunE = h.Test
-	}
-
-	cmd.Flags().BoolP("verbose", "v", false, "Show verbose output for each test")
-
-	return cmd
+	return BuildCommand(CommandSpec{
+		Use:     "test [directory]",
+		Short:   "Run all *.test.yapi.yml files in the current directory or specified directory",
+		Args:    cobra.MaximumNArgs(1),
+		Handler: handler,
+		Flags: []FlagSpec{
+			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
+		},
+	})
 }

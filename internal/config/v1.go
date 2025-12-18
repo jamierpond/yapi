@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"sort"
 	"strings"
 
 	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/utils"
+	"yapi.run/cli/internal/vars"
 )
 
 // knownV1Keys is the set of valid keys for v1 config files.
@@ -237,9 +237,9 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 
 // expandEnvVars expands environment variables in URL, Path, Headers, Query, and OutputFile
 func (c *ConfigV1) expandEnvVars() {
-	c.URL = os.ExpandEnv(c.URL)
-	c.Path = os.ExpandEnv(c.Path)
-	c.OutputFile = os.ExpandEnv(c.OutputFile)
+	c.URL, _ = vars.ExpandString(c.URL, vars.EnvResolver)
+	c.Path, _ = vars.ExpandString(c.Path, vars.EnvResolver)
+	c.OutputFile, _ = vars.ExpandString(c.OutputFile, vars.EnvResolver)
 	c.Headers = expandMapEnv(c.Headers)
 	c.Query = expandMapEnv(c.Query)
 }
@@ -249,7 +249,7 @@ func expandMapEnv(m map[string]string) map[string]string {
 		return m
 	}
 	for k, v := range m {
-		m[k] = os.ExpandEnv(v)
+		m[k], _ = vars.ExpandString(v, vars.EnvResolver)
 	}
 	return m
 }
@@ -305,25 +305,9 @@ func (c *ConfigV1) buildURL() string {
 	return finalURL
 }
 
-// detectTransport determines the transport type from URL scheme
-func (c *ConfigV1) detectTransport() string {
-	urlLower := strings.ToLower(c.URL)
-
-	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
-		return constants.TransportGRPC
-	}
-	if strings.HasPrefix(urlLower, "tcp://") {
-		return constants.TransportTCP
-	}
-	if c.Graphql != "" {
-		return constants.TransportGraphQL
-	}
-	return constants.TransportHTTP
-}
-
 // enrichMetadata adds transport-specific metadata to the request
 func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
-	transport := c.detectTransport()
+	transport := domain.DetectTransport(c.URL, c.Graphql != "")
 	req.Metadata["transport"] = transport
 
 	switch transport {

@@ -97,7 +97,7 @@ func Compile(cfg *config.ConfigV1, resolver vars.Resolver) *CompiledRequest {
 	}
 
 	// 6. Protocol Detection and Validation
-	transport := detectTransport(req.URL, interpolated)
+	transport := domain.DetectTransport(req.URL, interpolated.Graphql != "")
 	req.Metadata["transport"] = transport
 
 	switch transport {
@@ -243,20 +243,6 @@ func walkValue(v any, resolver vars.Resolver) (any, error) {
 	default:
 		return val, nil
 	}
-}
-
-func detectTransport(u string, c *config.ConfigV1) string {
-	urlLower := strings.ToLower(u)
-	if strings.HasPrefix(urlLower, "grpc://") || strings.HasPrefix(urlLower, "grpcs://") {
-		return constants.TransportGRPC
-	}
-	if strings.HasPrefix(urlLower, "tcp://") {
-		return constants.TransportTCP
-	}
-	if c.Graphql != "" {
-		return constants.TransportGraphQL
-	}
-	return constants.TransportHTTP
 }
 
 func isValidEncoding(e string) bool {
