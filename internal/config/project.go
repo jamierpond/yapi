@@ -32,8 +32,11 @@ type EnvironmentConfig struct {
 }
 
 // Environment represents a single environment configuration.
+// It embeds ConfigV1 to allow setting default values for any YAPI field at the environment level.
+// These defaults are merged with individual file configs (file values take precedence).
 type Environment struct {
 	Name     string            // Derived from map key
+	ConfigV1 `yaml:",inline"`  // Inline all ConfigV1 fields (url, headers, method, etc.)
 	Vars     map[string]string `yaml:"vars"`      // Environment-specific variables
 	EnvFiles []string          `yaml:"env_files"` // Environment-specific .env files
 }

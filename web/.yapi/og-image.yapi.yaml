@@ -4,3 +4,4 @@ method: GET
 expect:
   status: 200
 output_file: ./og-image.png
+

@@ -107,9 +107,39 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 }
 
 // AnalyzeConfigStringWithProject analyzes a YAML config with optional project context.
-// If project is provided, performs cross-environment variable validation.
+// If project is provided, performs cross-environment variable validation and uses project
+// variables from the default environment for resolution.
 func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
-	parseRes, err := config.LoadFromString(text)
+	var parseRes *config.ParseResult
+	var err error
+
+	// If project config is available, use project variables for resolution
+	if project != nil {
+		// Get the default environment (or first available environment)
+		envName := project.DefaultEnvironment
+		if envName == "" && len(project.Environments) > 0 {
+			// If no default, use the first environment alphabetically for consistency
+			envNames := project.ListEnvironments()
+			if len(envNames) > 0 {
+				envName = envNames[0]
+			}
+		}
+
+		// Resolve environment variables from project config
+		envVars, resolveErr := project.ResolveEnvFiles(projectRoot, envName)
+		if resolveErr == nil {
+			// Build project-aware resolver
+			resolver := BuildProjectResolver(envVars)
+			parseRes, err = config.LoadFromStringWithResolver(text, resolver)
+		} else {
+			// Fall back to default parsing if we can't resolve env vars
+			parseRes, err = config.LoadFromString(text)
+		}
+	} else {
+		// No project config - use default env resolver
+		parseRes, err = config.LoadFromString(text)
+	}
+
 	if err != nil {
 		line := extractLineFromError(err.Error())
 		diag := Diagnostic{

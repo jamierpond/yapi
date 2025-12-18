@@ -1,5 +1,7 @@
 yapi: v1
-url: http://localhost:3000/playground
+# url: ${url}/playground
+# todo implement setting url at the very top leven yapi.config.yaml
+path: /playground
 method: GET
 expect:
   status: 200

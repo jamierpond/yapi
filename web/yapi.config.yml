@@ -4,10 +4,12 @@ default_environment: prod
 
 environments:
   local:
+    url: http://localhost:3000
     vars:
-      url: http://localhost:3000
+      some_param: default_value
 
   prod:
+    url: https://yapi.run
     vars:
-      url: https://yapi.run
+      some_param: some_value
 
