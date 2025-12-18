@@ -12,6 +12,7 @@ import (
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
+	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/compiler"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/constants"
