@@ -1,0 +1,3 @@
+- yapi stress/ yapi pwn like apache ab
+yapi pwn -p8 -n100 ./my-shit-endpoint.yapi.yml
+--> tells you some stats about your endpoint
