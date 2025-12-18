@@ -102,9 +102,9 @@ var cmdManifest = []CommandSpec{
 		},
 	},
 	{
-		Use:   "share <file>",
+		Use:   "share [file]",
 		Short: "Generate a shareable yapi.run link for a config file",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 	},
 	{
 		Use:   "test [directory]",

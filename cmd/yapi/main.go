@@ -75,6 +75,25 @@ func (app *rootCommand) io(strict bool) (io.Writer, bool) {
 	return os.Stdout, app.noColor
 }
 
+// selectConfigFile returns the config file path, handling interactive TUI selection when no args provided.
+// Returns (selectedPath, fromTUI, error).
+func selectConfigFile(args []string, cmdName string) (string, bool, error) {
+	if len(args) > 0 {
+		return args[0], false, nil
+	}
+
+	selectedPath, err := tui.FindConfigFileSingle()
+	if err != nil {
+		return "", false, fmt.Errorf("failed to select config file: %w", err)
+	}
+
+	// Log to history with from_tui flag
+	absPath, _ := filepath.Abs(selectedPath)
+	logHistoryFromTUI(fmt.Sprintf("yapi %s %q", cmdName, absPath))
+
+	return selectedPath, true, nil
+}
+
 func main() {
 	observability.Init(version, commit)
 	defer observability.Close()
@@ -131,19 +150,17 @@ func main() {
 }
 
 func (app *rootCommand) runInteractiveE(cmd *cobra.Command, args []string) error {
-	selectedPath, err := tui.FindConfigFileSingle()
+	path, _, err := selectConfigFile(args, "run")
 	if err != nil {
-		return fmt.Errorf("failed to select config file: %w", err)
+		return err
 	}
-	absPath, _ := filepath.Abs(selectedPath)
-	logHistoryFromTUI(fmt.Sprintf("yapi run %q", absPath))
-	return app.runConfigPathE(selectedPath)
+	return app.runConfigPathE(path)
 }
 
 func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
-	path := "-"
-	if len(args) > 0 {
-		path = args[0]
+	path, _, err := selectConfigFile(args, "run")
+	if err != nil {
+		return err
 	}
 	return app.runConfigPathE(path)
 }
@@ -152,22 +169,12 @@ func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
 	pretty, _ := cmd.Flags().GetBool("pretty")
 	noPretty, _ := cmd.Flags().GetBool("no-pretty")
 
-	var path string
-	interactive := len(args) == 0
-
-	if interactive {
-		selectedPath, err := tui.FindConfigFileSingle()
-		if err != nil {
-			return fmt.Errorf("failed to select config file: %w", err)
-		}
-		path = selectedPath
-		absPath, _ := filepath.Abs(selectedPath)
-		logHistoryFromTUI(fmt.Sprintf("yapi watch %q", absPath))
-	} else {
-		path = args[0]
+	path, fromTUI, err := selectConfigFile(args, "watch")
+	if err != nil {
+		return err
 	}
 
-	usePretty := pretty || (interactive && !noPretty)
+	usePretty := pretty || (fromTUI && !noPretty)
 
 	if usePretty {
 		return tui.RunWatch(path)
@@ -376,9 +383,13 @@ func versionE(cmd *cobra.Command, args []string) error {
 func validateE(cmd *cobra.Command, args []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
-	path := "-"
-	if len(args) > 0 {
-		path = args[0]
+	path, _, err := selectConfigFile(args, "validate")
+	if err != nil {
+		if jsonOutput {
+			outputValidateError(err)
+			return nil
+		}
+		return err
 	}
 
 	data, err := utils.ReadInput(path)
@@ -438,7 +449,10 @@ func outputValidateText(analysis *validation.Analysis) error {
 }
 
 func shareE(cmd *cobra.Command, args []string) error {
-	filename := args[0]
+	filename, _, err := selectConfigFile(args, "share")
+	if err != nil {
+		return err
+	}
 
 	data, err := os.ReadFile(filename) //nolint:gosec // user-provided file path
 	if err != nil {
