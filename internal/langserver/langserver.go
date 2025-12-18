@@ -286,10 +286,21 @@ func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text str
 	// Parse YAML first to catch syntax errors
 	var rawConfig map[string]any
 	if err := yaml.Unmarshal([]byte(text), &rawConfig); err != nil {
+		// Try to extract line number from error message
+		// Error format: "yaml: line X: ..."
+		line := protocol.UInteger(0)
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "line ") {
+			var lineNum int
+			if _, scanErr := fmt.Sscanf(errMsg, "yaml: line %d:", &lineNum); scanErr == nil && lineNum > 0 {
+				line = protocol.UInteger(lineNum - 1) // LSP uses 0-indexed lines
+			}
+		}
+
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
-				Start: protocol.Position{Line: 0, Character: 0},
-				End:   protocol.Position{Line: 0, Character: 100},
+				Start: protocol.Position{Line: line, Character: 0},
+				End:   protocol.Position{Line: line, Character: 100},
 			},
 			Severity: ptr(protocol.DiagnosticSeverityError),
 			Source:   ptr("yapi"),
