@@ -25,12 +25,17 @@ type ParseResult struct {
 
 // LoadFromString parses a yapi config from raw YAML data.
 func LoadFromString(data string) (*ParseResult, error) {
-	return LoadFromStringWithResolver(data, nil)
+	return LoadFromStringWithOptions(data, nil, nil)
 }
 
 // LoadFromStringWithResolver parses a yapi config from raw YAML data using a custom variable resolver.
 // If resolver is nil, uses the default EnvResolver.
 func LoadFromStringWithResolver(data string, resolver vars.Resolver) (*ParseResult, error) {
+	return LoadFromStringWithOptions(data, resolver, nil)
+}
+
+// LoadFromStringWithOptions parses a yapi config with optional resolver and environment defaults.
+func LoadFromStringWithOptions(data string, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
 	// 1. Peek at version
 	var env Envelope
 	if err := yaml.Unmarshal([]byte(data), &env); err != nil {
@@ -40,10 +45,10 @@ func LoadFromStringWithResolver(data string, resolver vars.Resolver) (*ParseResu
 	// 2. Dispatch based on version
 	switch env.Yapi {
 	case "v1":
-		return parseV1WithResolver([]byte(data), resolver)
+		return parseV1WithOptions([]byte(data), resolver, defaults)
 	case "":
 		// Legacy support: Parse as V1 but warn
-		res, err := parseV1WithResolver([]byte(data), resolver)
+		res, err := parseV1WithOptions([]byte(data), resolver, defaults)
 		if err == nil {
 			res.Warnings = append(res.Warnings, "Missing 'yapi: v1' version tag. Defaulting to v1.")
 		}
@@ -54,13 +59,22 @@ func LoadFromStringWithResolver(data string, resolver vars.Resolver) (*ParseResu
 }
 
 func parseV1(data []byte) (*ParseResult, error) {
-	return parseV1WithResolver(data, nil)
+	return parseV1WithOptions(data, nil, nil)
 }
 
 func parseV1WithResolver(data []byte, resolver vars.Resolver) (*ParseResult, error) {
+	return parseV1WithOptions(data, resolver, nil)
+}
+
+func parseV1WithOptions(data []byte, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
 	var v1 ConfigV1
 	if err := yaml.Unmarshal(data, &v1); err != nil {
 		return nil, err
+	}
+
+	// Merge with environment defaults if provided
+	if defaults != nil {
+		v1 = v1.MergeWithDefaults(*defaults)
 	}
 
 	// Check if this is a chain config

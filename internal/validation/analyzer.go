@@ -107,13 +107,13 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 }
 
 // AnalyzeConfigStringWithProject analyzes a YAML config with optional project context.
-// If project is provided, performs cross-environment variable validation and uses project
-// variables from the default environment for resolution.
+// If project is provided, performs cross-environment variable validation, uses project
+// variables from the default environment for resolution, and applies environment defaults.
 func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
 	var parseRes *config.ParseResult
 	var err error
 
-	// If project config is available, use project variables for resolution
+	// If project config is available, use project variables and defaults
 	if project != nil {
 		// Get the default environment (or first available environment)
 		envName := project.DefaultEnvironment
@@ -125,15 +125,22 @@ func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1
 			}
 		}
 
+		// Get the environment to extract defaults
+		var envDefaults *config.ConfigV1
+		if env, ok := project.Environments[envName]; ok {
+			// Extract the embedded ConfigV1 from the environment
+			envDefaults = &env.ConfigV1
+		}
+
 		// Resolve environment variables from project config
 		envVars, resolveErr := project.ResolveEnvFiles(projectRoot, envName)
 		if resolveErr == nil {
 			// Build project-aware resolver
 			resolver := BuildProjectResolver(envVars)
-			parseRes, err = config.LoadFromStringWithResolver(text, resolver)
+			parseRes, err = config.LoadFromStringWithOptions(text, resolver, envDefaults)
 		} else {
-			// Fall back to default parsing if we can't resolve env vars
-			parseRes, err = config.LoadFromString(text)
+			// Fall back to parsing with just defaults if we can't resolve env vars
+			parseRes, err = config.LoadFromStringWithOptions(text, nil, envDefaults)
 		}
 	} else {
 		// No project config - use default env resolver

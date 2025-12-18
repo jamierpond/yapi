@@ -165,6 +165,67 @@ func (c *ConfigV1) Merge(step ChainStep) ConfigV1 {
 	return m
 }
 
+// MergeWithDefaults applies environment defaults to a file config.
+// File values take precedence over environment defaults.
+func (c *ConfigV1) MergeWithDefaults(defaults ConfigV1) ConfigV1 {
+	m := defaults // Start with defaults
+
+	// File values override defaults (reverse of Coalesce order)
+	m.URL = utils.Coalesce(c.URL, defaults.URL)
+	m.Path = utils.Coalesce(c.Path, defaults.Path)
+	m.Method = utils.Coalesce(c.Method, defaults.Method)
+	m.ContentType = utils.Coalesce(c.ContentType, defaults.ContentType)
+	m.JSON = utils.Coalesce(c.JSON, defaults.JSON)
+	m.Graphql = utils.Coalesce(c.Graphql, defaults.Graphql)
+	m.Service = utils.Coalesce(c.Service, defaults.Service)
+	m.RPC = utils.Coalesce(c.RPC, defaults.RPC)
+	m.Proto = utils.Coalesce(c.Proto, defaults.Proto)
+	m.ProtoPath = utils.Coalesce(c.ProtoPath, defaults.ProtoPath)
+	m.Data = utils.Coalesce(c.Data, defaults.Data)
+	m.Encoding = utils.Coalesce(c.Encoding, defaults.Encoding)
+	m.JQFilter = utils.Coalesce(c.JQFilter, defaults.JQFilter)
+	m.Delay = utils.Coalesce(c.Delay, defaults.Delay)
+	m.OutputFile = utils.Coalesce(c.OutputFile, defaults.OutputFile)
+
+	// Bool/Int overrides - file values take precedence
+	if c.Insecure {
+		m.Insecure = true
+	}
+	if c.Plaintext {
+		m.Plaintext = true
+	}
+	if c.CloseAfterSend {
+		m.CloseAfterSend = true
+	}
+	if c.ReadTimeout != 0 {
+		m.ReadTimeout = c.ReadTimeout
+	}
+	if c.IdleTimeout != 0 {
+		m.IdleTimeout = c.IdleTimeout
+	}
+
+	// Map merging - file values override defaults
+	m.Headers = utils.MergeMaps(defaults.Headers, c.Headers)
+	m.Query = utils.MergeMaps(defaults.Query, c.Query)
+
+	// Body/Variables - file values override if present
+	m.Body = utils.DeepCloneMap(defaults.Body)
+	if c.Body != nil {
+		m.Body = c.Body
+	}
+
+	m.Variables = utils.DeepCloneMap(defaults.Variables)
+	if c.Variables != nil {
+		m.Variables = c.Variables
+	}
+
+	// Preserve file-specific fields
+	m.Expect = c.Expect
+	m.Chain = c.Chain
+
+	return m
+}
+
 // Expectation defines assertions for a chain step
 type Expectation struct {
 	Status any          `yaml:"status,omitempty"` // int or []int
