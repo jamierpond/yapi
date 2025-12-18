@@ -252,8 +252,8 @@ func TestAssertionSet_UnmarshalYAML(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "empty flat array",
-			yaml: `assert: []`,
+			name:        "empty flat array",
+			yaml:        `assert: []`,
 			wantBody:    []string{},
 			wantHeaders: nil,
 			wantErr:     false,

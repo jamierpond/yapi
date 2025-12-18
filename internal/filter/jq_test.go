@@ -755,10 +755,10 @@ func TestEvalJQBoolWithDetailAndVars(t *testing.T) {
 			variables: map[string]any{
 				"_threshold": 5,
 			},
-			wantPassed:   true,
-			wantLeftSide: ".value",
-			wantOperator: ">",
-			wantRightSide: "$_threshold",
+			wantPassed:      true,
+			wantLeftSide:    ".value",
+			wantOperator:    ">",
+			wantRightSide:   "$_threshold",
 			wantActualValue: "10",
 		},
 	}
