@@ -122,6 +122,7 @@ func main() {
 		Validate:       validateE,
 		Share:          shareE,
 		Test:           app.testE,
+		List:           listE,
 	}
 
 	rootCmd := commands.BuildRoot(cfg, handlers)
@@ -1095,6 +1096,47 @@ func findTestFiles(dir string) ([]string, error) {
 	})
 
 	return testFiles, err
+}
+
+func listE(cmd *cobra.Command, args []string) error {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
+	// Use tui.FindConfigFiles to get git-tracked yapi files
+	yapiFiles, err := tui.FindConfigFiles()
+	if err != nil {
+		return fmt.Errorf("failed to find yapi files: %w", err)
+	}
+
+	if len(yapiFiles) == 0 {
+		if !jsonOutput {
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No yapi config files found"))
+		}
+		return nil
+	}
+
+	// Sort files alphabetically
+	sort.Strings(yapiFiles)
+
+	// Output as JSON or text
+	if jsonOutput {
+		type fileEntry struct {
+			Path string `json:"path"`
+		}
+		entries := make([]fileEntry, len(yapiFiles))
+		for i, file := range yapiFiles {
+			entries[i].Path = file
+		}
+		output, _ := json.MarshalIndent(entries, "", "  ")
+		fmt.Println(string(output))
+	} else {
+		// Text output
+		fmt.Fprintf(os.Stderr, "%s\n\n", color.Accent(fmt.Sprintf("Found %d yapi config file(s):", len(yapiFiles))))
+		for _, file := range yapiFiles {
+			fmt.Println(file)
+		}
+	}
+
+	return nil
 }
 
 // isTerminal checks if the given file is a terminal (TTY)

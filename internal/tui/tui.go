@@ -49,6 +49,11 @@ func getTTY() (in, out *os.File, cleanup func()) {
 // yapiFilePattern matches *.yapi.yaml or *.yapi.yml in subdirectories only
 var yapiFilePattern = regexp.MustCompile(`^.+/.+\.yapi\.ya?ml$`)
 
+// FindConfigFiles returns all git-tracked yapi config files relative to the current directory
+func FindConfigFiles() ([]string, error) {
+	return findFiles()
+}
+
 func findFiles() ([]string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {

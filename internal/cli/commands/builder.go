@@ -7,6 +7,7 @@ import (
 // CommandSpec defines the specification for a command.
 type CommandSpec struct {
 	Use     string
+	Aliases []string
 	Short   string
 	Long    string
 	Args    cobra.PositionalArgs
@@ -26,10 +27,11 @@ type FlagSpec struct {
 // BuildCommand creates a cobra command from a spec.
 func BuildCommand(spec CommandSpec) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   spec.Use,
-		Short: spec.Short,
-		Args:  spec.Args,
-		Run:   func(cmd *cobra.Command, args []string) {}, // no-op for doc generation
+		Use:     spec.Use,
+		Aliases: spec.Aliases,
+		Short:   spec.Short,
+		Args:    spec.Args,
+		Run:     func(cmd *cobra.Command, args []string) {}, // no-op for doc generation
 	}
 
 	if spec.Long != "" {
