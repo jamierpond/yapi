@@ -3,15 +3,11 @@ yapi: v1
 default_environment: prod
 
 environments:
-  # Local Development: Point to different localhost ports
   local:
     vars:
-      protocol: "http"
-      domain: "localhost:3000"
+      url: http://localhost:3000
 
-  # Staging: Point to the cloud staging subdomains
   prod:
     vars:
-      protocol: "https"
-      domain: "yapi.run"
+      url: https://yapi.run
 
