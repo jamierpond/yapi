@@ -1230,15 +1230,22 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		// Load and analyze config to get resolved URL
+		// Read config file
 		configData, err := os.ReadFile(filePath)
 		if err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
 		}
 
+		// Build resolver with environment variables
 		var analysis *validation.Analysis
-		if projEnv != nil && projEnv.project != nil {
+		if projEnv != nil && projEnv.project != nil && projEnv.envVars != nil {
+			// Use AnalyzeConfigStringWithProject but temporarily override the default environment
+			// Save original default
+			originalDefault := projEnv.project.DefaultEnvironment
+			projEnv.project.DefaultEnvironment = projEnv.envName
 			analysis, err = validation.AnalyzeConfigStringWithProject(string(configData), projEnv.project, projEnv.projectRoot)
+			// Restore original default
+			projEnv.project.DefaultEnvironment = originalDefault
 		} else {
 			analysis, err = validation.AnalyzeConfigString(string(configData))
 		}
