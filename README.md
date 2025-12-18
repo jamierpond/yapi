@@ -284,6 +284,30 @@ Tired of `Alt-Tab` -\> `Up Arrow` -\> `Enter`? Use watch mode to re-run the requ
 yapi watch ./my-request.yapi.yml
 ```
 
+### 🔥 Load Testing
+
+Stress test **entire workflows** with concurrent execution. Not just individual requests - stress test multi-step chains, auth flows, and complex scenarios. Perfect for finding bottlenecks in real-world usage patterns.
+
+```bash
+# Stress test an auth flow: login -> create post -> fetch results
+yapi stress auth-flow.yapi.yml -n 1000 -p 50
+
+# Run a multi-step workflow for 30 seconds
+yapi stress my-workflow.yapi.yml -d 30s -p 10
+
+# Load test against production
+yapi stress checkout-flow.yapi.yml -e prod -n 500 -p 25
+```
+
+**Options:**
+- `-n, --num-requests` - Total number of workflow executions (default: 100)
+- `-p, --parallel` - Number of concurrent workflow executions (default: 1)
+- `-d, --duration` - Run for a specific duration (e.g., 10s, 1m) - overrides num-requests
+- `-e, --env` - Target a specific environment from yapi.config.yml
+- `-y, --yes` - Skip confirmation prompt
+
+**Key advantage:** Each parallel execution runs the **entire chain** - login, get token, make authenticated request, etc. This tests your API under realistic load, not just isolated endpoints.
+
 -----
 
 ## 🧠 Editor Integration (LSP)
