@@ -537,6 +537,12 @@ func validateE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Check if this is a project config file
+	fileName := filepath.Base(path)
+	if fileName == "yapi.config.yml" || fileName == "yapi.config.yaml" {
+		return validateProjectConfigFile(path, jsonOutput)
+	}
+
 	data, err := utils.ReadInput(path)
 	if err != nil {
 		if jsonOutput {
@@ -561,6 +567,68 @@ func validateE(cmd *cobra.Command, args []string) error {
 	}
 
 	return outputValidateText(analysis, path, data)
+}
+
+func validateProjectConfigFile(path string, jsonOutput bool) error {
+	// Try to load the project config
+	projectRoot := filepath.Dir(path)
+	_, err := config.LoadProject(projectRoot)
+
+	if jsonOutput {
+		if err != nil {
+			out := validation.JSONOutput{
+				Valid: false,
+				Diagnostics: []validation.JSONDiagnostic{{
+					Severity: "error",
+					Message:  fmt.Sprintf("Invalid project config: %v", err),
+					Line:     0,
+					Col:      0,
+				}},
+				Warnings: []string{},
+			}
+			_ = json.NewEncoder(os.Stdout).Encode(out)
+		} else {
+			out := validation.JSONOutput{
+				Valid:       true,
+				Diagnostics: []validation.JSONDiagnostic{},
+				Warnings:    []string{},
+			}
+			_ = json.NewEncoder(os.Stdout).Encode(out)
+		}
+		return nil
+	}
+
+	// Text output
+	data, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return fmt.Errorf("failed to read config: %w", readErr)
+	}
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, color.AccentBg(" yapi validate "))
+	fmt.Fprintln(os.Stderr)
+
+	absPath, _ := filepath.Abs(path)
+	fmt.Fprintln(os.Stderr, "  "+color.Dim("file     ")+filepath.Base(absPath))
+	if dir := filepath.Dir(absPath); dir != "" && dir != "." {
+		fmt.Fprintln(os.Stderr, "  "+color.Dim("path     ")+dir)
+	}
+
+	lines := strings.Count(string(data), "\n") + 1
+	size := len(data)
+	fmt.Fprintln(os.Stderr, "  "+color.Dim("lines    ")+fmt.Sprintf("%d", lines))
+	fmt.Fprintln(os.Stderr, "  "+color.Dim("size     ")+formatBytes(size))
+	fmt.Fprintln(os.Stderr)
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, color.Red("[ERROR] ")+err.Error())
+		fmt.Fprintln(os.Stderr)
+		return errors.New("validation errors")
+	}
+
+	fmt.Fprintln(os.Stderr, "  "+color.Green("Valid project configuration!"))
+	fmt.Fprintln(os.Stderr)
+	return nil
 }
 
 func outputValidateError(err error) {

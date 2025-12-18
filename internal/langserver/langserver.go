@@ -175,16 +175,12 @@ func textDocumentDidSave(ctx *glsp.Context, params *protocol.DidSaveTextDocument
 }
 
 func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string) {
-	// Check if this is a project config file - don't validate as a request file
+	// Check if this is a project config file
 	if filePath := uriToPath(uri); filePath != "" {
 		fileName := filepath.Base(filePath)
 		if fileName == "yapi.config.yml" || fileName == "yapi.config.yaml" {
-			// This is a project config file, not a request file
-			// Send empty diagnostics (project configs are validated when loaded)
-			ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-				URI:         uri,
-				Diagnostics: []protocol.Diagnostic{},
-			})
+			// This is a project config file - validate it
+			validateProjectConfig(ctx, uri, text, filePath)
 			return
 		}
 	}
@@ -277,6 +273,33 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 		}
 	}
 
+	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+		URI:         uri,
+		Diagnostics: diagnostics,
+	})
+}
+
+func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text string, filePath string) {
+	diagnostics := []protocol.Diagnostic{}
+
+	// Try to load and validate the project config
+	projectRoot := filepath.Dir(filePath)
+	_, err := config.LoadProject(projectRoot)
+
+	if err != nil {
+		// Parse error or validation error
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 100},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  fmt.Sprintf("Invalid project config: %v", err),
+		})
+	}
+
+	// Send diagnostics
 	ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 		URI:         uri,
 		Diagnostics: diagnostics,
