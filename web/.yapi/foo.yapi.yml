@@ -1,7 +1,0 @@
-
-yapi: v1
-url: https://api.github.com/repos/jamierpond/yapi
-method: GET
-# get just num stars, and repo name, still json full response
-jq_filter: '. | {stars: .stargazers_count, name: .name}'
-
