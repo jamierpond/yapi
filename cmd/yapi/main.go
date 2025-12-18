@@ -80,11 +80,27 @@ func (app *rootCommand) io(strict bool) (io.Writer, bool) {
 // selectConfigFile returns the config file path, handling interactive TUI selection when no args provided.
 // Returns (selectedPath, fromTUI, error).
 func selectConfigFile(args []string, cmdName string) (string, bool, error) {
+	return selectConfigFileWithOptions(args, cmdName, false)
+}
+
+// selectConfigFileIncludingProject returns the config file path, including project config files in TUI.
+// Returns (selectedPath, fromTUI, error).
+func selectConfigFileIncludingProject(args []string, cmdName string) (string, bool, error) {
+	return selectConfigFileWithOptions(args, cmdName, true)
+}
+
+func selectConfigFileWithOptions(args []string, cmdName string, includeProjectConfig bool) (string, bool, error) {
 	if len(args) > 0 {
 		return args[0], false, nil
 	}
 
-	selectedPath, err := tui.FindConfigFileSingle()
+	var selectedPath string
+	var err error
+	if includeProjectConfig {
+		selectedPath, err = tui.FindConfigFileSingleIncludingProject()
+	} else {
+		selectedPath, err = tui.FindConfigFileSingle()
+	}
 	if err != nil {
 		return "", false, fmt.Errorf("failed to select config file: %w", err)
 	}
@@ -517,8 +533,8 @@ func validateE(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Otherwise use normal file selection
-	path, _, err = selectConfigFile(args, "validate")
+	// Otherwise use normal file selection (including project config files)
+	path, _, err = selectConfigFileIncludingProject(args, "validate")
 	if err != nil {
 		if jsonOutput {
 			outputValidateError(err)

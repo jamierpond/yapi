@@ -51,10 +51,15 @@ var yapiFilePattern = regexp.MustCompile(`^.+/.+\.yapi\.ya?ml$`)
 
 // FindConfigFiles returns all git-tracked yapi config files relative to the current directory
 func FindConfigFiles() ([]string, error) {
-	return findFiles()
+	return findFiles(false)
 }
 
-func findFiles() ([]string, error) {
+// FindConfigFilesIncludingProject returns all git-tracked yapi config files including yapi.config.yml
+func FindConfigFilesIncludingProject() ([]string, error) {
+	return findFiles(true)
+}
+
+func findFiles(includeProjectConfig bool) ([]string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
@@ -107,9 +112,12 @@ func findFiles() ([]string, error) {
 			relPath = path
 		}
 
-		// Match .yapi.yml files or yapi.config.yml files
+		// Match .yapi.yml files
 		base := filepath.Base(relPath)
-		if yapiFilePattern.MatchString(relPath) || base == "yapi.config.yml" || base == "yapi.config.yaml" {
+		if yapiFilePattern.MatchString(relPath) {
+			configFiles = append(configFiles, relPath)
+		} else if includeProjectConfig && (base == "yapi.config.yml" || base == "yapi.config.yaml") {
+			// Only include yapi.config.yml if explicitly requested
 			configFiles = append(configFiles, relPath)
 		}
 	}
@@ -123,8 +131,19 @@ func findFiles() ([]string, error) {
 }
 
 // FindConfigFileSingle prompts the user to select a single config file.
+// Only shows .yapi.yml files, not project config files.
 func FindConfigFileSingle() (string, error) {
-	files, err := findFiles()
+	return findConfigFileSingle(false)
+}
+
+// FindConfigFileSingleIncludingProject prompts the user to select a single config file.
+// Shows both .yapi.yml files and project config files (yapi.config.yml).
+func FindConfigFileSingleIncludingProject() (string, error) {
+	return findConfigFileSingle(true)
+}
+
+func findConfigFileSingle(includeProjectConfig bool) (string, error) {
+	files, err := findFiles(includeProjectConfig)
 	if err != nil {
 		return "", err
 	}
