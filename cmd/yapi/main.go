@@ -415,7 +415,7 @@ func validateE(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return outputValidateText(analysis)
+	return outputValidateText(analysis, path, data)
 }
 
 func outputValidateError(err error) {
