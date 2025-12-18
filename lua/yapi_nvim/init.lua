@@ -46,7 +46,9 @@ local function start_watch(filepath)
 
   if not filepath:match("%.yapi$") and
      not filepath:match("%.yapi%.yml$") and
-     not filepath:match("%.yapi%.yaml$")
+     not filepath:match("%.yapi%.yaml$") and
+     not filepath:match("yapi%.config%.yml$") and
+     not filepath:match("yapi%.config%.yaml$")
   then
     vim.notify("[yapi] Not a yapi config file", vim.log.levels.WARN)
     return
@@ -90,7 +92,9 @@ local function run_once(filepath)
 
   if not filepath:match("%.yapi$") and
      not filepath:match("%.yapi%.yml$") and
-     not filepath:match("%.yapi%.yaml$")
+     not filepath:match("%.yapi%.yaml$") and
+     not filepath:match("yapi%.config%.yml$") and
+     not filepath:match("yapi%.config%.yaml$")
   then
     vim.notify("[yapi] Not a yapi config file", vim.log.levels.WARN)
     return
@@ -161,7 +165,7 @@ function M.setup(opts)
   -- Auto-start watch on save if configured
   if M._opts.watch_on_save then
     vim.api.nvim_create_autocmd("BufWritePost", {
-      pattern = { "*.yapi.yml", "*.yapi.yaml" },
+      pattern = { "*.yapi.yml", "*.yapi.yaml", "*.yapi", "yapi.config.yml", "yapi.config.yaml" },
       callback = function()
         M.watch()
       end,
@@ -174,13 +178,19 @@ function M.setup(opts)
     vim.lsp.config.yapi = {
       cmd = { "yapi", "lsp" },
       filetypes = { "yaml.yapi" },
-      root_markers = { ".git" },
+      root_markers = { "yapi.config.yml", "yapi.config.yaml", ".git" },
     }
     vim.lsp.enable("yapi")
 
     -- Set filetype to yaml.yapi for yapi config files
     vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
-      pattern = { "*.yapi.yml", "*.yapi.yaml" },
+      pattern = {
+        "*.yapi.yml",
+        "*.yapi.yaml",
+        "*.yapi",
+        "yapi.config.yml",
+        "yapi.config.yaml"
+      },
       callback = function()
         vim.bo.filetype = "yaml.yapi"
       end,
