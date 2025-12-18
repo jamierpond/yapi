@@ -528,7 +528,27 @@ func versionE(cmd *cobra.Command, args []string) error {
 func validateE(cmd *cobra.Command, args []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
-	path, _, err := selectConfigFile(args, "validate")
+	var path string
+	var err error
+
+	// If no file provided, look for project config first
+	if len(args) == 0 {
+		cwd, _ := os.Getwd()
+		if projectRoot, findErr := config.FindProjectRoot(cwd); findErr == nil {
+			// Found a project config, validate it
+			configPath := filepath.Join(projectRoot, "yapi.config.yml")
+			if _, statErr := os.Stat(configPath); statErr == nil {
+				return validateProjectConfigFile(configPath, jsonOutput)
+			}
+			configPath = filepath.Join(projectRoot, "yapi.config.yaml")
+			if _, statErr := os.Stat(configPath); statErr == nil {
+				return validateProjectConfigFile(configPath, jsonOutput)
+			}
+		}
+	}
+
+	// Otherwise use normal file selection
+	path, _, err = selectConfigFile(args, "validate")
 	if err != nil {
 		if jsonOutput {
 			outputValidateError(err)

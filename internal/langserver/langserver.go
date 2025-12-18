@@ -326,26 +326,23 @@ func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text str
 		})
 	}
 
-	if kind, ok := rawConfig["kind"].(string); !ok {
-		diagnostics = append(diagnostics, protocol.Diagnostic{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: 0, Character: 0},
-				End:   protocol.Position{Line: 0, Character: 100},
-			},
-			Severity: ptr(protocol.DiagnosticSeverityError),
-			Source:   ptr("yapi"),
-			Message:  "Missing required field 'kind' (must be 'project')",
-		})
-	} else if kind != "project" {
-		diagnostics = append(diagnostics, protocol.Diagnostic{
-			Range: protocol.Range{
-				Start: protocol.Position{Line: 0, Character: 0},
-				End:   protocol.Position{Line: 0, Character: 100},
-			},
-			Severity: ptr(protocol.DiagnosticSeverityError),
-			Source:   ptr("yapi"),
-			Message:  fmt.Sprintf("Invalid 'kind': must be 'project', got '%s'", kind),
-		})
+	// Check if default_environment references a valid environment
+	if defaultEnv, ok := rawConfig["default_environment"].(string); ok && defaultEnv != "" {
+		if envs, hasEnvs := rawConfig["environments"].(map[string]any); hasEnvs {
+			if _, exists := envs[defaultEnv]; !exists {
+				// Get line number for default_environment
+				line := findFieldLineInText(text, "default_environment")
+				diagnostics = append(diagnostics, protocol.Diagnostic{
+					Range: protocol.Range{
+						Start: protocol.Position{Line: protocol.UInteger(line), Character: 0},
+						End:   protocol.Position{Line: protocol.UInteger(line), Character: 100},
+					},
+					Severity: ptr(protocol.DiagnosticSeverityError),
+					Source:   ptr("yapi"),
+					Message:  fmt.Sprintf("default_environment '%s' not found in environments", defaultEnv),
+				})
+			}
+		}
 	}
 
 	// Try to load the full project config for additional validation
@@ -370,6 +367,17 @@ func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text str
 		URI:         uri,
 		Diagnostics: diagnostics,
 	})
+}
+
+func findFieldLineInText(text string, fieldName string) int {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, fieldName+":") {
+			return i
+		}
+	}
+	return 0
 }
 
 func ptr[T any](v T) *T {

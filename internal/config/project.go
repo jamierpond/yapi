@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
@@ -97,15 +98,22 @@ func LoadProject(projectRoot string) (*ProjectConfigV1, error) {
 		return nil, fmt.Errorf("failed to parse project config: %w", err)
 	}
 
-	// Validate required fields
-	if config.Kind != "project" {
-		return nil, fmt.Errorf("invalid or missing 'kind' (expected 'project', got '%s')", config.Kind)
-	}
-
 	// Populate environment names from map keys
 	for name, env := range config.Environments {
 		env.Name = name
 		config.Environments[name] = env
+	}
+
+	// Validate default_environment references an existing environment
+	if config.DefaultEnvironment != "" {
+		if _, exists := config.Environments[config.DefaultEnvironment]; !exists {
+			availableEnvs := make([]string, 0, len(config.Environments))
+			for name := range config.Environments {
+				availableEnvs = append(availableEnvs, name)
+			}
+			return nil, fmt.Errorf("default_environment '%s' not found in environments (available: %s)",
+				config.DefaultEnvironment, strings.Join(availableEnvs, ", "))
+		}
 	}
 
 	return &config, nil

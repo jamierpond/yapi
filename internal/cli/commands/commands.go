@@ -24,6 +24,7 @@ type Handlers struct {
 	Validate       func(cmd *cobra.Command, args []string) error
 	Share          func(cmd *cobra.Command, args []string) error
 	Test           func(cmd *cobra.Command, args []string) error
+	List           func(cmd *cobra.Command, args []string) error
 }
 
 // BuildRoot builds the root command tree with optional handlers.
@@ -120,6 +121,14 @@ var cmdManifest = []CommandSpec{
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 		},
 	},
+	{
+		Use:   "list [directory]",
+		Short: "List all yapi config files in the current directory or project",
+		Args:  cobra.MaximumNArgs(1),
+		Flags: []FlagSpec{
+			{Name: "json", Type: "bool", Default: false, Usage: "Output as JSON"},
+		},
+	},
 }
 
 // getHandler maps command names to handlers
@@ -155,6 +164,8 @@ func getHandler(h *Handlers, use string) func(*cobra.Command, []string) error {
 		return h.Share
 	case "test":
 		return h.Test
+	case "list":
+		return h.List
 	default:
 		return nil
 	}

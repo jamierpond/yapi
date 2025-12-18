@@ -1,5 +1,4 @@
 yapi: v1
-kind: project
 
 defaults_environment: local
 
@@ -17,3 +16,4 @@ environments:
       user_host: "https://users.staging.api.com"
       payment_host: "https://payments.staging.api.com"
       notification_host: "https://notify.staging.api.com"
+
