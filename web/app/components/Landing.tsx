@@ -83,7 +83,7 @@ export default async function Landing() {
           </h1>
 
           <p className="text-xl text-yapi-fg-muted max-w-xl mx-auto leading-relaxed">
-            Define API requests in YAML. Run them from your terminal. HTTP, gRPC, GraphQL. Commit to git. No Postman. No Insomnia.
+            Chain API requests in YAML. Switch environments with a flag. Run complex workflows from your terminal. Commit to git. No Electron apps.
           </p>
 
           <div className="flex flex-col justify-center items-center gap-4 pt-8 animate-fade-in-up delay-75 w-full max-w-xl mx-auto">
@@ -125,7 +125,7 @@ export default async function Landing() {
               <div className="flex-1 border-r border-white/5 flex flex-col">
                 <div className="bg-[#252526] px-4 py-2 flex items-center justify-between border-b border-black/20">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-yapi-fg-muted font-mono">create-user.yapi.yml</span>
+                    <span className="text-xs text-yapi-fg-muted font-mono">auth-flow.yapi.yml</span>
                   </div>
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
@@ -134,17 +134,20 @@ export default async function Landing() {
                   </div>
                 </div>
                 <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-yapi-fg/90">
-                  <div className="text-yapi-fg-subtle/50 mb-2"># Define your request in YAML</div>
-                  <div><span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${BASE_URL}"}</span>/api/v1/users</div>
-                  <div><span className="text-yapi-accent">method</span>: POST</div>
-                  <div><span className="text-yapi-accent">headers</span>:</div>
-                  <div>{"  "}<span className="text-blue-300">Authorization</span>: Bearer <span className="text-orange-300">{"${API_KEY}"}</span></div>
-                  <div><span className="text-yapi-accent">body</span>:</div>
-                  <div>{"  "}<span className="text-blue-300">username</span>: "dev_sheep"</div>
-                  <div>{"  "}<span className="text-blue-300">role</span>: "admin"</div>
-                  <div>{"  "}<span className="text-blue-300">features</span>:</div>
-                  <div>{"    "}- "beta_access"</div>
-                  <div>{"    "}- "unlimited_wool"</div>
+                  <div className="text-yapi-fg-subtle/50 mb-2"># Chain requests together</div>
+                  <div><span className="text-yapi-accent">chain</span>:</div>
+                  <div>{"  "}- <span className="text-yapi-accent">name</span>: login</div>
+                  <div>{"    "}<span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${url}"}</span>/auth/login</div>
+                  <div>{"    "}<span className="text-yapi-accent">method</span>: POST</div>
+                  <div>{"    "}<span className="text-yapi-accent">body</span>:</div>
+                  <div>{"      "}<span className="text-blue-300">user</span>: "dev_sheep"</div>
+                  <div>{"    "}<span className="text-yapi-accent">expect</span>:</div>
+                  <div>{"      "}<span className="text-blue-300">assert</span>:</div>
+                  <div>{"        "}- <span className="text-green-400">.token != null</span></div>
+                  <div className="mt-2">{"  "}- <span className="text-yapi-accent">name</span>: get_profile</div>
+                  <div>{"    "}<span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${url}"}</span>/me</div>
+                  <div>{"    "}<span className="text-yapi-accent">headers</span>:</div>
+                  <div>{"      "}<span className="text-blue-300">Auth</span>: Bearer <span className="text-orange-300">{"${login.token}"}</span></div>
                 </div>
               </div>
 
@@ -158,16 +161,21 @@ export default async function Landing() {
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[size:100%_4px] pointer-events-none opacity-20"></div>
 
                     <div className="text-yapi-fg-muted mb-4">
-                      $ yapi run create-user.yapi.yml
+                      $ yapi run auth-flow.yapi.yml -e prod
                     </div>
 
                     <div>
-                      <span className="text-yapi-success font-bold">201 Created</span> <span className="text-yapi-fg-subtle text-xs ml-2">124ms</span>
+                      <span className="text-yapi-fg-subtle text-xs">Step 1/2: login</span><br/>
+                      <span className="text-yapi-success font-bold">200 OK</span> <span className="text-yapi-fg-subtle text-xs ml-2">89ms</span>
+                      <br/>
+                      <span className="text-green-400 text-xs">✓ .token != null</span>
+                      <br/><br/>
+                      <span className="text-yapi-fg-subtle text-xs">Step 2/2: get_profile</span><br/>
+                      <span className="text-yapi-success font-bold">200 OK</span> <span className="text-yapi-fg-subtle text-xs ml-2">67ms</span>
                       <br/><br/>
                       <span className="text-yellow-500">{`{`}</span><br/>
-                      {"  "}<span className="text-blue-400">"id"</span>: <span className="text-green-400">"usr_8a92b"</span>,<br/>
-                      {"  "}<span className="text-blue-400">"status"</span>: <span className="text-green-400">"active"</span>,<br/>
-                      {"  "}<span className="text-blue-400">"message"</span>: <span className="text-green-400">"Welcome to the flock."</span><br/>
+                      {"  "}<span className="text-blue-400">"name"</span>: <span className="text-green-400">"Dev Sheep"</span>,<br/>
+                      {"  "}<span className="text-blue-400">"role"</span>: <span className="text-green-400">"admin"</span><br/>
                       <span className="text-yellow-500">{`}`}</span>
                       <span className="inline-block w-2 h-4 bg-yapi-accent ml-2 align-middle animate-pulse"></span>
                     </div>
@@ -179,61 +187,38 @@ export default async function Landing() {
         {/* Feature Grid */}
         <div className="max-w-6xl w-full mx-auto grid md:grid-cols-3 gap-8 mt-32">
           <FeatureCard
-            icon="⚡"
-            title="Go Native Speed"
-            desc="Written in Go. Starts instantly. Uses minimal RAM. No Electron bloat, no loading spinners, no updates that move your buttons."
+            icon="🔗"
+            title="Request Chaining"
+            desc="Chain requests together declaratively. Pass data between steps. Validate with assertions. Build auth flows and integration tests without a separate framework."
           />
           <FeatureCard
-            icon="🤝"
-            title="Team Friendly"
-            desc="Review API changes in Pull Requests. Diff your request bodies. Merge conflicts are just text conflicts. True collaboration."
+            icon="🌍"
+            title="Environment Configs"
+            desc="One yapi.config.yml to manage dev, staging, and prod. Switch with a flag. No duplicate files. Load secrets from shell env. Perfect for teams and CI/CD."
           />
           <FeatureCard
             icon="🧠"
             title="Built-in LSP"
-            desc="Full Language Server with autocompletion, real-time validation, and hover info. Works with Neovim, VS Code, and any LSP-compatible editor."
+            desc="Full Language Server with autocompletion, real-time validation, and hover info. Works with Neovim, VS Code, and any LSP-compatible editor. No extensions needed."
           />
         </div>
 
-        {/* Advanced Feature Highlight */}
-        <div className="max-w-4xl w-full mx-auto mt-32 mb-16 border-t border-yapi-border/50 pt-16">
-           <div className="flex flex-col md:flex-row gap-12 items-center">
-              <div className="flex-1 space-y-4">
-                <div className="inline-block px-3 py-1 rounded bg-yapi-success/10 text-yapi-success text-xs font-bold uppercase tracking-wider">
-                  New
-                </div>
-                <h3 className="text-3xl font-bold">Request Chaining & Assertions</h3>
-                <p className="text-yapi-fg-muted leading-relaxed">
-                  Build complex workflows without a GUI scripting engine.
-                  Chain requests declaratively, pass data between steps, and validate responses
-                  with JQ-powered assertions. Perfect for auth flows and integration tests.
+        {/* Additional Features */}
+        <div className="max-w-6xl w-full mx-auto mt-32 mb-16">
+           <div className="grid md:grid-cols-2 gap-8">
+              <div className="p-8 rounded-2xl border border-yapi-border bg-yapi-bg-elevated/20">
+                <div className="text-3xl mb-4">⚡</div>
+                <h3 className="text-xl font-bold mb-3">Go Native Speed</h3>
+                <p className="text-yapi-fg-muted leading-relaxed text-sm">
+                  Written in Go. Starts instantly. Uses minimal RAM. No Electron bloat, no loading spinners, no updates that move your buttons. Just a fast, reliable CLI tool.
                 </p>
               </div>
-              <div className="flex-1 w-full">
-                 <div className="bg-[#1e1e1e] border border-yapi-border rounded-lg p-4 font-mono text-xs shadow-lg overflow-x-auto">
-                   <pre className="text-yapi-fg-muted whitespace-pre">
-                     <code>
-{`chain:
-  `}<span className="text-yapi-fg-subtle"># Step 1: Login</span>{`
-  - `}<span className="text-yapi-accent">name</span>{`: auth
-    `}<span className="text-yapi-accent">url</span>{`: /login
-    `}<span className="text-yapi-accent">body</span>{`: { user: "me" }
-    `}<span className="text-yapi-accent">expect</span>{`:
-      `}<span className="text-blue-300">status</span>{`: 200
-      `}<span className="text-blue-300">assert</span>{`:
-        - `}<span className="text-green-400">.token != null</span>{`
-
-  `}<span className="text-yapi-fg-subtle"># Step 2: Use Token</span>{`
-  - `}<span className="text-yapi-accent">name</span>{`: profile
-    `}<span className="text-yapi-accent">url</span>{`: /me
-    `}<span className="text-yapi-accent">headers</span>{`:
-      `}<span className="text-blue-300">Authorization</span>{`: `}<span className="text-orange-300">{'${auth.token}'}</span>{`
-    `}<span className="text-yapi-accent">expect</span>{`:
-      `}<span className="text-blue-300">assert</span>{`:
-        - `}<span className="text-green-400">.email != null</span>
-                     </code>
-                   </pre>
-                 </div>
+              <div className="p-8 rounded-2xl border border-yapi-border bg-yapi-bg-elevated/20">
+                <div className="text-3xl mb-4">🤝</div>
+                <h3 className="text-xl font-bold mb-3">Team Friendly</h3>
+                <p className="text-yapi-fg-muted leading-relaxed text-sm">
+                  Review API changes in Pull Requests. Diff your request bodies. Merge conflicts are just text conflicts. True collaboration without shared cloud workspaces.
+                </p>
               </div>
            </div>
         </div>
