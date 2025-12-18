@@ -58,14 +58,6 @@ func LoadFromStringWithOptions(data string, resolver vars.Resolver, defaults *Co
 	}
 }
 
-func parseV1(data []byte) (*ParseResult, error) {
-	return parseV1WithOptions(data, nil, nil)
-}
-
-func parseV1WithResolver(data []byte, resolver vars.Resolver) (*ParseResult, error) {
-	return parseV1WithOptions(data, resolver, nil)
-}
-
 func parseV1WithOptions(data []byte, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
 	var v1 ConfigV1
 	if err := yaml.Unmarshal(data, &v1); err != nil {

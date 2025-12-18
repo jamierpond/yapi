@@ -325,7 +325,7 @@ func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, p
 
 	if len(missingVars) > 0 {
 		sort.Strings(missingVars)
-		msg.WriteString(fmt.Sprintf("\nNot defined in any environment:\n"))
+		msg.WriteString("\nNot defined in any environment:\n")
 		for _, varName := range missingVars {
 			msg.WriteString(fmt.Sprintf("  - %s\n", varName))
 		}
@@ -346,7 +346,7 @@ func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, p
 
 	availableEnvs := project.ListEnvironments()
 	sort.Strings(availableEnvs)
-	msg.WriteString(fmt.Sprintf("\nUse --env <name> to select an environment.\n"))
+	msg.WriteString("\nUse --env <name> to select an environment.\n")
 	msg.WriteString(fmt.Sprintf("Available environments: %s", strings.Join(availableEnvs, ", ")))
 
 	return &EnvironmentRequirement{

@@ -393,11 +393,6 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	return nil
 }
 
-// runConfigPathSafe runs a config file without returning error (for watch mode)
-func (app *rootCommand) runConfigPathSafe(path string) {
-	_ = app.executeRunE(runContext{path: path, strict: false})
-}
-
 // runConfigPathE runs a config file in strict mode (returns error)
 func (app *rootCommand) runConfigPathE(path string) error {
 	return app.executeRunE(runContext{path: path, strict: true})
@@ -456,7 +451,7 @@ func loadProjectAndEnv(configPath string, requestedEnv string, checkRequirement 
 
 	// Check if config requires an environment (only if requested and no explicit env)
 	if envName == "" && checkRequirement {
-		configData, readErr := os.ReadFile(configPath)
+		configData, readErr := os.ReadFile(configPath) // #nosec G304 -- configPath is validated user-provided config file path
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read config: %w", readErr)
 		}
@@ -608,7 +603,7 @@ func validateProjectConfigFile(path string, jsonOutput bool) error {
 	}
 
 	// Text output
-	data, readErr := os.ReadFile(path)
+	data, readErr := os.ReadFile(path) // #nosec G304 -- path is validated user-provided config file path
 	if readErr != nil {
 		return fmt.Errorf("failed to read config: %w", readErr)
 	}
@@ -1231,7 +1226,7 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 		}
 
 		// Read config file
-		configData, err := os.ReadFile(filePath)
+		configData, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided config file path
 		if err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
 		}
@@ -1277,8 +1272,8 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, "Are you sure you want to continue? [y/N]: ")
 
 		var response string
-		fmt.Scanln(&response)
-		if response != "y" && response != "Y" && response != "yes" && response != "YES" {
+		_, err = fmt.Scanln(&response)
+		if err != nil || (response != "y" && response != "Y" && response != "yes" && response != "YES") {
 			fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Stress test cancelled"))
 			return nil
 		}
