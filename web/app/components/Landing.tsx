@@ -124,13 +124,13 @@ export default async function Landing() {
               {/* Left Pane: The Config (Editor) */}
               <div className="flex-1 border-r border-white/5 flex flex-col">
                 <div className="bg-[#252526] px-4 py-2 flex items-center justify-between border-b border-black/20">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-yapi-fg-muted font-mono">auth-flow.yapi.yml</span>
-                  </div>
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
                     <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
                     <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-yapi-fg-muted font-mono">auth-flow.yapi.yml</span>
                   </div>
                 </div>
                 <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-yapi-fg/90 whitespace-pre">
