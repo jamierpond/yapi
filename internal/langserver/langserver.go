@@ -246,7 +246,6 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
-
 // valDesc represents a value with its description for completions
 type valDesc struct {
 	val  string

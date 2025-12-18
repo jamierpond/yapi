@@ -6,20 +6,21 @@ import (
 	"strings"
 
 	"yapi.run/cli/internal/cli/color"
+	"yapi.run/cli/internal/utils"
 )
 
-// ValidationError provides specific information about validation failures.
-type ValidationError struct {
+// Error provides specific information about validation failures.
+type Error struct {
 	Diagnostics []Diagnostic
 }
 
-func (e *ValidationError) Error() string {
-	var errMsgs []string
-	for _, d := range e.Diagnostics {
-		if d.Severity == SeverityError {
-			errMsgs = append(errMsgs, d.Message)
-		}
-	}
+func (e *Error) Error() string {
+	errors := utils.Filter(e.Diagnostics, func(d Diagnostic) bool {
+		return d.Severity == SeverityError
+	})
+	errMsgs := utils.Map(errors, func(d Diagnostic) string {
+		return d.Message
+	})
 	if len(errMsgs) == 0 {
 		return "validation failed"
 	}

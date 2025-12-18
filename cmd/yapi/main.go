@@ -278,7 +278,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	validation.PrintErrors(runRes.Analysis, out, app.noColor)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
-			return &validation.ValidationError{Diagnostics: runRes.Analysis.Diagnostics}
+			return &validation.Error{Diagnostics: runRes.Analysis.Diagnostics}
 		}
 		return nil
 	}
