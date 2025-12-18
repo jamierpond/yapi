@@ -136,12 +136,13 @@ var cmdManifest = []CommandSpec{
 		Use:     "stress [file]",
 		Aliases: []string{"pwn"},
 		Short:   "Load test a yapi config file with concurrent requests",
-		Args:    cobra.ExactArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "parallel", Shorthand: "p", Type: "int", Default: 1, Usage: "Number of concurrent requests"},
 			{Name: "num-requests", Shorthand: "n", Type: "int", Default: 100, Usage: "Total number of requests to make"},
 			{Name: "duration", Shorthand: "d", Type: "string", Default: "", Usage: "Duration to run test (e.g., 10s, 1m) - overrides num-requests"},
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
+			{Name: "yes", Shorthand: "y", Type: "bool", Default: false, Usage: "Skip confirmation prompt"},
 		},
 	},
 }

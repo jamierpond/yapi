@@ -1194,12 +1194,17 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	numRequests, _ := cmd.Flags().GetInt("num-requests")
 	durationStr, _ := cmd.Flags().GetString("duration")
 	envName, _ := cmd.Flags().GetString("env")
+	skipConfirm, _ := cmd.Flags().GetBool("yes")
 
 	if parallel < 1 {
 		return fmt.Errorf("parallel must be at least 1")
 	}
 
-	filePath := args[0]
+	// Handle TUI file selection when no args provided
+	filePath, _, err := selectConfigFile(args, "stress")
+	if err != nil {
+		return err
+	}
 
 	// Parse duration if provided
 	var duration time.Duration
@@ -1215,6 +1220,62 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 		if numRequests < 1 {
 			return fmt.Errorf("num-requests must be at least 1")
 		}
+	}
+
+	// Load config to get resolved URL for confirmation
+	if !skipConfirm {
+		// Load project and environment
+		projEnv, err := loadProjectAndEnv(filePath, envName, true)
+		if err != nil {
+			return err
+		}
+
+		// Load and analyze config to get resolved URL
+		configData, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read config: %w", err)
+		}
+
+		var analysis *validation.Analysis
+		if projEnv != nil && projEnv.project != nil {
+			analysis, err = validation.AnalyzeConfigStringWithProject(string(configData), projEnv.project, projEnv.projectRoot)
+		} else {
+			analysis, err = validation.AnalyzeConfigString(string(configData))
+		}
+		if err != nil {
+			return fmt.Errorf("failed to analyze config: %w", err)
+		}
+
+		// Get the resolved URL
+		var targetURL string
+		if analysis.Request != nil && analysis.Request.URL != "" {
+			targetURL = analysis.Request.URL
+		} else {
+			targetURL = "<unknown>"
+		}
+
+		// Show confirmation prompt
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("⚠️  Stress Test Confirmation"))
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "  %s %s\n", color.Dim("Target:"), color.Cyan(targetURL))
+		fmt.Fprintf(os.Stderr, "  %s %d threads\n", color.Dim("Threads:"), parallel)
+		if useDuration {
+			fmt.Fprintf(os.Stderr, "  %s %v\n", color.Dim("Duration:"), duration)
+			fmt.Fprintf(os.Stderr, "  %s unlimited (duration-based)\n", color.Dim("Requests:"))
+		} else {
+			fmt.Fprintf(os.Stderr, "  %s %d total (%d per thread)\n", color.Dim("Requests:"), numRequests, numRequests/parallel)
+		}
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "Are you sure you want to continue? [y/N]: ")
+
+		var response string
+		fmt.Scanln(&response)
+		if response != "y" && response != "Y" && response != "yes" && response != "YES" {
+			fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Stress test cancelled"))
+			return nil
+		}
+		fmt.Fprintf(os.Stderr, "\n")
 	}
 
 	// Print header
