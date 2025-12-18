@@ -1,0 +1,10 @@
+# Simple test file
+yapi: v1
+url: https://jsonplaceholder.typicode.com/todos/1
+
+expect:
+  status: 200
+  assert:
+    - .userId != null
+    - .id == 1
+    - .completed == false

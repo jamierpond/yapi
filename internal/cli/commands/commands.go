@@ -22,6 +22,7 @@ type Handlers struct {
 	Version        func(cmd *cobra.Command, args []string) error
 	Validate       func(cmd *cobra.Command, args []string) error
 	Share          func(cmd *cobra.Command, args []string) error
+	Test           func(cmd *cobra.Command, args []string) error
 }
 
 // BuildRoot builds the root command tree with optional handlers.
@@ -54,6 +55,7 @@ func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
 	rootCmd.AddCommand(newVersionCmd(handlers))
 	rootCmd.AddCommand(newValidateCmd(handlers))
 	rootCmd.AddCommand(newShareCmd(handlers))
+	rootCmd.AddCommand(newTestCmd(handlers))
 
 	return rootCmd
 }
@@ -158,6 +160,22 @@ func newShareCmd(h *Handlers) *cobra.Command {
 	if h != nil && h.Share != nil {
 		cmd.RunE = h.Share
 	}
+
+	return cmd
+}
+
+func newTestCmd(h *Handlers) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "test [directory]",
+		Short: "Run all *.test.yapi.yml files in the current directory or specified directory",
+		Args:  cobra.MaximumNArgs(1),
+		Run:   func(cmd *cobra.Command, args []string) {},
+	}
+	if h != nil && h.Test != nil {
+		cmd.RunE = h.Test
+	}
+
+	cmd.Flags().BoolP("verbose", "v", false, "Show verbose output for each test")
 
 	return cmd
 }

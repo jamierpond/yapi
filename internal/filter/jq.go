@@ -154,29 +154,13 @@ func EvalJQBoolWithDetail(input string, expr string) (bool, *AssertionDetail, er
 	return EvalJQBoolWithDetailAndVars(input, expr, nil)
 }
 
-// EvalJQBoolWithDetailAndVars evaluates a JQ expression with optional variables.
-// Variables is a map of variable names to values (e.g., map[string]any{"_headers": {...}}).
-func EvalJQBoolWithDetailAndVars(input string, expr string, variables map[string]any) (bool, *AssertionDetail, error) {
-	expr = strings.TrimSpace(expr)
-	detail := &AssertionDetail{
-		Expression: expr,
-	}
-
-	if expr == "" {
-		return false, detail, fmt.Errorf("empty assertion expression")
-	}
-
-	// Try to parse the assertion to extract left side, operator, and right side
-	// Common patterns: .field == value, .field != value, .field > value, etc.
-	// Check multi-character operators first to avoid incorrect matches
+// parseAssertionOperator extracts the left side, operator, and right side from an assertion expression
+func parseAssertionOperator(expr string, detail *AssertionDetail) {
 	operators := []string{"==", "!=", ">=", "<=", ">", "<"}
 	for _, op := range operators {
 		if idx := strings.Index(expr, op); idx != -1 {
-			// Make sure this is the operator and not part of a larger operator
-			// For example, don't match "=" in ">="
 			validMatch := true
 			if op == "=" || op == ">" || op == "<" {
-				// Check if this is part of a two-character operator
 				if idx > 0 && (expr[idx-1] == '>' || expr[idx-1] == '<' || expr[idx-1] == '!' || expr[idx-1] == '=') {
 					validMatch = false
 				}
@@ -184,7 +168,6 @@ func EvalJQBoolWithDetailAndVars(input string, expr string, variables map[string
 					validMatch = false
 				}
 			}
-
 			if validMatch {
 				detail.LeftSide = strings.TrimSpace(expr[:idx])
 				detail.Operator = op
@@ -194,72 +177,91 @@ func EvalJQBoolWithDetailAndVars(input string, expr string, variables map[string
 			}
 		}
 	}
+}
 
-	// Parse the jq query
+// evalLeftSide evaluates the left side of an assertion to get the actual value
+func evalLeftSide(leftSide string, inputData any, varNames []string, varValues []any) string {
+	if leftSide == "" {
+		return ""
+	}
+	leftQuery, err := gojq.Parse(leftSide)
+	if err != nil {
+		return ""
+	}
+
+	var leftIter gojq.Iter
+	if varNames != nil {
+		leftCode, err := gojq.Compile(leftQuery, gojq.WithVariables(varNames))
+		if err != nil {
+			return ""
+		}
+		leftIter = leftCode.Run(inputData, varValues...)
+	} else {
+		leftIter = leftQuery.Run(inputData)
+	}
+
+	if leftVal, ok := leftIter.Next(); ok {
+		if _, isErr := leftVal.(error); !isErr {
+			return formatValue(leftVal)
+		}
+	}
+	return ""
+}
+
+// compileAndRunWithVars compiles a query with variables and returns the iterator
+func compileAndRunWithVars(query *gojq.Query, inputData any, variables map[string]any) (gojq.Iter, []string, []any, error) {
+	var varNames []string
+	for name := range variables {
+		varNames = append(varNames, "$"+name)
+	}
+	code, err := gojq.Compile(query, gojq.WithVariables(varNames))
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to compile jq expression with variables: %w", err)
+	}
+
+	varValues := make([]any, 0, len(variables))
+	for _, name := range varNames {
+		varValues = append(varValues, variables[strings.TrimPrefix(name, "$")])
+	}
+
+	return code.Run(inputData, varValues...), varNames, varValues, nil
+}
+
+// EvalJQBoolWithDetailAndVars evaluates a JQ expression with optional variables.
+// Variables is a map of variable names to values (e.g., map[string]any{"_headers": {...}}).
+func EvalJQBoolWithDetailAndVars(input string, expr string, variables map[string]any) (bool, *AssertionDetail, error) {
+	expr = strings.TrimSpace(expr)
+	detail := &AssertionDetail{Expression: expr}
+
+	if expr == "" {
+		return false, detail, fmt.Errorf("empty assertion expression")
+	}
+
+	parseAssertionOperator(expr, detail)
+
 	query, err := gojq.Parse(expr)
 	if err != nil {
 		return false, detail, fmt.Errorf("failed to parse jq expression %q: %w", expr, err)
 	}
 
-	// Parse the input JSON
 	inputData, err := parseJSONPreserveNumbers(input)
 	if err != nil {
 		return false, detail, fmt.Errorf("failed to parse input as JSON: %w", err)
 	}
 
 	var iter gojq.Iter
+	var varNames []string
+	var varValues []any
 
-	// Compile and run with variables if provided
 	if variables != nil {
-		var varNames []string
-		for name := range variables {
-			varNames = append(varNames, "$"+name)
-		}
-		code, err := gojq.Compile(query, gojq.WithVariables(varNames))
+		iter, varNames, varValues, err = compileAndRunWithVars(query, inputData, variables)
 		if err != nil {
-			return false, detail, fmt.Errorf("failed to compile jq expression with variables: %w", err)
+			return false, detail, err
 		}
-
-		// Build variable values in order
-		varValues := make([]any, 0, len(variables))
-		for _, name := range varNames {
-			varValues = append(varValues, variables[strings.TrimPrefix(name, "$")])
-		}
-
-		iter = code.Run(inputData, varValues...)
-
-		// If we successfully parsed the left side, evaluate it to get the actual value
-		// (with variables support)
-		if detail.LeftSide != "" {
-			leftQuery, err := gojq.Parse(detail.LeftSide)
-			if err == nil {
-				leftCode, err := gojq.Compile(leftQuery, gojq.WithVariables(varNames))
-				if err == nil {
-					leftIter := leftCode.Run(inputData, varValues...)
-					if leftVal, ok := leftIter.Next(); ok {
-						if _, isErr := leftVal.(error); !isErr {
-							detail.ActualValue = formatValue(leftVal)
-						}
-					}
-				}
-			}
-		}
+		detail.ActualValue = evalLeftSide(detail.LeftSide, inputData, varNames, varValues)
 	} else {
-		// If we successfully parsed the left side, evaluate it to get the actual value
-		if detail.LeftSide != "" {
-			leftQuery, err := gojq.Parse(detail.LeftSide)
-			if err == nil {
-				leftIter := leftQuery.Run(inputData)
-				if leftVal, ok := leftIter.Next(); ok {
-					if _, isErr := leftVal.(error); !isErr {
-						detail.ActualValue = formatValue(leftVal)
-					}
-				}
-			}
-		}
-
-		// Run the full query
 		iter = query.Run(inputData)
+		detail.ActualValue = evalLeftSide(detail.LeftSide, inputData, nil, nil)
 	}
 
 	v, ok := iter.Next()
@@ -270,13 +272,10 @@ func EvalJQBoolWithDetailAndVars(input string, expr string, variables map[string
 		return false, detail, fmt.Errorf("assertion error: %w", err)
 	}
 
-	// Check if result is boolean true
-	switch val := v.(type) {
-	case bool:
+	if val, ok := v.(bool); ok {
 		return val, detail, nil
-	default:
-		return false, detail, fmt.Errorf("assertion %q did not return boolean (got %T: %v)", expr, v, v)
 	}
+	return false, detail, fmt.Errorf("assertion %q did not return boolean (got %T: %v)", expr, v, v)
 }
 
 // formatValue formats a value for display in error messages

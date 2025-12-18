@@ -113,6 +113,7 @@ func main() {
 		Version:        versionE,
 		Validate:       validateE,
 		Share:          shareE,
+		Test:           app.testE,
 	}
 
 	rootCmd := commands.BuildRoot(cfg, handlers)
@@ -791,6 +792,122 @@ func reconstructCommand(cmd *cobra.Command, args []string) string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
+	verbose, _ := cmd.Flags().GetBool("verbose")
+
+	// Determine search directory
+	searchDir := "."
+	if len(args) > 0 {
+		searchDir = args[0]
+	}
+
+	// Find all test files
+	testFiles, err := findTestFiles(searchDir)
+	if err != nil {
+		return fmt.Errorf("failed to find test files: %w", err)
+	}
+
+	if len(testFiles) == 0 {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.test.yapi.yml files found"))
+		return nil
+	}
+
+	fmt.Fprintf(os.Stderr, "%s\n\n", color.Accent(fmt.Sprintf("Running %d test(s)...", len(testFiles))))
+
+	// Run each test and collect results
+	type testResult struct {
+		file   string
+		passed bool
+		err    error
+	}
+
+	var results []testResult
+	passCount := 0
+
+	for i, testFile := range testFiles {
+		relPath, _ := filepath.Rel(searchDir, testFile)
+		if verbose {
+			fmt.Fprintf(os.Stderr, "%s %s\n", color.Dim(fmt.Sprintf("[%d/%d]", i+1, len(testFiles))), relPath)
+		}
+
+		// Run the test file
+		err := app.executeRunE(runContext{path: testFile, strict: true})
+
+		result := testResult{
+			file:   relPath,
+			passed: err == nil,
+			err:    err,
+		}
+		results = append(results, result)
+
+		if err == nil {
+			passCount++
+			if !verbose {
+				fmt.Fprintf(os.Stderr, "%s ", color.Green("✓"))
+			} else {
+				fmt.Fprintf(os.Stderr, "  %s\n\n", color.Green("PASS"))
+			}
+		} else {
+			if !verbose {
+				fmt.Fprintf(os.Stderr, "%s ", color.Red("✗"))
+			} else {
+				fmt.Fprintf(os.Stderr, "  %s %s\n\n", color.Red("FAIL"), color.Dim(err.Error()))
+			}
+		}
+	}
+
+	if !verbose {
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	// Print summary
+	fmt.Fprintf(os.Stderr, "\n")
+	if passCount == len(results) {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Green(fmt.Sprintf("All %d test(s) passed", passCount)))
+		return nil
+	}
+
+	failCount := len(results) - passCount
+	fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("%d of %d test(s) failed", failCount, len(results))))
+
+	// List failed tests
+	fmt.Fprintf(os.Stderr, "\n%s\n", color.Red("Failed tests:"))
+	for _, r := range results {
+		if !r.passed {
+			fmt.Fprintf(os.Stderr, "  %s %s\n", color.Red("✗"), r.file)
+			if r.err != nil && verbose {
+				fmt.Fprintf(os.Stderr, "    %s\n", color.Dim(r.err.Error()))
+			}
+		}
+	}
+
+	return fmt.Errorf("%d test(s) failed", failCount)
+}
+
+// findTestFiles recursively finds all *.test.yapi.yml files in the given directory
+func findTestFiles(dir string) ([]string, error) {
+	var testFiles []string
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml" {
+			base := filepath.Base(path)
+			// Match *.test.yapi.yml or *.test.yapi.yaml
+			if strings.HasSuffix(base, ".test.yapi.yml") || strings.HasSuffix(base, ".test.yapi.yaml") {
+				testFiles = append(testFiles, path)
+			}
+		}
+		return nil
+	})
+
+	return testFiles, err
 }
 
 // isTerminal checks if the given file is a terminal (TTY)

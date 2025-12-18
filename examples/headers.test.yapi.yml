@@ -1,0 +1,11 @@
+# Test header assertions
+yapi: v1
+url: https://httpbin.org/headers
+
+expect:
+  status: 200
+  assert:
+    headers:
+      - .["Content-Type"] != null
+    body:
+      - .headers != null
