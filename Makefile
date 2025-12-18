@@ -59,7 +59,11 @@ run-print-analytics: build
 
 test:
 	@echo "Running all tests..."
-	@go test ./...
+	@go test -cover -coverprofile=coverage.out ./...
+	@echo ""
+	@echo "Coverage summary:"
+	@go tool cover -func=coverage.out | grep total | awk '{print "Total coverage: " $$3}'
+	@rm -f coverage.out
 
 fuzz:
 	@go run ./scripts/fuzz.go
