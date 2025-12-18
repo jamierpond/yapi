@@ -3,6 +3,7 @@ package validation
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"yapi.run/cli/internal/config"
@@ -197,5 +198,146 @@ func BuildProjectResolver(projectVars map[string]string) vars.Resolver {
 
 		// Return empty string if not found (os.ExpandEnv behavior)
 		return "", nil
+	}
+}
+
+// EnvironmentRequirement describes whether a config requires an environment
+type EnvironmentRequirement struct {
+	Required         bool              // True if an environment is required
+	MissingVariables []string          // Variables that are not defined anywhere
+	PartialVariables map[string]string // Variables defined in some envs (var -> envs CSV)
+	Message          string            // Helpful error message
+}
+
+// CheckEnvironmentRequirement analyzes a config to determine if it needs an environment.
+// Returns requirement info including which variables are missing and where they're defined.
+func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, projectRoot string) *EnvironmentRequirement {
+	// Extract all variables used in the config
+	varNames := extractEnvVarNames(text)
+	if len(varNames) == 0 {
+		// No variables used - no environment needed
+		return &EnvironmentRequirement{Required: false}
+	}
+
+	// Build matrix of where each variable is defined
+	varMatrix := make(map[string]*VarDiagnosis)
+	for varName := range varNames {
+		varMatrix[varName] = &VarDiagnosis{
+			Name:          varName,
+			DefinedInEnvs: []string{},
+			MissingInEnvs: []string{},
+			IsInDefaults:  false,
+			IsOS:          false,
+		}
+	}
+
+	// Check defaults
+	defaultVars := make(map[string]string)
+	if len(project.Defaults.EnvFiles) > 0 || len(project.Defaults.Vars) > 0 {
+		vars, err := project.ResolveEnvFiles(projectRoot, "")
+		if err == nil {
+			defaultVars = vars
+		}
+	}
+
+	for varName := range varNames {
+		// Check OS environment
+		if _, ok := os.LookupEnv(varName); ok {
+			varMatrix[varName].IsOS = true
+			continue
+		}
+
+		// Check defaults
+		if _, ok := defaultVars[varName]; ok {
+			varMatrix[varName].IsInDefaults = true
+			continue
+		}
+
+		// Check each environment
+		for envName := range project.Environments {
+			envVars, err := project.ResolveEnvFiles(projectRoot, envName)
+			if err != nil {
+				continue
+			}
+			if _, ok := envVars[varName]; ok {
+				varMatrix[varName].DefinedInEnvs = append(varMatrix[varName].DefinedInEnvs, envName)
+			} else {
+				varMatrix[varName].MissingInEnvs = append(varMatrix[varName].MissingInEnvs, envName)
+			}
+		}
+	}
+
+	// Analyze results
+	var missingVars []string
+	partialVars := make(map[string]string)
+	var anyEnvSpecificVar bool
+
+	for varName, diagnosis := range varMatrix {
+		// Skip if in OS env or defaults (always available)
+		if diagnosis.IsOS || diagnosis.IsInDefaults {
+			continue
+		}
+
+		// Variable is not defined anywhere - critical error
+		if len(diagnosis.DefinedInEnvs) == 0 {
+			missingVars = append(missingVars, varName)
+			continue
+		}
+
+		// Variable is only in environments (not in OS or defaults)
+		// This means we need to select an environment
+		anyEnvSpecificVar = true
+
+		// Variable is defined in some but not all environments
+		if len(diagnosis.MissingInEnvs) > 0 {
+			sort.Strings(diagnosis.DefinedInEnvs)
+			partialVars[varName] = strings.Join(diagnosis.DefinedInEnvs, ", ")
+		} else {
+			// Variable is in all environments - still need to pick one
+			sort.Strings(diagnosis.DefinedInEnvs)
+			partialVars[varName] = strings.Join(diagnosis.DefinedInEnvs, ", ")
+		}
+	}
+
+	// If all variables are satisfied by OS env or defaults, no environment needed
+	if !anyEnvSpecificVar && len(missingVars) == 0 {
+		return &EnvironmentRequirement{Required: false}
+	}
+
+	// Build helpful error message
+	var msg strings.Builder
+	msg.WriteString("This config requires environment variables that are not currently defined.\n")
+
+	if len(missingVars) > 0 {
+		sort.Strings(missingVars)
+		msg.WriteString(fmt.Sprintf("\nNot defined in any environment:\n"))
+		for _, varName := range missingVars {
+			msg.WriteString(fmt.Sprintf("  - %s\n", varName))
+		}
+	}
+
+	if len(partialVars) > 0 {
+		msg.WriteString("\nDefined in some environments:\n")
+		// Sort for consistent output
+		varList := make([]string, 0, len(partialVars))
+		for varName := range partialVars {
+			varList = append(varList, varName)
+		}
+		sort.Strings(varList)
+		for _, varName := range varList {
+			msg.WriteString(fmt.Sprintf("  - %s (available in: %s)\n", varName, partialVars[varName]))
+		}
+	}
+
+	availableEnvs := project.ListEnvironments()
+	sort.Strings(availableEnvs)
+	msg.WriteString(fmt.Sprintf("\nUse --env <name> to select an environment.\n"))
+	msg.WriteString(fmt.Sprintf("Available environments: %s", strings.Join(availableEnvs, ", ")))
+
+	return &EnvironmentRequirement{
+		Required:         true,
+		MissingVariables: missingVars,
+		PartialVariables: partialVars,
+		Message:          msg.String(),
 	}
 }
