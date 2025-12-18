@@ -3,7 +3,6 @@ package validation
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -12,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/domain"
+	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/vars"
 )
 
@@ -121,37 +121,18 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 // AnalyzeConfigFile loads a file and analyzes it.
 // If path is "-", reads from stdin.
 func AnalyzeConfigFile(path string) (*Analysis, error) {
-	var data []byte
-	var err error
-
-	// Read the file/stdin content once
-	if path == "-" {
-		data, err = io.ReadAll(os.Stdin)
-		if err != nil {
-			diag := Diagnostic{
-				Severity: SeverityError,
-				Field:    "",
-				Message:  fmt.Sprintf("failed to read from stdin: %v", err),
-				Line:     0,
-				Col:      0,
-			}
-			return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
+	data, err := utils.ReadInput(path)
+	if err != nil {
+		diag := Diagnostic{
+			Severity: SeverityError,
+			Field:    "",
+			Message:  fmt.Sprintf("failed to read config: %v", err),
+			Line:     0,
+			Col:      0,
 		}
-	} else {
-		data, err = os.ReadFile(path) //nolint:gosec // user-provided config path
-		if err != nil {
-			diag := Diagnostic{
-				Severity: SeverityError,
-				Field:    "",
-				Message:  fmt.Sprintf("failed to load config: %v", err),
-				Line:     0,
-				Col:      0,
-			}
-			return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
-		}
+		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	// Parse the config from the raw data
 	parseRes, err := config.LoadFromString(string(data))
 	if err != nil {
 		diag := Diagnostic{

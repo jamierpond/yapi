@@ -15,6 +15,14 @@ type Request struct {
 	Metadata map[string]string
 }
 
+// SetHeader sets a header value, initializing the Headers map if needed.
+func (r *Request) SetHeader(key, value string) {
+	if r.Headers == nil {
+		r.Headers = make(map[string]string)
+	}
+	r.Headers[key] = value
+}
+
 // Response represents the result of an API request.
 type Response struct {
 	StatusCode int

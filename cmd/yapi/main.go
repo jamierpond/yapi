@@ -375,31 +375,22 @@ func versionE(cmd *cobra.Command, args []string) error {
 
 func validateE(cmd *cobra.Command, args []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
-	var text string
 
-	if len(args) == 0 || args[0] == "-" {
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			if jsonOutput {
-				outputValidateError(err)
-				return nil
-			}
-			return fmt.Errorf("failed to read stdin: %w", err)
-		}
-		text = string(data)
-	} else {
-		data, err := os.ReadFile(args[0])
-		if err != nil {
-			if jsonOutput {
-				outputValidateError(err)
-				return nil
-			}
-			return fmt.Errorf("failed to read file: %w", err)
-		}
-		text = string(data)
+	path := "-"
+	if len(args) > 0 {
+		path = args[0]
 	}
 
-	analysis, err := validation.AnalyzeConfigString(text)
+	data, err := utils.ReadInput(path)
+	if err != nil {
+		if jsonOutput {
+			outputValidateError(err)
+			return nil
+		}
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	analysis, err := validation.AnalyzeConfigString(string(data))
 	if err != nil {
 		if jsonOutput {
 			outputValidateError(err)

@@ -1,6 +1,11 @@
 // Package utils provides generic utility functions.
 package utils
 
+import (
+	"io"
+	"os"
+)
+
 // Map transforms a slice of T to a slice of U.
 func Map[T, U any](ts []T, f func(T) U) []U {
 	us := make([]U, len(ts))
@@ -80,6 +85,14 @@ func DeepCloneSlice(src []any) []any {
 		}
 	}
 	return dst
+}
+
+// ReadInput reads from stdin if path is empty or "-", otherwise reads from the file.
+func ReadInput(path string) ([]byte, error) {
+	if path == "" || path == "-" {
+		return io.ReadAll(os.Stdin)
+	}
+	return os.ReadFile(path) //nolint:gosec // user-provided file path
 }
 
 // IsBinaryContent checks if the given content appears to be binary data.

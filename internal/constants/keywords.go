@@ -34,6 +34,10 @@ var ValidHTTPMethods = map[string]bool{
 }
 
 // CanonicalizeMethod returns canonical uppercase method name.
+// Returns GET if m is empty.
 func CanonicalizeMethod(m string) string {
+	if m == "" {
+		return MethodGET
+	}
 	return strings.ToUpper(strings.TrimSpace(m))
 }

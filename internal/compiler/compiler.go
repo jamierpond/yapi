@@ -33,9 +33,6 @@ func Compile(cfg *config.ConfigV1, resolver vars.Resolver) *CompiledRequest {
 	}
 
 	// 2. Canonicalize
-	if interpolated.Method == "" {
-		interpolated.Method = constants.MethodGET
-	}
 	interpolated.Method = constants.CanonicalizeMethod(interpolated.Method)
 
 	// 3. Construct Domain Object
@@ -71,29 +68,20 @@ func Compile(cfg *config.ConfigV1, resolver vars.Resolver) *CompiledRequest {
 	if interpolated.JSON != "" {
 		req.Body = strings.NewReader(interpolated.JSON)
 		req.Metadata["body_source"] = "json"
-		if req.Headers == nil {
-			req.Headers = make(map[string]string)
-		}
-		req.Headers["Content-Type"] = utils.Coalesce(req.Headers["Content-Type"], "application/json")
+		req.SetHeader("Content-Type", utils.Coalesce(req.Headers["Content-Type"], "application/json"))
 	} else if interpolated.Body != nil {
 		bodyBytes, err := json.Marshal(interpolated.Body)
 		if err != nil {
 			res.Errors = append(res.Errors, fmt.Errorf("invalid json in 'body' field: %w", err))
 		} else {
 			req.Body = strings.NewReader(string(bodyBytes))
-			if req.Headers == nil {
-				req.Headers = make(map[string]string)
-			}
-			req.Headers["Content-Type"] = utils.Coalesce(req.Headers["Content-Type"], "application/json")
+			req.SetHeader("Content-Type", utils.Coalesce(req.Headers["Content-Type"], "application/json"))
 		}
 	}
 
 	// Content-Type override
 	if interpolated.ContentType != "" {
-		if req.Headers == nil {
-			req.Headers = make(map[string]string)
-		}
-		req.Headers["Content-Type"] = interpolated.ContentType
+		req.SetHeader("Content-Type", interpolated.ContentType)
 	}
 
 	// 6. Protocol Detection and Validation
