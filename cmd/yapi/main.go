@@ -1102,8 +1102,29 @@ func findTestFiles(dir string, all bool) ([]string, error) {
 func listE(cmd *cobra.Command, args []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
-	// Use tui.FindConfigFiles to get git-tracked yapi files
-	yapiFiles, err := tui.FindConfigFiles()
+	// Determine search directory
+	searchDir := "."
+	if len(args) > 0 {
+		searchDir = args[0]
+	}
+
+	// If no directory specified, try git-based discovery
+	// If directory specified, use file walk
+	var yapiFiles []string
+	var err error
+
+	if len(args) == 0 {
+		// Use tui.FindConfigFiles to get git-tracked yapi files
+		yapiFiles, err = tui.FindConfigFiles()
+		if err != nil {
+			// Fall back to file walk if not in git repo
+			yapiFiles, err = findAllYapiFiles(searchDir)
+		}
+	} else {
+		// Directory specified - use file walk
+		yapiFiles, err = findAllYapiFiles(searchDir)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to find yapi files: %w", err)
 	}
@@ -1138,6 +1159,31 @@ func listE(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// findAllYapiFiles finds all *.yapi.yml files in the given directory (excluding yapi.config.yml)
+func findAllYapiFiles(dir string) ([]string, error) {
+	var yapiFiles []string
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml" {
+			base := filepath.Base(path)
+			// Match *.yapi.yml or *.yapi.yaml (but not yapi.config.yml)
+			if (strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml")) &&
+				base != "yapi.config.yml" && base != "yapi.config.yaml" {
+				yapiFiles = append(yapiFiles, path)
+			}
+		}
+		return nil
+	})
+
+	return yapiFiles, err
 }
 
 // isTerminal checks if the given file is a terminal (TTY)
