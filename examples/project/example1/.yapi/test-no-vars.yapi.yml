@@ -1,7 +1,0 @@
-yapi: v1
-
-url: https://httpbin.org/get
-method: GET
-
-headers:
-  Accept: application/json
