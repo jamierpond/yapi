@@ -432,8 +432,17 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 	}
 
 	// JQ Assertions
+	// Build variables map with headers (convert to map[string]any for gojq compatibility)
+	headersAny := make(map[string]any, len(result.Headers))
+	for k, v := range result.Headers {
+		headersAny[k] = v
+	}
+	variables := map[string]any{
+		"_headers": headersAny,
+	}
+
 	for _, assertion := range expect.Assert {
-		passed, detail, err := filter.EvalJQBoolWithDetail(result.Body, assertion)
+		passed, detail, err := filter.EvalJQBoolWithDetailAndVars(result.Body, assertion, variables)
 		ar := AssertionResult{
 			Expression: assertion,
 			Passed:     passed && err == nil,

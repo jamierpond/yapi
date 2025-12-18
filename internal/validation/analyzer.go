@@ -466,6 +466,11 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 				continue
 			}
 
+			// Skip JQ variables (start with underscore, e.g., $_headers, $_body)
+			if strings.HasPrefix(varName, "_") {
+				continue
+			}
+
 			value := os.Getenv(varName)
 			refs = append(refs, EnvVarInfo{
 				Name:       varName,

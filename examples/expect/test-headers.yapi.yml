@@ -1,0 +1,18 @@
+yapi: v1
+url: https://httpbin.org/response-headers
+query:
+  Content-Type: application/json
+  ETag: "W/\"sample-etag\""
+  Cache-Control: "public, max-age=3600"
+
+expect:
+  status: 200
+  assert:
+    # Assert on response headers using $_headers variable
+    - $_headers["Content-Type"] == "application/json"
+    - $_headers["Etag"] != null
+    - $_headers["Cache-Control"] != null
+
+    # Still can assert on body (httpbin returns array for duplicate params)
+    - .["Content-Type"] | type == "array"
+    - .["ETag"] == "W/\"sample-etag\""

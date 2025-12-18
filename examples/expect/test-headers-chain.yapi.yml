@@ -1,0 +1,22 @@
+# Header assertions in a chain
+yapi: v1
+url: https://httpbin.org
+
+chain:
+  - name: get_headers
+    path: /response-headers
+    query:
+      X-Custom-Value: "12345"
+    expect:
+      status: 200
+      assert:
+        - $_headers["Content-Type"] != null
+        - .["X-Custom-Value"] == "12345"
+
+  - name: check_previous_header
+    path: /anything
+    json: '{"previous_header": "$get_headers.headers.X-Custom-Value"}'
+    expect:
+      status: 200
+      assert:
+        - .json["previous_header"] == "12345"

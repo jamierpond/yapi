@@ -1,0 +1,18 @@
+# Complex header assertions demonstrating various patterns
+yapi: v1
+url: https://httpbin.org/headers
+
+expect:
+  status: 200
+  assert:
+    # Check that specific headers exist (not null)
+    - $_headers["Content-Type"] != null
+
+    # Check header value matches expected
+    - $_headers["Content-Type"] == "application/json"
+
+    # Check header contains substring (using jq functions)
+    - ($_headers["Content-Type"] // "") | contains("json")
+
+    # Body assertions still work as before
+    - .headers != null

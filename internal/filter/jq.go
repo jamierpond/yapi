@@ -151,6 +151,12 @@ type AssertionDetail struct {
 // EvalJQBoolWithDetail evaluates a JQ expression and returns detailed information about the assertion.
 // This is useful for generating helpful error messages when assertions fail.
 func EvalJQBoolWithDetail(input string, expr string) (bool, *AssertionDetail, error) {
+	return EvalJQBoolWithDetailAndVars(input, expr, nil)
+}
+
+// EvalJQBoolWithDetailAndVars evaluates a JQ expression with optional variables.
+// Variables is a map of variable names to values (e.g., map[string]any{"_headers": {...}}).
+func EvalJQBoolWithDetailAndVars(input string, expr string, variables map[string]any) (bool, *AssertionDetail, error) {
 	expr = strings.TrimSpace(expr)
 	detail := &AssertionDetail{
 		Expression: expr,
@@ -201,21 +207,61 @@ func EvalJQBoolWithDetail(input string, expr string) (bool, *AssertionDetail, er
 		return false, detail, fmt.Errorf("failed to parse input as JSON: %w", err)
 	}
 
-	// If we successfully parsed the left side, evaluate it to get the actual value
-	if detail.LeftSide != "" {
-		leftQuery, err := gojq.Parse(detail.LeftSide)
-		if err == nil {
-			leftIter := leftQuery.Run(inputData)
-			if leftVal, ok := leftIter.Next(); ok {
-				if _, isErr := leftVal.(error); !isErr {
-					detail.ActualValue = formatValue(leftVal)
+	var iter gojq.Iter
+
+	// Compile and run with variables if provided
+	if variables != nil {
+		var varNames []string
+		for name := range variables {
+			varNames = append(varNames, "$"+name)
+		}
+		code, err := gojq.Compile(query, gojq.WithVariables(varNames))
+		if err != nil {
+			return false, detail, fmt.Errorf("failed to compile jq expression with variables: %w", err)
+		}
+
+		// Build variable values in order
+		varValues := make([]any, 0, len(variables))
+		for _, name := range varNames {
+			varValues = append(varValues, variables[strings.TrimPrefix(name, "$")])
+		}
+
+		iter = code.Run(inputData, varValues...)
+
+		// If we successfully parsed the left side, evaluate it to get the actual value
+		// (with variables support)
+		if detail.LeftSide != "" {
+			leftQuery, err := gojq.Parse(detail.LeftSide)
+			if err == nil {
+				leftCode, err := gojq.Compile(leftQuery, gojq.WithVariables(varNames))
+				if err == nil {
+					leftIter := leftCode.Run(inputData, varValues...)
+					if leftVal, ok := leftIter.Next(); ok {
+						if _, isErr := leftVal.(error); !isErr {
+							detail.ActualValue = formatValue(leftVal)
+						}
+					}
 				}
 			}
 		}
+	} else {
+		// If we successfully parsed the left side, evaluate it to get the actual value
+		if detail.LeftSide != "" {
+			leftQuery, err := gojq.Parse(detail.LeftSide)
+			if err == nil {
+				leftIter := leftQuery.Run(inputData)
+				if leftVal, ok := leftIter.Next(); ok {
+					if _, isErr := leftVal.(error); !isErr {
+						detail.ActualValue = formatValue(leftVal)
+					}
+				}
+			}
+		}
+
+		// Run the full query
+		iter = query.Run(inputData)
 	}
 
-	// Run the full query
-	iter := query.Run(inputData)
 	v, ok := iter.Next()
 	if !ok {
 		return false, detail, fmt.Errorf("assertion %q produced no result", expr)
