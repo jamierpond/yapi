@@ -160,7 +160,7 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 		}
 
 		// 7. Assert Expectations
-		expectRes := CheckExpectations(step.Expect, result)
+		expectRes := CheckExpectationsWithEnv(step.Expect, result, opts.EnvOverrides)
 
 		// 8. Store Result (including expectation result even if failed)
 		chainCtx.AddResult(step.Name, result)
@@ -394,6 +394,11 @@ func (e *ExpectationResult) AllPassed() bool {
 
 // CheckExpectations validates the response against expected values
 func CheckExpectations(expect config.Expectation, result *Result) *ExpectationResult {
+	return CheckExpectationsWithEnv(expect, result, nil)
+}
+
+// CheckExpectationsWithEnv validates the response against expected values with environment variables
+func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars map[string]string) *ExpectationResult {
 	totalAssertions := len(expect.Assert.Body) + len(expect.Assert.Headers)
 	res := &ExpectationResult{
 		AssertionsTotal:  totalAssertions,
@@ -434,9 +439,33 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 		}
 	}
 
+	// Prepare environment variables for jq
+	var jqVars map[string]any
+	if len(envVars) > 0 {
+		jqVars = make(map[string]any)
+		// Convert map[string]string to map[string]any for jq
+		envMap := make(map[string]any)
+		for k, v := range envVars {
+			envMap[k] = v
+		}
+		jqVars["env"] = envMap
+	}
+
 	// Body Assertions - run against response body
 	for _, assertion := range expect.Assert.Body {
-		passed, detail, err := filter.EvalJQBoolWithDetail(result.Body, assertion)
+		// Convert env.VARNAME syntax to $env.VARNAME for jq compatibility
+		processedAssertion := strings.ReplaceAll(assertion, "env.", "$env.")
+
+		var passed bool
+		var detail *filter.AssertionDetail
+		var err error
+
+		if jqVars != nil {
+			passed, detail, err = filter.EvalJQBoolWithDetailAndVars(result.Body, processedAssertion, jqVars)
+		} else {
+			passed, detail, err = filter.EvalJQBoolWithDetail(result.Body, processedAssertion)
+		}
+
 		ar := AssertionResult{
 			Expression: assertion,
 			Passed:     passed && err == nil,
@@ -467,7 +496,19 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 		}
 
 		for _, assertion := range expect.Assert.Headers {
-			passed, detail, err := filter.EvalJQBoolWithDetail(string(headersJSON), assertion)
+			// Convert env.VARNAME syntax to $env.VARNAME for jq compatibility
+			processedAssertion := strings.ReplaceAll(assertion, "env.", "$env.")
+
+			var passed bool
+			var detail *filter.AssertionDetail
+			var err error
+
+			if jqVars != nil {
+				passed, detail, err = filter.EvalJQBoolWithDetailAndVars(string(headersJSON), processedAssertion, jqVars)
+			} else {
+				passed, detail, err = filter.EvalJQBoolWithDetail(string(headersJSON), processedAssertion)
+			}
+
 			ar := AssertionResult{
 				Expression: assertion,
 				Passed:     passed && err == nil,

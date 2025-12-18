@@ -25,4 +25,4 @@ environments:
   example:
     vars:
       GITHUB_USER: octocat
-      REPO_NAME: hello-world
+      REPO_NAME: Hello-World

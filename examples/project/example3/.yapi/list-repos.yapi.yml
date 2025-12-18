@@ -23,5 +23,4 @@ expect:
     body:
       - . | type == "array"
       - length > 0
-      - .[0].name != null
-      - .[0].owner.login != null
+      - .[0].owner.login == env.GITHUB_USER

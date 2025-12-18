@@ -114,7 +114,7 @@ func (e *Engine) RunConfig(
 	// Check expectations if present
 	var expectRes *runner.ExpectationResult
 	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert.Body) > 0 || len(analysis.Expect.Assert.Headers) > 0) {
-		expectRes = runner.CheckExpectations(analysis.Expect, result)
+		expectRes = runner.CheckExpectationsWithEnv(analysis.Expect, result, opts.EnvOverrides)
 	}
 
 	// Call hook with request stats (if configured)
