@@ -1184,6 +1184,12 @@ func findAllYapiFiles(dir string) ([]string, error) {
 	return yapiFiles, err
 }
 
+// stressTestResult represents the result of a single stress test request
+type stressTestResult struct {
+	duration time.Duration
+	err      error
+}
+
 // promptStressTestConfirmation shows a confirmation prompt for stress testing
 func (app *rootCommand) promptStressTestConfirmation(filePath, envName string, parallel, numRequests int, duration time.Duration, useDuration bool) error {
 	// Load project and environment
@@ -1249,10 +1255,7 @@ func (app *rootCommand) promptStressTestConfirmation(filePath, envName string, p
 }
 
 // printStressTestResults calculates and prints stress test statistics
-func printStressTestResults(allResults []struct {
-	duration time.Duration
-	err      error
-}, startTime, stopTime time.Time, parallel, numRequests int, useDuration bool, duration time.Duration) error {
+func printStressTestResults(allResults []stressTestResult, startTime, stopTime time.Time, parallel, numRequests int, useDuration bool, duration time.Duration) error {
 	if len(allResults) == 0 {
 		return fmt.Errorf("no requests completed")
 	}
@@ -1388,12 +1391,7 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(os.Stderr, "\n")
 
 	// Statistics tracking
-	type reqResult struct {
-		duration time.Duration
-		err      error
-	}
-
-	results := make(chan reqResult, parallel)
+	results := make(chan stressTestResult, parallel)
 	var wg sync.WaitGroup
 
 	startTime := time.Now()
@@ -1419,7 +1417,7 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 			err := app.executeRunE(runContext{path: filePath, strict: false, envName: envName})
 			reqDuration := time.Since(reqStart)
 
-			results <- reqResult{duration: reqDuration, err: err}
+			results <- stressTestResult{duration: reqDuration, err: err}
 		}
 	}
 
@@ -1431,7 +1429,7 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	}
 
 	// Collect results in a separate goroutine
-	var allResults []reqResult
+	var allResults []stressTestResult
 	done := make(chan bool)
 	go func() {
 		for result := range results {
