@@ -12,6 +12,8 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -139,6 +141,7 @@ func main() {
 		Share:          shareE,
 		Test:           app.testE,
 		List:           listE,
+		Stress:         app.stressE,
 	}
 
 	rootCmd := commands.BuildRoot(cfg, handlers)
@@ -1184,6 +1187,180 @@ func findAllYapiFiles(dir string) ([]string, error) {
 	})
 
 	return yapiFiles, err
+}
+
+func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
+	parallel, _ := cmd.Flags().GetInt("parallel")
+	numRequests, _ := cmd.Flags().GetInt("num-requests")
+	durationStr, _ := cmd.Flags().GetString("duration")
+	envName, _ := cmd.Flags().GetString("env")
+
+	if parallel < 1 {
+		return fmt.Errorf("parallel must be at least 1")
+	}
+
+	filePath := args[0]
+
+	// Parse duration if provided
+	var duration time.Duration
+	var useDuration bool
+	if durationStr != "" {
+		var err error
+		duration, err = time.ParseDuration(durationStr)
+		if err != nil {
+			return fmt.Errorf("invalid duration: %w", err)
+		}
+		useDuration = true
+	} else {
+		if numRequests < 1 {
+			return fmt.Errorf("num-requests must be at least 1")
+		}
+	}
+
+	// Print header
+	fmt.Fprintf(os.Stderr, "%s\n", color.Accent("yapi stress test"))
+	fmt.Fprintf(os.Stderr, "%s\n", color.Dim("File: "+filePath))
+	if useDuration {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Duration: %v, Concurrency: %d", duration, parallel)))
+	} else {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Requests: %d, Concurrency: %d", numRequests, parallel)))
+	}
+	fmt.Fprintf(os.Stderr, "\n")
+
+	// Statistics tracking
+	type reqResult struct {
+		duration time.Duration
+		err      error
+	}
+
+	results := make(chan reqResult, parallel)
+	var wg sync.WaitGroup
+
+	startTime := time.Now()
+	var stopTime time.Time
+
+	// Worker function
+	worker := func(requestCount *int64) {
+		defer wg.Done()
+		for {
+			// Check if we should stop
+			if useDuration {
+				if time.Since(startTime) >= duration {
+					return
+				}
+			} else {
+				if atomic.AddInt64(requestCount, 1) > int64(numRequests) {
+					return
+				}
+			}
+
+			// Execute request
+			reqStart := time.Now()
+			err := app.executeRunE(runContext{path: filePath, strict: false, envName: envName})
+			reqDuration := time.Since(reqStart)
+
+			results <- reqResult{duration: reqDuration, err: err}
+		}
+	}
+
+	// Start workers
+	var requestCount int64
+	for i := 0; i < parallel; i++ {
+		wg.Add(1)
+		go worker(&requestCount)
+	}
+
+	// Collect results in a separate goroutine
+	var allResults []reqResult
+	done := make(chan bool)
+	go func() {
+		for result := range results {
+			allResults = append(allResults, result)
+			// Print progress
+			if len(allResults)%10 == 0 || (!useDuration && len(allResults) == numRequests) {
+				elapsed := time.Since(startTime)
+				rps := float64(len(allResults)) / elapsed.Seconds()
+				fmt.Fprintf(os.Stderr, "\r%s %d requests in %v (%.2f req/s)",
+					color.Dim("Progress:"), len(allResults), elapsed.Round(time.Millisecond), rps)
+			}
+		}
+		done <- true
+	}()
+
+	// Wait for all workers to finish
+	wg.Wait()
+	stopTime = time.Now()
+	close(results)
+	<-done
+
+	fmt.Fprintf(os.Stderr, "\r%s\n\n", strings.Repeat(" ", 80)) // Clear progress line
+
+	// Calculate statistics
+	if len(allResults) == 0 {
+		return fmt.Errorf("no requests completed")
+	}
+
+	var durations []time.Duration
+	successCount := 0
+	failCount := 0
+	var totalDuration time.Duration
+
+	for _, r := range allResults {
+		durations = append(durations, r.duration)
+		totalDuration += r.duration
+		if r.err == nil {
+			successCount++
+		} else {
+			failCount++
+		}
+	}
+
+	// Sort durations for percentile calculations
+	sort.Slice(durations, func(i, j int) bool {
+		return durations[i] < durations[j]
+	})
+
+	totalTime := stopTime.Sub(startTime)
+	reqsPerSec := float64(len(allResults)) / totalTime.Seconds()
+
+	// Calculate percentiles
+	p50 := durations[len(durations)*50/100]
+	p90 := durations[len(durations)*90/100]
+	p95 := durations[len(durations)*95/100]
+	p99 := durations[len(durations)*99/100]
+	minDuration := durations[0]
+	maxDuration := durations[len(durations)-1]
+	avgDuration := totalDuration / time.Duration(len(durations))
+
+	// Print results
+	fmt.Fprintf(os.Stderr, "%s\n", color.Accent("Results:"))
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "  %s\n", color.Green(fmt.Sprintf("Completed: %d requests in %v", len(allResults), totalTime.Round(time.Millisecond))))
+	fmt.Fprintf(os.Stderr, "  %s\n", color.Green(fmt.Sprintf("Success: %d (%.1f%%)", successCount, float64(successCount)*100/float64(len(allResults)))))
+	if failCount > 0 {
+		fmt.Fprintf(os.Stderr, "  %s\n", color.Red(fmt.Sprintf("Failed: %d (%.1f%%)", failCount, float64(failCount)*100/float64(len(allResults)))))
+	}
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "  %s\n", color.Accent("Throughput:"))
+	fmt.Fprintf(os.Stderr, "    %.2f requests/second\n", reqsPerSec)
+	fmt.Fprintf(os.Stderr, "    %.2f ms/request (avg)\n", float64(avgDuration.Microseconds())/1000.0)
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "  %s\n", color.Accent("Latency:"))
+	fmt.Fprintf(os.Stderr, "    Min:  %v\n", minDuration.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "    Avg:  %v\n", avgDuration.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "    Max:  %v\n", maxDuration.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "  %s\n", color.Accent("Percentiles:"))
+	fmt.Fprintf(os.Stderr, "    50%%:  %v\n", p50.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "    90%%:  %v\n", p90.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "    95%%:  %v\n", p95.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "    99%%:  %v\n", p99.Round(time.Millisecond))
+
+	if failCount > 0 {
+		return fmt.Errorf("%d requests failed", failCount)
+	}
+
+	return nil
 }
 
 // isTerminal checks if the given file is a terminal (TTY)
