@@ -1335,7 +1335,22 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	// Print results
 	fmt.Fprintf(os.Stderr, "%s\n", color.Accent("Results:"))
 	fmt.Fprintf(os.Stderr, "\n")
-	fmt.Fprintf(os.Stderr, "  %s\n", color.Green(fmt.Sprintf("Completed: %d requests in %v", len(allResults), totalTime.Round(time.Millisecond))))
+
+	// Configuration summary
+	if useDuration {
+		fmt.Fprintf(os.Stderr, "  %s\n", color.Dim(fmt.Sprintf("%d threads, %v duration, %d total requests", parallel, duration, len(allResults))))
+	} else {
+		requestsPerThread := numRequests / parallel
+		remainder := numRequests % parallel
+		if remainder > 0 {
+			fmt.Fprintf(os.Stderr, "  %s\n", color.Dim(fmt.Sprintf("%d threads, ~%d requests/thread, %d total requests", parallel, requestsPerThread, numRequests)))
+		} else {
+			fmt.Fprintf(os.Stderr, "  %s\n", color.Dim(fmt.Sprintf("%d threads, %d requests/thread, %d total requests", parallel, requestsPerThread, numRequests)))
+		}
+	}
+	fmt.Fprintf(os.Stderr, "  %s\n", color.Dim(fmt.Sprintf("Completed in %.2f seconds", totalTime.Seconds())))
+	fmt.Fprintf(os.Stderr, "\n")
+
 	fmt.Fprintf(os.Stderr, "  %s\n", color.Green(fmt.Sprintf("Success: %d (%.1f%%)", successCount, float64(successCount)*100/float64(len(allResults)))))
 	if failCount > 0 {
 		fmt.Fprintf(os.Stderr, "  %s\n", color.Red(fmt.Sprintf("Failed: %d (%.1f%%)", failCount, float64(failCount)*100/float64(len(allResults)))))
