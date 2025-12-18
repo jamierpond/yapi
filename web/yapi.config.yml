@@ -1,19 +1,17 @@
 yapi: v1
 
-default_environment: local
+default_environment: prod
 
 environments:
   # Local Development: Point to different localhost ports
   local:
     vars:
-      user_host: "http://localhost:3001"
-      payment_host: "http://localhost:3002"
-      notification_host: "http://localhost:3003"
+      protocol: "http"
+      domain: "localhost:3000"
 
   # Staging: Point to the cloud staging subdomains
-  staging:
+  prod:
     vars:
-      user_host: "https://users.staging.api.com"
-      payment_host: "https://payments.staging.api.com"
-      notification_host: "https://notify.staging.api.com"
+      protocol: "https"
+      domain: "yapi.run"
 
