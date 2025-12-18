@@ -283,12 +283,9 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text string, filePath string) {
 	diagnostics := []protocol.Diagnostic{}
 
-	// Try to load and validate the project config
-	projectRoot := filepath.Dir(filePath)
-	_, err := config.LoadProject(projectRoot)
-
-	if err != nil {
-		// Parse error or validation error
+	// Parse YAML first to catch syntax errors
+	var rawConfig map[string]any
+	if err := yaml.Unmarshal([]byte(text), &rawConfig); err != nil {
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{Line: 0, Character: 0},
@@ -296,7 +293,64 @@ func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text str
 			},
 			Severity: ptr(protocol.DiagnosticSeverityError),
 			Source:   ptr("yapi"),
-			Message:  fmt.Sprintf("Invalid project config: %v", err),
+			Message:  fmt.Sprintf("YAML syntax error: %v", err),
+		})
+		ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+			URI:         uri,
+			Diagnostics: diagnostics,
+		})
+		return
+	}
+
+	// Check required fields
+	if _, ok := rawConfig["yapi"]; !ok {
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 100},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  "Missing required field 'yapi' (e.g., yapi: v1)",
+		})
+	}
+
+	if kind, ok := rawConfig["kind"].(string); !ok {
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 100},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  "Missing required field 'kind' (must be 'project')",
+		})
+	} else if kind != "project" {
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 100},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  fmt.Sprintf("Invalid 'kind': must be 'project', got '%s'", kind),
+		})
+	}
+
+	// Try to load the full project config for additional validation
+	projectRoot := filepath.Dir(filePath)
+	_, err := config.LoadProject(projectRoot)
+
+	if err != nil && len(diagnostics) == 0 {
+		// Only add this error if we haven't already added validation errors
+		diagnostics = append(diagnostics, protocol.Diagnostic{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: 0, Character: 100},
+			},
+			Severity: ptr(protocol.DiagnosticSeverityError),
+			Source:   ptr("yapi"),
+			Message:  fmt.Sprintf("Project config error: %v", err),
 		})
 	}
 
