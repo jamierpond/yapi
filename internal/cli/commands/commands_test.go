@@ -53,6 +53,7 @@ func TestNewTestCmd(t *testing.T) {
 			verboseFlag := cmd.Flags().Lookup("verbose")
 			if verboseFlag == nil {
 				t.Error("newTestCmd() missing verbose flag")
+				return
 			}
 
 			// Check verbose flag shorthand
