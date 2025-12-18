@@ -1,0 +1,6 @@
+yapi: v1
+
+environment:
+  dev:
+    domain: http://localhost:3000
+    env_file: .env.local

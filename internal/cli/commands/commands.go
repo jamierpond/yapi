@@ -10,6 +10,7 @@ type Config struct {
 	URLOverride  string
 	NoColor      bool
 	BinaryOutput bool
+	Environment  string // Target environment from project config
 }
 
 // Handlers contains the callback functions for command execution
@@ -63,6 +64,9 @@ var cmdManifest = []CommandSpec{
 		Use:   "run [file]",
 		Short: "Run a request defined in a yapi config file (reads from stdin if no file specified)",
 		Args:  cobra.MaximumNArgs(1),
+		Flags: []FlagSpec{
+			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
+		},
 	},
 	{
 		Use:   "watch [file]",
@@ -71,6 +75,7 @@ var cmdManifest = []CommandSpec{
 		Flags: []FlagSpec{
 			{Name: "pretty", Shorthand: "p", Type: "bool", Default: false, Usage: "Enable pretty TUI mode"},
 			{Name: "no-pretty", Type: "bool", Default: false, Usage: "Disable pretty TUI mode"},
+			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 		},
 	},
 	{
@@ -112,6 +117,7 @@ var cmdManifest = []CommandSpec{
 		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
+			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 		},
 	},
 }

@@ -103,6 +103,12 @@ func (a *Analysis) ToJSON() JSONOutput {
 // AnalyzeConfigString is the single entrypoint for analyzing YAML config.
 // Both CLI and LSP should call this function.
 func AnalyzeConfigString(text string) (*Analysis, error) {
+	return AnalyzeConfigStringWithProject(text, nil, "")
+}
+
+// AnalyzeConfigStringWithProject analyzes a YAML config with optional project context.
+// If project is provided, performs cross-environment variable validation.
+func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
 	parseRes, err := config.LoadFromString(text)
 	if err != nil {
 		line := extractLineFromError(err.Error())
@@ -115,7 +121,7 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 		}
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
-	return analyzeParsed(text, parseRes), nil
+	return analyzeParsed(text, parseRes, project, projectRoot), nil
 }
 
 // AnalyzeConfigFile loads a file and analyzes it.
@@ -145,17 +151,24 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	return analyzeParsed(string(data), parseRes), nil
+	return analyzeParsed(string(data), parseRes, nil, ""), nil
 }
 
 // analyzeParsed is the common analysis path for both string and file inputs.
-func analyzeParsed(text string, parseRes *config.ParseResult) *Analysis {
+func analyzeParsed(text string, parseRes *config.ParseResult, project *config.ProjectConfigV1, projectRoot string) *Analysis {
 	var diags []Diagnostic
 
 	// Chain config
 	if len(parseRes.Chain) > 0 {
 		diags = append(diags, validateChain(text, parseRes.Base, parseRes.Chain)...)
-		diags = append(diags, validateEnvVars(text)...)
+
+		// Use project-aware validation if available
+		if project != nil {
+			diags = append(diags, ValidateProjectVars(text, project, projectRoot)...)
+		} else {
+			diags = append(diags, validateEnvVars(text)...)
+		}
+
 		return &Analysis{
 			Chain:       parseRes.Chain,
 			Base:        parseRes.Base,
@@ -180,7 +193,13 @@ func analyzeParsed(text string, parseRes *config.ParseResult) *Analysis {
 	diags = append(diags, ValidateGraphQLSyntax(text, req)...)
 	diags = append(diags, ValidateJQSyntax(text, req)...)
 	diags = append(diags, validateUnknownKeys(text)...)
-	diags = append(diags, validateEnvVars(text)...)
+
+	// Use project-aware validation if available
+	if project != nil {
+		diags = append(diags, ValidateProjectVars(text, project, projectRoot)...)
+	} else {
+		diags = append(diags, validateEnvVars(text)...)
+	}
 
 	if len(parseRes.Expect.Assert.Body) > 0 {
 		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert.Body, "")...)

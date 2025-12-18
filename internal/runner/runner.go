@@ -35,6 +35,7 @@ type Options struct {
 	URLOverride  string
 	NoColor      bool
 	BinaryOutput bool
+	EnvOverrides map[string]string // Environment variables from project config
 }
 
 // Run executes a yapi request and returns the result.

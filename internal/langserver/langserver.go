@@ -3,6 +3,8 @@ package langserver
 
 import (
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/tliron/commonlog"
@@ -11,6 +13,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
 	"yapi.run/cli/internal/compiler"
+	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
@@ -26,8 +29,10 @@ var (
 )
 
 type document struct {
-	URI  protocol.DocumentUri
-	Text string
+	URI         protocol.DocumentUri
+	Text        string
+	ProjectRoot string                  // Path to project root (if found)
+	Project     *config.ProjectConfigV1 // Project config (if found)
 }
 
 // Run starts the yapi language server over stdio.
@@ -94,11 +99,23 @@ func textDocumentDidOpen(ctx *glsp.Context, params *protocol.DidOpenTextDocument
 	uri := params.TextDocument.URI
 	text := params.TextDocument.Text
 
-	docs[uri] = &document{
+	doc := &document{
 		URI:  uri,
 		Text: text,
 	}
 
+	// Try to find and load project config
+	if filePath := uriToPath(uri); filePath != "" {
+		dirPath := filepath.Dir(filePath)
+		if projectRoot, err := config.FindProjectRoot(dirPath); err == nil {
+			doc.ProjectRoot = projectRoot
+			if project, err := config.LoadProject(projectRoot); err == nil {
+				doc.Project = project
+			}
+		}
+	}
+
+	docs[uri] = doc
 	validateAndNotify(ctx, uri, text)
 	return nil
 }
@@ -111,12 +128,25 @@ func textDocumentDidChange(ctx *glsp.Context, params *protocol.DidChangeTextDocu
 		text := params.ContentChanges[len(params.ContentChanges)-1].(protocol.TextDocumentContentChangeEventWhole).Text
 
 		if doc, ok := docs[uri]; ok {
+			// Update text but preserve project context
 			doc.Text = text
 		} else {
-			docs[uri] = &document{
+			// Create new document if it doesn't exist
+			doc := &document{
 				URI:  uri,
 				Text: text,
 			}
+			// Try to load project context
+			if filePath := uriToPath(uri); filePath != "" {
+				dirPath := filepath.Dir(filePath)
+				if projectRoot, err := config.FindProjectRoot(dirPath); err == nil {
+					doc.ProjectRoot = projectRoot
+					if project, err := config.LoadProject(projectRoot); err == nil {
+						doc.Project = project
+					}
+				}
+			}
+			docs[uri] = doc
 		}
 
 		validateAndNotify(ctx, uri, text)
@@ -145,7 +175,21 @@ func textDocumentDidSave(ctx *glsp.Context, params *protocol.DidSaveTextDocument
 }
 
 func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string) {
-	analysis, err := validation.AnalyzeConfigString(text)
+	// Get document to access project context
+	doc, ok := docs[uri]
+	var analysis *validation.Analysis
+	var err error
+
+	// Use project-aware validation if available
+	if ok && doc.Project != nil {
+		analysis, err = validation.AnalyzeConfigStringWithProject(text, doc.Project, doc.ProjectRoot)
+	} else {
+		analysis, err = validation.AnalyzeConfigString(text)
+	}
+
+	if err != nil || analysis == nil {
+		analysis, err = validation.AnalyzeConfigString(text)
+	}
 	if err != nil {
 		// Catastrophic error - send one diagnostic and bail
 		ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
@@ -431,4 +475,16 @@ func textDocumentHover(ctx *glsp.Context, params *protocol.HoverParams) (*protoc
 	}
 
 	return nil, nil
+}
+
+// uriToPath converts a file:// URI to a filesystem path.
+func uriToPath(uri protocol.DocumentUri) string {
+	u, err := url.Parse(string(uri))
+	if err != nil {
+		return ""
+	}
+	if u.Scheme != "file" {
+		return ""
+	}
+	return u.Path
 }

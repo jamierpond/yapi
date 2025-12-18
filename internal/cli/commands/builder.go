@@ -52,6 +52,16 @@ func BuildCommand(spec CommandSpec) *cobra.Command {
 			} else {
 				cmd.Flags().Bool(flag.Name, defaultVal, flag.Usage)
 			}
+		case "string":
+			defaultVal := ""
+			if flag.Default != nil {
+				defaultVal = flag.Default.(string)
+			}
+			if flag.Shorthand != "" {
+				cmd.Flags().StringP(flag.Name, flag.Shorthand, defaultVal, flag.Usage)
+			} else {
+				cmd.Flags().String(flag.Name, defaultVal, flag.Usage)
+			}
 		}
 	}
 
