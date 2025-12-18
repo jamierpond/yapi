@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 )
 
@@ -42,6 +43,45 @@ method: GET`,
 				t.Errorf("LoadFromString() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestLoad_File(t *testing.T) {
+	// Create a temporary file
+	tmpfile, err := os.CreateTemp("", "yapi-test-*.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	content := `yapi: v1
+url: https://example.com
+method: GET`
+
+	if _, err := tmpfile.Write([]byte(content)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test Load function
+	result, err := Load(tmpfile.Name())
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Load() returned nil result")
+	}
+
+	if result.Request == nil {
+		t.Fatal("Load() returned nil request")
+	}
+
+	// Verify the config was loaded successfully
+	if result.Request.URL != "https://example.com" {
+		t.Errorf("Load() URL = %v, want https://example.com", result.Request.URL)
 	}
 }
 
