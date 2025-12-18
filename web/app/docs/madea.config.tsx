@@ -49,7 +49,7 @@ function VersionFooter() {
         rel="noopener noreferrer"
         className="text-yapi-accent hover:underline"
       >
-        yapi v{versionInfo.semver}-{versionInfo.commit}
+        yapi {versionInfo.commit}
       </a>
     </p>
   );
