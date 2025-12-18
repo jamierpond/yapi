@@ -14,6 +14,12 @@ import (
 // Returns the filtered result as a string.
 // If the filter produces multiple values, they are joined with newlines.
 func ApplyJQ(input string, filterExpr string) (string, error) {
+	return ApplyJQWithVars(input, filterExpr, nil)
+}
+
+// ApplyJQWithVars applies a jq filter expression with optional variables.
+// Variables is a map of variable names to values (e.g., map[string]any{"_headers": {...}}).
+func ApplyJQWithVars(input string, filterExpr string, variables map[string]any) (string, error) {
 	filterExpr = strings.TrimSpace(filterExpr)
 	if filterExpr == "" {
 		return input, nil
@@ -25,15 +31,47 @@ func ApplyJQ(input string, filterExpr string) (string, error) {
 		return "", fmt.Errorf("failed to parse jq filter %q: %w", filterExpr, err)
 	}
 
+	// Compile the query with variables if provided
+	if variables != nil {
+		var varNames []string
+		for name := range variables {
+			varNames = append(varNames, "$"+name)
+		}
+		code, err := gojq.Compile(query, gojq.WithVariables(varNames))
+		if err != nil {
+			return "", fmt.Errorf("failed to compile jq filter with variables: %w", err)
+		}
+
+		// Parse the input JSON, preserving number precision
+		inputData, err := parseJSONPreserveNumbers(input)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse input as JSON: %w", err)
+		}
+
+		// Build variable values in order
+		varValues := make([]any, 0, len(variables))
+		for _, name := range varNames {
+			varValues = append(varValues, variables[strings.TrimPrefix(name, "$")])
+		}
+
+		// Run the compiled query with variables
+		iter := code.Run(inputData, varValues...)
+		return collectResults(iter)
+	}
+
 	// Parse the input JSON, preserving number precision
 	inputData, err := parseJSONPreserveNumbers(input)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse input as JSON: %w", err)
 	}
 
-	// Run the query
+	// Run the query without variables
 	iter := query.Run(inputData)
+	return collectResults(iter)
+}
 
+// collectResults collects results from a JQ iterator
+func collectResults(iter gojq.Iter) (string, error) {
 	var results []string
 	for {
 		v, ok := iter.Next()
