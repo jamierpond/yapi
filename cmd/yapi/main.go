@@ -1184,181 +1184,75 @@ func findAllYapiFiles(dir string) ([]string, error) {
 	return yapiFiles, err
 }
 
-func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
-	parallel, _ := cmd.Flags().GetInt("parallel")
-	numRequests, _ := cmd.Flags().GetInt("num-requests")
-	durationStr, _ := cmd.Flags().GetString("duration")
-	envName, _ := cmd.Flags().GetString("env")
-	skipConfirm, _ := cmd.Flags().GetBool("yes")
-
-	if parallel < 1 {
-		return fmt.Errorf("parallel must be at least 1")
-	}
-
-	// Handle TUI file selection when no args provided
-	filePath, _, err := selectConfigFile(args, "stress")
+// promptStressTestConfirmation shows a confirmation prompt for stress testing
+func (app *rootCommand) promptStressTestConfirmation(filePath, envName string, parallel, numRequests int, duration time.Duration, useDuration bool) error {
+	// Load project and environment
+	projEnv, err := loadProjectAndEnv(filePath, envName, true)
 	if err != nil {
 		return err
 	}
 
-	// Parse duration if provided
-	var duration time.Duration
-	var useDuration bool
-	if durationStr != "" {
-		var err error
-		duration, err = time.ParseDuration(durationStr)
-		if err != nil {
-			return fmt.Errorf("invalid duration: %w", err)
-		}
-		useDuration = true
+	// Read config file
+	configData, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided config file path
+	if err != nil {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	// Build resolver with environment variables
+	var analysis *validation.Analysis
+	if projEnv != nil && projEnv.project != nil && projEnv.envVars != nil {
+		// Use AnalyzeConfigStringWithProject but temporarily override the default environment
+		// Save original default
+		originalDefault := projEnv.project.DefaultEnvironment
+		projEnv.project.DefaultEnvironment = projEnv.envName
+		analysis, err = validation.AnalyzeConfigStringWithProject(string(configData), projEnv.project, projEnv.projectRoot)
+		// Restore original default
+		projEnv.project.DefaultEnvironment = originalDefault
 	} else {
-		if numRequests < 1 {
-			return fmt.Errorf("num-requests must be at least 1")
-		}
+		analysis, err = validation.AnalyzeConfigString(string(configData))
+	}
+	if err != nil {
+		return fmt.Errorf("failed to analyze config: %w", err)
 	}
 
-	// Load config to get resolved URL for confirmation
-	if !skipConfirm {
-		// Load project and environment
-		projEnv, err := loadProjectAndEnv(filePath, envName, true)
-		if err != nil {
-			return err
-		}
-
-		// Read config file
-		configData, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided config file path
-		if err != nil {
-			return fmt.Errorf("failed to read config: %w", err)
-		}
-
-		// Build resolver with environment variables
-		var analysis *validation.Analysis
-		if projEnv != nil && projEnv.project != nil && projEnv.envVars != nil {
-			// Use AnalyzeConfigStringWithProject but temporarily override the default environment
-			// Save original default
-			originalDefault := projEnv.project.DefaultEnvironment
-			projEnv.project.DefaultEnvironment = projEnv.envName
-			analysis, err = validation.AnalyzeConfigStringWithProject(string(configData), projEnv.project, projEnv.projectRoot)
-			// Restore original default
-			projEnv.project.DefaultEnvironment = originalDefault
-		} else {
-			analysis, err = validation.AnalyzeConfigString(string(configData))
-		}
-		if err != nil {
-			return fmt.Errorf("failed to analyze config: %w", err)
-		}
-
-		// Get the resolved URL
-		var targetURL string
-		if analysis.Request != nil && analysis.Request.URL != "" {
-			targetURL = analysis.Request.URL
-		} else {
-			targetURL = "<unknown>"
-		}
-
-		// Show confirmation prompt
-		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("⚠️  Stress Test Confirmation"))
-		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "  %s %s\n", color.Dim("Target:"), color.Cyan(targetURL))
-		fmt.Fprintf(os.Stderr, "  %s %d threads\n", color.Dim("Threads:"), parallel)
-		if useDuration {
-			fmt.Fprintf(os.Stderr, "  %s %v\n", color.Dim("Duration:"), duration)
-			fmt.Fprintf(os.Stderr, "  %s unlimited (duration-based)\n", color.Dim("Requests:"))
-		} else {
-			fmt.Fprintf(os.Stderr, "  %s %d total (%d per thread)\n", color.Dim("Requests:"), numRequests, numRequests/parallel)
-		}
-		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "Are you sure you want to continue? [y/N]: ")
-
-		var response string
-		_, err = fmt.Scanln(&response)
-		if err != nil || (response != "y" && response != "Y" && response != "yes" && response != "YES") {
-			fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Stress test cancelled"))
-			return nil
-		}
-		fmt.Fprintf(os.Stderr, "\n")
+	// Get the resolved URL
+	var targetURL string
+	if analysis.Request != nil && analysis.Request.URL != "" {
+		targetURL = analysis.Request.URL
+	} else {
+		targetURL = "<unknown>"
 	}
 
-	// Print header
-	fmt.Fprintf(os.Stderr, "%s\n", color.Accent("yapi stress test"))
-	fmt.Fprintf(os.Stderr, "%s\n", color.Dim("File: "+filePath))
+	// Show confirmation prompt
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("⚠️  Stress Test Confirmation"))
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "  %s %s\n", color.Dim("Target:"), color.Cyan(targetURL))
+	fmt.Fprintf(os.Stderr, "  %s %d threads\n", color.Dim("Threads:"), parallel)
 	if useDuration {
-		fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Duration: %v, Concurrency: %d", duration, parallel)))
+		fmt.Fprintf(os.Stderr, "  %s %v\n", color.Dim("Duration:"), duration)
+		fmt.Fprintf(os.Stderr, "  %s unlimited (duration-based)\n", color.Dim("Requests:"))
 	} else {
-		fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Requests: %d, Concurrency: %d", numRequests, parallel)))
+		fmt.Fprintf(os.Stderr, "  %s %d total (%d per thread)\n", color.Dim("Requests:"), numRequests, numRequests/parallel)
 	}
 	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "Are you sure you want to continue? [y/N]: ")
 
-	// Statistics tracking
-	type reqResult struct {
-		duration time.Duration
-		err      error
+	var response string
+	_, err = fmt.Scanln(&response)
+	if err != nil || (response != "y" && response != "Y" && response != "yes" && response != "YES") {
+		fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Stress test cancelled"))
+		return fmt.Errorf("cancelled")
 	}
+	fmt.Fprintf(os.Stderr, "\n")
+	return nil
+}
 
-	results := make(chan reqResult, parallel)
-	var wg sync.WaitGroup
-
-	startTime := time.Now()
-	var stopTime time.Time
-
-	// Worker function
-	worker := func(requestCount *int64) {
-		defer wg.Done()
-		for {
-			// Check if we should stop
-			if useDuration {
-				if time.Since(startTime) >= duration {
-					return
-				}
-			} else {
-				if atomic.AddInt64(requestCount, 1) > int64(numRequests) {
-					return
-				}
-			}
-
-			// Execute request
-			reqStart := time.Now()
-			err := app.executeRunE(runContext{path: filePath, strict: false, envName: envName})
-			reqDuration := time.Since(reqStart)
-
-			results <- reqResult{duration: reqDuration, err: err}
-		}
-	}
-
-	// Start workers
-	var requestCount int64
-	for i := 0; i < parallel; i++ {
-		wg.Add(1)
-		go worker(&requestCount)
-	}
-
-	// Collect results in a separate goroutine
-	var allResults []reqResult
-	done := make(chan bool)
-	go func() {
-		for result := range results {
-			allResults = append(allResults, result)
-			// Print progress
-			if len(allResults)%10 == 0 || (!useDuration && len(allResults) == numRequests) {
-				elapsed := time.Since(startTime)
-				rps := float64(len(allResults)) / elapsed.Seconds()
-				fmt.Fprintf(os.Stderr, "\r%s %d requests in %v (%.2f req/s)",
-					color.Dim("Progress:"), len(allResults), elapsed.Round(time.Millisecond), rps)
-			}
-		}
-		done <- true
-	}()
-
-	// Wait for all workers to finish
-	wg.Wait()
-	stopTime = time.Now()
-	close(results)
-	<-done
-
-	fmt.Fprintf(os.Stderr, "\r%s\n\n", strings.Repeat(" ", 80)) // Clear progress line
-
-	// Calculate statistics
+// printStressTestResults calculates and prints stress test statistics
+func printStressTestResults(allResults []struct {
+	duration time.Duration
+	err      error
+}, startTime, stopTime time.Time, parallel, numRequests int, useDuration bool, duration time.Duration) error {
 	if len(allResults) == 0 {
 		return fmt.Errorf("no requests completed")
 	}
@@ -1441,6 +1335,128 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
+	parallel, _ := cmd.Flags().GetInt("parallel")
+	numRequests, _ := cmd.Flags().GetInt("num-requests")
+	durationStr, _ := cmd.Flags().GetString("duration")
+	envName, _ := cmd.Flags().GetString("env")
+	skipConfirm, _ := cmd.Flags().GetBool("yes")
+
+	if parallel < 1 {
+		return fmt.Errorf("parallel must be at least 1")
+	}
+
+	// Handle TUI file selection when no args provided
+	filePath, _, err := selectConfigFile(args, "stress")
+	if err != nil {
+		return err
+	}
+
+	// Parse duration if provided
+	var duration time.Duration
+	var useDuration bool
+	if durationStr != "" {
+		var err error
+		duration, err = time.ParseDuration(durationStr)
+		if err != nil {
+			return fmt.Errorf("invalid duration: %w", err)
+		}
+		useDuration = true
+	} else {
+		if numRequests < 1 {
+			return fmt.Errorf("num-requests must be at least 1")
+		}
+	}
+
+	// Show confirmation prompt
+	if !skipConfirm {
+		if err := app.promptStressTestConfirmation(filePath, envName, parallel, numRequests, duration, useDuration); err != nil {
+			return nil
+		}
+	}
+
+	// Print header
+	fmt.Fprintf(os.Stderr, "%s\n", color.Accent("yapi stress test"))
+	fmt.Fprintf(os.Stderr, "%s\n", color.Dim("File: "+filePath))
+	if useDuration {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Duration: %v, Concurrency: %d", duration, parallel)))
+	} else {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Dim(fmt.Sprintf("Requests: %d, Concurrency: %d", numRequests, parallel)))
+	}
+	fmt.Fprintf(os.Stderr, "\n")
+
+	// Statistics tracking
+	type reqResult struct {
+		duration time.Duration
+		err      error
+	}
+
+	results := make(chan reqResult, parallel)
+	var wg sync.WaitGroup
+
+	startTime := time.Now()
+	var stopTime time.Time
+
+	// Worker function
+	worker := func(requestCount *int64) {
+		defer wg.Done()
+		for {
+			// Check if we should stop
+			if useDuration {
+				if time.Since(startTime) >= duration {
+					return
+				}
+			} else {
+				if atomic.AddInt64(requestCount, 1) > int64(numRequests) {
+					return
+				}
+			}
+
+			// Execute request
+			reqStart := time.Now()
+			err := app.executeRunE(runContext{path: filePath, strict: false, envName: envName})
+			reqDuration := time.Since(reqStart)
+
+			results <- reqResult{duration: reqDuration, err: err}
+		}
+	}
+
+	// Start workers
+	var requestCount int64
+	for i := 0; i < parallel; i++ {
+		wg.Add(1)
+		go worker(&requestCount)
+	}
+
+	// Collect results in a separate goroutine
+	var allResults []reqResult
+	done := make(chan bool)
+	go func() {
+		for result := range results {
+			allResults = append(allResults, result)
+			// Print progress
+			if len(allResults)%10 == 0 || (!useDuration && len(allResults) == numRequests) {
+				elapsed := time.Since(startTime)
+				rps := float64(len(allResults)) / elapsed.Seconds()
+				fmt.Fprintf(os.Stderr, "\r%s %d requests in %v (%.2f req/s)",
+					color.Dim("Progress:"), len(allResults), elapsed.Round(time.Millisecond), rps)
+			}
+		}
+		done <- true
+	}()
+
+	// Wait for all workers to finish
+	wg.Wait()
+	stopTime = time.Now()
+	close(results)
+	<-done
+
+	fmt.Fprintf(os.Stderr, "\r%s\n\n", strings.Repeat(" ", 80)) // Clear progress line
+
+	// Print results and statistics
+	return printStressTestResults(allResults, startTime, stopTime, parallel, numRequests, useDuration, duration)
 }
 
 // isTerminal checks if the given file is a terminal (TTY)
