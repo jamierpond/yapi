@@ -133,21 +133,21 @@ export default async function Landing() {
                     <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
                   </div>
                 </div>
-                <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-yapi-fg/90">
+                <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-yapi-fg/90 whitespace-pre">
                   <div className="text-yapi-fg-subtle/50 mb-2"># Chain requests together</div>
                   <div><span className="text-yapi-accent">chain</span>:</div>
-                  <div>{"  "}- <span className="text-yapi-accent">name</span>: login</div>
-                  <div>{"    "}<span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${url}"}</span>/auth/login</div>
-                  <div>{"    "}<span className="text-yapi-accent">method</span>: POST</div>
-                  <div>{"    "}<span className="text-yapi-accent">body</span>:</div>
-                  <div>{"      "}<span className="text-blue-300">user</span>: "dev_sheep"</div>
-                  <div>{"    "}<span className="text-yapi-accent">expect</span>:</div>
-                  <div>{"      "}<span className="text-blue-300">assert</span>:</div>
-                  <div>{"        "}- <span className="text-green-400">.token != null</span></div>
-                  <div className="mt-2">{"  "}- <span className="text-yapi-accent">name</span>: get_profile</div>
-                  <div>{"    "}<span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${url}"}</span>/me</div>
-                  <div>{"    "}<span className="text-yapi-accent">headers</span>:</div>
-                  <div>{"      "}<span className="text-blue-300">Auth</span>: Bearer <span className="text-orange-300">{"${login.token}"}</span></div>
+                  <div>  - <span className="text-yapi-accent">name</span>: login</div>
+                  <div>    <span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${url}"}</span>/auth/login</div>
+                  <div>    <span className="text-yapi-accent">method</span>: POST</div>
+                  <div>    <span className="text-yapi-accent">body</span>:</div>
+                  <div>      <span className="text-blue-300">user</span>: "dev_sheep"</div>
+                  <div>    <span className="text-yapi-accent">expect</span>:</div>
+                  <div>      <span className="text-blue-300">assert</span>:</div>
+                  <div>        - <span className="text-green-400">.token != null</span></div>
+                  <div className="mt-2">  - <span className="text-yapi-accent">name</span>: get_profile</div>
+                  <div>    <span className="text-yapi-accent">url</span>: <span className="text-orange-300">{"${url}"}</span>/me</div>
+                  <div>    <span className="text-yapi-accent">headers</span>:</div>
+                  <div>      <span className="text-blue-300">Auth</span>: Bearer <span className="text-orange-300">{"${login.token}"}</span></div>
                 </div>
               </div>
 
@@ -156,7 +156,7 @@ export default async function Landing() {
                  <div className="bg-[#1a1a1a] px-4 py-2 flex items-center border-b border-black/20">
                     <span className="text-xs text-yapi-fg-subtle font-mono">zsh — yapi run</span>
                  </div>
-                 <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto relative h-full">
+                 <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto relative h-full whitespace-pre">
                     {/* Scanline */}
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[size:100%_4px] pointer-events-none opacity-20"></div>
 
