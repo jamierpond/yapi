@@ -1,6 +1,6 @@
 yapi: v1
 
-default_environment: prod
+default_environment: local
 
 environments:
   local:
