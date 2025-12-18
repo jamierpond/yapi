@@ -142,7 +142,7 @@ func TestCheckExpectations_Assert(t *testing.T) {
 }
 
 func TestResolveVariableRaw(t *testing.T) {
-	ctx := NewChainContext()
+	ctx := NewChainContext(nil)
 	ctx.Results["step1"] = StepResult{
 		BodyJSON: map[string]any{
 			"result": map[string]any{
@@ -226,7 +226,7 @@ func TestResolveVariableRaw(t *testing.T) {
 }
 
 func TestInterpolateBody(t *testing.T) {
-	ctx := NewChainContext()
+	ctx := NewChainContext(nil)
 	ctx.Results["prev"] = StepResult{
 		BodyJSON:   map[string]any{"token": "abc123"},
 		StatusCode: 200,

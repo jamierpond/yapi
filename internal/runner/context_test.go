@@ -59,7 +59,7 @@ func TestChainContext_ExpandVariables_EnvVars(t *testing.T) {
 }
 
 func TestChainContext_ExpandVariables_ChainRefs(t *testing.T) {
-	ctx := NewChainContext()
+	ctx := NewChainContext(nil)
 
 	// Add a step result
 	ctx.Results["login"] = StepResult{
@@ -142,7 +142,7 @@ func TestChainContext_ExpandVariables_ChainRefs(t *testing.T) {
 }
 
 func TestChainContext_AddResult(t *testing.T) {
-	ctx := NewChainContext()
+	ctx := NewChainContext(nil)
 
 	result := &Result{
 		Body:        `{"message":"success"}`,
@@ -175,7 +175,7 @@ func TestChainContext_AddResult(t *testing.T) {
 }
 
 func TestChainContext_AddResult_NonJSON(t *testing.T) {
-	ctx := NewChainContext()
+	ctx := NewChainContext(nil)
 
 	result := &Result{
 		Body:        "plain text response",

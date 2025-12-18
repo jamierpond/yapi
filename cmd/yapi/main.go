@@ -18,6 +18,7 @@ import (
 	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/cli/commands"
 	"yapi.run/cli/internal/cli/middleware"
+	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/core"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/observability"
@@ -162,12 +163,16 @@ func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return app.runConfigPathE(path)
+
+	// Get --env flag if specified
+	envName, _ := cmd.Flags().GetString("env")
+	return app.runConfigPathWithEnvE(path, envName)
 }
 
 func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
 	pretty, _ := cmd.Flags().GetBool("pretty")
 	noPretty, _ := cmd.Flags().GetBool("no-pretty")
+	envName, _ := cmd.Flags().GetString("env")
 
 	path, fromTUI, err := selectConfigFile(args, "watch")
 	if err != nil {
@@ -179,10 +184,10 @@ func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
 	if usePretty {
 		return tui.RunWatch(path)
 	}
-	return app.watchConfigPath(path)
+	return app.watchConfigPath(path, envName)
 }
 
-func (app *rootCommand) watchConfigPath(path string) error {
+func (app *rootCommand) watchConfigPath(path string, envName string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path: %w", err)
@@ -190,7 +195,7 @@ func (app *rootCommand) watchConfigPath(path string) error {
 
 	clearScreen()
 	printWatchHeader(absPath)
-	app.runConfigPathSafe(absPath)
+	_ = app.executeRunE(runContext{path: absPath, strict: false, envName: envName})
 
 	lastMod, err := getModTime(absPath)
 	if err != nil {
@@ -211,7 +216,7 @@ func (app *rootCommand) watchConfigPath(path string) error {
 			lastMod = currentMod
 			clearScreen()
 			printWatchHeader(absPath)
-			app.runConfigPathSafe(absPath)
+			_ = app.executeRunE(runContext{path: absPath, strict: false, envName: envName})
 		}
 	}
 	return nil
@@ -237,8 +242,9 @@ func printWatchHeader(path string) {
 
 // runContext holds options for executeRun
 type runContext struct {
-	path   string
-	strict bool // If true, return error on failures; if false, print and return nil
+	path    string
+	strict  bool   // If true, return error on failures; if false, print and return nil
+	envName string // Target environment from yapi.config.yml
 }
 
 // printResult outputs a single result with optional expectation.
@@ -273,6 +279,17 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		URLOverride:  app.urlOverride,
 		NoColor:      app.noColor,
 		BinaryOutput: app.binaryOutput,
+	}
+
+	// Load project environment variables if --env flag is specified
+	if ctx.envName != "" {
+		envVars, err := loadProjectEnv(ctx.path, ctx.envName)
+		if err != nil {
+			// Don't fail on missing project config - just warn and continue
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow(fmt.Sprintf("Warning: %v", err)))
+		} else {
+			opts.EnvOverrides = envVars
+		}
 	}
 
 	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)
@@ -355,6 +372,47 @@ func (app *rootCommand) runConfigPathSafe(path string) {
 // runConfigPathE runs a config file in strict mode (returns error)
 func (app *rootCommand) runConfigPathE(path string) error {
 	return app.executeRunE(runContext{path: path, strict: true})
+}
+
+// runConfigPathWithEnvE runs a config file with a specific environment in strict mode
+func (app *rootCommand) runConfigPathWithEnvE(path string, envName string) error {
+	return app.executeRunE(runContext{path: path, strict: true, envName: envName})
+}
+
+// loadProjectEnv finds the project config and loads environment variables for the specified environment
+func loadProjectEnv(configPath string, envName string) (map[string]string, error) {
+	// Get the directory containing the config file
+	absPath, err := filepath.Abs(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve config path: %w", err)
+	}
+	configDir := filepath.Dir(absPath)
+
+	// Find project root
+	projectRoot, err := config.FindProjectRoot(configDir)
+	if err != nil {
+		return nil, fmt.Errorf("no yapi.config.yml found (use --env flag only when a project config exists)")
+	}
+
+	// Load project config
+	project, err := config.LoadProject(projectRoot)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load project config: %w", err)
+	}
+
+	// Validate that the specified environment exists
+	if _, ok := project.Environments[envName]; !ok {
+		availableEnvs := project.ListEnvironments()
+		return nil, fmt.Errorf("environment '%s' not found in yapi.config.yml (available: %s)", envName, strings.Join(availableEnvs, ", "))
+	}
+
+	// Resolve environment files and variables
+	envVars, err := project.ResolveEnvFiles(projectRoot, envName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load environment '%s': %w", envName, err)
+	}
+
+	return envVars, nil
 }
 
 func lspE(cmd *cobra.Command, args []string) error {
