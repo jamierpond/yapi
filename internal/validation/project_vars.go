@@ -45,22 +45,24 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 	}
 
 	// 3. Check if variables are in defaults
+	// Load all default variables once
+	defaultVars := make(map[string]string)
+	if len(project.Defaults.EnvFiles) > 0 || len(project.Defaults.Vars) > 0 {
+		vars, err := project.ResolveEnvFiles(projectRoot, "")
+		if err == nil {
+			defaultVars = vars
+		}
+	}
+
 	for varName := range varNames {
-		// Check defaults.vars
-		if _, ok := project.Defaults.Vars[varName]; ok {
+		// Check defaults (from both vars and env_files)
+		if _, ok := defaultVars[varName]; ok {
 			varMatrix[varName].IsInDefaults = true
 			continue
 		}
-
-		// Check defaults.env_files
-		for _, envFile := range project.Defaults.EnvFiles {
-			defaultVars, err := project.ResolveEnvFiles(projectRoot, "")
-			if err == nil {
-				if _, ok := defaultVars[varName]; ok {
-					varMatrix[varName].IsInDefaults = true
-					break
-				}
-			}
+		if _, ok := project.Defaults.Vars[varName]; ok {
+			varMatrix[varName].IsInDefaults = true
+			continue
 		}
 
 		// Check if it's an OS environment variable

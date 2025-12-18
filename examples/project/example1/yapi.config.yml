@@ -1,0 +1,33 @@
+yapi: v1
+kind: project
+
+# Simple project configuration demonstrating environment-based variables
+# This example shows a typical microservice setup with dev, staging, and prod
+
+defaults:
+  vars:
+    TIMEOUT: "30"
+    LOG_LEVEL: info
+
+environments:
+  dev:
+    vars:
+      API_URL: http://localhost:8080
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      CACHE_ENABLED: "false"
+
+  staging:
+    vars:
+      API_URL: https://staging-api.example.com
+      DB_HOST: staging-db.example.com
+      DB_PORT: "5432"
+      CACHE_ENABLED: "true"
+
+  prod:
+    vars:
+      API_URL: https://api.example.com
+      DB_HOST: prod-db.example.com
+      DB_PORT: "5432"
+      CACHE_ENABLED: "true"
+      LOG_LEVEL: warn

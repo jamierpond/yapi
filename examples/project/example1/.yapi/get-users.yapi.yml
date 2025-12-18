@@ -1,0 +1,25 @@
+yapi: v1
+
+# Get users from the API
+# Usage:
+#   yapi run .yapi/get-users.yapi.yml --env dev
+#   yapi run .yapi/get-users.yapi.yml --env staging
+#   yapi run .yapi/get-users.yapi.yml --env prod
+
+url: ${API_URL}/api/users
+method: GET
+
+headers:
+  Accept: application/json
+  X-Timeout: ${TIMEOUT}
+
+query:
+  limit: "10"
+  offset: "0"
+
+expect:
+  status: 200
+  assert:
+    body:
+      - . | type == "array"
+      - length > 0

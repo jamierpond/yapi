@@ -807,6 +807,7 @@ func fileExists(path string) bool {
 
 func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
+	envName, _ := cmd.Flags().GetString("env")
 
 	// Determine search directory
 	searchDir := "."
@@ -844,7 +845,7 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 		}
 
 		// Run the test file
-		err := app.executeRunE(runContext{path: testFile, strict: true})
+		err := app.executeRunE(runContext{path: testFile, strict: true, envName: envName})
 
 		result := testResult{
 			file:   relPath,
