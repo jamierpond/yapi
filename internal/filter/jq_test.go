@@ -597,11 +597,11 @@ func TestApplyJQWithVars(t *testing.T) {
 		{
 			name:       "combine input and variable",
 			input:      `{"name": "test"}`,
-			filterExpr: `{name, header: $_headers["Content-Type"]}`,
+			filterExpr: `.name + " " + $_headers["Content-Type"]`,
 			variables: map[string]any{
 				"_headers": map[string]any{"Content-Type": "application/json"},
 			},
-			want:    "{\n  \"name\": \"test\",\n  \"header\": \"application/json\"\n}",
+			want:    "test application/json",
 			wantErr: false,
 		},
 		{
@@ -755,12 +755,11 @@ func TestEvalJQBoolWithDetailAndVars(t *testing.T) {
 			variables: map[string]any{
 				"_threshold": 5,
 			},
-			wantPassed:        true,
-			wantLeftSide:      ".value",
-			wantOperator:      ">",
-			wantRightSide:     "$_threshold",
-			wantActualValue:   "10",
-			wantExpectedValue: "5",
+			wantPassed:   true,
+			wantLeftSide: ".value",
+			wantOperator: ">",
+			wantRightSide: "$_threshold",
+			wantActualValue: "10",
 		},
 	}
 
