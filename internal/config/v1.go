@@ -167,7 +167,7 @@ func (c *ConfigV1) Merge(step ChainStep) ConfigV1 {
 
 // Expectation defines assertions for a chain step
 type Expectation struct {
-	Status any         `yaml:"status,omitempty"` // int or []int
+	Status any          `yaml:"status,omitempty"` // int or []int
 	Assert AssertionSet `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
 }
 
