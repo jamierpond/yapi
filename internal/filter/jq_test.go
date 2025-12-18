@@ -641,6 +641,26 @@ func TestApplyJQWithVars(t *testing.T) {
 			want:    "",
 			wantErr: true,
 		},
+		{
+			name:       "empty filter with variables",
+			input:      `{"id": 1}`,
+			filterExpr: "",
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json"},
+			},
+			want:    `{"id": 1}`,
+			wantErr: false,
+		},
+		{
+			name:       "empty result with variables",
+			input:      `[1, 2, 3]`,
+			filterExpr: `.[] | select(. > 10)`,
+			variables: map[string]any{
+				"_headers": map[string]any{},
+			},
+			want:    "",
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -760,6 +780,15 @@ func TestEvalJQBoolWithDetailAndVars(t *testing.T) {
 			wantOperator:    ">",
 			wantRightSide:   "$_threshold",
 			wantActualValue: "10",
+		},
+		{
+			name:  "invalid expression with variables",
+			input: `{"id": 1}`,
+			expr:  `$_bad &`,
+			variables: map[string]any{
+				"_bad": "value",
+			},
+			wantErr: true,
 		},
 	}
 
