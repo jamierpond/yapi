@@ -97,17 +97,31 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 	var diags []Diagnostic
 
 	for varName, diagnosis := range varMatrix {
-		// Case A: Variable is in defaults or OS -> No error
-		if diagnosis.IsInDefaults || diagnosis.IsOS {
+		// Case A: Variable is in defaults -> No diagnostic needed
+		if diagnosis.IsInDefaults {
 			continue
 		}
 
-		// Case B: Variable is defined in ALL environments -> No error
+		// Case B: Variable is only in OS environment -> Warning (non-reproducible)
+		// This makes validation deterministic and encourages explicit config
+		if diagnosis.IsOS && len(diagnosis.DefinedInEnvs) == 0 {
+			line := findVarLine(text, varName)
+			diags = append(diags, Diagnostic{
+				Severity: SeverityWarning,
+				Field:    varName,
+				Message:  fmt.Sprintf("variable '%s' only defined in OS environment (not in project config). Consider adding to yapi.config.yml for reproducibility", varName),
+				Line:     line,
+				Col:      0,
+			})
+			continue
+		}
+
+		// Case C: Variable is defined in ALL environments -> No error
 		if len(diagnosis.MissingInEnvs) == 0 {
 			continue
 		}
 
-		// Case C: Variable is missing in SOME environments -> Warning
+		// Case D: Variable is missing in SOME environments -> Warning
 		if len(diagnosis.DefinedInEnvs) > 0 && len(diagnosis.MissingInEnvs) > 0 {
 			line := findVarLine(text, varName)
 			envList := strings.Join(diagnosis.MissingInEnvs, ", ")
@@ -121,8 +135,8 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 			continue
 		}
 
-		// Case D: Variable is not found in ANY environment -> Error
-		if len(diagnosis.DefinedInEnvs) == 0 {
+		// Case E: Variable is not found in ANY environment and not in OS -> Error
+		if len(diagnosis.DefinedInEnvs) == 0 && !diagnosis.IsOS {
 			line := findVarLine(text, varName)
 			diags = append(diags, Diagnostic{
 				Severity: SeverityError,

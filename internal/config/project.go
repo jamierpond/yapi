@@ -18,6 +18,11 @@ type ProjectConfigV1 struct {
 	DefaultEnvironment string                 `yaml:"default_environment"` // Default environment to use when --env not specified
 	Defaults           EnvironmentConfig      `yaml:"defaults"`            // Default vars applied to all environments
 	Environments       map[string]Environment `yaml:"environments"`        // Named environments (dev, staging, prod, etc.)
+
+	// envCache caches resolved environment variables to avoid repeated file I/O
+	// Key is environment name (empty string for defaults)
+	// This cache is particularly important for LSP performance
+	envCache map[string]map[string]string `yaml:"-"`
 }
 
 // EnvironmentConfig holds variable definitions that can be shared or inherited.
@@ -140,7 +145,23 @@ func (pc *ProjectConfigV1) ListEnvironments() []string {
 // ResolveEnvFiles resolves all .env file paths relative to the project root and loads them.
 // Returns a merged map of all variables (defaults first, then environment-specific).
 // OS environment variables take precedence over all loaded vars.
+// Results are cached to avoid repeated file I/O (important for LSP performance).
 func (pc *ProjectConfigV1) ResolveEnvFiles(projectRoot string, envName string) (map[string]string, error) {
+	// Initialize cache if needed
+	if pc.envCache == nil {
+		pc.envCache = make(map[string]map[string]string)
+	}
+
+	// Check cache first
+	if cached, ok := pc.envCache[envName]; ok {
+		// Return a copy to prevent external modifications
+		result := make(map[string]string, len(cached))
+		for k, v := range cached {
+			result[k] = v
+		}
+		return result, nil
+	}
+
 	result := make(map[string]string)
 
 	// 1. Load default .env files
@@ -184,5 +205,13 @@ func (pc *ProjectConfigV1) ResolveEnvFiles(projectRoot string, envName string) (
 	// 5. OS environment variables override everything
 	// This happens at resolution time, not here
 
-	return result, nil
+	// Store in cache
+	pc.envCache[envName] = result
+
+	// Return a copy to prevent external modifications
+	resultCopy := make(map[string]string, len(result))
+	for k, v := range result {
+		resultCopy[k] = v
+	}
+	return resultCopy, nil
 }

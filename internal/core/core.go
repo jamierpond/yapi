@@ -103,17 +103,20 @@ func (e *Engine) RunConfig(
 
 	// Re-expand variables if EnvOverrides is provided
 	if len(opts.EnvOverrides) > 0 && analysis.Base != nil {
-		// Create a custom resolver that checks EnvOverrides first, then OS env
+		// Create a custom resolver with correct precedence order:
+		// 1. OS environment (highest priority - matches runner/context.go)
+		// 2. Project EnvOverrides
+		// 3. Empty string fallback
 		resolver := func(key string) (string, error) {
-			// Check EnvOverrides first
-			if val, ok := opts.EnvOverrides[key]; ok {
-				return val, nil
-			}
-			// Fall back to OS environment
+			// 1. Check OS environment first (highest priority)
 			if val, ok := os.LookupEnv(key); ok {
 				return val, nil
 			}
-			// Return empty string (os.ExpandEnv behavior)
+			// 2. Check project EnvOverrides
+			if val, ok := opts.EnvOverrides[key]; ok {
+				return val, nil
+			}
+			// 3. Return empty string (os.ExpandEnv behavior)
 			return "", nil
 		}
 
