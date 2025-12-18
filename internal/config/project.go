@@ -12,10 +12,11 @@ import (
 
 // ProjectConfigV1 represents a yapi.config.yml file which defines environments for a project.
 type ProjectConfigV1 struct {
-	Yapi         string                 `yaml:"yapi"`         // Must be "v1"
-	Kind         string                 `yaml:"kind"`         // Must be "project"
-	Defaults     EnvironmentConfig      `yaml:"defaults"`     // Default vars applied to all environments
-	Environments map[string]Environment `yaml:"environments"` // Named environments (dev, staging, prod, etc.)
+	Yapi               string                 `yaml:"yapi"`                  // Must be "v1"
+	Kind               string                 `yaml:"kind"`                  // Must be "project"
+	DefaultEnvironment string                 `yaml:"default_environment"`   // Default environment to use when --env not specified
+	Defaults           EnvironmentConfig      `yaml:"defaults"`              // Default vars applied to all environments
+	Environments       map[string]Environment `yaml:"environments"`          // Named environments (dev, staging, prod, etc.)
 }
 
 // EnvironmentConfig holds variable definitions that can be shared or inherited.

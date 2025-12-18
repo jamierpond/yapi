@@ -281,9 +281,24 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		BinaryOutput: app.binaryOutput,
 	}
 
-	// Load project environment variables if --env flag is specified
-	if ctx.envName != "" {
-		envVars, err := loadProjectEnv(ctx.path, ctx.envName)
+	// Load project environment variables
+	// First check if project config exists, then use --env flag or default_environment
+	envName := ctx.envName
+	if envName == "" {
+		// Try to find project and use default_environment if specified
+		absPath, err := filepath.Abs(ctx.path)
+		if err == nil {
+			configDir := filepath.Dir(absPath)
+			if projectRoot, err := config.FindProjectRoot(configDir); err == nil {
+				if project, err := config.LoadProject(projectRoot); err == nil && project.DefaultEnvironment != "" {
+					envName = project.DefaultEnvironment
+				}
+			}
+		}
+	}
+
+	if envName != "" {
+		envVars, err := loadProjectEnv(ctx.path, envName)
 		if err != nil {
 			// Fail with clear error message
 			if ctx.strict {
