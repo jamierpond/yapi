@@ -564,3 +564,250 @@ func TestFormatValue(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyJQWithVars(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		filterExpr string
+		variables  map[string]any
+		want       string
+		wantErr    bool
+	}{
+		{
+			name:       "simple variable usage",
+			input:      `{"id": 1}`,
+			filterExpr: `.id == $_headers["Content-Type"]`,
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json"},
+			},
+			want:    "false",
+			wantErr: false,
+		},
+		{
+			name:       "access variable in filter",
+			input:      `{"data": "test"}`,
+			filterExpr: `$_headers`,
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json", "X-Custom": "value"},
+			},
+			want:    "{\n  \"Content-Type\": \"application/json\",\n  \"X-Custom\": \"value\"\n}",
+			wantErr: false,
+		},
+		{
+			name:       "combine input and variable",
+			input:      `{"name": "test"}`,
+			filterExpr: `{name, header: $_headers["Content-Type"]}`,
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json"},
+			},
+			want:    "{\n  \"name\": \"test\",\n  \"header\": \"application/json\"\n}",
+			wantErr: false,
+		},
+		{
+			name:       "no variables provided (nil)",
+			input:      `{"id": 1}`,
+			filterExpr: `.id`,
+			variables:  nil,
+			want:       "1",
+			wantErr:    false,
+		},
+		{
+			name:       "empty variables map",
+			input:      `{"id": 1}`,
+			filterExpr: `.id`,
+			variables:  map[string]any{},
+			want:       "1",
+			wantErr:    false,
+		},
+		{
+			name:       "multiple variables",
+			input:      `{"value": 10}`,
+			filterExpr: `$_a + $_b + .value`,
+			variables: map[string]any{
+				"_a": 5,
+				"_b": 3,
+			},
+			want:    "18",
+			wantErr: false,
+		},
+		{
+			name:       "invalid filter with variables",
+			input:      `{"id": 1}`,
+			filterExpr: `.id &`,
+			variables: map[string]any{
+				"_headers": map[string]any{},
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ApplyJQWithVars(tt.input, tt.filterExpr, tt.variables)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ApplyJQWithVars() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("ApplyJQWithVars() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEvalJQBoolWithDetailAndVars(t *testing.T) {
+	tests := []struct {
+		name              string
+		input             string
+		expr              string
+		variables         map[string]any
+		wantPassed        bool
+		wantErr           bool
+		wantLeftSide      string
+		wantOperator      string
+		wantRightSide     string
+		wantActualValue   string
+		wantExpectedValue string
+	}{
+		{
+			name:  "simple variable comparison",
+			input: `{"status": "ok"}`,
+			expr:  `$_headers["Content-Type"] == "application/json"`,
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json"},
+			},
+			wantPassed:        true,
+			wantLeftSide:      `$_headers["Content-Type"]`,
+			wantOperator:      "==",
+			wantRightSide:     `"application/json"`,
+			wantActualValue:   `"application/json"`,
+			wantExpectedValue: `"application/json"`,
+		},
+		{
+			name:  "variable comparison fails",
+			input: `{"status": "ok"}`,
+			expr:  `$_headers["Content-Type"] == "text/html"`,
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json"},
+			},
+			wantPassed:        false,
+			wantLeftSide:      `$_headers["Content-Type"]`,
+			wantOperator:      "==",
+			wantRightSide:     `"text/html"`,
+			wantActualValue:   `"application/json"`,
+			wantExpectedValue: `"text/html"`,
+		},
+		{
+			name:  "variable null check passes",
+			input: `{}`,
+			expr:  `$_headers["X-Custom"] != null`,
+			variables: map[string]any{
+				"_headers": map[string]any{"X-Custom": "value123"},
+			},
+			wantPassed:        true,
+			wantLeftSide:      `$_headers["X-Custom"]`,
+			wantOperator:      "!=",
+			wantRightSide:     "null",
+			wantActualValue:   `"value123"`,
+			wantExpectedValue: "null",
+		},
+		{
+			name:  "variable null check fails",
+			input: `{}`,
+			expr:  `$_headers["Missing"] != null`,
+			variables: map[string]any{
+				"_headers": map[string]any{"Content-Type": "application/json"},
+			},
+			wantPassed:        false,
+			wantLeftSide:      `$_headers["Missing"]`,
+			wantOperator:      "!=",
+			wantRightSide:     "null",
+			wantActualValue:   "null",
+			wantExpectedValue: "null",
+		},
+		{
+			name:  "no variables - regular expression",
+			input: `{"id": 1}`,
+			expr:  `.id == 1`,
+			variables: map[string]any{
+				"_headers": map[string]any{},
+			},
+			wantPassed:        true,
+			wantLeftSide:      ".id",
+			wantOperator:      "==",
+			wantRightSide:     "1",
+			wantActualValue:   "1",
+			wantExpectedValue: "1",
+		},
+		{
+			name:       "nil variables - backward compatible",
+			input:      `{"id": 1}`,
+			expr:       `.id == 1`,
+			variables:  nil,
+			wantPassed: true,
+		},
+		{
+			name:  "combine input and variable in expression",
+			input: `{"value": 10}`,
+			expr:  `.value > $_threshold`,
+			variables: map[string]any{
+				"_threshold": 5,
+			},
+			wantPassed:        true,
+			wantLeftSide:      ".value",
+			wantOperator:      ">",
+			wantRightSide:     "$_threshold",
+			wantActualValue:   "10",
+			wantExpectedValue: "5",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			passed, detail, err := EvalJQBoolWithDetailAndVars(tt.input, tt.expr, tt.variables)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EvalJQBoolWithDetailAndVars() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if passed != tt.wantPassed {
+				t.Errorf("EvalJQBoolWithDetailAndVars() passed = %v, want %v", passed, tt.wantPassed)
+			}
+
+			if detail == nil {
+				t.Fatal("EvalJQBoolWithDetailAndVars() detail is nil")
+			}
+
+			if detail.Expression != tt.expr {
+				t.Errorf("detail.Expression = %q, want %q", detail.Expression, tt.expr)
+			}
+
+			if tt.wantLeftSide != "" && detail.LeftSide != tt.wantLeftSide {
+				t.Errorf("detail.LeftSide = %q, want %q", detail.LeftSide, tt.wantLeftSide)
+			}
+
+			if tt.wantOperator != "" && detail.Operator != tt.wantOperator {
+				t.Errorf("detail.Operator = %q, want %q", detail.Operator, tt.wantOperator)
+			}
+
+			if tt.wantRightSide != "" && detail.RightSide != tt.wantRightSide {
+				t.Errorf("detail.RightSide = %q, want %q", detail.RightSide, tt.wantRightSide)
+			}
+
+			if tt.wantActualValue != "" && detail.ActualValue != tt.wantActualValue {
+				t.Errorf("detail.ActualValue = %q, want %q", detail.ActualValue, tt.wantActualValue)
+			}
+
+			if tt.wantExpectedValue != "" && detail.ExpectedValue != tt.wantExpectedValue {
+				t.Errorf("detail.ExpectedValue = %q, want %q", detail.ExpectedValue, tt.wantExpectedValue)
+			}
+		})
+	}
+}

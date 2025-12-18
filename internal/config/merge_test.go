@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/utils"
 )
 
@@ -198,5 +199,117 @@ func TestDeepCloneMap(t *testing.T) {
 				t.Error("src array nested map was modified")
 			}
 		}
+	}
+}
+
+func TestAssertionSet_UnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		name        string
+		yaml        string
+		wantBody    []string
+		wantHeaders []string
+		wantErr     bool
+	}{
+		{
+			name: "flat array - backward compatible",
+			yaml: `assert:
+  - .id == 1
+  - .name != null`,
+			wantBody:    []string{".id == 1", ".name != null"},
+			wantHeaders: nil,
+			wantErr:     false,
+		},
+		{
+			name: "grouped map - body only",
+			yaml: `assert:
+  body:
+    - .id == 1
+    - .name != null`,
+			wantBody:    []string{".id == 1", ".name != null"},
+			wantHeaders: nil,
+			wantErr:     false,
+		},
+		{
+			name: "grouped map - headers only",
+			yaml: `assert:
+  headers:
+    - .["Content-Type"] == "application/json"
+    - .["X-Custom"] != null`,
+			wantBody:    nil,
+			wantHeaders: []string{`.["Content-Type"] == "application/json"`, `.["X-Custom"] != null`},
+			wantErr:     false,
+		},
+		{
+			name: "grouped map - both body and headers",
+			yaml: `assert:
+  headers:
+    - .["Content-Type"] != null
+  body:
+    - .id == 1
+    - .name != null`,
+			wantBody:    []string{".id == 1", ".name != null"},
+			wantHeaders: []string{`.["Content-Type"] != null`},
+			wantErr:     false,
+		},
+		{
+			name: "empty flat array",
+			yaml: `assert: []`,
+			wantBody:    []string{},
+			wantHeaders: nil,
+			wantErr:     false,
+		},
+		{
+			name: "empty grouped map",
+			yaml: `assert:
+  body: []
+  headers: []`,
+			wantBody:    []string{},
+			wantHeaders: []string{},
+			wantErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var data struct {
+				Assert AssertionSet `yaml:"assert"`
+			}
+
+			err := yaml.Unmarshal([]byte(tt.yaml), &data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UnmarshalYAML() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if len(data.Assert.Body) != len(tt.wantBody) {
+				t.Errorf("UnmarshalYAML() body count = %d, want %d", len(data.Assert.Body), len(tt.wantBody))
+			}
+
+			for i, want := range tt.wantBody {
+				if i >= len(data.Assert.Body) {
+					break
+				}
+				if data.Assert.Body[i] != want {
+					t.Errorf("UnmarshalYAML() body[%d] = %q, want %q", i, data.Assert.Body[i], want)
+				}
+			}
+
+			if len(data.Assert.Headers) != len(tt.wantHeaders) {
+				t.Errorf("UnmarshalYAML() headers count = %d, want %d", len(data.Assert.Headers), len(tt.wantHeaders))
+			}
+
+			for i, want := range tt.wantHeaders {
+				if i >= len(data.Assert.Headers) {
+					break
+				}
+				if data.Assert.Headers[i] != want {
+					t.Errorf("UnmarshalYAML() headers[%d] = %q, want %q", i, data.Assert.Headers[i], want)
+				}
+			}
+		})
 	}
 }
