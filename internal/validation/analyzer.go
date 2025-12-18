@@ -435,6 +435,16 @@ type EnvVarInfo struct {
 	EndIndex   int
 }
 
+// isJQBuiltin returns true if the variable name is a known JQ built-in variable.
+// JQ built-ins in yapi include: _headers, _body, _request, _response
+func isJQBuiltin(varName string) bool {
+	switch varName {
+	case "_headers", "_body", "_request", "_response":
+		return true
+	}
+	return false
+}
+
 // FindEnvVarRefs finds all environment variable references in text
 func FindEnvVarRefs(text string) []EnvVarInfo {
 	var refs []EnvVarInfo
@@ -504,8 +514,9 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 				continue
 			}
 
-			// Skip JQ variables (start with underscore, e.g., $_headers, $_body)
-			if strings.HasPrefix(varName, "_") {
+			// Skip known JQ built-in variables (_headers, _body, etc.)
+			// but allow user environment variables that happen to start with underscore
+			if isJQBuiltin(varName) {
 				continue
 			}
 

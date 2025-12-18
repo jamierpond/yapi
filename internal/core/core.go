@@ -3,6 +3,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -63,7 +64,12 @@ func (e *Engine) RunConfig(
 		var err error
 		project, err = config.LoadProject(opts.ProjectRoot)
 		if err != nil {
-			// Ignore project load errors during validation - still run the config
+			// If user explicitly requested an environment via --env flag,
+			// they need to know if project loading failed
+			if opts.ProjectEnv != "" {
+				return &RunConfigResult{Error: fmt.Errorf("failed to load project config: %w", err)}
+			}
+			// Otherwise, ignore project load errors during validation - still run the config
 			project = nil
 		}
 	}

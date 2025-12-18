@@ -138,7 +138,7 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 }
 
 // extractEnvVarNames extracts all unique environment variable names from the text.
-// Excludes chain references (${step.field}) and JQ variables ($_var).
+// Excludes chain references (${step.field}) and known JQ built-in variables.
 func extractEnvVarNames(text string) map[string]bool {
 	result := make(map[string]bool)
 	refs := FindEnvVarRefs(text)
@@ -148,8 +148,9 @@ func extractEnvVarNames(text string) map[string]bool {
 		if strings.Contains(ref.Name, ".") {
 			continue
 		}
-		// Skip JQ variables (start with underscore)
-		if strings.HasPrefix(ref.Name, "_") {
+		// Skip known JQ built-in variables (_headers, _body, etc.)
+		// Note: FindEnvVarRefs already filters these out, but we check again for safety
+		if isJQBuiltin(ref.Name) {
 			continue
 		}
 		result[ref.Name] = true

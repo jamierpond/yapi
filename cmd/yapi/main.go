@@ -283,101 +283,23 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		BinaryOutput: app.binaryOutput,
 	}
 
-	// Detect if this config is part of a project (has yapi.config.yml)
-	absPath, err := filepath.Abs(ctx.path)
+	// Load project and environment configuration
+	projEnv, err := loadProjectAndEnv(ctx.path, ctx.envName, true)
 	if err != nil {
 		if ctx.strict {
-			return fmt.Errorf("failed to resolve path: %w", err)
+			return err
 		}
-		fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("Failed to resolve path: %v", err)))
+		fmt.Fprintf(os.Stderr, "%s\n", color.Red(err.Error()))
 		return nil
 	}
-	configDir := filepath.Dir(absPath)
-	projectRoot, projectErr := config.FindProjectRoot(configDir)
 
-	var project *config.ProjectConfigV1
-	if projectErr == nil {
-		// We're in a project - load the config
-		project, err = config.LoadProject(projectRoot)
-		if err != nil {
-			if ctx.strict {
-				return fmt.Errorf("failed to load project config: %w", err)
-			}
-			fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("Failed to load project config: %v", err)))
-			return nil
+	// Apply project settings if found
+	if projEnv != nil {
+		opts.ProjectRoot = projEnv.projectRoot
+		if projEnv.envVars != nil {
+			opts.EnvOverrides = projEnv.envVars
+			opts.ProjectEnv = projEnv.envName
 		}
-		// Set project root for validation
-		opts.ProjectRoot = projectRoot
-	}
-
-	// Determine which environment to use
-	envName := ctx.envName
-	if project != nil {
-		// We're in a project context
-		if envName == "" {
-			// No --env flag specified, check for default_environment
-			if project.DefaultEnvironment != "" {
-				envName = project.DefaultEnvironment
-			} else {
-				// No environment specified - check if the config actually needs one
-				configData, readErr := os.ReadFile(ctx.path)
-				if readErr != nil {
-					if ctx.strict {
-						return fmt.Errorf("failed to read config: %w", readErr)
-					}
-					fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("Failed to read config: %v", readErr)))
-					return nil
-				}
-
-				req := validation.CheckEnvironmentRequirement(string(configData), project, projectRoot)
-				if req.Required {
-					// Config uses variables that need an environment
-					if ctx.strict {
-						return fmt.Errorf("%s", req.Message)
-					}
-					fmt.Fprintf(os.Stderr, "%s\n", color.Red(req.Message))
-					return nil
-				}
-				// Config doesn't use any undefined variables - proceed without environment
-			}
-		}
-
-		// Load the environment variables if an environment was selected
-		if envName != "" {
-			// Validate that the environment exists
-			if _, ok := project.Environments[envName]; !ok {
-				availableEnvs := project.ListEnvironments()
-				sort.Strings(availableEnvs)
-				errMsg := fmt.Sprintf("Environment '%s' not found in yapi.config.yml\nAvailable environments: %s",
-					envName, strings.Join(availableEnvs, ", "))
-				if ctx.strict {
-					return fmt.Errorf("%s", errMsg)
-				}
-				fmt.Fprintf(os.Stderr, "%s\n", color.Red(errMsg))
-				return nil
-			}
-
-			// Load the environment variables
-			envVars, err := project.ResolveEnvFiles(projectRoot, envName)
-			if err != nil {
-				if ctx.strict {
-					return fmt.Errorf("failed to load environment '%s': %w", envName, err)
-				}
-				fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("Failed to load environment '%s': %v", envName, err)))
-				return nil
-			}
-
-			opts.EnvOverrides = envVars
-			opts.ProjectEnv = envName
-		}
-	} else if envName != "" {
-		// --env flag specified but no project config found
-		errMsg := "--env flag specified but no yapi.config.yml found in directory tree"
-		if ctx.strict {
-			return fmt.Errorf("%s", errMsg)
-		}
-		fmt.Fprintf(os.Stderr, "%s\n", color.Red(errMsg))
-		return nil
 	}
 
 	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)
@@ -467,19 +389,33 @@ func (app *rootCommand) runConfigPathWithEnvE(path string, envName string) error
 	return app.executeRunE(runContext{path: path, strict: true, envName: envName})
 }
 
-// loadProjectEnv finds the project config and loads environment variables for the specified environment
-func loadProjectEnv(configPath string, envName string) (map[string]string, error) {
-	// Get the directory containing the config file
+// projectEnvResult holds the result of loading a project and optional environment
+type projectEnvResult struct {
+	project     *config.ProjectConfigV1
+	projectRoot string
+	envVars     map[string]string
+	envName     string
+}
+
+// loadProjectAndEnv loads project config and optional environment variables.
+// Returns nil result with no error if no project found (not an error condition).
+// Returns error only for actual load failures.
+func loadProjectAndEnv(configPath string, requestedEnv string, checkRequirement bool) (*projectEnvResult, error) {
+	// Resolve absolute path
 	absPath, err := filepath.Abs(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve config path: %w", err)
+		return nil, fmt.Errorf("failed to resolve path: %w", err)
 	}
 	configDir := filepath.Dir(absPath)
 
-	// Find project root
+	// Try to find project root
 	projectRoot, err := config.FindProjectRoot(configDir)
 	if err != nil {
-		return nil, fmt.Errorf("no yapi.config.yml found (use --env flag only when a project config exists)")
+		// No project found - not an error if no env was requested
+		if requestedEnv != "" {
+			return nil, fmt.Errorf("--env flag specified but no yapi.config.yml found in directory tree")
+		}
+		return nil, nil
 	}
 
 	// Load project config
@@ -488,19 +424,52 @@ func loadProjectEnv(configPath string, envName string) (map[string]string, error
 		return nil, fmt.Errorf("failed to load project config: %w", err)
 	}
 
-	// Validate that the specified environment exists
-	if _, ok := project.Environments[envName]; !ok {
-		availableEnvs := project.ListEnvironments()
-		return nil, fmt.Errorf("environment '%s' not found in yapi.config.yml (available: %s)", envName, strings.Join(availableEnvs, ", "))
+	result := &projectEnvResult{
+		project:     project,
+		projectRoot: projectRoot,
 	}
 
-	// Resolve environment files and variables
-	envVars, err := project.ResolveEnvFiles(projectRoot, envName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load environment '%s': %w", envName, err)
+	// Determine which environment to use
+	envName := requestedEnv
+	if envName == "" && project.DefaultEnvironment != "" {
+		envName = project.DefaultEnvironment
 	}
 
-	return envVars, nil
+	// Check if config requires an environment (only if requested and no explicit env)
+	if envName == "" && checkRequirement {
+		configData, readErr := os.ReadFile(configPath)
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read config: %w", readErr)
+		}
+		req := validation.CheckEnvironmentRequirement(string(configData), project, projectRoot)
+		if req.Required {
+			return nil, fmt.Errorf("%s", req.Message)
+		}
+		// Config doesn't need environment - return project info only
+		return result, nil
+	}
+
+	// Load environment if specified
+	if envName != "" {
+		// Validate environment exists
+		if _, ok := project.Environments[envName]; !ok {
+			availableEnvs := project.ListEnvironments()
+			sort.Strings(availableEnvs)
+			return nil, fmt.Errorf("environment '%s' not found in yapi.config.yml\nAvailable environments: %s",
+				envName, strings.Join(availableEnvs, ", "))
+		}
+
+		// Load environment variables
+		envVars, err := project.ResolveEnvFiles(projectRoot, envName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load environment '%s': %w", envName, err)
+		}
+
+		result.envVars = envVars
+		result.envName = envName
+	}
+
+	return result, nil
 }
 
 func lspE(cmd *cobra.Command, args []string) error {
