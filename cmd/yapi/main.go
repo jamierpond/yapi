@@ -1354,6 +1354,8 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(os.Stderr, "  %s\n", color.Green(fmt.Sprintf("Success: %d (%.1f%%)", successCount, float64(successCount)*100/float64(len(allResults)))))
 	if failCount > 0 {
 		fmt.Fprintf(os.Stderr, "  %s\n", color.Red(fmt.Sprintf("Failed: %d (%.1f%%)", failCount, float64(failCount)*100/float64(len(allResults)))))
+	} else {
+		fmt.Fprintf(os.Stderr, "  %s\n", color.Dim(fmt.Sprintf("Failed: 0 (0.0%%)")))
 	}
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "  %s\n", color.Accent("Throughput:"))
