@@ -154,7 +154,11 @@ func (app *rootCommand) runInteractiveE(cmd *cobra.Command, args []string) error
 }
 
 func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
-	return app.runConfigPathE(args[0])
+	path := "-"
+	if len(args) > 0 {
+		path = args[0]
+	}
+	return app.runConfigPathE(path)
 }
 
 func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {

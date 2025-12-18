@@ -3,6 +3,7 @@ package validation
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -118,8 +119,40 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 }
 
 // AnalyzeConfigFile loads a file and analyzes it.
+// If path is "-", reads from stdin.
 func AnalyzeConfigFile(path string) (*Analysis, error) {
-	parseRes, err := config.Load(path)
+	var data []byte
+	var err error
+
+	// Read the file/stdin content once
+	if path == "-" {
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			diag := Diagnostic{
+				Severity: SeverityError,
+				Field:    "",
+				Message:  fmt.Sprintf("failed to read from stdin: %v", err),
+				Line:     0,
+				Col:      0,
+			}
+			return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
+		}
+	} else {
+		data, err = os.ReadFile(path) //nolint:gosec // user-provided config path
+		if err != nil {
+			diag := Diagnostic{
+				Severity: SeverityError,
+				Field:    "",
+				Message:  fmt.Sprintf("failed to load config: %v", err),
+				Line:     0,
+				Col:      0,
+			}
+			return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
+		}
+	}
+
+	// Parse the config from the raw data
+	parseRes, err := config.LoadFromString(string(data))
 	if err != nil {
 		diag := Diagnostic{
 			Severity: SeverityError,
@@ -131,7 +164,6 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	data, _ := os.ReadFile(path) //nolint:gosec // user-provided config path
 	return analyzeParsed(string(data), parseRes), nil
 }
 

@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -24,10 +25,21 @@ type ParseResult struct {
 }
 
 // Load reads and parses a yapi config file from the given path.
+// If path is "-", reads from stdin.
 func Load(path string) (*ParseResult, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // user-provided config file
-	if err != nil {
-		return nil, err
+	var data []byte
+	var err error
+
+	if path == "-" {
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read from stdin: %w", err)
+		}
+	} else {
+		data, err = os.ReadFile(path) //nolint:gosec // user-provided config file
+		if err != nil {
+			return nil, err
+		}
 	}
 	return LoadFromString(string(data))
 }

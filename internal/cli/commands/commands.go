@@ -62,9 +62,9 @@ func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
 
 func newRunCmd(h *Handlers) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run <file>",
-		Short: "Run a request defined in a yapi config file",
-		Args:  cobra.ExactArgs(1),
+		Use:   "run [file]",
+		Short: "Run a request defined in a yapi config file (reads from stdin if no file specified)",
+		Args:  cobra.MaximumNArgs(1),
 		Run:   func(cmd *cobra.Command, args []string) {}, // no-op for doc generation
 	}
 	if h != nil && h.Run != nil {
