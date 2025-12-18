@@ -1,6 +1,8 @@
 yapi: v1
 kind: project
 
+defaults_environment: local
+
 environments:
   # Local Development: Point to different localhost ports
   local:

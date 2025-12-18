@@ -175,6 +175,20 @@ func textDocumentDidSave(ctx *glsp.Context, params *protocol.DidSaveTextDocument
 }
 
 func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string) {
+	// Check if this is a project config file - don't validate as a request file
+	if filePath := uriToPath(uri); filePath != "" {
+		fileName := filepath.Base(filePath)
+		if fileName == "yapi.config.yml" || fileName == "yapi.config.yaml" {
+			// This is a project config file, not a request file
+			// Send empty diagnostics (project configs are validated when loaded)
+			ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+				URI:         uri,
+				Diagnostics: []protocol.Diagnostic{},
+			})
+			return
+		}
+	}
+
 	// Get document to access project context
 	doc, ok := docs[uri]
 	var analysis *validation.Analysis
