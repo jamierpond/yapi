@@ -134,6 +134,7 @@ export default async function Landing() {
                   </div>
                 </div>
                 <div className="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-yapi-fg/90 whitespace-pre">
+                  <div><span className="text-yapi-accent">yapi</span>: v1</div>
                   <div className="text-yapi-fg-subtle/50 mb-2"># Chain requests together</div>
                   <div><span className="text-yapi-accent">chain</span>:</div>
                   <div>  - <span className="text-yapi-accent">name</span>: login</div>
