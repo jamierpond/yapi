@@ -1,0 +1,21 @@
+yapi: v1
+
+# Authenticated API request using secrets from .env files
+# The API_KEY comes from environment-specific .env files
+# Usage:
+#   yapi run .yapi/authenticated-request.yapi.yml --env dev
+#   yapi run .yapi/authenticated-request.yapi.yml --env prod
+
+url: ${BASE_URL}/api/${API_VERSION}/protected
+method: GET
+
+headers:
+  Authorization: Bearer ${API_KEY}
+  Content-Type: ${CONTENT_TYPE}
+  User-Agent: ${USER_AGENT}
+
+expect:
+  status: 200
+  assert:
+    body:
+      - .authenticated == true

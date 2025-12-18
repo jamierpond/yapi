@@ -4,6 +4,7 @@ package core
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"yapi.run/cli/internal/config"
@@ -69,6 +70,33 @@ func (e *Engine) RunConfig(
 	if len(analysis.Chain) > 0 {
 		// For chains, return analysis only - caller handles execution
 		return &RunConfigResult{Analysis: analysis}
+	}
+
+	// Re-expand variables if EnvOverrides is provided
+	if len(opts.EnvOverrides) > 0 && analysis.Base != nil {
+		// Create a custom resolver that checks EnvOverrides first
+		resolver := func(key string) (string, error) {
+			// Check EnvOverrides first
+			if val, ok := opts.EnvOverrides[key]; ok {
+				return val, nil
+			}
+			// Fall back to OS environment
+			if val, ok := os.LookupEnv(key); ok {
+				return val, nil
+			}
+			// Return empty string (os.ExpandEnv behavior)
+			return "", nil
+		}
+
+		// Re-expand variables with the custom resolver
+		analysis.Base.ExpandWithResolver(resolver)
+
+		// Re-convert to domain request
+		req, err := analysis.Base.ToDomain()
+		if err != nil {
+			return &RunConfigResult{Analysis: analysis, Error: err}
+		}
+		analysis.Request = req
 	}
 
 	if analysis.Request == nil {

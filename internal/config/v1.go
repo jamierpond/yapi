@@ -240,6 +240,11 @@ func (c *ConfigV1) expandEnvVars() {
 	vars.ExpandAll(c, vars.EnvResolver)
 }
 
+// ExpandWithResolver expands environment variables using a custom resolver
+func (c *ConfigV1) ExpandWithResolver(resolver vars.Resolver) {
+	vars.ExpandAll(c, resolver)
+}
+
 // setDefaults applies default values for Method
 func (c *ConfigV1) setDefaults() {
 	if c.Method == "" {
