@@ -82,10 +82,10 @@ func FindProjectRoot(startDir string) (string, error) {
 func LoadProject(projectRoot string) (*ProjectConfigV1, error) {
 	// Try .yml first, then .yaml
 	configPath := filepath.Join(projectRoot, "yapi.config.yml")
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) // #nosec G304 -- configPath is constructed from projectRoot and fixed filename
 	if err != nil {
 		configPath = filepath.Join(projectRoot, "yapi.config.yaml")
-		data, err = os.ReadFile(configPath)
+		data, err = os.ReadFile(configPath) // #nosec G304 -- configPath is constructed from projectRoot and fixed filename
 		if err != nil {
 			return nil, fmt.Errorf("failed to read project config: %w", err)
 		}

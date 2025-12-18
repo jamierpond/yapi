@@ -78,7 +78,7 @@ func (e *Engine) RunConfig(
 	var analysis *validation.Analysis
 	var err error
 	if project != nil {
-		data, readErr := os.ReadFile(path)
+		data, readErr := os.ReadFile(path) // #nosec G304 -- path is validated user-provided config file path
 		if readErr != nil {
 			return &RunConfigResult{Error: readErr}
 		}
