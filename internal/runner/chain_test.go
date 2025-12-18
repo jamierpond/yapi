@@ -1042,6 +1042,55 @@ func TestCheckExpectations_HeaderAssertions(t *testing.T) {
 	}
 }
 
+func TestCheckExpectations_HeaderAssertionErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		expectation config.Expectation
+		result      *Result
+		wantErr     bool
+	}{
+		{
+			name: "header assertion with invalid JQ expression",
+			expectation: config.Expectation{
+				Assert: config.AssertionSet{
+					Headers: []string{`.["Content-Type"] &`},
+				},
+			},
+			result: &Result{
+				Body: `{}`,
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "header assertion with non-boolean result",
+			expectation: config.Expectation{
+				Assert: config.AssertionSet{
+					Headers: []string{`.["Content-Type"]`},
+				},
+			},
+			result: &Result{
+				Body: `{}`,
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := CheckExpectations(tt.expectation, tt.result)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("CheckExpectations() error = %v, wantErr %v", res.Error, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestCheckExpectations_HeaderAssertionResults(t *testing.T) {
 	expectation := config.Expectation{
 		Assert: config.AssertionSet{
