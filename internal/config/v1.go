@@ -167,8 +167,36 @@ func (c *ConfigV1) Merge(step ChainStep) ConfigV1 {
 
 // Expectation defines assertions for a chain step
 type Expectation struct {
-	Status any      `yaml:"status,omitempty"` // int or []int
-	Assert []string `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
+	Status any         `yaml:"status,omitempty"` // int or []int
+	Assert AssertionSet `yaml:"assert,omitempty"` // JQ expressions that must evaluate to true
+}
+
+// AssertionSet represents assertions that can be either a flat list or grouped by context
+type AssertionSet struct {
+	Body    []string // Assertions on response body (default context)
+	Headers []string // Assertions on response headers
+}
+
+// UnmarshalYAML implements custom unmarshaling for AssertionSet to support both:
+// - Flat array: assert: [...]  (all treated as body assertions)
+// - Grouped map: assert: { headers: [...], body: [...] }
+func (a *AssertionSet) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Try to unmarshal as array first (backward compatible)
+	var flatList []string
+	if err := unmarshal(&flatList); err == nil {
+		a.Body = flatList
+		return nil
+	}
+
+	// Try to unmarshal as map (grouped assertions)
+	var grouped map[string][]string
+	if err := unmarshal(&grouped); err != nil {
+		return err
+	}
+
+	a.Headers = grouped["headers"]
+	a.Body = grouped["body"]
+	return nil
 }
 
 // ToDomain converts V1 YAML to the Canonical Config

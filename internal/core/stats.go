@@ -26,16 +26,16 @@ func ExtractConfigStats(analysis *validation.Analysis) map[string]any {
 	stats["chain_step_count"] = len(analysis.Chain)
 
 	// Expectations
-	hasExpectations := analysis.Expect.Status != nil || len(analysis.Expect.Assert) > 0
-	assertionCount := len(analysis.Expect.Assert)
+	hasExpectations := analysis.Expect.Status != nil || len(analysis.Expect.Assert.Body) > 0 || len(analysis.Expect.Assert.Headers) > 0
+	assertionCount := len(analysis.Expect.Assert.Body) + len(analysis.Expect.Assert.Headers)
 	hasStatusCheck := analysis.Expect.Status != nil
 
 	// Count expectations across chain steps too
 	for _, step := range analysis.Chain {
-		if step.Expect.Status != nil || len(step.Expect.Assert) > 0 {
+		if step.Expect.Status != nil || len(step.Expect.Assert.Body) > 0 || len(step.Expect.Assert.Headers) > 0 {
 			hasExpectations = true
 		}
-		assertionCount += len(step.Expect.Assert)
+		assertionCount += len(step.Expect.Assert.Body) + len(step.Expect.Assert.Headers)
 		if step.Expect.Status != nil {
 			hasStatusCheck = true
 		}

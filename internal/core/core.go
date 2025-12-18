@@ -88,7 +88,7 @@ func (e *Engine) RunConfig(
 
 	// Check expectations if present
 	var expectRes *runner.ExpectationResult
-	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert) > 0) {
+	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert.Body) > 0 || len(analysis.Expect.Assert.Headers) > 0) {
 		expectRes = runner.CheckExpectations(analysis.Expect, result)
 	}
 

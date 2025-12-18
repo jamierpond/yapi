@@ -1,3 +1,4 @@
+# Test header assertions using grouped syntax
 yapi: v1
 url: https://httpbin.org/response-headers
 query:
@@ -8,11 +9,10 @@ query:
 expect:
   status: 200
   assert:
-    # Assert on response headers using $_headers variable
-    - $_headers["Content-Type"] == "application/json"
-    - $_headers["Etag"] != null
-    - $_headers["Cache-Control"] != null
-
-    # Still can assert on body (httpbin returns array for duplicate params)
-    - .["Content-Type"] | type == "array"
-    - .["ETag"] == "W/\"sample-etag\""
+    headers:
+      - .["Content-Type"] == "application/json"
+      - .["Etag"] != null
+      - .["Cache-Control"] != null
+    body:
+      - .["Content-Type"] | type == "array"
+      - .["ETag"] == "W/\"sample-etag\""

@@ -77,37 +77,37 @@ func TestCheckExpectations_Assert(t *testing.T) {
 	}{
 		{
 			name:        "assertion passes - contains check",
-			expectation: config.Expectation{Assert: []string{`.status == "success"`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.status == "success"`}}},
 			result:      &Result{Body: `{"status": "success"}`},
 			wantErr:     false,
 		},
 		{
 			name:        "assertion fails - value mismatch",
-			expectation: config.Expectation{Assert: []string{`.status == "error"`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.status == "error"`}}},
 			result:      &Result{Body: `{"status": "success"}`},
 			wantErr:     true,
 		},
 		{
 			name:        "assertion passes - field exists",
-			expectation: config.Expectation{Assert: []string{`.status != null`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.status != null`}}},
 			result:      &Result{Body: `{"status": "success"}`},
 			wantErr:     false,
 		},
 		{
 			name:        "assertion fails - field missing",
-			expectation: config.Expectation{Assert: []string{`.missing != null`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.missing != null`}}},
 			result:      &Result{Body: `{"status": "success"}`},
 			wantErr:     true,
 		},
 		{
 			name:        "multiple assertions - all pass",
-			expectation: config.Expectation{Assert: []string{`.status == "success"`, `.data == "test"`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.status == "success"`, `.data == "test"`}}},
 			result:      &Result{Body: `{"status": "success", "data": "test"}`},
 			wantErr:     false,
 		},
 		{
 			name:        "multiple assertions - one fails",
-			expectation: config.Expectation{Assert: []string{`.status == "success"`, `.data == "wrong"`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.status == "success"`, `.data == "wrong"`}}},
 			result:      &Result{Body: `{"status": "success", "data": "test"}`},
 			wantErr:     true,
 		},
@@ -119,13 +119,13 @@ func TestCheckExpectations_Assert(t *testing.T) {
 		},
 		{
 			name:        "array length check",
-			expectation: config.Expectation{Assert: []string{`.items | length > 0`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.items | length > 0`}}},
 			result:      &Result{Body: `{"items": [1, 2, 3]}`},
 			wantErr:     false,
 		},
 		{
 			name:        "empty array fails length check",
-			expectation: config.Expectation{Assert: []string{`.items | length > 0`}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{`.items | length > 0`}}},
 			result:      &Result{Body: `{"items": []}`},
 			wantErr:     true,
 		},
@@ -754,7 +754,7 @@ func TestCheckExpectations_DetailedErrors(t *testing.T) {
 	}{
 		{
 			name:        "equality assertion failure with details",
-			expectation: config.Expectation{Assert: []string{".id == 999"}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{".id == 999"}}},
 			result:      &Result{Body: `{"id": 1, "title": "test"}`},
 			wantErr:     true,
 			wantErrContains: []string{
@@ -765,7 +765,7 @@ func TestCheckExpectations_DetailedErrors(t *testing.T) {
 		},
 		{
 			name:        "greater than assertion failure",
-			expectation: config.Expectation{Assert: []string{".id > 100"}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{".id > 100"}}},
 			result:      &Result{Body: `{"id": 1}`},
 			wantErr:     true,
 			wantErrContains: []string{
@@ -775,7 +775,7 @@ func TestCheckExpectations_DetailedErrors(t *testing.T) {
 		},
 		{
 			name:        "not equal assertion failure",
-			expectation: config.Expectation{Assert: []string{".completed != false"}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{".completed != false"}}},
 			result:      &Result{Body: `{"completed": false}`},
 			wantErr:     true,
 			wantErrContains: []string{
@@ -785,7 +785,7 @@ func TestCheckExpectations_DetailedErrors(t *testing.T) {
 		},
 		{
 			name:        "complex pipe expression failure",
-			expectation: config.Expectation{Assert: []string{".title | length > 100"}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{".title | length > 100"}}},
 			result:      &Result{Body: `{"title": "short"}`},
 			wantErr:     true,
 			wantErrContains: []string{
@@ -795,7 +795,7 @@ func TestCheckExpectations_DetailedErrors(t *testing.T) {
 		},
 		{
 			name:        "null comparison failure",
-			expectation: config.Expectation{Assert: []string{".userId == null"}},
+			expectation: config.Expectation{Assert: config.AssertionSet{Body: []string{".userId == null"}}},
 			result:      &Result{Body: `{"userId": 1}`},
 			wantErr:     true,
 			wantErrContains: []string{

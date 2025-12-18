@@ -3,6 +3,7 @@ package runner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -392,9 +393,10 @@ func (e *ExpectationResult) AllPassed() bool {
 
 // CheckExpectations validates the response against expected values
 func CheckExpectations(expect config.Expectation, result *Result) *ExpectationResult {
+	totalAssertions := len(expect.Assert.Body) + len(expect.Assert.Headers)
 	res := &ExpectationResult{
-		AssertionsTotal:  len(expect.Assert),
-		AssertionResults: make([]AssertionResult, 0, len(expect.Assert)),
+		AssertionsTotal:  totalAssertions,
+		AssertionResults: make([]AssertionResult, 0, totalAssertions),
 	}
 
 	// Status Check
@@ -431,18 +433,9 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 		}
 	}
 
-	// JQ Assertions
-	// Build variables map with headers (convert to map[string]any for gojq compatibility)
-	headersAny := make(map[string]any, len(result.Headers))
-	for k, v := range result.Headers {
-		headersAny[k] = v
-	}
-	variables := map[string]any{
-		"_headers": headersAny,
-	}
-
-	for _, assertion := range expect.Assert {
-		passed, detail, err := filter.EvalJQBoolWithDetailAndVars(result.Body, assertion, variables)
+	// Body Assertions - run against response body
+	for _, assertion := range expect.Assert.Body {
+		passed, detail, err := filter.EvalJQBoolWithDetail(result.Body, assertion)
 		ar := AssertionResult{
 			Expression: assertion,
 			Passed:     passed && err == nil,
@@ -461,6 +454,38 @@ func CheckExpectations(expect config.Expectation, result *Result) *ExpectationRe
 			return res
 		}
 		res.AssertionsPassed++
+	}
+
+	// Header Assertions - run against headers as JSON
+	if len(expect.Assert.Headers) > 0 {
+		// Convert headers to JSON for JQ processing
+		headersJSON, err := json.Marshal(result.Headers)
+		if err != nil {
+			res.Error = fmt.Errorf("failed to marshal headers for assertions: %w", err)
+			return res
+		}
+
+		for _, assertion := range expect.Assert.Headers {
+			passed, detail, err := filter.EvalJQBoolWithDetail(string(headersJSON), assertion)
+			ar := AssertionResult{
+				Expression: assertion,
+				Passed:     passed && err == nil,
+				Error:      err,
+			}
+			res.AssertionResults = append(res.AssertionResults, ar)
+
+			if err != nil {
+				res.Error = fmt.Errorf("header assertion failed: %w", err)
+				return res
+			}
+			if !passed {
+				// Generate detailed error message based on what we know about the assertion
+				errorMsg := formatAssertionError(detail)
+				res.Error = fmt.Errorf("header %s", errorMsg)
+				return res
+			}
+			res.AssertionsPassed++
+		}
 	}
 
 	return res

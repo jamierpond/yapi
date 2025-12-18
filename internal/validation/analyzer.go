@@ -169,8 +169,11 @@ func analyzeParsed(text string, parseRes *config.ParseResult) *Analysis {
 	diags = append(diags, validateUnknownKeys(text)...)
 	diags = append(diags, validateEnvVars(text)...)
 
-	if len(parseRes.Expect.Assert) > 0 {
-		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert, "")...)
+	if len(parseRes.Expect.Assert.Body) > 0 {
+		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert.Body, "")...)
+	}
+	if len(parseRes.Expect.Assert.Headers) > 0 {
+		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert.Headers, "")...)
 	}
 
 	return &Analysis{
@@ -310,8 +313,11 @@ func validateChain(text string, base *config.ConfigV1, chain []config.ChainStep)
 		}
 
 		// 4. Validate JQ assertions
-		if len(step.Expect.Assert) > 0 {
-			diags = append(diags, ValidateChainAssertions(text, step.Expect.Assert, step.Name)...)
+		if len(step.Expect.Assert.Body) > 0 {
+			diags = append(diags, ValidateChainAssertions(text, step.Expect.Assert.Body, step.Name)...)
+		}
+		if len(step.Expect.Assert.Headers) > 0 {
+			diags = append(diags, ValidateChainAssertions(text, step.Expect.Assert.Headers, step.Name)...)
 		}
 
 		// 5. Add to defined scope

@@ -10,8 +10,10 @@ chain:
     expect:
       status: 200
       assert:
-        - $_headers["Content-Type"] != null
-        - .["X-Custom-Value"] == "12345"
+        headers:
+          - .["X-Custom-Value"] != null
+        body:
+          - .["X-Custom-Value"] == "12345"
 
   - name: check_previous_header
     path: /anything
@@ -19,4 +21,5 @@ chain:
     expect:
       status: 200
       assert:
-        - .json["previous_header"] == "12345"
+        body:
+          - .json["previous_header"] == "12345"
