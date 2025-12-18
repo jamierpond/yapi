@@ -161,23 +161,32 @@ export default async function Landing() {
                     {/* Scanline */}
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[size:100%_4px] pointer-events-none opacity-20"></div>
 
-                    <div className="text-yapi-fg-muted mb-4">
+                    <div className="text-yapi-fg-muted mb-3">
                       $ yapi run auth-flow.yapi.yml -e prod
                     </div>
 
-                    <div>
-                      <span className="text-yapi-fg-subtle text-xs">Step 1/2: login</span><br/>
-                      <span className="text-yapi-success font-bold">200 OK</span> <span className="text-yapi-fg-subtle text-xs ml-2">89ms</span>
-                      <br/>
-                      <span className="text-green-400 text-xs">✓ .token != null</span>
-                      <br/><br/>
-                      <span className="text-yapi-fg-subtle text-xs">Step 2/2: get_profile</span><br/>
-                      <span className="text-yapi-success font-bold">200 OK</span> <span className="text-yapi-fg-subtle text-xs ml-2">67ms</span>
-                      <br/><br/>
+                    <div className="text-yapi-fg-muted text-xs mb-2">
+                      Running step 1: login...<br/>
+                      Running step 2: get_profile...
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="text-yapi-fg-subtle mb-1">--- Step 2: get_profile ---</div>
                       <span className="text-yellow-500">{`{`}</span><br/>
                       {"  "}<span className="text-blue-400">"name"</span>: <span className="text-green-400">"Dev Sheep"</span>,<br/>
+                      {"  "}<span className="text-blue-400">"email"</span>: <span className="text-green-400">"dev@example.com"</span>,<br/>
                       {"  "}<span className="text-blue-400">"role"</span>: <span className="text-green-400">"admin"</span><br/>
                       <span className="text-yellow-500">{`}`}</span>
+                    </div>
+
+                    <div className="text-yapi-fg-subtle text-xs mb-2">
+                      URL: https://api.example.com/me<br/>
+                      Time: 67ms<br/>
+                      Size: 78B
+                    </div>
+
+                    <div className="text-yapi-success text-sm">
+                      Chain completed successfully.
                       <span className="inline-block w-2 h-4 bg-yapi-accent ml-2 align-middle animate-pulse"></span>
                     </div>
                  </div>
