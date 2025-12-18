@@ -235,23 +235,9 @@ func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 	return req, nil
 }
 
-// expandEnvVars expands environment variables in URL, Path, Headers, Query, and OutputFile
+// expandEnvVars expands environment variables in all string fields using reflection
 func (c *ConfigV1) expandEnvVars() {
-	c.URL, _ = vars.ExpandString(c.URL, vars.EnvResolver)
-	c.Path, _ = vars.ExpandString(c.Path, vars.EnvResolver)
-	c.OutputFile, _ = vars.ExpandString(c.OutputFile, vars.EnvResolver)
-	c.Headers = expandMapEnv(c.Headers)
-	c.Query = expandMapEnv(c.Query)
-}
-
-func expandMapEnv(m map[string]string) map[string]string {
-	if len(m) == 0 {
-		return m
-	}
-	for k, v := range m {
-		m[k], _ = vars.ExpandString(v, vars.EnvResolver)
-	}
-	return m
+	vars.ExpandAll(c, vars.EnvResolver)
 }
 
 // setDefaults applies default values for Method

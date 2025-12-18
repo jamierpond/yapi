@@ -67,6 +67,14 @@ type rootCommand struct {
 	engine       *core.Engine
 }
 
+// io returns the appropriate writer and color flag based on strict mode
+func (app *rootCommand) io(strict bool) (io.Writer, bool) {
+	if strict {
+		return os.Stderr, app.noColor
+	}
+	return os.Stdout, app.noColor
+}
+
 func main() {
 	observability.Init(version, commit)
 	defer observability.Close()
@@ -271,11 +279,8 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
-	out := os.Stdout
-	if ctx.strict {
-		out = os.Stderr
-	}
-	validation.PrintErrors(runRes.Analysis, out, app.noColor)
+	out, noColor := app.io(ctx.strict)
+	validation.PrintErrors(runRes.Analysis, out, noColor)
 	if runRes.Analysis != nil && runRes.Analysis.HasErrors() {
 		if ctx.strict {
 			return &validation.Error{Diagnostics: runRes.Analysis.Diagnostics}
@@ -308,11 +313,8 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		}
 
 		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
-		out = os.Stdout
-		if ctx.strict {
-			out = os.Stderr
-		}
-		validation.PrintWarnings(runRes.Analysis, out, app.noColor)
+		out, noColor := app.io(ctx.strict)
+		validation.PrintWarnings(runRes.Analysis, out, noColor)
 		return nil
 	}
 
@@ -333,11 +335,8 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
-	out = os.Stdout
-	if ctx.strict {
-		out = os.Stderr
-	}
-	validation.PrintWarnings(runRes.Analysis, out, app.noColor)
+	out, noColor = app.io(ctx.strict)
+	validation.PrintWarnings(runRes.Analysis, out, noColor)
 	return nil
 }
 

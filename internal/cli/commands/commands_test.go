@@ -6,61 +6,49 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestNewTestCmd(t *testing.T) {
-	tests := []struct {
-		name         string
-		handlers     *Handlers
-		wantUse      string
-		wantShort    string
-		wantMaxArgs  int
-		wantHasFlags bool
-	}{
-		{
-			name:         "creates test command with nil handlers",
-			handlers:     nil,
-			wantUse:      "test [directory]",
-			wantShort:    "Run all *.test.yapi.yml files in the current directory or specified directory",
-			wantMaxArgs:  1,
-			wantHasFlags: true,
-		},
-		{
-			name: "creates test command with handlers",
-			handlers: &Handlers{
-				Test: func(cmd *cobra.Command, args []string) error {
-					return nil
-				},
-			},
-			wantUse:      "test [directory]",
-			wantShort:    "Run all *.test.yapi.yml files in the current directory or specified directory",
-			wantMaxArgs:  1,
-			wantHasFlags: true,
+func TestTestCmdFromManifest(t *testing.T) {
+	// Find the test command spec in the manifest
+	var testSpec *CommandSpec
+	for i, spec := range cmdManifest {
+		if spec.Use == "test [directory]" {
+			testSpec = &cmdManifest[i]
+			break
+		}
+	}
+
+	if testSpec == nil {
+		t.Fatal("test command not found in manifest")
+	}
+
+	// Test command properties from manifest
+	if testSpec.Short != "Run all *.test.yapi.yml files in the current directory or specified directory" {
+		t.Errorf("test command Short = %v, want expected description", testSpec.Short)
+	}
+
+	// Test building the command with handlers
+	handlers := &Handlers{
+		Test: func(cmd *cobra.Command, args []string) error {
+			return nil
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := newTestCmd(tt.handlers)
+	testSpec.Handler = getHandler(handlers, testSpec.Use)
+	cmd := BuildCommand(*testSpec)
 
-			if cmd.Use != tt.wantUse {
-				t.Errorf("newTestCmd() Use = %v, want %v", cmd.Use, tt.wantUse)
-			}
+	if cmd.Use != "test [directory]" {
+		t.Errorf("built command Use = %v, want 'test [directory]'", cmd.Use)
+	}
 
-			if cmd.Short != tt.wantShort {
-				t.Errorf("newTestCmd() Short = %v, want %v", cmd.Short, tt.wantShort)
-			}
+	// Check verbose flag exists
+	verboseFlag := cmd.Flags().Lookup("verbose")
+	if verboseFlag == nil {
+		t.Error("test command missing verbose flag")
+		return
+	}
 
-			// Check verbose flag exists
-			verboseFlag := cmd.Flags().Lookup("verbose")
-			if verboseFlag == nil {
-				t.Error("newTestCmd() missing verbose flag")
-				return
-			}
-
-			// Check verbose flag shorthand
-			if verboseFlag.Shorthand != "v" {
-				t.Errorf("newTestCmd() verbose flag shorthand = %v, want 'v'", verboseFlag.Shorthand)
-			}
-		})
+	// Check verbose flag shorthand
+	if verboseFlag.Shorthand != "v" {
+		t.Errorf("verbose flag shorthand = %v, want 'v'", verboseFlag.Shorthand)
 	}
 }
 

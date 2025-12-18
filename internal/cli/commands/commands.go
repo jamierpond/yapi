@@ -48,133 +48,108 @@ func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&cfg.NoColor, "no-color", false, "Disable color output")
 	rootCmd.PersistentFlags().BoolVar(&cfg.BinaryOutput, "binary-output", false, "Display binary content to stdout (by default binary content is hidden when outputting to a terminal)")
 
-	rootCmd.AddCommand(newRunCmd(handlers))
-	rootCmd.AddCommand(newWatchCmd(handlers))
-	rootCmd.AddCommand(newHistoryCmd(handlers))
-	rootCmd.AddCommand(newLSPCmd(handlers))
-	rootCmd.AddCommand(newVersionCmd(handlers))
-	rootCmd.AddCommand(newValidateCmd(handlers))
-	rootCmd.AddCommand(newShareCmd(handlers))
-	rootCmd.AddCommand(newTestCmd(handlers))
+	// Build commands from manifest
+	for _, spec := range cmdManifest {
+		spec.Handler = getHandler(handlers, spec.Use)
+		rootCmd.AddCommand(BuildCommand(spec))
+	}
 
 	return rootCmd
 }
 
-func newRunCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.Run
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "run [file]",
-		Short:   "Run a request defined in a yapi config file (reads from stdin if no file specified)",
-		Args:    cobra.MaximumNArgs(1),
-		Handler: handler,
-	})
-}
-
-func newWatchCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.Watch
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "watch [file]",
-		Short:   "Watch a yapi config file and re-run on changes",
-		Args:    cobra.MaximumNArgs(1),
-		Handler: handler,
+// cmdManifest defines all CLI commands as declarative data
+var cmdManifest = []CommandSpec{
+	{
+		Use:   "run [file]",
+		Short: "Run a request defined in a yapi config file (reads from stdin if no file specified)",
+		Args:  cobra.MaximumNArgs(1),
+	},
+	{
+		Use:   "watch [file]",
+		Short: "Watch a yapi config file and re-run on changes",
+		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "pretty", Shorthand: "p", Type: "bool", Default: false, Usage: "Enable pretty TUI mode"},
 			{Name: "no-pretty", Type: "bool", Default: false, Usage: "Disable pretty TUI mode"},
 		},
-	})
-}
-
-func newHistoryCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.History
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "history [count]",
-		Short:   "Show yapi command history (default: last 10)",
-		Args:    cobra.MaximumNArgs(1),
-		Handler: handler,
+	},
+	{
+		Use:   "history [count]",
+		Short: "Show yapi command history (default: last 10)",
+		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "json", Type: "bool", Default: false, Usage: "Output as JSON"},
 		},
-	})
-}
-
-func newLSPCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.LSP
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "lsp",
-		Short:   "Run the yapi language server over stdio",
-		Handler: handler,
-	})
-}
-
-func newVersionCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.Version
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "version",
-		Short:   "Print version information",
-		Handler: handler,
+	},
+	{
+		Use:   "lsp",
+		Short: "Run the yapi language server over stdio",
+	},
+	{
+		Use:   "version",
+		Short: "Print version information",
 		Flags: []FlagSpec{
 			{Name: "json", Type: "bool", Default: false, Usage: "Output version info as JSON"},
 		},
-	})
-}
-
-func newValidateCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.Validate
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "validate [file]",
-		Short:   "Validate a yapi config file",
-		Long:    "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
-		Args:    cobra.MaximumNArgs(1),
-		Handler: handler,
+	},
+	{
+		Use:   "validate [file]",
+		Short: "Validate a yapi config file",
+		Long:  "Validate a yapi config file and report diagnostics. Use - to read from stdin.",
+		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "json", Type: "bool", Default: false, Usage: "Output diagnostics as JSON"},
 		},
-	})
-}
-
-func newShareCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.Share
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "share <file>",
-		Short:   "Generate a shareable yapi.run link for a config file",
-		Args:    cobra.ExactArgs(1),
-		Handler: handler,
-	})
-}
-
-func newTestCmd(h *Handlers) *cobra.Command {
-	var handler func(*cobra.Command, []string) error
-	if h != nil {
-		handler = h.Test
-	}
-	return BuildCommand(CommandSpec{
-		Use:     "test [directory]",
-		Short:   "Run all *.test.yapi.yml files in the current directory or specified directory",
-		Args:    cobra.MaximumNArgs(1),
-		Handler: handler,
+	},
+	{
+		Use:   "share <file>",
+		Short: "Generate a shareable yapi.run link for a config file",
+		Args:  cobra.ExactArgs(1),
+	},
+	{
+		Use:   "test [directory]",
+		Short: "Run all *.test.yapi.yml files in the current directory or specified directory",
+		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
 		},
-	})
+	},
+}
+
+// getHandler maps command names to handlers
+func getHandler(h *Handlers, use string) func(*cobra.Command, []string) error {
+	if h == nil {
+		return nil
+	}
+	// Extract command name from "use" string (e.g., "run [file]" -> "run")
+	cmdName := use
+	if idx := len(use); idx > 0 {
+		for i, r := range use {
+			if r == ' ' || r == '[' {
+				cmdName = use[:i]
+				break
+			}
+		}
+	}
+
+	switch cmdName {
+	case "run":
+		return h.Run
+	case "watch":
+		return h.Watch
+	case "history":
+		return h.History
+	case "lsp":
+		return h.LSP
+	case "version":
+		return h.Version
+	case "validate":
+		return h.Validate
+	case "share":
+		return h.Share
+	case "test":
+		return h.Test
+	default:
+		return nil
+	}
 }
