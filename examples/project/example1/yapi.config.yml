@@ -1,5 +1,4 @@
 yapi: v1
-kind: project
 
 # Simple project configuration demonstrating environment-based variables
 # This example shows a typical microservice setup with dev, staging, and prod

@@ -1,5 +1,4 @@
 yapi: v1
-kind: project
 
 # GitHub API example - query different users/orgs in different environments
 # This demonstrates using environments to target different GitHub accounts
