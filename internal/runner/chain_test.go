@@ -1139,3 +1139,36 @@ func TestCheckExpectations_HeaderAssertionResults(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckExpectations_OnlyHeadersNoBody(t *testing.T) {
+	expectation := config.Expectation{
+		Assert: config.AssertionSet{
+			Headers: []string{
+				`.["Content-Type"] != null`,
+				`.["Content-Length"] != null`,
+			},
+		},
+	}
+
+	result := &Result{
+		Body: `{}`,
+		Headers: map[string]string{
+			"Content-Type":   "application/json",
+			"Content-Length": "42",
+		},
+	}
+
+	res := CheckExpectations(expectation, result)
+
+	if res.Error != nil {
+		t.Errorf("Expected no error, got: %v", res.Error)
+	}
+
+	if res.AssertionsTotal != 2 {
+		t.Errorf("AssertionsTotal = %d, want 2 (only headers)", res.AssertionsTotal)
+	}
+
+	if res.AssertionsPassed != 2 {
+		t.Errorf("AssertionsPassed = %d, want 2", res.AssertionsPassed)
+	}
+}
