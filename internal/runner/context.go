@@ -20,13 +20,15 @@ type StepResult struct {
 
 // ChainContext tracks results from chain steps for variable interpolation.
 type ChainContext struct {
-	Results map[string]StepResult
+	Results      map[string]StepResult
+	EnvOverrides map[string]string // Environment variables from project config
 }
 
 // NewChainContext creates a new chain context for tracking step results.
-func NewChainContext() *ChainContext {
+func NewChainContext(envOverrides map[string]string) *ChainContext {
 	return &ChainContext{
-		Results: make(map[string]StepResult),
+		Results:      make(map[string]StepResult),
+		EnvOverrides: envOverrides,
 	}
 }
 
@@ -65,12 +67,19 @@ func (c *ChainContext) ExpandVariables(input string) (string, error) {
 			key = match[1:]
 		}
 
-		// 1. Check OS Environment
+		// 1. Check OS Environment (highest priority)
 		if val, ok := os.LookupEnv(key); ok {
 			return val
 		}
 
-		// 2. Check Chain Context (must contain dot)
+		// 2. Check Environment Overrides from project config
+		if c.EnvOverrides != nil {
+			if val, ok := c.EnvOverrides[key]; ok {
+				return val
+			}
+		}
+
+		// 3. Check Chain Context (must contain dot)
 		if strings.Contains(key, ".") {
 			val, err := c.resolveChainVar(key)
 			if err != nil {

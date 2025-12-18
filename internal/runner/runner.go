@@ -106,7 +106,7 @@ type ExecutorFactory interface {
 
 // RunChain executes a sequence of steps, merging each step with the base config
 func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV1, steps []config.ChainStep, opts Options) (*ChainResult, error) {
-	chainCtx := NewChainContext()
+	chainCtx := NewChainContext(opts.EnvOverrides)
 	chainResult := &ChainResult{
 		Results:            make([]*Result, 0, len(steps)),
 		StepNames:          make([]string, 0, len(steps)),

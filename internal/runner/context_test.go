@@ -9,7 +9,7 @@ func TestChainContext_ExpandVariables_EnvVars(t *testing.T) {
 	os.Setenv("TEST_VAR", "test_value")
 	defer os.Unsetenv("TEST_VAR")
 
-	ctx := NewChainContext()
+	ctx := NewChainContext(nil)
 
 	tests := []struct {
 		name     string
