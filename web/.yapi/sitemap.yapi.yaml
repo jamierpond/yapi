@@ -1,5 +1,5 @@
 yapi: v1
-url: http://localhost:3000/sitemap.xml
+path: /sitemap.xml
 method: GET
 expect:
   status: 200

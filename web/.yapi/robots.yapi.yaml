@@ -1,5 +1,5 @@
 yapi: v1
-url: http://localhost:3000/robots.txt
+path: /robots.txt
 method: GET
 expect:
   status: 200

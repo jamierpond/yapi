@@ -1,5 +1,5 @@
 yapi: v1
-url: ${url}/og
+path: /og
 method: GET
 expect:
   status: 200
