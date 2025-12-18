@@ -202,6 +202,17 @@ func (a *AssertionSet) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // ToDomain converts V1 YAML to the Canonical Config
 func (c *ConfigV1) ToDomain() (*domain.Request, error) {
 	c.expandEnvVars()
+	return c.toDomainInternal()
+}
+
+// ToDomainWithResolver converts V1 YAML using a custom resolver for variable expansion
+func (c *ConfigV1) ToDomainWithResolver(resolver vars.Resolver) (*domain.Request, error) {
+	c.ExpandWithResolver(resolver)
+	return c.toDomainInternal()
+}
+
+// toDomainInternal is the shared conversion logic (assumes variables are already expanded)
+func (c *ConfigV1) toDomainInternal() (*domain.Request, error) {
 	c.setDefaults()
 
 	bodyReader, bodySource, err := c.prepareBody()

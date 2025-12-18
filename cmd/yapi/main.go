@@ -285,11 +285,14 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	if ctx.envName != "" {
 		envVars, err := loadProjectEnv(ctx.path, ctx.envName)
 		if err != nil {
-			// Don't fail on missing project config - just warn and continue
-			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow(fmt.Sprintf("Warning: %v", err)))
-		} else {
-			opts.EnvOverrides = envVars
+			// Fail with clear error message
+			if ctx.strict {
+				return fmt.Errorf("environment error: %w", err)
+			}
+			fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("Environment error: %v", err)))
+			return nil
 		}
+		opts.EnvOverrides = envVars
 	}
 
 	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)

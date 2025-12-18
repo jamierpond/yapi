@@ -57,10 +57,14 @@ func parseV1(data []byte) (*ParseResult, error) {
 		return &ParseResult{Chain: v1.Chain, Base: &v1}, nil
 	}
 
+	// Keep a copy of the original config before variable expansion
+	// This allows re-expansion with different resolvers later
+	baseCopy := v1
+
 	domainReq, err := v1.ToDomain()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ParseResult{Request: domainReq, Expect: v1.Expect, Base: &v1}, nil
+	return &ParseResult{Request: domainReq, Expect: v1.Expect, Base: &baseCopy}, nil
 }

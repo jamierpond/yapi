@@ -4,6 +4,8 @@ kind: project
 # Simple project configuration demonstrating environment-based variables
 # This example shows a typical microservice setup with dev, staging, and prod
 
+default_environment: dev
+
 defaults:
   vars:
     TIMEOUT: "30"

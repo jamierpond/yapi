@@ -74,7 +74,7 @@ func (e *Engine) RunConfig(
 
 	// Re-expand variables if EnvOverrides is provided
 	if len(opts.EnvOverrides) > 0 && analysis.Base != nil {
-		// Create a custom resolver that checks EnvOverrides first
+		// Create a custom resolver that checks EnvOverrides first, then OS env
 		resolver := func(key string) (string, error) {
 			// Check EnvOverrides first
 			if val, ok := opts.EnvOverrides[key]; ok {
@@ -88,11 +88,8 @@ func (e *Engine) RunConfig(
 			return "", nil
 		}
 
-		// Re-expand variables with the custom resolver
-		analysis.Base.ExpandWithResolver(resolver)
-
-		// Re-convert to domain request
-		req, err := analysis.Base.ToDomain()
+		// Re-convert to domain request using custom resolver
+		req, err := analysis.Base.ToDomainWithResolver(resolver)
 		if err != nil {
 			return &RunConfigResult{Analysis: analysis, Error: err}
 		}
