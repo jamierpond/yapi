@@ -117,6 +117,7 @@ var cmdManifest = []CommandSpec{
 		Short: "Run all *.test.yapi.yml files in the current directory or specified directory",
 		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
+			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Run all *.yapi.yml files (not just *.test.yapi.yml)"},
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 		},

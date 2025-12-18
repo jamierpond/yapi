@@ -969,6 +969,7 @@ func fileExists(path string) bool {
 func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	envName, _ := cmd.Flags().GetString("env")
+	all, _ := cmd.Flags().GetBool("all")
 
 	// Determine search directory
 	searchDir := "."
@@ -977,13 +978,17 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 	}
 
 	// Find all test files
-	testFiles, err := findTestFiles(searchDir)
+	testFiles, err := findTestFiles(searchDir, all)
 	if err != nil {
 		return fmt.Errorf("failed to find test files: %w", err)
 	}
 
 	if len(testFiles) == 0 {
-		fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.test.yapi.yml files found"))
+		if all {
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.yapi.yml files found"))
+		} else {
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.test.yapi.yml files found"))
+		}
 		return nil
 	}
 
@@ -1059,8 +1064,10 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 	return fmt.Errorf("%d test(s) failed", failCount)
 }
 
-// findTestFiles recursively finds all *.test.yapi.yml files in the given directory
-func findTestFiles(dir string) ([]string, error) {
+// findTestFiles recursively finds test files in the given directory.
+// If all is true, finds all *.yapi.yml files.
+// If all is false, finds only *.test.yapi.yml files.
+func findTestFiles(dir string, all bool) ([]string, error) {
 	var testFiles []string
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -1072,9 +1079,18 @@ func findTestFiles(dir string) ([]string, error) {
 		}
 		if filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml" {
 			base := filepath.Base(path)
-			// Match *.test.yapi.yml or *.test.yapi.yaml
-			if strings.HasSuffix(base, ".test.yapi.yml") || strings.HasSuffix(base, ".test.yapi.yaml") {
-				testFiles = append(testFiles, path)
+
+			if all {
+				// Match *.yapi.yml or *.yapi.yaml (but not yapi.config.yml)
+				if (strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml")) &&
+					base != "yapi.config.yml" && base != "yapi.config.yaml" {
+					testFiles = append(testFiles, path)
+				}
+			} else {
+				// Match *.test.yapi.yml or *.test.yapi.yaml
+				if strings.HasSuffix(base, ".test.yapi.yml") || strings.HasSuffix(base, ".test.yapi.yaml") {
+					testFiles = append(testFiles, path)
+				}
 			}
 		}
 		return nil

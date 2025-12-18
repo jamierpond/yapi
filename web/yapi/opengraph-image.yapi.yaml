@@ -1,5 +1,0 @@
-yapi: v1
-path: /opengraph-image
-method: GET
-expect:
-  status: 200
