@@ -26,8 +26,6 @@ type ParseResult struct {
 
 // Load reads and parses a yapi config file from the given path.
 // If path is "-", reads from stdin.
-//
-//nolint:deadcode // Public API function, used in tests
 func Load(path string) (*ParseResult, error) {
 	var data []byte
 	var err error
