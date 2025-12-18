@@ -432,14 +432,40 @@ func outputValidateError(err error) {
 	_ = json.NewEncoder(os.Stdout).Encode(out)
 }
 
-func outputValidateText(analysis *validation.Analysis) error {
+func outputValidateText(analysis *validation.Analysis, path string, data []byte) error {
 	hasOutput := len(analysis.Warnings) > 0 || len(analysis.Diagnostics) > 0
 
-	if hasOutput {
-		// Use the consolidated validation formatter
-		validation.PrintWarnings(analysis, os.Stdout, false)
+	// Print file info header
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, color.AccentBg(" yapi validate "))
+	fmt.Fprintln(os.Stderr)
+
+	// Show file path (or stdin indicator)
+	if path == "-" {
+		fmt.Fprintln(os.Stderr, "  "+color.Dim("source   stdin"))
 	} else {
-		fmt.Println(color.Green("Valid"))
+		absPath, _ := filepath.Abs(path)
+		fmt.Fprintln(os.Stderr, "  "+color.Dim("file     ")+filepath.Base(absPath))
+		if dir := filepath.Dir(absPath); dir != "" && dir != "." {
+			fmt.Fprintln(os.Stderr, "  "+color.Dim("path     ")+dir)
+		}
+	}
+
+	// Show file stats
+	lines := strings.Count(string(data), "\n") + 1
+	size := len(data)
+	fmt.Fprintln(os.Stderr, "  "+color.Dim("lines    ")+fmt.Sprintf("%d", lines))
+	fmt.Fprintln(os.Stderr, "  "+color.Dim("size     ")+formatBytes(size))
+	fmt.Fprintln(os.Stderr)
+
+	if hasOutput {
+		// Print errors and warnings
+		validation.PrintErrors(analysis, os.Stderr, false)
+		validation.PrintWarnings(analysis, os.Stderr, false)
+		fmt.Fprintln(os.Stderr)
+	} else {
+		fmt.Fprintln(os.Stderr, "  "+color.Green("Valid!"))
+		fmt.Fprintln(os.Stderr)
 	}
 
 	if analysis.HasErrors() {
