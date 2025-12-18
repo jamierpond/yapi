@@ -715,7 +715,7 @@ func TestFormatAssertionError(t *testing.T) {
 			},
 		},
 		{
-			name: "nil detail",
+			name:   "nil detail",
 			detail: nil,
 			wantContain: []string{
 				"assertion failed",
@@ -746,11 +746,11 @@ func TestFormatAssertionError(t *testing.T) {
 
 func TestCheckExpectations_DetailedErrors(t *testing.T) {
 	tests := []struct {
-		name             string
-		expectation      config.Expectation
-		result           *Result
-		wantErr          bool
-		wantErrContains  []string
+		name            string
+		expectation     config.Expectation
+		result          *Result
+		wantErr         bool
+		wantErrContains []string
 	}{
 		{
 			name:        "equality assertion failure with details",
