@@ -1,0 +1,28 @@
+yapi: v1
+kind: project
+
+# GitHub API example - query different users/orgs in different environments
+# This demonstrates using environments to target different GitHub accounts
+
+default_environment: anthropic
+
+defaults:
+  vars:
+    GITHUB_API: https://api.github.com
+    ACCEPT_HEADER: "application/vnd.github+json"
+
+environments:
+  anthropic:
+    vars:
+      GITHUB_USER: anthropics
+      REPO_NAME: anthropic-sdk-python
+
+  personal:
+    vars:
+      GITHUB_USER: torvalds
+      REPO_NAME: linux
+
+  example:
+    vars:
+      GITHUB_USER: octocat
+      REPO_NAME: hello-world

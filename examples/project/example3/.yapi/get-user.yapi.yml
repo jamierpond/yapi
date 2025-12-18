@@ -1,0 +1,21 @@
+yapi: v1
+
+# Get GitHub user information
+# Usage:
+#   yapi run .yapi/get-user.yapi.yml                    # Uses default (anthropic)
+#   yapi run .yapi/get-user.yapi.yml --env personal     # Uses torvalds
+#   yapi run .yapi/get-user.yapi.yml --env example      # Uses octocat
+
+url: ${GITHUB_API}/users/${GITHUB_USER}
+method: GET
+
+headers:
+  Accept: ${ACCEPT_HEADER}
+  User-Agent: yapi-cli
+
+expect:
+  status: 200
+  assert:
+    body:
+      - .login != null
+      - .type == "User" or .type == "Organization"

@@ -1,0 +1,26 @@
+yapi: v1
+
+# List repositories for a GitHub user/org
+# Usage:
+#   yapi run .yapi/list-repos.yapi.yml                  # List Anthropic repos
+#   yapi run .yapi/list-repos.yapi.yml --env personal   # List Torvalds repos
+#   yapi run .yapi/list-repos.yapi.yml --env example    # List Octocat repos
+
+url: ${GITHUB_API}/users/${GITHUB_USER}/repos
+method: GET
+
+headers:
+  Accept: ${ACCEPT_HEADER}
+  User-Agent: yapi-cli
+
+query:
+  sort: updated
+  per_page: "10"
+
+expect:
+  status: 200
+  assert:
+    body:
+      - . | type == "array"
+      - length > 0
+      - .[0].owner.login == env.GITHUB_USER

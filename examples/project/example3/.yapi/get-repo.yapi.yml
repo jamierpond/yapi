@@ -1,0 +1,22 @@
+yapi: v1
+
+# Get GitHub repository information
+# Usage:
+#   yapi run .yapi/get-repo.yapi.yml                    # anthropics/anthropic-sdk-python
+#   yapi run .yapi/get-repo.yapi.yml --env personal     # torvalds/linux
+#   yapi run .yapi/get-repo.yapi.yml --env example      # octocat/hello-world
+
+url: ${GITHUB_API}/repos/${GITHUB_USER}/${REPO_NAME}
+method: GET
+
+headers:
+  Accept: ${ACCEPT_HEADER}
+  User-Agent: yapi-cli
+
+expect:
+  status: 200
+  assert:
+    body:
+      - .name == env.REPO_NAME
+      - .owner.login == env.GITHUB_USER
+      - .stargazers_count >= 0
