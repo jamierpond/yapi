@@ -102,9 +102,6 @@ bump-major:
 
 release:
 	@echo "Pushing commits and tags to origin..."
-	@# Push submodule first
-	@cd gh-action && git push origin HEAD && git push --tags && cd ..
-	@# Push parent repo
 	@git push origin HEAD
 	@TAG=$$(git describe --tags --abbrev=0); \
 	echo "Pushing tag $$TAG..."; \
