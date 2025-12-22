@@ -277,10 +277,13 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 		// Check if content is binary
 		isBinary := utils.IsBinaryContent(result.Body)
 
-		// Skip dumping binary to terminal unless explicitly requested or piping
-		if isBinary && isTTY && !app.binaryOutput {
-			fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Binary content detected. Output hidden to prevent terminal corruption."))
-			fmt.Fprintf(os.Stderr, "%s\n", color.Dim("To display binary output, use --binary-output flag or pipe to a file."))
+		// Skip dumping binary output unless explicitly requested with --binary-output
+		if isBinary && !app.binaryOutput {
+			if isTTY {
+				fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Binary content detected. Output hidden to prevent terminal corruption."))
+				fmt.Fprintf(os.Stderr, "%s\n", color.Dim("To display binary output, use --binary-output flag or pipe to a file."))
+			}
+			// In non-TTY (CI/piped), silently skip binary output
 		} else {
 			body := strings.TrimRight(output.Highlight(result.Body, result.ContentType, app.noColor), "\n\r")
 			fmt.Println(body)
