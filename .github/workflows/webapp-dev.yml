@@ -60,8 +60,8 @@ jobs:
       # 2. THE FUN PART: Use our Action
       # ------------------------------------------------------------------
       - name: Run Smoke Tests
-        uses: ./action
-        # uses: jamierpond/yapi/action@v0.5.1
+        # uses: ./action
+        uses: jamierpond/yapi/action@v0.5.1
         with:
           # Using locally built yapi!
           version: local
