@@ -44,14 +44,27 @@ jobs:
           pnpm build:web
 
       # ------------------------------------------------------------------
+      # 1.5. BUILD & INSTALL YAPI CLI
+      # ------------------------------------------------------------------
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build & Install Yapi CLI
+        run: |
+          make build
+          sudo cp ./bin/yapi /usr/local/bin/yapi
+          yapi version
+
+      # ------------------------------------------------------------------
       # 2. THE FUN PART: Use our Action
       # ------------------------------------------------------------------
       - name: Run Smoke Tests
         uses: ./gh-action # LOCAL TESTING, TO REVERT.
         # uses: jamierpond/yapi-action@v1
         with:
-          # The Action handles installing yapi!
-          version: latest
+          # Using locally built yapi!
+          version: local
 
           # The Action handles backgrounding this!
           start: pnpm --filter web start
