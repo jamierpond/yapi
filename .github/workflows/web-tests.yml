@@ -80,7 +80,7 @@ jobs:
           yapi version
 
       - name: Run yapi integration tests
-        uses: ./action
+        uses: ./action  # jamierpond/yapi/action@main
         with:
           version: local
           start: pnpm --filter web start --port 3000
