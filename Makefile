@@ -101,9 +101,12 @@ bump-major:
 	@./scripts/bump.sh major
 
 release:
+	@echo "Pushing commits and tags to origin..."
+	@git push origin HEAD
 	@TAG=$$(git describe --tags --abbrev=0); \
-	echo "Pushing $$TAG to origin..."; \
+	echo "Pushing tag $$TAG..."; \
 	git push origin "$$TAG"
+	@echo "Release complete!"
 
 gen-docs:
 	@echo "Generating CLI documentation..."

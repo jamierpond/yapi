@@ -37,5 +37,34 @@ if git tag -l | grep -q "^${NEW_VERSION}$"; then
 fi
 
 echo "New version: $NEW_VERSION"
+
+# Update gh-action package.json
+SEMVER="${MAJOR}.${MINOR}.${PATCH}"
+if [ -d "gh-action" ]; then
+    echo "Updating gh-action/package.json to $SEMVER..."
+
+    if command -v jq &> /dev/null; then
+        jq ".version = \"$SEMVER\"" gh-action/package.json > gh-action/package.json.tmp && mv gh-action/package.json.tmp gh-action/package.json
+    else
+        # Fallback to node if jq is not available
+        cd gh-action
+        node -e "const pkg = require('./package.json'); pkg.version = '$SEMVER'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');"
+        cd ..
+    fi
+
+    # Build the action
+    echo "Building gh-action..."
+    cd gh-action
+    pnpm run build 2>/dev/null || npm run build
+    cd ..
+
+    # Commit gh-action changes
+    git add gh-action/package.json gh-action/dist/
+    git commit -m "Bump gh-action version to $SEMVER"
+
+    echo "gh-action updated and committed"
+fi
+
+# Create main version tag
 git tag "$NEW_VERSION"
-echo "Tagged $NEW_VERSION"
+echo "Tagged $NEW_VERSION - run 'make release' to push"
