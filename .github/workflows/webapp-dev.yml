@@ -48,6 +48,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Run Smoke Tests
         uses: ./gh-action
+        # uses: jamierpond/yapi-action@v1
         with:
           # The Action handles installing yapi!
           version: latest
