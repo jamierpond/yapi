@@ -4,7 +4,7 @@ Run [Yapi](https://yapi.run) integration tests in GitHub Actions with automatic 
 
 ## Usage
 
-**Use a specific version tag (not @v1):**
+**Use a specific version tag:**
 
 ```yaml
 - uses: jamierpond/yapi-action@v0.5.0
@@ -71,6 +71,3 @@ jobs:
 4. Runs your tests
 5. Fails if tests fail
 
-## License
-
-MIT

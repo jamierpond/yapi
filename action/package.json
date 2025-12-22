@@ -20,7 +20,6 @@
     "api-testing"
   ],
   "author": "jamierpond",
-  "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
