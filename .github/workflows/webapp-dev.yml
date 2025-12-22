@@ -1,4 +1,4 @@
-name: Homepage Smoke Tests
+name: Yapi Webapp Smoke Tests
 
 on:
   push:
