@@ -85,4 +85,4 @@ jobs:
           version: local
           start: pnpm --filter web start --port 3000
           wait-on: http://localhost:3000/healthz
-          command: yapi test ./web/yapi -a
+          command: yapi test ./web/yapi -a -p 16
