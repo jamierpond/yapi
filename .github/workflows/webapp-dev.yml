@@ -61,7 +61,7 @@ jobs:
       # ------------------------------------------------------------------
       - name: Run Smoke Tests
         # uses: ./action
-        uses: jamierpond/yapi/action@v0.5.0
+        uses: jamierpond/yapi/action@v0.5.1
         with:
           # Using locally built yapi!
           version: local
