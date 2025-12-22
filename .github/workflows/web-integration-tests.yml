@@ -1,4 +1,4 @@
-name: Yapi Webapp Smoke Tests
+name: Web Tests
 
 on:
   push:
@@ -7,28 +7,54 @@ on:
       - 'web/**'
       - 'cmd/**'
       - 'internal/**'
-      - '.github/workflows/webapp-dev.yml'
+      - '.github/workflows/web-integration-tests.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'web/**'
       - 'cmd/**'
       - 'internal/**'
-      - '.github/workflows/webapp-dev.yml'
+      - '.github/workflows/web-integration-tests.yml'
   workflow_dispatch:
 
 jobs:
-  smoke-test:
-    name: Smoke Test Webapp
+  unit-tests:
+    name: Unit Tests & Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # ------------------------------------------------------------------
-      # 1. PREP: Build the site
-      # ------------------------------------------------------------------
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build madea-blog-core
+        run: pnpm --filter madea-blog-core build
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Build web
+        run: pnpm build:web
+
+  integration-tests:
+    name: Integration Tests (yapi)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -43,9 +69,6 @@ jobs:
           pnpm --filter madea-blog-core build
           pnpm build:web
 
-      # ------------------------------------------------------------------
-      # 1.5. BUILD & INSTALL YAPI CLI
-      # ------------------------------------------------------------------
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
@@ -56,21 +79,10 @@ jobs:
           sudo cp ./bin/yapi /usr/local/bin/yapi
           yapi version
 
-      # ------------------------------------------------------------------
-      # 2. THE FUN PART: Use our Action
-      # ------------------------------------------------------------------
-      - name: Run Smoke Tests
+      - name: Run yapi integration tests
         uses: ./action
-        # uses: jamierpond/yapi/action@v0.5.1
         with:
-          # Using locally built yapi!
           version: local
-
-          # The Action handles backgrounding this!
           start: pnpm --filter web start --port 3000
-
-          # The Action handles waiting for this!
           wait-on: http://localhost:3000/healthz
-
-          # The Action runs this once healthy!
           command: yapi test ./web/yapi -a
