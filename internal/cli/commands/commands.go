@@ -121,6 +121,7 @@ var cmdManifest = []CommandSpec{
 			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Run all *.yapi.yml files (not just *.test.yapi.yml)"},
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
+			{Name: "parallel", Shorthand: "p", Type: "int", Default: 1, Usage: "Number of parallel threads to run tests on"},
 		},
 	},
 	{

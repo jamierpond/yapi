@@ -968,6 +968,11 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	envName, _ := cmd.Flags().GetString("env")
 	all, _ := cmd.Flags().GetBool("all")
+	parallel, _ := cmd.Flags().GetInt("parallel")
+
+	if parallel < 1 {
+		return fmt.Errorf("parallel must be at least 1")
+	}
 
 	// Determine search directory
 	searchDir := "."
@@ -995,44 +1000,78 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 	// Run each test and collect results
 	type testResult struct {
 		file   string
+		index  int
 		passed bool
 		err    error
 	}
 
-	var results []testResult
-	passCount := 0
+	// Create channels and wait group for parallel execution
+	results := make(chan testResult, len(testFiles))
+	semaphore := make(chan struct{}, parallel)
+	var wg sync.WaitGroup
 
+	// Launch all tests in parallel (controlled by semaphore)
 	for i, testFile := range testFiles {
-		relPath, _ := filepath.Rel(searchDir, testFile)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "%s %s\n", color.Dim(fmt.Sprintf("[%d/%d]", i+1, len(testFiles))), relPath)
-		}
+		wg.Add(1)
+		go func(idx int, filePath string) {
+			defer wg.Done()
 
-		// Run the test file
-		err := app.executeRunE(runContext{path: testFile, strict: true, envName: envName})
+			// Acquire semaphore slot
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
 
-		result := testResult{
-			file:   relPath,
-			passed: err == nil,
-			err:    err,
-		}
-		results = append(results, result)
+			relPath, _ := filepath.Rel(searchDir, filePath)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "%s %s\n", color.Dim(fmt.Sprintf("[%d/%d]", idx+1, len(testFiles))), relPath)
+			}
 
-		if err == nil {
+			// Run the test file
+			err := app.executeRunE(runContext{path: filePath, strict: true, envName: envName})
+
+			result := testResult{
+				file:   relPath,
+				index:  idx,
+				passed: err == nil,
+				err:    err,
+			}
+			results <- result
+
+			if err == nil {
+				if !verbose {
+					fmt.Fprintf(os.Stderr, "%s ", color.Green("✓"))
+				} else {
+					fmt.Fprintf(os.Stderr, "  %s\n\n", color.Green("PASS"))
+				}
+			} else {
+				if !verbose {
+					fmt.Fprintf(os.Stderr, "%s ", color.Red("✗"))
+				} else {
+					fmt.Fprintf(os.Stderr, "  %s %s\n\n", color.Red("FAIL"), color.Dim(err.Error()))
+				}
+			}
+		}(i, testFile)
+	}
+
+	// Wait for all tests to complete in a separate goroutine
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect results
+	var allResults []testResult
+	passCount := 0
+	for result := range results {
+		allResults = append(allResults, result)
+		if result.passed {
 			passCount++
-			if !verbose {
-				fmt.Fprintf(os.Stderr, "%s ", color.Green("✓"))
-			} else {
-				fmt.Fprintf(os.Stderr, "  %s\n\n", color.Green("PASS"))
-			}
-		} else {
-			if !verbose {
-				fmt.Fprintf(os.Stderr, "%s ", color.Red("✗"))
-			} else {
-				fmt.Fprintf(os.Stderr, "  %s %s\n\n", color.Red("FAIL"), color.Dim(err.Error()))
-			}
 		}
 	}
+
+	// Sort results by original index to maintain order in summary
+	sort.Slice(allResults, func(i, j int) bool {
+		return allResults[i].index < allResults[j].index
+	})
 
 	if !verbose {
 		fmt.Fprintf(os.Stderr, "\n")
@@ -1040,17 +1079,17 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 
 	// Print summary
 	fmt.Fprintf(os.Stderr, "\n")
-	if passCount == len(results) {
+	if passCount == len(allResults) {
 		fmt.Fprintf(os.Stderr, "%s\n", color.Green(fmt.Sprintf("All %d test(s) passed", passCount)))
 		return nil
 	}
 
-	failCount := len(results) - passCount
-	fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("%d of %d test(s) failed", failCount, len(results))))
+	failCount := len(allResults) - passCount
+	fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("%d of %d test(s) failed", failCount, len(allResults))))
 
 	// List failed tests
 	fmt.Fprintf(os.Stderr, "\n%s\n", color.Red("Failed tests:"))
-	for _, r := range results {
+	for _, r := range allResults {
 		if !r.passed {
 			fmt.Fprintf(os.Stderr, "  %s %s\n", color.Red("✗"), r.file)
 			if r.err != nil && verbose {
