@@ -43,34 +43,29 @@ SEMVER="${MAJOR}.${MINOR}.${PATCH}"
 if [ -d "gh-action" ]; then
     echo "Updating gh-action/package.json to $SEMVER..."
 
-    cd gh-action
-
     # Update package.json
     if command -v jq &> /dev/null; then
-        jq ".version = \"$SEMVER\"" package.json > package.json.tmp && mv package.json.tmp package.json
+        jq ".version = \"$SEMVER\"" gh-action/package.json > gh-action/package.json.tmp && mv gh-action/package.json.tmp gh-action/package.json
     else
+        cd gh-action
         node -e "const pkg = require('./package.json'); pkg.version = '$SEMVER'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');"
+        cd ..
     fi
 
     # Build the action
     echo "Building gh-action..."
+    cd gh-action
     pnpm run build 2>/dev/null || npm run build
-
-    # Commit changes within the submodule
-    git add package.json dist/
-    git commit -m "Bump version to $SEMVER"
-
-    # Tag the submodule
-    git tag "v$SEMVER"
-
     cd ..
 
-    # Update submodule reference in parent repo
-    git add gh-action
-    git commit -m "Update gh-action to v$SEMVER"
+    # Stage changes
+    git add gh-action/package.json gh-action/dist/
 
-    echo "gh-action updated and committed"
+    echo "gh-action updated to $SEMVER"
 fi
+
+# Commit all changes
+git commit -m "Bump version to $NEW_VERSION"
 
 # Create main version tag
 git tag "$NEW_VERSION"
