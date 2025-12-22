@@ -60,4 +60,4 @@ jobs:
           wait-on: http://localhost:3000/healthz
 
           # The Action runs this once healthy!
-          command: yapi test -a ./web/yapi
+          command: yapi test ./web/yapi -a
