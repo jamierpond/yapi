@@ -1,0 +1,37 @@
+name: 'Yapi Action'
+description: 'Run Yapi integration tests with background services and health checks'
+author: 'jamierpond'
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  start:
+    description: 'Multiline string of commands to start in background (e.g., npm run dev)'
+    required: false
+    default: ''
+
+  wait-on:
+    description: 'Multiline string of URLs to poll before testing (e.g., http://localhost:3000)'
+    required: false
+    default: ''
+
+  wait-on-timeout:
+    description: 'Timeout in milliseconds for wait-on health checks'
+    required: false
+    default: '60000'
+
+  command:
+    description: 'The main test command to execute'
+    required: false
+    default: 'yapi run .'
+
+  version:
+    description: 'Version of yapi to install'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
