@@ -1,3 +1,6 @@
 [submodule "web/madea-blog-core"]
 	path = web/madea-blog-core
 	url = https://github.com/jamierpond/madea-blog-core.git
+[submodule "gh-action"]
+	path = gh-action
+	url = https://github.com/jamierpond/yapi-action.git
