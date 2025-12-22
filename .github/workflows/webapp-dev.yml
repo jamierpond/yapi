@@ -60,7 +60,7 @@ jobs:
       # 3. THE FUN PART: Use our Action
       # ------------------------------------------------------------------
       - name: Run Smoke Tests
-        uses: yapi/action@v1
+        uses: ../yapi-gh-action/dist
         with:
           # We tell the action to skip installing yapi because we built it above
           version: local
