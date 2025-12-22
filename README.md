@@ -310,6 +310,63 @@ yapi stress checkout-flow.yapi.yml -e prod -n 500 -p 25
 
 -----
 
+## 🔄 CI/CD Integration (GitHub Actions)
+
+Run your yapi tests automatically in GitHub Actions with service orchestration and health checks built-in.
+
+```yaml
+name: Integration Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Yapi Integration Tests
+        uses: jamierpond/yapi-action@v1
+        with:
+          # Start your service in the background
+          start: npm run dev
+
+          # Wait for it to be healthy
+          wait-on: http://localhost:3000/health
+
+          # Run your test suite
+          command: yapi test ./tests -a
+```
+
+**Features:**
+- Automatically installs yapi CLI
+- Starts background services (web servers, APIs, databases)
+- Waits for health checks before running tests
+- Fails the workflow if tests fail
+
+**Multiple services example:**
+```yaml
+- uses: jamierpond/yapi-action@v1
+  with:
+    start: |
+      docker-compose up -d
+      pnpm --filter api dev
+    wait-on: |
+      http://localhost:8080/health
+      http://localhost:3000/ready
+    command: yapi test ./integration -a
+```
+
+See the [action documentation](https://github.com/jamierpond/yapi/tree/main/action) for more options.
+
+-----
+
 ## 🧠 Editor Integration (LSP)
 
 Unlike other API clients, **yapi** ships with a **full LSP implementation** out of the box. No extensions to install, no separate tools to configure. Your editor becomes an intelligent API development environment.
