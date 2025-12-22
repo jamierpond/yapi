@@ -1,0 +1,75 @@
+name: Homepage Smoke Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'web/**'
+      - 'cmd/**'
+      - 'internal/**'
+      - '.github/workflows/webapp-dev.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'web/**'
+      - 'cmd/**'
+      - 'internal/**'
+      - '.github/workflows/webapp-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    name: Validate Homepage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ------------------------------------------------------------------
+      # 1. PREP: Build the tools (Dogfooding)
+      # ------------------------------------------------------------------
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build Yapi CLI
+        run: |
+          go build -o $HOME/.yapi/bin/yapi ./cmd/yapi
+          echo "$HOME/.yapi/bin" >> $GITHUB_PATH
+
+      # ------------------------------------------------------------------
+      # 2. PREP: Build the site
+      # ------------------------------------------------------------------
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install & Build Web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter madea-blog-core build
+          pnpm build:web
+
+      # ------------------------------------------------------------------
+      # 3. THE FUN PART: Use our Action
+      # ------------------------------------------------------------------
+      - name: Run Smoke Tests
+        uses: yapi/action@v1
+        with:
+          # We tell the action to skip installing yapi because we built it above
+          version: local
+
+          # The Action handles backgrounding this!
+          start: pnpm --filter web start
+
+          # The Action handles waiting for this!
+          wait-on: http://localhost:3000/healthz
+
+          # The Action runs this once healthy!
+          command: yapi run ./web/yapi --config ./web/yapi.config.yml --env local
