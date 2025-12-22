@@ -19,7 +19,7 @@ on:
 
 jobs:
   smoke-test:
-    name: Validate Homepage
+    name: Smoke Test Webapp
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
