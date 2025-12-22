@@ -41,12 +41,12 @@ echo "New version: $NEW_VERSION"
 # Build the action before tagging
 echo "Building action..."
 cd action
-npm install
+pnpm install
 if [ $? -ne 0 ]; then
     echo "Error: Action install failed"
     exit 1
 fi
-npm run build
+pnpm run build
 if [ $? -ne 0 ]; then
     echo "Error: Action build failed"
     exit 1
