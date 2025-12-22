@@ -47,7 +47,7 @@ jobs:
       # 2. THE FUN PART: Use our Action
       # ------------------------------------------------------------------
       - name: Run Smoke Tests
-        uses: ./gh-action
+        uses: ./gh-action # LOCAL TESTING, TO REVERT.
         # uses: jamierpond/yapi-action@v1
         with:
           # The Action handles installing yapi!
