@@ -13,7 +13,8 @@ import (
 
 // ImportResult represents the result of importing a collection
 type ImportResult struct {
-	Files map[string]config.ConfigV1 // relative path -> config
+	Files       map[string]config.ConfigV1 // relative path -> config
+	Environment map[string]string          // environment variables
 }
 
 // ImportPostmanCollection imports a Postman collection from a JSON file
@@ -29,13 +30,36 @@ func ImportPostmanCollection(filePath string) (*ImportResult, error) {
 	}
 
 	result := &ImportResult{
-		Files: make(map[string]config.ConfigV1),
+		Files:       make(map[string]config.ConfigV1),
+		Environment: make(map[string]string),
 	}
 
 	// Convert all items in the collection
 	convertItems(collection.Item, "", result)
 
 	return result, nil
+}
+
+// ImportPostmanEnvironment imports a Postman environment file
+func ImportPostmanEnvironment(filePath string) (map[string]string, error) {
+	data, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided file path
+	if err != nil {
+		return nil, fmt.Errorf("failed to read environment file: %w", err)
+	}
+
+	var env PostmanEnvironment
+	if err := json.Unmarshal(data, &env); err != nil {
+		return nil, fmt.Errorf("failed to parse Postman environment: %w", err)
+	}
+
+	envVars := make(map[string]string)
+	for _, v := range env.Values {
+		if v.Enabled {
+			envVars[v.Key] = v.Value
+		}
+	}
+
+	return envVars, nil
 }
 
 // convertItems recursively converts Postman items to yapi configs
@@ -88,9 +112,22 @@ func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
 			isJSON = req.Body.Options.Raw.Language == "json"
 		}
 
-		// Try to parse as JSON to determine if we should use body or json field
+		// Try to parse as JSON and use body field for better yapi experience
 		if isJSON || isJSONString(rawBody) {
-			cfg.JSON = rawBody
+			var bodyData any
+			if err := json.Unmarshal([]byte(rawBody), &bodyData); err == nil {
+				// Successfully parsed - use body field if it's an object
+				if bodyMap, ok := bodyData.(map[string]any); ok {
+					cfg.Body = bodyMap
+				} else {
+					// Arrays or other types - use json field
+					cfg.JSON = rawBody
+				}
+			} else {
+				// Failed to parse - fall back to json field
+				cfg.JSON = rawBody
+			}
+
 			// Set content type if not already set
 			if cfg.Headers == nil {
 				cfg.Headers = make(map[string]string)
@@ -99,6 +136,7 @@ func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
 				cfg.ContentType = "application/json"
 			}
 		} else {
+			// Not JSON - use json field for raw text
 			cfg.JSON = rawBody
 		}
 	}

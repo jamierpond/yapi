@@ -90,3 +90,17 @@ type PostmanQueryParam struct {
 	Value    string `json:"value"`
 	Disabled bool   `json:"disabled,omitempty"`
 }
+
+// PostmanEnvironment represents a Postman environment file
+type PostmanEnvironment struct {
+	ID     string                 `json:"id"`
+	Name   string                 `json:"name"`
+	Values []PostmanEnvVariable   `json:"values"`
+}
+
+// PostmanEnvVariable represents a single environment variable
+type PostmanEnvVariable struct {
+	Key     string `json:"key"`
+	Value   string `json:"value"`
+	Enabled bool   `json:"enabled"`
+}
