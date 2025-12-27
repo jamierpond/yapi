@@ -1,0 +1,14 @@
+yapi: v1
+url: https://httpbin.org/post
+method: POST
+content_type: multipart/form-data
+form:
+  name: John Doe
+  email: john@example.com
+  bio: "Software developer who loves building APIs"
+expect:
+  status: 200
+  assert:
+    body:
+      - .form.name == "John Doe"
+      - .form.email == "john@example.com"

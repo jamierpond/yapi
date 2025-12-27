@@ -1,0 +1,11 @@
+yapi: v1
+url: https://httpbin.org/post
+method: POST
+content_type: application/x-www-form-urlencoded
+form:
+  grant_type: password
+  username: user@example.com
+  password: mypassword
+  client_id: my-app
+expect:
+  status: 200

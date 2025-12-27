@@ -1,0 +1,9 @@
+yapi: v1
+url: https://httpbin.org/post
+method: POST
+form:
+  name: John Doe
+  email: john@example.com
+  message: Hello from yapi!
+expect:
+  status: 200

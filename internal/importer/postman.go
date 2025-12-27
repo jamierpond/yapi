@@ -108,42 +108,73 @@ func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
 		}
 	}
 
-	// Convert body
-	if req.Body != nil && req.Body.Mode == "raw" && req.Body.Raw != "" {
-		rawBody := convertVariables(req.Body.Raw)
+	// Convert body based on mode
+	if req.Body != nil {
+		switch req.Body.Mode {
+		case "raw":
+			if req.Body.Raw != "" {
+				rawBody := convertVariables(req.Body.Raw)
 
-		// Determine if it's JSON
-		isJSON := false
-		if req.Body.Options != nil && req.Body.Options.Raw != nil {
-			isJSON = req.Body.Options.Raw.Language == "json"
-		}
+				// Determine if it's JSON
+				isJSON := false
+				if req.Body.Options != nil && req.Body.Options.Raw != nil {
+					isJSON = req.Body.Options.Raw.Language == "json"
+				}
 
-		// Try to parse as JSON and use body field for better yapi experience
-		if isJSON || isJSONString(rawBody) {
-			var bodyData any
-			if err := json.Unmarshal([]byte(rawBody), &bodyData); err == nil {
-				// Successfully parsed - use body field if it's an object
-				if bodyMap, ok := bodyData.(map[string]any); ok {
-					cfg.Body = bodyMap
+				// Try to parse as JSON and use body field for better yapi experience
+				if isJSON || isJSONString(rawBody) {
+					var bodyData any
+					if err := json.Unmarshal([]byte(rawBody), &bodyData); err == nil {
+						// Successfully parsed - use body field if it's an object
+						if bodyMap, ok := bodyData.(map[string]any); ok {
+							cfg.Body = bodyMap
+						} else {
+							// Arrays or other types - use json field
+							cfg.JSON = rawBody
+						}
+					} else {
+						// Failed to parse - fall back to json field
+						cfg.JSON = rawBody
+					}
+
+					// Set content type if not already set
+					if cfg.Headers == nil {
+						cfg.Headers = make(map[string]string)
+					}
+					if _, hasContentType := cfg.Headers["Content-Type"]; !hasContentType {
+						cfg.ContentType = "application/json"
+					}
 				} else {
-					// Arrays or other types - use json field
+					// Not JSON - use json field for raw text
 					cfg.JSON = rawBody
 				}
-			} else {
-				// Failed to parse - fall back to json field
-				cfg.JSON = rawBody
 			}
 
-			// Set content type if not already set
-			if cfg.Headers == nil {
-				cfg.Headers = make(map[string]string)
+		case "urlencoded":
+			if len(req.Body.URLEncoded) > 0 {
+				cfg.Form = make(map[string]string)
+				for _, field := range req.Body.URLEncoded {
+					if !field.Disabled && field.Key != "" {
+						cfg.Form[field.Key] = convertVariables(field.Value)
+					}
+				}
+				cfg.ContentType = "application/x-www-form-urlencoded"
 			}
-			if _, hasContentType := cfg.Headers["Content-Type"]; !hasContentType {
-				cfg.ContentType = "application/json"
+
+		case "formdata":
+			if len(req.Body.FormData) > 0 {
+				cfg.Form = make(map[string]string)
+				for _, field := range req.Body.FormData {
+					// Only handle text fields for now (skip file uploads)
+					if !field.Disabled && field.Key != "" && field.Type != "file" {
+						cfg.Form[field.Key] = convertVariables(field.Value)
+					}
+				}
+				// Only set content type if we actually have form fields
+				if len(cfg.Form) > 0 {
+					cfg.ContentType = "multipart/form-data"
+				}
 			}
-		} else {
-			// Not JSON - use json field for raw text
-			cfg.JSON = rawBody
 		}
 	}
 

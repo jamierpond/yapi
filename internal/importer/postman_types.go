@@ -41,9 +41,19 @@ type PostmanHeader struct {
 
 // PostmanBody represents a request body
 type PostmanBody struct {
-	Mode    string          `json:"mode"` // raw, urlencoded, formdata, etc.
-	Raw     string          `json:"raw,omitempty"`
-	Options *PostmanOptions `json:"options,omitempty"`
+	Mode       string              `json:"mode"` // raw, urlencoded, formdata, etc.
+	Raw        string              `json:"raw,omitempty"`
+	URLEncoded []PostmanFormField  `json:"urlencoded,omitempty"`
+	FormData   []PostmanFormField  `json:"formdata,omitempty"`
+	Options    *PostmanOptions     `json:"options,omitempty"`
+}
+
+// PostmanFormField represents a form field in formdata or urlencoded body
+type PostmanFormField struct {
+	Key      string `json:"key"`
+	Value    string `json:"value"`
+	Type     string `json:"type,omitempty"` // text or file
+	Disabled bool   `json:"disabled,omitempty"`
 }
 
 // PostmanOptions contains body options like language

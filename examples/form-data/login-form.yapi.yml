@@ -1,0 +1,13 @@
+yapi: v1
+url: https://httpbin.org/post
+method: POST
+form:
+  username: testuser
+  password: secret123
+  remember_me: "true"
+expect:
+  status: 200
+  assert:
+    body:
+      - .form.username == "testuser"
+      - .form.remember_me == "true"
