@@ -28,12 +28,6 @@ func LoadFromString(data string) (*ParseResult, error) {
 	return LoadFromStringWithOptions(data, nil, nil)
 }
 
-// LoadFromStringWithResolver parses a yapi config from raw YAML data using a custom variable resolver.
-// If resolver is nil, uses the default EnvResolver.
-func LoadFromStringWithResolver(data string, resolver vars.Resolver) (*ParseResult, error) {
-	return LoadFromStringWithOptions(data, resolver, nil)
-}
-
 // LoadFromStringWithOptions parses a yapi config with optional resolver and environment defaults.
 func LoadFromStringWithOptions(data string, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
 	// 1. Peek at version

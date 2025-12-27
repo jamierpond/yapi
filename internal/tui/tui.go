@@ -54,11 +54,6 @@ func FindConfigFiles() ([]string, error) {
 	return findFiles(false)
 }
 
-// FindConfigFilesIncludingProject returns all git-tracked yapi config files including yapi.config.yml
-func FindConfigFilesIncludingProject() ([]string, error) {
-	return findFiles(true)
-}
-
 func findFiles(includeProjectConfig bool) ([]string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
