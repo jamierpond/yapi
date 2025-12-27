@@ -334,7 +334,7 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 		config := &Config{
 			Body: map[string]any{
 				"nested": map[string]any{
-					"key":  "$TEST_VAR",
+					"key": "$TEST_VAR",
 					"deep": map[string]any{
 						"value": "${TEST_VAR}",
 					},
