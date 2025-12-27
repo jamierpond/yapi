@@ -40,8 +40,10 @@ func ExpandAll(obj any, resolver Resolver) {
 				}
 			} else if field.Type().Elem().Kind() == reflect.Interface {
 				// Handle map[string]any - recursively expand values
-				expandedMap := expandMapAny(field.Interface(), resolver)
-				field.Set(reflect.ValueOf(expandedMap))
+				if !field.IsNil() {
+					expandedMap := expandMapAny(field.Interface(), resolver)
+					field.Set(reflect.ValueOf(expandedMap))
+				}
 			}
 		case reflect.Struct:
 			ExpandAll(field.Addr().Interface(), resolver)
