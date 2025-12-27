@@ -1709,7 +1709,7 @@ func importE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Write environment file if we have variables
+	// Write environment file and yapi.config.yml if we have variables
 	if len(envVars) > 0 {
 		envFilePath := filepath.Join(outDir, ".env")
 		var envContent strings.Builder
@@ -1721,6 +1721,26 @@ func importE(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to write .env file: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "  %s .env (environment variables)\n", color.Green("✓"))
+
+		// Create yapi.config.yml
+		yapiConfigPath := filepath.Join(outDir, "yapi.config.yml")
+		yapiConfig := map[string]any{
+			"yapi":                "v1",
+			"default_environment": "imported",
+			"environments": map[string]any{
+				"imported": map[string]any{
+					"env_files": []string{".env"},
+				},
+			},
+		}
+		yapiConfigData, err := yaml.Marshal(yapiConfig)
+		if err != nil {
+			return fmt.Errorf("failed to marshal yapi.config.yml: %w", err)
+		}
+		if err := os.WriteFile(yapiConfigPath, yapiConfigData, 0644); err != nil {
+			return fmt.Errorf("failed to write yapi.config.yml: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "  %s yapi.config.yml (project configuration)\n", color.Green("✓"))
 	}
 
 	// Write all files
