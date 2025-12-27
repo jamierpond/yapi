@@ -252,24 +252,42 @@ func extractQueryParams(url PostmanURL) map[string]string {
 	return params
 }
 
-// convertVariables converts Postman variable syntax {{var}} to yapi syntax ${var}
+// convertVariables converts Postman variable syntax to yapi syntax
+// {{variable}} -> ${variable}
+// Postman dynamic variables ({{$guid}}, {{$timestamp}}, etc.) are converted
+// but will need manual handling as yapi doesn't have built-in dynamic variables
 func convertVariables(s string) string {
 	// Replace {{variable}} with ${variable}
+	// This includes Postman dynamic variables like:
+	// - {{$guid}} -> ${$guid} (will need manual UUID generation)
+	// - {{$timestamp}} -> ${$timestamp} (will need manual timestamp)
+	// - {{$randomInt}} -> ${$randomInt} (will need manual random number)
+	// - {{$isoTimestamp}} -> ${$isoTimestamp} (will need manual ISO timestamp)
 	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
 	return re.ReplaceAllString(s, `${$1}`)
 }
 
 // sanitizeFileName converts a name to a safe filename
+// Prevents directory traversal attacks by removing dots and path separators
 func sanitizeFileName(name string) string {
 	// Replace spaces with hyphens
 	name = strings.ReplaceAll(name, " ", "-")
 
-	// Remove or replace special characters
-	re := regexp.MustCompile(`[^a-zA-Z0-9\-_.]`)
+	// Remove dots, slashes, and other special characters to prevent directory traversal
+	// Only allow alphanumeric, hyphens, and underscores
+	re := regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
 	name = re.ReplaceAllString(name, "")
 
 	// Convert to lowercase
 	name = strings.ToLower(name)
+
+	// Ensure we only use the base name (additional safety against path injection)
+	name = filepath.Base(name)
+
+	// Prevent empty filenames
+	if name == "" || name == "." || name == ".." {
+		name = "unnamed"
+	}
 
 	// Limit length
 	if len(name) > 200 {

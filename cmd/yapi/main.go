@@ -1783,10 +1783,17 @@ func importE(cmd *cobra.Command, args []string) error {
 		}
 
 		// Add placeholders for any undefined variables
+		// Separate Postman dynamic variables from regular variables
 		var undefinedVars []string
+		var dynamicVars []string
 		for varName := range usedVars {
 			if _, exists := envVars[varName]; !exists {
-				undefinedVars = append(undefinedVars, varName)
+				// Check if this is a Postman dynamic variable (starts with $)
+				if strings.HasPrefix(varName, "$") {
+					dynamicVars = append(dynamicVars, varName)
+				} else {
+					undefinedVars = append(undefinedVars, varName)
+				}
 			}
 		}
 
@@ -1796,6 +1803,20 @@ func importE(cmd *cobra.Command, args []string) error {
 			for _, varName := range undefinedVars {
 				envContent.WriteString(fmt.Sprintf("%s=\n", varName))
 			}
+			envContent.WriteString("\n")
+		}
+
+		if len(dynamicVars) > 0 {
+			sort.Strings(dynamicVars)
+			envContent.WriteString("# Postman dynamic variables detected (require manual handling):\n")
+			envContent.WriteString("# - $guid: Generate a UUID\n")
+			envContent.WriteString("# - $timestamp: Current Unix timestamp\n")
+			envContent.WriteString("# - $isoTimestamp: Current ISO 8601 timestamp\n")
+			envContent.WriteString("# - $randomInt: Random integer\n")
+			envContent.WriteString("# You'll need to replace these with actual values or implement dynamic generation\n")
+			for _, varName := range dynamicVars {
+				envContent.WriteString(fmt.Sprintf("# %s=\n", varName))
+			}
 		}
 
 		if err := os.WriteFile(envFilePath, []byte(envContent.String()), 0644); err != nil {
@@ -1803,7 +1824,11 @@ func importE(cmd *cobra.Command, args []string) error {
 		}
 
 		varCount := len(envVars) + len(undefinedVars)
-		fmt.Fprintf(os.Stderr, "  %s .env (%d variables)\n", color.Green("✓"), varCount)
+		if len(dynamicVars) > 0 {
+			fmt.Fprintf(os.Stderr, "  %s .env (%d variables, %d Postman dynamic variables need manual handling)\n", color.Green("✓"), varCount, len(dynamicVars))
+		} else {
+			fmt.Fprintf(os.Stderr, "  %s .env (%d variables)\n", color.Green("✓"), varCount)
+		}
 
 		// Create yapi.config.yml with helpful comments
 		yapiConfigPath := filepath.Join(outDir, "yapi.config.yml")

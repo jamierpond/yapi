@@ -376,15 +376,6 @@ func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
 			c.ContentType = "application/x-www-form-urlencoded"
 		}
 
-		// Use URL encoding for urlencoded content type
-		if strings.Contains(c.ContentType, "application/x-www-form-urlencoded") {
-			formValues := url.Values{}
-			for k, v := range c.Form {
-				formValues.Set(k, v)
-			}
-			return strings.NewReader(formValues.Encode()), "form", nil
-		}
-
 		// Use multipart for multipart/form-data
 		if strings.Contains(c.ContentType, "multipart/form-data") {
 			var buf bytes.Buffer
@@ -405,7 +396,7 @@ func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
 			return &buf, "form", nil
 		}
 
-		// Fallback to urlencoded for unknown content types
+		// Use URL encoding for urlencoded or unknown content types (fallback)
 		formValues := url.Values{}
 		for k, v := range c.Form {
 			formValues.Set(k, v)
