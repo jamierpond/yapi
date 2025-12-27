@@ -261,3 +261,289 @@ func TestExpandAll_ComplexStruct(t *testing.T) {
 		t.Errorf("Ptr.API = %v, want https://example.com/v2", config.Ptr.API)
 	}
 }
+
+func TestExpandAll_MapStringAny(t *testing.T) {
+	os.Setenv("TEST_VAR", "expanded_value")
+	os.Setenv("TEST_NUM", "42")
+	defer func() {
+		os.Unsetenv("TEST_VAR")
+		os.Unsetenv("TEST_NUM")
+	}()
+
+	t.Run("expands string values in map[string]any", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"name":   "$TEST_VAR",
+				"value":  "${TEST_VAR}",
+				"static": "no_change",
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		if config.Body["name"] != "expanded_value" {
+			t.Errorf("Body[name] = %v, want expanded_value", config.Body["name"])
+		}
+		if config.Body["value"] != "expanded_value" {
+			t.Errorf("Body[value] = %v, want expanded_value", config.Body["value"])
+		}
+		if config.Body["static"] != "no_change" {
+			t.Errorf("Body[static] = %v, want no_change", config.Body["static"])
+		}
+	})
+
+	t.Run("preserves non-string types in map[string]any", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"number": 42,
+				"float":  3.14,
+				"bool":   true,
+				"null":   nil,
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		if config.Body["number"] != 42 {
+			t.Errorf("Body[number] = %v, want 42", config.Body["number"])
+		}
+		if config.Body["float"] != 3.14 {
+			t.Errorf("Body[float] = %v, want 3.14", config.Body["float"])
+		}
+		if config.Body["bool"] != true {
+			t.Errorf("Body[bool] = %v, want true", config.Body["bool"])
+		}
+		if config.Body["null"] != nil {
+			t.Errorf("Body[null] = %v, want nil", config.Body["null"])
+		}
+	})
+
+	t.Run("expands nested maps in map[string]any", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"nested": map[string]any{
+					"key":  "$TEST_VAR",
+					"deep": map[string]any{
+						"value": "${TEST_VAR}",
+					},
+				},
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		nested := config.Body["nested"].(map[string]any)
+		if nested["key"] != "expanded_value" {
+			t.Errorf("Body[nested][key] = %v, want expanded_value", nested["key"])
+		}
+
+		deep := nested["deep"].(map[string]any)
+		if deep["value"] != "expanded_value" {
+			t.Errorf("Body[nested][deep][value] = %v, want expanded_value", deep["value"])
+		}
+	})
+
+	t.Run("expands arrays in map[string]any", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"array": []any{
+					"$TEST_VAR",
+					"${TEST_VAR}",
+					42,
+					true,
+					map[string]any{
+						"nested": "$TEST_VAR",
+					},
+				},
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		arr := config.Body["array"].([]any)
+		if arr[0] != "expanded_value" {
+			t.Errorf("Body[array][0] = %v, want expanded_value", arr[0])
+		}
+		if arr[1] != "expanded_value" {
+			t.Errorf("Body[array][1] = %v, want expanded_value", arr[1])
+		}
+		if arr[2] != 42 {
+			t.Errorf("Body[array][2] = %v, want 42", arr[2])
+		}
+		if arr[3] != true {
+			t.Errorf("Body[array][3] = %v, want true", arr[3])
+		}
+		nested := arr[4].(map[string]any)
+		if nested["nested"] != "expanded_value" {
+			t.Errorf("Body[array][4][nested] = %v, want expanded_value", nested["nested"])
+		}
+	})
+
+	t.Run("preserves nil map[string]any", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: nil,
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		if config.Body != nil {
+			t.Errorf("Body should be nil, got %v", config.Body)
+		}
+	})
+
+	t.Run("handles empty map[string]any", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		if config.Body == nil {
+			t.Error("Body should not be nil")
+		}
+		if len(config.Body) != 0 {
+			t.Errorf("Body should be empty, got %v", config.Body)
+		}
+	})
+
+	t.Run("handles mixed string interpolation and literals", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"url":      "https://$TEST_VAR/api",
+				"message":  "Value is: ${TEST_VAR}",
+				"template": "Start ${TEST_VAR} end",
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		if config.Body["url"] != "https://expanded_value/api" {
+			t.Errorf("Body[url] = %v, want https://expanded_value/api", config.Body["url"])
+		}
+		if config.Body["message"] != "Value is: expanded_value" {
+			t.Errorf("Body[message] = %v, want 'Value is: expanded_value'", config.Body["message"])
+		}
+		if config.Body["template"] != "Start expanded_value end" {
+			t.Errorf("Body[template] = %v, want 'Start expanded_value end'", config.Body["template"])
+		}
+	})
+
+	t.Run("handles undefined variables", func(t *testing.T) {
+		type Config struct {
+			Body map[string]any
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"undefined": "$UNDEFINED_VAR",
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		// EnvResolver returns empty string for undefined vars
+		if config.Body["undefined"] != "" {
+			t.Errorf("Body[undefined] = %v, want empty string", config.Body["undefined"])
+		}
+	})
+
+	t.Run("complex real-world scenario", func(t *testing.T) {
+		type Config struct {
+			Body      map[string]any
+			Variables map[string]any // GraphQL variables
+		}
+
+		config := &Config{
+			Body: map[string]any{
+				"query": "query { user { name } }",
+				"user": map[string]any{
+					"name":  "$TEST_VAR",
+					"id":    123,
+					"email": "test@${TEST_VAR}.com",
+					"settings": map[string]any{
+						"theme": "$TEST_VAR",
+						"lang":  "en",
+					},
+				},
+				"tags": []any{"$TEST_VAR", "static", "${TEST_VAR}"},
+			},
+			Variables: map[string]any{
+				"id":   "${TEST_NUM}",
+				"name": "$TEST_VAR",
+			},
+		}
+
+		ExpandAll(config, EnvResolver)
+
+		// Check Body
+		if config.Body["query"] != "query { user { name } }" {
+			t.Errorf("Body[query] = %v, want 'query { user { name } }'", config.Body["query"])
+		}
+
+		user := config.Body["user"].(map[string]any)
+		if user["name"] != "expanded_value" {
+			t.Errorf("Body[user][name] = %v, want expanded_value", user["name"])
+		}
+		if user["id"] != 123 {
+			t.Errorf("Body[user][id] = %v, want 123", user["id"])
+		}
+		if user["email"] != "test@expanded_value.com" {
+			t.Errorf("Body[user][email] = %v, want test@expanded_value.com", user["email"])
+		}
+
+		settings := user["settings"].(map[string]any)
+		if settings["theme"] != "expanded_value" {
+			t.Errorf("Body[user][settings][theme] = %v, want expanded_value", settings["theme"])
+		}
+		if settings["lang"] != "en" {
+			t.Errorf("Body[user][settings][lang] = %v, want en", settings["lang"])
+		}
+
+		tags := config.Body["tags"].([]any)
+		if tags[0] != "expanded_value" {
+			t.Errorf("Body[tags][0] = %v, want expanded_value", tags[0])
+		}
+		if tags[1] != "static" {
+			t.Errorf("Body[tags][1] = %v, want static", tags[1])
+		}
+		if tags[2] != "expanded_value" {
+			t.Errorf("Body[tags][2] = %v, want expanded_value", tags[2])
+		}
+
+		// Check Variables
+		if config.Variables["id"] != "42" {
+			t.Errorf("Variables[id] = %v, want 42", config.Variables["id"])
+		}
+		if config.Variables["name"] != "expanded_value" {
+			t.Errorf("Variables[name] = %v, want expanded_value", config.Variables["name"])
+		}
+	})
+}
