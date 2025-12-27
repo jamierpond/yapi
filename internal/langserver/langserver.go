@@ -16,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/compiler"
 	"yapi.run/cli/internal/config"
+	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
 	"yapi.run/cli/internal/vars"
