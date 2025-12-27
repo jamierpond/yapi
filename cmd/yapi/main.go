@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -1665,6 +1666,59 @@ func isTerminal(f *os.File) bool {
 	return (stat.Mode() & os.ModeCharDevice) != 0
 }
 
+// collectUsedVariables extracts all ${var} references from imported configs
+func collectUsedVariables(files map[string]config.ConfigV1) map[string]bool {
+	varPattern := regexp.MustCompile(`\$\{([^}]+)\}`)
+	vars := make(map[string]bool)
+
+	for _, cfg := range files {
+		// Check URL
+		for _, match := range varPattern.FindAllStringSubmatch(cfg.URL, -1) {
+			if len(match) > 1 {
+				vars[match[1]] = true
+			}
+		}
+
+		// Check headers
+		for _, v := range cfg.Headers {
+			for _, match := range varPattern.FindAllStringSubmatch(v, -1) {
+				if len(match) > 1 {
+					vars[match[1]] = true
+				}
+			}
+		}
+
+		// Check query params
+		for _, v := range cfg.Query {
+			for _, match := range varPattern.FindAllStringSubmatch(v, -1) {
+				if len(match) > 1 {
+					vars[match[1]] = true
+				}
+			}
+		}
+
+		// Check form data
+		for _, v := range cfg.Form {
+			for _, match := range varPattern.FindAllStringSubmatch(v, -1) {
+				if len(match) > 1 {
+					vars[match[1]] = true
+				}
+			}
+		}
+
+		// Check JSON body
+		if cfg.JSON != "" {
+			for _, match := range varPattern.FindAllStringSubmatch(cfg.JSON, -1) {
+				if len(match) > 1 {
+					vars[match[1]] = true
+				}
+			}
+		}
+	}
+
+	return vars
+}
+
 // importE handles the import command to convert external collections to yapi format
 func importE(cmd *cobra.Command, args []string) error {
 	inputPath := args[0]
@@ -1709,35 +1763,63 @@ func importE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Write environment file and yapi.config.yml if we have variables
-	if len(envVars) > 0 {
+	// Collect all variables used in the imported files
+	usedVars := collectUsedVariables(result.Files)
+
+	// Write environment file and yapi.config.yml
+	if len(envVars) > 0 || len(usedVars) > 0 {
 		envFilePath := filepath.Join(outDir, ".env")
 		var envContent strings.Builder
-		envContent.WriteString("# Imported from Postman environment\n")
-		for key, value := range envVars {
-			envContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		envContent.WriteString("# Imported from Postman collection\n")
+		envContent.WriteString("# Fill in the values for your environment\n\n")
+
+		// Write environment variables first
+		if len(envVars) > 0 {
+			envContent.WriteString("# From Postman environment file\n")
+			for key, value := range envVars {
+				envContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+			}
+			envContent.WriteString("\n")
 		}
+
+		// Add placeholders for any undefined variables
+		var undefinedVars []string
+		for varName := range usedVars {
+			if _, exists := envVars[varName]; !exists {
+				undefinedVars = append(undefinedVars, varName)
+			}
+		}
+
+		if len(undefinedVars) > 0 {
+			sort.Strings(undefinedVars)
+			envContent.WriteString("# Variables used in collection (set these values)\n")
+			for _, varName := range undefinedVars {
+				envContent.WriteString(fmt.Sprintf("%s=\n", varName))
+			}
+		}
+
 		if err := os.WriteFile(envFilePath, []byte(envContent.String()), 0644); err != nil {
 			return fmt.Errorf("failed to write .env file: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "  %s .env (environment variables)\n", color.Green("✓"))
 
-		// Create yapi.config.yml
+		varCount := len(envVars) + len(undefinedVars)
+		fmt.Fprintf(os.Stderr, "  %s .env (%d variables)\n", color.Green("✓"), varCount)
+
+		// Create yapi.config.yml with helpful comments
 		yapiConfigPath := filepath.Join(outDir, "yapi.config.yml")
-		yapiConfig := map[string]any{
-			"yapi":                "v1",
-			"default_environment": "imported",
-			"environments": map[string]any{
-				"imported": map[string]any{
-					"env_files": []string{".env"},
-				},
-			},
-		}
-		yapiConfigData, err := yaml.Marshal(yapiConfig)
-		if err != nil {
-			return fmt.Errorf("failed to marshal yapi.config.yml: %w", err)
-		}
-		if err := os.WriteFile(yapiConfigPath, yapiConfigData, 0644); err != nil {
+		yapiConfigContent := `yapi: v1
+
+# Imported from Postman collection
+# Edit .env file to set your API keys and variables
+
+default_environment: imported
+
+environments:
+  imported:
+    env_files:
+      - .env
+`
+		if err := os.WriteFile(yapiConfigPath, []byte(yapiConfigContent), 0644); err != nil {
 			return fmt.Errorf("failed to write yapi.config.yml: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "  %s yapi.config.yml (project configuration)\n", color.Green("✓"))
