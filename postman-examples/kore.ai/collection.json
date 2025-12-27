@@ -1,0 +1,2867 @@
+{
+	"info": {
+		"_postman_id": "0f0b51b0-12ed-4b4f-8bb4-6e39cec0fec9",
+		"name": "KORE.ai PUBLIC API's",
+		"description": "This collection covers all the KORE.ai public API'S.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Public APIs",
+			"item": [
+				{
+					"name": "Upload File API - Bot Definition",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c1e575c-31fe-4c3d-b387-c6143e3a0f99",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotDefinitionFileID\", data.fileId);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": null
+								},
+								{
+									"key": "fileContext",
+									"value": "bulkImport",
+									"type": "text"
+								},
+								{
+									"key": "fileExtension",
+									"value": "json",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/uploadfile",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"uploadfile"
+							]
+						},
+						"description": "Used to Upload the botdefinition, botconfig, and botfunction file (if any)  as well as the bot icon to the local server and get the file ID. You need to upload the files separately.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-import-upload-file-api/\n\nUploading the bot definition file here at the API"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload File API - Bot Config",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c1e575c-31fe-4c3d-b387-c6143e3a0f99",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotConfigFileID\", data.fileId);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": null
+								},
+								{
+									"key": "fileContext",
+									"value": "bulkImport",
+									"type": "text"
+								},
+								{
+									"key": "fileExtension",
+									"value": "json",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/uploadfile",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"uploadfile"
+							]
+						},
+						"description": "Used to Upload the botdefinition, botconfig, and botfunction file (if any) as well as the bot icon to the local server and get the file ID. You need to upload the files separately.\r\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-import-upload-file-api/\r\n\r\nUploading the bot config file here at the API"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload File API - Bot Icon",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c1e575c-31fe-4c3d-b387-c6143e3a0f99",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotIconFileID\", data.fileId);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": null
+								},
+								{
+									"key": "fileContext",
+									"value": "bulkImport",
+									"type": "text"
+								},
+								{
+									"key": "fileExtension",
+									"value": "json",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/uploadfile",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"uploadfile"
+							]
+						},
+						"description": "Used to Upload the botdefinition, botconfig, and botfunction file (if any) as well as the bot icon to the local server and get the file ID. You need to upload the files separately.\r\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-import-upload-file-api/\r\n\r\nUploading the bot icon file here at the API"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Bot as a New Bot API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "ace2308e-a05c-4a6a-983c-d4aff19fb3d7",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotName\", data.statusLogs[0].taskName);",
+									"postman.setEnvironmentVariable(\"BotImportBIR\", data._id);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "677bd445-a317-4eb2-a517-63210bf31bf8",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"botDefinition\" : \"{{BotDefinitionFileID}}\",\n\t\"configInfo\" : \"{{BotConfigFileID}}\",\n\t\"icon\" : \"{{BotIconFileID}}\",\n\t\"name\" : \"{{BotName}}\",\n\t\"purpose\" : \"{{BotPurpose}}\"\n\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/import",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"import"
+							]
+						},
+						"description": "Import Bot as a New Bot API is used to create a new bot in the account owner’s Builder Tool using the File IDs generated by uploading the files to the local server. Bot Name and Purpose are optional fields as they will be taken from the existing bot copy. If the developer wants to have a new bot name, then optional field needs to be provided.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/import-bot-as-a-new-bot-api/\n\nCreating a new bot by using the file IDs generated for bot definition, bot config and bot icon file at previous endpoints."
+					},
+					"response": []
+				},
+				{
+					"name": "Bot Import Status API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "ace2308e-a05c-4a6a-983c-d4aff19fb3d7",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotID\", data.streamId);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "677bd445-a317-4eb2-a517-63210bf31bf8",
+								"exec": [
+									"// postman.setEnvironmentVariable(\"PublicSmartbot\", \"ConsumerAutomationBot\" + parseInt(Math.random()*1000000));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/import/status/{{BotImportBIR}}",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"import",
+								"status",
+								"{{BotImportBIR}}"
+							]
+						},
+						"description": "Used to get the status of the bot import request initiated using Import Bot as New Bot API or Import Bot into an Existing Bot API.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-import-status-api/\n\nChecking the status of Bot Import for the bot being created at the previous endpoint"
+					},
+					"response": []
+				},
+				{
+					"name": "Publish Bot API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "f0b55c43-93ef-48ee-9fee-c93889aee4ea",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"versionComment\" : \"new update\"\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/publish",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"publish"
+							]
+						},
+						"description": "Used to initiate a publish request for a bot. Before calling the Publish Bot API, make sure that at least one channel is enabled for the bot.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/publish-bot-api/\n\nPublishing the bot created at the previous endpoints here at this API."
+					},
+					"response": []
+				},
+				{
+					"name": "Bot Export API - Full Export of Published Version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"exportType\" : \"published\"\n\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/export",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"export"
+							]
+						},
+						"description": "Used to export bot definition and all associated components. This API only initiates the export process. Use Export Status API to view the progress of the export and also to get a link to download the file once the export is completed.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-export-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Bot Export Status API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "9017ac85-1fbf-4e51-bf06-5e6dea9946c1",
+								"exec": [
+									"    function delay(ms) {\r",
+									"        var cur_d = new Date();\r",
+									"        var cur_ticks = cur_d.getTime();\r",
+									"        var ms_passed = 0;\r",
+									"        while(ms_passed < ms) {\r",
+									"            var d = new Date();  // Possible memory leak?\r",
+									"            var ticks = d.getTime();\r",
+									"            ms_passed = ticks - cur_ticks;\r",
+									"        }\r",
+									"    }\r",
+									"    delay(4000);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/export/status",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"export",
+								"status"
+							]
+						},
+						"description": "Gets the status of Bot Export request and also provides the download link of the bot export copy after the export is completed. \n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-export-status-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Bot into an Existing Bot API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "ace2308e-a05c-4a6a-983c-d4aff19fb3d7",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotName\", data.statusLogs[0].taskName);",
+									"postman.setEnvironmentVariable(\"BotImportBIR\", data._id);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "677bd445-a317-4eb2-a517-63210bf31bf8",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"botDefinition\" : \"{{BotDefinitionFileID}}\",\n\t\"configInfo\" : \"{{BotConfigFileID}}\"\n\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/import",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"import"
+							]
+						},
+						"description": "Used to import bot definition file into an existing bot for upgrading to new version or restoring to an earlier version.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/import-bot-into-an-existing-bot-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Bot Export API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"exportType\" : \"latest\",\n\t\"exportOptions\": {\n\n\t\t\t\t\t\"tasks\": [\n\t\t\t\t\t\t\"bottask\"\n\n\t\t\t\t\t\t\t]\n\t\t\t\t\t}\n\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/export",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"export"
+							]
+						},
+						"description": "Used to export bot definition and all associated components. This API only initiates the export process. Use Export Status API to view the progress of the export and also to get a link to download the file once the export is completed.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-export-api/\n\nPartial export of latest version of the bot is detailed here at this API"
+					},
+					"response": []
+				},
+				{
+					"name": "Bot variables Import API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  {\n    \"key\": \"Global\",\n    \"value\": \"Globalkey-prePopulated\",\n    \"hint\": \"\",\n    \"variableType\": \"env\",\n    \"scope\": \"prePopulated\"\n  },\n\t{\n    \"key\": \"Lang\",\n    \"variableType\": \"locale\",\n    \"scope\": \"prePopulated\",\n    \"localeData\": {\n      \"en\": {\n        \"value\": \"english language prompt\",\n        \"hint\": \"\"\n      }\n    }\n  }\n]"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/{{version}}/public/builder/stream/{{BotID}}/variables/import",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"{{version}}",
+								"public",
+								"builder",
+								"stream",
+								"{{BotID}}",
+								"variables",
+								"import"
+							]
+						},
+						"description": "Imports global and content variables into the bot.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-variables-import/"
+					},
+					"response": []
+				},
+				{
+					"name": "Bot variables Export API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/{{version}}/public/builder/stream/{{BotID}}/variables/export",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"{{version}}",
+								"public",
+								"builder",
+								"stream",
+								"{{BotID}}",
+								"variables",
+								"export"
+							]
+						},
+						"description": "Exports global and content variables from a bot.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-variables-export/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get ChangeLogs API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/changelogs",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"changelogs"
+							]
+						},
+						"description": "To get the list of changes made to the bot definition for a given date period. \nMore details at https://developer.kore.ai/docs/bots/api-guide/get-changelogs-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Find Intent API - Published version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"input\": \"book a ticket\",\n  \"streamName\": \"{{BotName}}\"\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/{{versionv}}/rest/streams/{{BotID}}/findIntent?fetchConfiguredTasks=false",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"{{versionv}}",
+								"rest",
+								"streams",
+								"{{BotID}}",
+								"findIntent"
+							],
+							"query": [
+								{
+									"key": "fetchConfiguredTasks",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Find intent API considering only the published tasks of the bot"
+					},
+					"response": []
+				},
+				{
+					"name": "Find Intent API - Latest version",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "023b4693-1362-46f2-a63e-0b2066a849b5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"input\": \"book a ticket\",\n  \"streamName\": \"{{BotName}}\"\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/{{versionv}}/rest/streams/{{BotID}}/findIntent?fetchConfiguredTasks=true",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"{{versionv}}",
+								"rest",
+								"streams",
+								"{{BotID}}",
+								"findIntent"
+							],
+							"query": [
+								{
+									"key": "fetchConfiguredTasks",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Find intent API considering only the configured version of tasks in the bot"
+					},
+					"response": []
+				},
+				{
+					"name": "File Upload - ML utterances",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c1e575c-31fe-4c3d-b387-c6143e3a0f99",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"MLutterancefileID\", data.fileId);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": null
+								},
+								{
+									"key": "fileContext",
+									"value": "bulkImport",
+									"type": "text"
+								},
+								{
+									"key": "fileExtension",
+									"value": "json",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/uploadfile",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"uploadfile"
+							]
+						},
+						"description": "Used to Upload the ML utterances\r\nMore details at https://developer.kore.ai/docs/bots/api-guide/bot-import-upload-file-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "ML Utterances Import API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"MLutteranceID\", data._id);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\"fileName\":\"MLUtterances.json\",\n\"fileId\":\"{{MLutterancefileID}}\"\n }\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/mlimport",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"mlimport"
+							]
+						},
+						"description": "Imports ML Utterances into a bot\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/ml-utterances-import-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "ML Utterances Import Status API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a87ff956-c123-4516-ba76-2b8692cd3d4f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/mlimport/status/{{MLutteranceID}}",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"mlimport",
+								"status",
+								"{{MLutteranceID}}"
+							]
+						},
+						"description": "Gets the status of the ML utterances import request made through Import ML Utterances API.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/ml-utterances-import-status-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "ML Utterances Train API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/ml/train",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"ml",
+								"train"
+							]
+						},
+						"description": "To initiate ML training of a bot\nMore details at https://developer.kore.ai/docs/bots/api-guide/ml-training-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "ML Utterance Train Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "be983e23-a0b0-46a3-ba50-3e60089a4f1e",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/ml/train/status",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"ml",
+								"train",
+								"status"
+							]
+						},
+						"description": "To get the status of the ML training\nMore details at https://developer.kore.ai/docs/bots/api-guide/ml-training-status-api/"
+					},
+					"response": [
+						{
+							"name": "ML Utterance Train Status",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "auth",
+										"value": "{{JWTToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{url}}/api/public/bot/{{BotID}}/ml/train/status",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"bot",
+										"{{BotID}}",
+										"ml",
+										"train",
+										"status"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 26 Jun 2019 12:06:40 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "148"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Server",
+									"value": "KoreServer/a919b4c"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "sameorigin"
+								},
+								{
+									"key": "Content-Security-Policy",
+									"value": "frame-ancestors https://*.kore.ai https://*.kore.com"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Expires",
+									"value": "-1"
+								},
+								{
+									"key": "Pragma",
+									"value": "no-cache, no-store"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, no-store"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=31536000; includeSubdomains;"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"trainingStatus\": \"Finished\",\n    \"isMlInSyncWithSentences\": true,\n    \"isMlInSyncWithSynonyms\": true,\n    \"isMlInSyncWithMlparams\": true,\n    \"isMlInSyncWithTraits\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "ML Utterances Export API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"MLutteranceID\", data._id);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\"fileName\":\"MLUtterances.json\",\n\"fileId\":\"{{MLutterancefileID}}\"\n }\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/mlimport",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"mlimport"
+							]
+						},
+						"description": "Used to export the ML utterances of a bot. It creates a request ID from which we can generate the Download link of the bot using ML Utterance Export Status API\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/ml-utterances-export-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "ML Utterances Export Status API Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a87ff956-c123-4516-ba76-2b8692cd3d4f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/mlexport/status",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"mlexport",
+								"status"
+							]
+						},
+						"description": "Gets the download link of the ML Utterances export copy\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/ml-utterances-export-status-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "FAQ Training API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\r\n\"language\":\"{{Lang}}\"\r\n\r\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/faqs/train",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"faqs",
+								"train"
+							]
+						},
+						"description": "To initiate the training of the knowledge graph\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/faq-training-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "FAQ Training Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bot/{{BotID}}/faqs/train/status?language={{Lang}}",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bot",
+								"{{BotID}}",
+								"faqs",
+								"train",
+								"status"
+							],
+							"query": [
+								{
+									"key": "language",
+									"value": "{{Lang}}"
+								}
+							]
+						},
+						"description": "To get the status of the FAQ training\nMore details at https://developer.kore.ai/docs/bots/api-guide/faq-training-status-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Sessions History API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/stream/{{BotID}}/getSessions",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"stream",
+								"{{BotID}}",
+								"getSessions"
+							]
+						},
+						"description": "This API retrieves the conversation sessions created. This API is available in BT and BAC app scopes\nMore details at https://developer.kore.ai/docs/bots/api-guide/sessions-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Sessions History API - All bots",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"dateFrom\": \"2019-06-22\",\n\t\"dataTo\":\"2019-06-24\"\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/getSessions",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"getSessions"
+							]
+						},
+						"description": "This API retrieves the conversation sessions created. This API is available in BT and BAC app scopes\nMore details at https://developer.kore.ai/docs/bots/api-guide/sessions-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Conversation History API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/stream/{{BotID1}}/getMessages?userId={{userID}}&skip=10&limit=10",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"stream",
+								"{{BotID1}}",
+								"getMessages"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{userID}}"
+								},
+								{
+									"key": "skip",
+									"value": "10"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Fetches the conversational messages between the bot and user in reverse chronological order. This API supports pagination. You can provide offset/skip and limit to get a certain number of messages at a time.\nMore details at https://developer.kore.ai/docs/bots/api-guide/conversation-history-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Conversation History API - All Bots - To include Session Id and MetaTags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"channelType\":\"{{channelType}}\"\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/getMessages",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"getMessages"
+							]
+						},
+						"description": "Fetches the conversational messages between the bot and user in reverse chronological order. This API supports pagination. You can provide offset/skip and limit to get a certain number of messages at a time.\nMore details at https://developer.kore.ai/docs/bots/api-guide/conversation-history-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Conversation History API - To include Session Id and MetaTags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/stream/{{BotID1}}/getMessages",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"stream",
+								"{{BotID1}}",
+								"getMessages"
+							]
+						},
+						"description": "Fetches the conversational messages between the bot and user in reverse chronological order. This API supports pagination. You can provide offset/skip and limit to get a certain number of messages at a time.\nMore details at https://developer.kore.ai/docs/bots/api-guide/conversation-history-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug Logs API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1d9a68e3-00e3-41e5-b6ac-95c4486364ca",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2a58170-d9f5-4911-8ff1-f356d246edbf",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/{{version}}/{{BotID2}}/debuglogs?identity={{identity}}&channelType={{channelType1}}&minimumInfo=true&limit=5&offset=300&timezone={{timezone}}",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"{{version}}",
+								"{{BotID2}}",
+								"debuglogs"
+							],
+							"query": [
+								{
+									"key": "identity",
+									"value": "{{identity}}"
+								},
+								{
+									"key": "channelType",
+									"value": "{{channelType1}}"
+								},
+								{
+									"key": "minimumInfo",
+									"value": "true"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								},
+								{
+									"key": "offset",
+									"value": "300"
+								},
+								{
+									"key": "timezone",
+									"value": "{{timezone}}"
+								}
+							]
+						},
+						"description": "To get debug logs of a specific conversation (currently supported only for IVR Channel)\nMore details at https://developer.kore.ai/docs/bots/api-guide/debug-logs-api/"
+					},
+					"response": []
+				}
+			],
+			"description": "This Folder has test cases for Smart bot import with public API's which covers both Import as new bot and import into existing Bot."
+		},
+		{
+			"name": "EERS Public API's",
+			"item": [
+				{
+					"name": "Get Bots API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1af3032f-b906-4f1d-8cd0-143726bc83cd",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/bots?offset=0&limit=50",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"bots"
+							],
+							"query": [
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "To retrieve the list of bots available in an account.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/get-bots-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload file API - Import Admin Roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c1e575c-31fe-4c3d-b387-c6143e3a0f99",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"AdminRolesFileID\", data.fileId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": null
+								},
+								{
+									"key": "fileContext",
+									"value": "bulkImport",
+									"type": "text"
+								},
+								{
+									"key": "fileExtension",
+									"value": "json",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/uploadfile",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"uploadfile"
+							]
+						},
+						"description": "To import admin roles into an account. This is typically used to import roles from one environment to another.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/get-roles-api/ and \nhttps://developer.kore.ai/docs/bots/api-guide/import-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Roles API - Admin Roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b6cef685-3588-4c8b-ba64-80366ffd9726",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\"fileId\":\"{{AdminRolesFileID}}\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/roles/import?roleType=admin&fullImport=true",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"roles",
+								"import"
+							],
+							"query": [
+								{
+									"key": "roleType",
+									"value": "admin"
+								},
+								{
+									"key": "fullImport",
+									"value": "true"
+								}
+							]
+						},
+						"description": "To import admin roles into an account. This is typically used to import roles from one environment to another.\nMore details at https://developer.kore.ai/docs/bots/api-guide/import-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload file API - Import Bot Roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c1e575c-31fe-4c3d-b387-c6143e3a0f99",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BotRolesFileID\", data.fileId);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": null
+								},
+								{
+									"key": "fileContext",
+									"value": "bulkImport",
+									"type": "text"
+								},
+								{
+									"key": "fileExtension",
+									"value": "json",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/uploadfile",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"uploadfile"
+							]
+						},
+						"description": "To import bot roles into an account. This is typically used to import roles from one environment to another.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/get-roles-api/ and \nhttps://developer.kore.ai/docs/bots/api-guide/import-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Roles API - Bot Roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "73b45a64-65bb-4956-ba55-06b383cb95f1",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\"fileId\":\"{{BotRolesFileID}}\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/roles/import?roleType=bot&fullImport=true",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"roles",
+								"import"
+							],
+							"query": [
+								{
+									"key": "roleType",
+									"value": "bot"
+								},
+								{
+									"key": "fullImport",
+									"value": "true"
+								}
+							]
+						},
+						"description": "To import bot roles into an account. This is typically used to import roles from one environment to another. More details at https://developer.kore.ai/docs/bots/api-guide/import-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Roles API - roleType BOT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4858f4e7-c218-43b1-898f-c5132cd4d18a",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/roles?roleType=bot",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"roles"
+							],
+							"query": [
+								{
+									"key": "roleType",
+									"value": "bot"
+								},
+								{
+									"key": "limit",
+									"value": "2",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To retrieve the list of bot roles available in an account.\nMore details at https://developer.kore.ai/docs/bots/api-guide/get-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Roles API - roleType ADMIN",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "43c2836e-6dd9-47b3-86d4-42cf9c8eac61",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/roles?roleType=admin",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"roles"
+							],
+							"query": [
+								{
+									"key": "roleType",
+									"value": "admin"
+								},
+								{
+									"key": "limit",
+									"value": "2",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To retrieve the list of admin roles available in an account. More details at https://developer.kore.ai/docs/bots/api-guide/get-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Roles Details API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "816cdcfd-8213-4755-a983-5d5c239b7f66",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/alluserroles",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"alluserroles"
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To get full information of all users and their associated roles in the account.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/get-user-roles-details-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Groups API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1236d3b8-0774-4190-9d41-223e53d11cb8",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/groups",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"groups"
+							],
+							"query": [
+								{
+									"key": "offset",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": null,
+									"disabled": true
+								}
+							]
+						},
+						"description": "To get the list of groups and group members available in the account.\nMore details at https://developer.kore.ai/docs/bots/api-guide/get-groups-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Roles API - roleType BOT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e6a93aef-97a2-4a89-a43a-3df76080f670",
+								"exec": [
+									"",
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"BT2\", data[4]._id);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/roles/export?roleType=bot",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"roles",
+								"export"
+							],
+							"query": [
+								{
+									"key": "roleType",
+									"value": "bot"
+								}
+							]
+						},
+						"description": "To export bot roles from an account. This is typically used to export roles from one environment to another. More details at https://developer.kore.ai/docs/bots/api-guide/export-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Roles API - roleType ADMIN",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "86887f34-8d11-4c1a-a202-67383ea4b1ab",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"CusomAdmin1\", data[2]._id);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/roles/export?roleType=admin",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"roles",
+								"export"
+							],
+							"query": [
+								{
+									"key": "roleType",
+									"value": "admin"
+								}
+							]
+						},
+						"description": "To export admin roles from an account. This is typically used to export roles from one environment to another.\nMore details at https://developer.kore.ai/docs/bots/api-guide/export-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign BT Roles API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a4b0374d-e8d2-43a7-90d0-6dec4c18803f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\r\n\"roleId\":\"{{BT2}}\",\r\n\"botId\":\"st-fd7c7396-82c1-5916-972d-6bfe6908b5ab\",\r\n\"addUsers\":[\"{{User1}}}\"],\r\n\"removeUsers\":[\"\"],\r\n\"addGroups\": [\"\"],\r\n\"removeGroups\":[\"\"]\r\n}]\r\n\r\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/btroles/assignments/",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"btroles",
+								"assignments",
+								""
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To assign a bot role to a set of users in a specific bot.\n\nMore details at https://developer.kore.ai/docs/bots/api-guide/assign-bt-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign BT Roles API - Revoke role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a4b0374d-e8d2-43a7-90d0-6dec4c18803f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"value": "{{JWT1}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\r\n\"roleId\":\"{{BT2}}\",\r\n\"botId\":\"{{BotID1}}\",\r\n\"addUsers\":[\"\"],\r\n\"removeUsers\":[\"{{User1}}\"],\r\n\"addGroups\": [\"\"],\r\n\"removeGroups\":[\"\"]\r\n}]\r\n\r\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/btroles/assignments/",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"btroles",
+								"assignments",
+								""
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To revoke a bot role to a set of users in a specific bot.\nMore details at https://developer.kore.ai/docs/bots/api-guide/assign-bt-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Admin Roles API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "f51dd868-a65f-45bf-a260-374cf0e967b2",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\r\n\"roleId\":\"{{CusomAdmin1}}\",\r\n\"addUsers\":[\"{{User1}}\"],\r\n\"removeUsers\":[\"\"],\r\n\"addGroups\": [\"\"],\r\n\"removeGroups\":[\"\"]\r\n}]\r\n\r\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/adminroles/assignments/",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"adminroles",
+								"assignments",
+								""
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To add users or groups from admin roles.\nMore details at https://developer.kore.ai/docs/bots/api-guide/assign-admin-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Admin Roles API - Revoke role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "f51dd868-a65f-45bf-a260-374cf0e967b2",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\r\n\"roleId\":\"{{CusomAdmin1}}\",\r\n\"addUsers\":[\"\"],\r\n\"removeUsers\":[\"bottester@koreai.xyz\"],\r\n\"addGroups\": [\"\"],\r\n\"removeGroups\":[\"\"]\r\n}]\r\n\r\n"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/adminroles/assignments/",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"adminroles",
+								"assignments",
+								""
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To remove users or groups from admin roles.\nMore details at https://developer.kore.ai/docs/bots/api-guide/assign-admin-roles-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Access API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e6e62a4f-9df2-4da9-8f91-0aa98668ffc1",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"emailIds\":[\"{{User1}}\"],\n\t\"canCreateBot\":true,\n\t\"isDeveloper\":true\n\t\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/useraccess",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"useraccess"
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To add the ability to access bot builder, create new bots.\nMore details at https://developer.kore.ai/docs/bots/api-guide/update-user-access-api/"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Access API - Remove Access",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e6e62a4f-9df2-4da9-8f91-0aa98668ffc1",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "auth",
+								"type": "text",
+								"value": "{{JWT1}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"emailIds\":[\"{{User1}}\"],\n\t\"canCreateBot\":false,\n\t\"isDeveloper\":false\n\t\n}"
+						},
+						"url": {
+							"raw": "https://{{host}}/api/public/useraccess",
+							"protocol": "https",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"useraccess"
+							],
+							"query": [
+								{
+									"key": "rnd",
+									"value": "mpbdyc",
+									"disabled": true
+								}
+							]
+						},
+						"description": "To remove the ability to access bot builder, create new bots. More details at https://developer.kore.ai/docs/bots/api-guide/update-user-access-api/"
+					},
+					"response": []
+				}
+			],
+			"description": "This folder contains piblic APi's related to Roles."
+		}
+	]
+}
