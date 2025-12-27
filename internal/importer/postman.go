@@ -92,6 +92,12 @@ func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
 		URL:    convertURL(req.URL),
 	}
 
+	// Convert query parameters
+	queryParams := extractQueryParams(req.URL)
+	if len(queryParams) > 0 {
+		cfg.Query = queryParams
+	}
+
 	// Convert headers
 	if len(req.Header) > 0 {
 		cfg.Headers = make(map[string]string)
@@ -145,9 +151,17 @@ func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
 }
 
 // convertURL converts a Postman URL to a string, replacing variables
+// Note: Query parameters are stripped and should be extracted separately via extractQueryParams
 func convertURL(url PostmanURL) string {
+	var baseURL string
+
 	if url.Raw != "" {
-		return convertVariables(url.Raw)
+		baseURL = convertVariables(url.Raw)
+		// Strip query parameters from raw URL
+		if idx := strings.Index(baseURL, "?"); idx != -1 {
+			baseURL = baseURL[:idx]
+		}
+		return baseURL
 	}
 
 	// Construct from parts if raw is not available
@@ -168,6 +182,43 @@ func convertURL(url PostmanURL) string {
 	}
 
 	return urlStr.String()
+}
+
+// extractQueryParams extracts query parameters from a Postman URL
+func extractQueryParams(url PostmanURL) map[string]string {
+	params := make(map[string]string)
+
+	// First, extract from the Query array if present
+	for _, q := range url.Query {
+		if !q.Disabled && q.Key != "" {
+			params[q.Key] = convertVariables(q.Value)
+		}
+	}
+
+	// If no Query array, try to parse from raw URL
+	if len(params) == 0 && url.Raw != "" {
+		if idx := strings.Index(url.Raw, "?"); idx != -1 {
+			queryString := url.Raw[idx+1:]
+			// Parse query string manually
+			pairs := strings.Split(queryString, "&")
+			for _, pair := range pairs {
+				if pair == "" {
+					continue
+				}
+				kv := strings.SplitN(pair, "=", 2)
+				if len(kv) >= 1 {
+					key := kv[0]
+					value := ""
+					if len(kv) == 2 {
+						value = kv[1]
+					}
+					params[key] = convertVariables(value)
+				}
+			}
+		}
+	}
+
+	return params
 }
 
 // convertVariables converts Postman variable syntax {{var}} to yapi syntax ${var}
