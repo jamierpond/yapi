@@ -1,6 +1,8 @@
 // Package importer provides functionality to import external API collections into yapi format
 package importer
 
+import "encoding/json"
+
 // PostmanCollection represents a Postman Collection v2.1 schema
 type PostmanCollection struct {
 	Info PostmanInfo   `json:"info"`
@@ -61,6 +63,25 @@ type PostmanURL struct {
 	Host     []string `json:"host,omitempty"`
 	Path     []string `json:"path,omitempty"`
 	Query    []PostmanQueryParam `json:"query,omitempty"`
+}
+
+// UnmarshalJSON implements custom unmarshaling for PostmanURL to handle both string and object formats
+func (u *PostmanURL) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as string first
+	var str string
+	if err := json.Unmarshal(data, &str); err == nil {
+		u.Raw = str
+		return nil
+	}
+
+	// Otherwise unmarshal as object
+	type Alias PostmanURL
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(u),
+	}
+	return json.Unmarshal(data, aux)
 }
 
 // PostmanQueryParam represents a URL query parameter
