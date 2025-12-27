@@ -1719,6 +1719,31 @@ func collectUsedVariables(files map[string]config.ConfigV1) map[string]bool {
 	return vars
 }
 
+// sanitizeEnvName converts an environment name to a safe identifier
+func sanitizeEnvName(name string) string {
+	// Replace spaces and special characters with hyphens
+	name = strings.ReplaceAll(name, " ", "-")
+	name = regexp.MustCompile(`[^a-zA-Z0-9\-_]`).ReplaceAllString(name, "")
+	name = strings.ToLower(name)
+	if name == "" {
+		return "imported"
+	}
+	return name
+}
+
+// quoteYAMLValue properly quotes a YAML value if needed
+func quoteYAMLValue(value string) string {
+	// If the value contains special characters, quote it
+	if strings.ContainsAny(value, ":#[]{}|>*&!%@`") || strings.HasPrefix(value, " ") || strings.HasSuffix(value, " ") {
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, "\"", "\\\""))
+	}
+	// If it looks like a number or boolean, quote it to keep it as string
+	if value == "true" || value == "false" || regexp.MustCompile(`^\d+$`).MatchString(value) {
+		return fmt.Sprintf("\"%s\"", value)
+	}
+	return value
+}
+
 // importE handles the import command to convert external collections to yapi format
 func importE(cmd *cobra.Command, args []string) error {
 	inputPath := args[0]
@@ -1778,54 +1803,124 @@ func importE(cmd *cobra.Command, args []string) error {
 	// Collect all variables used in the imported files
 	usedVars := collectUsedVariables(result.Files)
 
-	// Write environment file and yapi.config.yml
-	if len(envVars) > 0 || len(usedVars) > 0 {
+	// Determine environment name
+	envName := "imported"
+	if envResult != nil && envResult.Name != "" {
+		envName = sanitizeEnvName(envResult.Name)
+	}
+
+	// Separate variables into categories
+	configVars := make(map[string]string)
+	secretVars := make(map[string]string)
+	var dynamicVars []string
+
+	// Add environment variables
+	if envResult != nil {
+		for k, v := range envResult.ConfigVars {
+			configVars[k] = v
+		}
+		for k, v := range envResult.SecretVars {
+			secretVars[k] = v
+		}
+	}
+
+	// Add undefined variables from collection
+	for varName := range usedVars {
+		// Skip if already categorized
+		if _, exists := configVars[varName]; exists {
+			continue
+		}
+		if _, exists := secretVars[varName]; exists {
+			continue
+		}
+
+		// Check if this is a Postman dynamic variable
+		if strings.HasPrefix(varName, "$") {
+			dynamicVars = append(dynamicVars, varName)
+		} else {
+			configVars[varName] = "" // Empty placeholder
+		}
+	}
+
+	// Generate yapi.config.yml
+	yapiConfigPath := filepath.Join(outDir, "yapi.config.yml")
+	var yapiConfigContent strings.Builder
+	yapiConfigContent.WriteString("yapi: v1\n\n")
+	yapiConfigContent.WriteString("# Imported from Postman collection\n")
+	if len(secretVars) > 0 {
+		yapiConfigContent.WriteString("# Secrets are in .env file - DO NOT commit .env to version control\n")
+	}
+	yapiConfigContent.WriteString("\n")
+	yapiConfigContent.WriteString(fmt.Sprintf("default_environment: %s\n\n", envName))
+	yapiConfigContent.WriteString("environments:\n")
+	yapiConfigContent.WriteString(fmt.Sprintf("  %s:\n", envName))
+
+	// Add config vars if any
+	if len(configVars) > 0 {
+		yapiConfigContent.WriteString("    vars:\n")
+		// Sort keys for consistent output
+		var keys []string
+		for k := range configVars {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := configVars[k]
+			if v == "" {
+				yapiConfigContent.WriteString(fmt.Sprintf("      %s: \"\"\n", k))
+			} else {
+				yapiConfigContent.WriteString(fmt.Sprintf("      %s: %s\n", k, quoteYAMLValue(v)))
+			}
+		}
+		yapiConfigContent.WriteString("\n")
+	}
+
+	// Add env_files reference if there are secrets
+	if len(secretVars) > 0 {
+		yapiConfigContent.WriteString("    env_files:\n")
+		yapiConfigContent.WriteString("      - .env\n")
+	}
+
+	if err := os.WriteFile(yapiConfigPath, []byte(yapiConfigContent.String()), 0644); err != nil {
+		return fmt.Errorf("failed to write yapi.config.yml: %w", err)
+	}
+	fmt.Fprintf(os.Stderr, "  %s yapi.config.yml (%d config variables)\n", color.Green("✓"), len(configVars))
+
+	// Generate .env file for secrets
+	if len(secretVars) > 0 || len(dynamicVars) > 0 {
 		envFilePath := filepath.Join(outDir, ".env")
 		var envContent strings.Builder
-		envContent.WriteString("# Imported from Postman collection\n")
-		envContent.WriteString("# Fill in the values for your environment\n\n")
+		envContent.WriteString("# Secrets from Postman environment\n")
+		envContent.WriteString("# DO NOT commit this file to version control!\n")
+		envContent.WriteString("# Add .env to your .gitignore\n\n")
 
-		// Write environment variables first
-		if len(envVars) > 0 {
-			envContent.WriteString("# From Postman environment file\n")
-			for key, value := range envVars {
-				envContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		if len(secretVars) > 0 {
+			// Sort keys for consistent output
+			var keys []string
+			for k := range secretVars {
+				keys = append(keys, k)
 			}
-			envContent.WriteString("\n")
-		}
+			sort.Strings(keys)
 
-		// Add placeholders for any undefined variables
-		// Separate Postman dynamic variables from regular variables
-		var undefinedVars []string
-		var dynamicVars []string
-		for varName := range usedVars {
-			if _, exists := envVars[varName]; !exists {
-				// Check if this is a Postman dynamic variable (starts with $)
-				if strings.HasPrefix(varName, "$") {
-					dynamicVars = append(dynamicVars, varName)
+			envContent.WriteString("# Detected secrets (fill in real values):\n")
+			for _, k := range keys {
+				v := secretVars[k]
+				if v == "" {
+					envContent.WriteString(fmt.Sprintf("%s=\n", k))
 				} else {
-					undefinedVars = append(undefinedVars, varName)
+					envContent.WriteString(fmt.Sprintf("%s=%s\n", k, v))
 				}
-			}
-		}
-
-		if len(undefinedVars) > 0 {
-			sort.Strings(undefinedVars)
-			envContent.WriteString("# Variables used in collection (set these values)\n")
-			for _, varName := range undefinedVars {
-				envContent.WriteString(fmt.Sprintf("%s=\n", varName))
 			}
 			envContent.WriteString("\n")
 		}
 
 		if len(dynamicVars) > 0 {
 			sort.Strings(dynamicVars)
-			envContent.WriteString("# Postman dynamic variables detected (require manual handling):\n")
+			envContent.WriteString("# Postman dynamic variables (require manual handling):\n")
 			envContent.WriteString("# - $guid: Generate a UUID\n")
 			envContent.WriteString("# - $timestamp: Current Unix timestamp\n")
 			envContent.WriteString("# - $isoTimestamp: Current ISO 8601 timestamp\n")
 			envContent.WriteString("# - $randomInt: Random integer\n")
-			envContent.WriteString("# You'll need to replace these with actual values or implement dynamic generation\n")
 			for _, varName := range dynamicVars {
 				envContent.WriteString(fmt.Sprintf("# %s=\n", varName))
 			}
@@ -1835,31 +1930,12 @@ func importE(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to write .env file: %w", err)
 		}
 
-		varCount := len(envVars) + len(undefinedVars)
 		if len(dynamicVars) > 0 {
-			fmt.Fprintf(os.Stderr, "  %s .env (%d variables, %d Postman dynamic variables need manual handling)\n", color.Green("✓"), varCount, len(dynamicVars))
+			fmt.Fprintf(os.Stderr, "  %s .env (%d secrets, %d dynamic variables)\n",
+				color.Green("✓"), len(secretVars), len(dynamicVars))
 		} else {
-			fmt.Fprintf(os.Stderr, "  %s .env (%d variables)\n", color.Green("✓"), varCount)
+			fmt.Fprintf(os.Stderr, "  %s .env (%d secrets)\n", color.Green("✓"), len(secretVars))
 		}
-
-		// Create yapi.config.yml with helpful comments
-		yapiConfigPath := filepath.Join(outDir, "yapi.config.yml")
-		yapiConfigContent := `yapi: v1
-
-# Imported from Postman collection
-# Edit .env file to set your API keys and variables
-
-default_environment: imported
-
-environments:
-  imported:
-    env_files:
-      - .env
-`
-		if err := os.WriteFile(yapiConfigPath, []byte(yapiConfigContent), 0644); err != nil {
-			return fmt.Errorf("failed to write yapi.config.yml: %w", err)
-		}
-		fmt.Fprintf(os.Stderr, "  %s yapi.config.yml (project configuration)\n", color.Green("✓"))
 	}
 
 	// Write all files

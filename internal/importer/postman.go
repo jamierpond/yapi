@@ -89,17 +89,21 @@ func ImportPostmanEnvironment(filePath string) (*EnvironmentImportResult, error)
 		isSecret := looksLikeSecret(v.Key, effectiveValue)
 
 		// Classify the variable
-		if !hasInitial && hasCurrent {
-			// Current-only variable - treat as secret
-			result.UndefinedSecrets = append(result.UndefinedSecrets, v.Key)
-			result.SecretVars[v.Key] = ""  // Placeholder in .env
-		} else if isSecret {
-			// Looks like a secret based on name/value
-			result.SecretWarnings = append(result.SecretWarnings,
-				fmt.Sprintf("Variable '%s' looks like a secret but is in 'initial' value (will be shared)", v.Key))
+		// Priority: explicit secret detection over initial/current distinction
+		if isSecret {
+			if hasInitial {
+				// Secret in initial value - warn user
+				result.SecretWarnings = append(result.SecretWarnings,
+					fmt.Sprintf("Variable '%s' looks like a secret but is in 'initial' value (will be shared)", v.Key))
+			}
 			result.SecretVars[v.Key] = effectiveValue
+		} else if !hasInitial && hasCurrent {
+			// Current-only variable that doesn't look like a secret
+			// This is likely a config var that wasn't properly exported
+			// Add to config vars but note it came from current
+			result.ConfigVars[v.Key] = effectiveValue
 		} else {
-			// Regular config variable
+			// Regular config variable with initial value
 			result.ConfigVars[v.Key] = effectiveValue
 		}
 	}
@@ -109,14 +113,28 @@ func ImportPostmanEnvironment(filePath string) (*EnvironmentImportResult, error)
 
 // looksLikeSecret detects if a variable name or value looks like a secret
 func looksLikeSecret(key, value string) bool {
-	// Check for secret-like keywords in the key name
-	secretKeywords := []string{
-		"token", "key", "secret", "password", "pwd", "pass",
-		"auth", "credential", "api_key", "apikey", "private",
-		"session", "cookie", "bearer",
+	lowerKey := strings.ToLower(key)
+
+	// Exact matches for common secret variable names
+	exactMatches := []string{
+		"jwt", "token", "apikey", "api_key", "secret", "password",
+		"passwd", "pwd", "auth", "bearer", "session", "cookie",
+	}
+	for _, exact := range exactMatches {
+		if lowerKey == exact {
+			return true
+		}
 	}
 
-	lowerKey := strings.ToLower(key)
+	// Keywords that indicate secrets when part of the name
+	// Use word boundaries to avoid false positives
+	secretKeywords := []string{
+		"_token", "_key", "_secret", "_password", "_pwd", "_auth",
+		"_credential", "_private", "_session", "_cookie", "_bearer",
+		"token_", "key_", "secret_", "password_", "pwd_", "auth_",
+		"credential_", "private_", "session_", "cookie_", "bearer_",
+	}
+
 	for _, keyword := range secretKeywords {
 		if strings.Contains(lowerKey, keyword) {
 			return true
@@ -124,7 +142,8 @@ func looksLikeSecret(key, value string) bool {
 	}
 
 	// Check for high-entropy values (likely tokens/keys)
-	if len(value) > 20 && hasHighEntropy(value) {
+	// Only check if value is reasonably long and looks random
+	if len(value) > 32 && hasHighEntropy(value) {
 		return true
 	}
 
