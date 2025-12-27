@@ -1,0 +1,167 @@
+package importer
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"yapi.run/cli/internal/config"
+)
+
+// ImportResult represents the result of importing a collection
+type ImportResult struct {
+	Files map[string]config.ConfigV1 // relative path -> config
+}
+
+// ImportPostmanCollection imports a Postman collection from a JSON file
+func ImportPostmanCollection(filePath string) (*ImportResult, error) {
+	data, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided file path
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	var collection PostmanCollection
+	if err := json.Unmarshal(data, &collection); err != nil {
+		return nil, fmt.Errorf("failed to parse Postman collection: %w", err)
+	}
+
+	result := &ImportResult{
+		Files: make(map[string]config.ConfigV1),
+	}
+
+	// Convert all items in the collection
+	convertItems(collection.Item, "", result)
+
+	return result, nil
+}
+
+// convertItems recursively converts Postman items to yapi configs
+func convertItems(items []PostmanItem, basePath string, result *ImportResult) {
+	for _, item := range items {
+		// If this item has a request, convert it
+		if item.Request != nil {
+			cfg := convertRequest(item.Name, item.Request)
+
+			// Generate file path
+			fileName := sanitizeFileName(item.Name) + ".yapi.yml"
+			filePath := filepath.Join(basePath, fileName)
+
+			result.Files[filePath] = cfg
+		}
+
+		// If this item has sub-items (folder), recurse
+		if len(item.Item) > 0 {
+			folderPath := filepath.Join(basePath, sanitizeFileName(item.Name))
+			convertItems(item.Item, folderPath, result)
+		}
+	}
+}
+
+// convertRequest converts a single Postman request to a yapi ConfigV1
+func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
+	cfg := config.ConfigV1{
+		Yapi:   "v1",
+		Method: strings.ToUpper(req.Method),
+		URL:    convertURL(req.URL),
+	}
+
+	// Convert headers
+	if len(req.Header) > 0 {
+		cfg.Headers = make(map[string]string)
+		for _, h := range req.Header {
+			if !h.Disabled {
+				cfg.Headers[h.Key] = convertVariables(h.Value)
+			}
+		}
+	}
+
+	// Convert body
+	if req.Body != nil && req.Body.Mode == "raw" && req.Body.Raw != "" {
+		rawBody := convertVariables(req.Body.Raw)
+
+		// Determine if it's JSON
+		isJSON := false
+		if req.Body.Options != nil && req.Body.Options.Raw != nil {
+			isJSON = req.Body.Options.Raw.Language == "json"
+		}
+
+		// Try to parse as JSON to determine if we should use body or json field
+		if isJSON || isJSONString(rawBody) {
+			cfg.JSON = rawBody
+			// Set content type if not already set
+			if cfg.Headers == nil {
+				cfg.Headers = make(map[string]string)
+			}
+			if _, hasContentType := cfg.Headers["Content-Type"]; !hasContentType {
+				cfg.ContentType = "application/json"
+			}
+		} else {
+			cfg.JSON = rawBody
+		}
+	}
+
+	return cfg
+}
+
+// convertURL converts a Postman URL to a string, replacing variables
+func convertURL(url PostmanURL) string {
+	if url.Raw != "" {
+		return convertVariables(url.Raw)
+	}
+
+	// Construct from parts if raw is not available
+	var urlStr strings.Builder
+
+	if url.Protocol != "" {
+		urlStr.WriteString(url.Protocol)
+		urlStr.WriteString("://")
+	}
+
+	if len(url.Host) > 0 {
+		urlStr.WriteString(convertVariables(strings.Join(url.Host, ".")))
+	}
+
+	if len(url.Path) > 0 {
+		urlStr.WriteString("/")
+		urlStr.WriteString(strings.Join(url.Path, "/"))
+	}
+
+	return urlStr.String()
+}
+
+// convertVariables converts Postman variable syntax {{var}} to yapi syntax ${var}
+func convertVariables(s string) string {
+	// Replace {{variable}} with ${variable}
+	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
+	return re.ReplaceAllString(s, `${$1}`)
+}
+
+// sanitizeFileName converts a name to a safe filename
+func sanitizeFileName(name string) string {
+	// Replace spaces with hyphens
+	name = strings.ReplaceAll(name, " ", "-")
+
+	// Remove or replace special characters
+	re := regexp.MustCompile(`[^a-zA-Z0-9\-_.]`)
+	name = re.ReplaceAllString(name, "")
+
+	// Convert to lowercase
+	name = strings.ToLower(name)
+
+	// Limit length
+	if len(name) > 200 {
+		name = name[:200]
+	}
+
+	return name
+}
+
+// isJSONString checks if a string looks like JSON
+func isJSONString(s string) bool {
+	s = strings.TrimSpace(s)
+	return (strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")) ||
+		(strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]"))
+}

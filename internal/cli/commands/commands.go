@@ -27,6 +27,7 @@ type Handlers struct {
 	List           func(cmd *cobra.Command, args []string) error
 	Stress         func(cmd *cobra.Command, args []string) error
 	About          func(cmd *cobra.Command, args []string) error
+	Import         func(cmd *cobra.Command, args []string) error
 }
 
 // BuildRoot builds the root command tree with optional handlers.
@@ -153,6 +154,15 @@ var cmdManifest = []CommandSpec{
 		Short:   "Show comprehensive yapi developer guide",
 		Long:    "Display a comprehensive developer guide for working with yapi. Includes syntax, examples, best practices, and project organization patterns.",
 	},
+	{
+		Use:   "import [file]",
+		Short: "Import an external collection (Postman) to yapi format",
+		Long:  "Import a Postman collection JSON file and convert it to yapi YAML files. Creates a directory structure mirroring the collection's folder organization.",
+		Args:  cobra.ExactArgs(1),
+		Flags: []FlagSpec{
+			{Name: "output", Shorthand: "o", Type: "string", Default: "./imported", Usage: "Directory to save imported yapi files"},
+		},
+	},
 }
 
 // getHandler maps command names to handlers
@@ -194,6 +204,8 @@ func getHandler(h *Handlers, use string) func(*cobra.Command, []string) error {
 		return h.Stress
 	case "about":
 		return h.About
+	case "import":
+		return h.Import
 	default:
 		return nil
 	}

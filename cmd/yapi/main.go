@@ -18,12 +18,14 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/briefing"
 	"yapi.run/cli/internal/cli/color"
 	"yapi.run/cli/internal/cli/commands"
 	"yapi.run/cli/internal/cli/middleware"
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/core"
+	"yapi.run/cli/internal/importer"
 	"yapi.run/cli/internal/langserver"
 	"yapi.run/cli/internal/observability"
 	"yapi.run/cli/internal/output"
@@ -144,6 +146,7 @@ func main() {
 		List:           listE,
 		Stress:         app.stressE,
 		About:          aboutE,
+		Import:         importE,
 	}
 
 	rootCmd := commands.BuildRoot(cfg, handlers)
@@ -1514,4 +1517,66 @@ func isTerminal(f *os.File) bool {
 		return false
 	}
 	return (stat.Mode() & os.ModeCharDevice) != 0
+}
+
+// importE handles the import command to convert external collections to yapi format
+func importE(cmd *cobra.Command, args []string) error {
+	inputPath := args[0]
+	outDir, _ := cmd.Flags().GetString("output")
+
+	// Check if input file exists
+	if _, err := os.Stat(inputPath); err != nil {
+		return fmt.Errorf("input file not found: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "\n%s\n", color.Accent("yapi import"))
+	fmt.Fprintf(os.Stderr, "%s\n", color.Dim("Importing Postman collection..."))
+	fmt.Fprintf(os.Stderr, "\n")
+
+	// Import the collection
+	result, err := importer.ImportPostmanCollection(inputPath)
+	if err != nil {
+		return fmt.Errorf("failed to import collection: %w", err)
+	}
+
+	if len(result.Files) == 0 {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No requests found in collection"))
+		return nil
+	}
+
+	// Create output directory
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Write all files
+	fileCount := 0
+	for relPath, cfg := range result.Files {
+		fullPath := filepath.Join(outDir, relPath)
+
+		// Create parent directory
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", relPath, err)
+		}
+
+		// Marshal to YAML
+		yamlData, err := yaml.Marshal(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to marshal config for %s: %w", relPath, err)
+		}
+
+		// Write file
+		if err := os.WriteFile(fullPath, yamlData, 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", relPath, err)
+		}
+
+		fileCount++
+		fmt.Fprintf(os.Stderr, "  %s %s\n", color.Green("✓"), relPath)
+	}
+
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "%s\n", color.Green(fmt.Sprintf("Successfully imported %d request(s) to %s", fileCount, outDir)))
+	fmt.Fprintf(os.Stderr, "\n")
+
+	return nil
 }
