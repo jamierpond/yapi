@@ -3,6 +3,7 @@ package briefing
 
 import _ "embed"
 
-//go:embed LLM_BRIEFING.md
 // Content holds the embedded LLM briefing documentation
+//
+//go:embed LLM_BRIEFING.md
 var Content string
