@@ -1,0 +1,780 @@
+{
+	"info": {
+		"_postman_id": "fc4c19ed-7978-42cc-87bc-4bb86a81ea1b",
+		"name": "Identity Service",
+		"description": "Delivering relevant digital experiences requires having a complete understanding of your customer. This is made more difficult when your customer data is fragmented across disparate systems, causing each individual customer to appear to have multiple \"identities\". Adobe Experience Platform Identity Service provides a RESTful API to help you to gain a better view of your customers and their behavior. By bridging identities across devices and systems, you are better able to deliver impactful, personal digital experiences in real-time. \n\nUse the Identity Service API to manage identities, namespaces, and clusters linked to the Identity Graph.  \n\n**Related documentation**:\n\n- [Identity Service documentation](https://www.adobe.com/go/identity-overview-en)  \n\n**Visualize API calls with Postman (a free, third-party software)**:\n\n- [Identity Service API Postman collection on GitHub](https://github.com/adobe/experience-platform-postman-samples/blob/master/apis/experience-platform/Identity%20Service.postman_collection.json)\n    \n- [Video guide for creating the Postman environment](https://video.tv.adobe.com/v/28832)\n    \n- [Steps for importing environments and collections in Postman](https://learning.getpostman.com/docs/postman/collection_runs/using_environments_in_collection_runs/)\n    \n\n**API paths**:\n\n- PLATFORM Gateway URL: https://platform-{REGION}.adobe.io\n    \n    - Information on `{REGION}` values can be found in the [Identity Service developer guide](https://experienceleague.adobe.com/docs/experience-platform/identity/api/getting-started.html).\n        \n- Base path for this API: /data/core/\n    \n- Example of a complete path: https://platform-va7.adobe.io/data/core/identity/cluster/members\n    \n\n**Required headers**:\n\n- All calls require the headers `Authorization`, `x-gw-ims-org-id`, and `x-api-key`. For more information on how to obtain these values, see the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).\n    \n- All resources in Experience Platform are isolated to specific virtual sandboxes. All requests to Platform APIs require the header `x-sandbox-name` whose value is the all-lowercase name of the sandbox the operation will take place in (for example, \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n    \n- All requests with a payload in the request body (such as POST, PUT, and PATCH calls) must include the header `Content-Type` with a value of `application/json`.\n    \n- **API error handling**:\n    \n    - Refer to the Experience Platform API troubleshooting guide for [FAQs](https://experienceleague.adobe.com/docs/experience-platform/landing/troubleshooting.html#faq), [API status codes](https://experienceleague.adobe.com/docs/experience-platform/landing/troubleshooting.html#api-status-codes), and [request header errors](https://experienceleague.adobe.com/docs/experience-platform/landing/troubleshooting.html#request-header-errors).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Identity",
+			"item": [
+				{
+					"name": "Retrieve an identity",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](https://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](https://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](https://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-uis-cst-ctx",
+								"value": "stub",
+								"description": "Customer context to be used for stub response",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/identity/identity?nsid=411&namespace=adcloud&id=2521328045094711779817",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"identity",
+								"identity"
+							],
+							"query": [
+								{
+									"key": "nsid",
+									"value": "411",
+									"description": "namespace code. One of `namespace` or `nsid` is required. will only be used if `namespace` was not provided."
+								},
+								{
+									"key": "namespace",
+									"value": "adcloud",
+									"description": "namespace id. One of `namespace` or `nsid` is required. `nsid` will only be used if `namespace` was not provided."
+								},
+								{
+									"key": "id",
+									"value": "2521328045094711779817",
+									"description": "(Required) Id in given namespace"
+								}
+							]
+						},
+						"description": "You can retrieve an identity (in the form of an XID string) by performing a GET request, given the identity namespace and an ID in that identity namespace."
+					},
+					"response": []
+				}
+			],
+			"description": "Identity services provide access to a profile identity in XID form."
+		},
+		{
+			"name": "Cluster (deprecated)",
+			"item": [
+				{
+					"name": "List linked identities for a given identity",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-uis-cst-ctx",
+								"value": "stub",
+								"description": "Customer context to be used for stub response",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/identity/cluster/members?xid=2521328045094711779817&nsid=411&namespace=adcloud&id=2521328045094711779817&graph-type=pdg",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"identity",
+								"cluster",
+								"members"
+							],
+							"query": [
+								{
+									"key": "xid",
+									"value": "2521328045094711779817",
+									"description": "Identity string as returned by /identity GET api"
+								},
+								{
+									"key": "nsid",
+									"value": "411",
+									"description": "namespace id"
+								},
+								{
+									"key": "namespace",
+									"value": "adcloud",
+									"description": "namespace code"
+								},
+								{
+									"key": "id",
+									"value": "2521328045094711779817",
+									"description": "Id in given namespace. Must be used alongside `namespace` or `nsid`."
+								},
+								{
+									"key": "graph-type",
+									"value": "pdg",
+									"description": "Graph type (output type) you want to get the cluster from"
+								}
+							]
+						},
+						"description": "This endpoint has been deprecated. Use /identity/v2/graph to retrieve the related XIDs for a given XID.\n\nGiven an XID return all XIDs, in the same or other namespaces, that are linked to it by the device graph type. The related XIDs are considered to be part of the same cluster. It is required to pass either xid or (namespace/nsid & id) pair to get cluster members."
+					},
+					"response": []
+				},
+				{
+					"name": "List linked identities for a list of identities",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-uis-cst-ctx",
+								"value": "stub",
+								"description": "Customer context to be used for stub response",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/identity/clusters/members",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"identity",
+								"clusters",
+								"members"
+							]
+						},
+						"description": "This endpoint has been deprecated. Use /identity/v2/graph to retrieve the related XIDs for a given list of XIDs.\n\nGiven set of identities, returns all linked identities in cluster corresponding to each identity"
+					},
+					"response": []
+				}
+			],
+			"description": "Cluster services provide access to groupings of identities as linked in the identity graph. These endpoints have been deprecated.  \nUse Graph API to access groupings of identities as linked in the identity graph."
+		},
+		{
+			"name": "Identity Namespace",
+			"item": [
+				{
+					"name": "Lists all identity namespaces available for the IMS Organization",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/idnamespace/identities",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"idnamespace",
+								"identities"
+							]
+						},
+						"description": "List all namespaces owned by a given organization."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new identity namespace",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/idnamespace/identities",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"idnamespace",
+								"identities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve details of a specific identity namespace by its ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/idnamespace/identities/:ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"idnamespace",
+								"identities",
+								":ID"
+							],
+							"variable": [
+								{
+									"key": "ID",
+									"value": "{{ID}}",
+									"description": "(Required) The numeric value of the \"id\" field."
+								}
+							]
+						},
+						"description": "Retrieve a specific namespace owned by a given organization."
+					},
+					"response": []
+				},
+				{
+					"name": "Update specific identity namespace",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n",
+								"type": "string"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/idnamespace/identities/:ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"idnamespace",
+								"identities",
+								":ID"
+							],
+							"variable": [
+								{
+									"key": "ID",
+									"value": "{{ID}}",
+									"description": "(Required) The numeric value of the \"id\" field."
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Identity namespaces provide context to identity data. Experience Platform provides standard namespaces as well as allowing organizations to create and manage custom namespaces."
+		},
+		{
+			"name": "Graph API",
+			"item": [
+				{
+					"name": "List linked identities",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "(Required) The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).",
+								"type": "text"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "(Required) The API key which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "(Required) The Organization ID which can be copied from your Experience Platform\nintegration. For more information on how to obtain this value, visit the\n[authentication\ntutorial](http://www.adobe.com/go/platform-api-authentication-en).\n"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The the all-lowercase name of the sandbox the operation will take place in. If unspecified, falls back to the default production sandbox (usually \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/identity/v2/graph",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"identity",
+								"v2",
+								"graph"
+							]
+						},
+						"description": "Given set of identities, returns all linked identities in the graph corresponding to each identity.\n"
+					},
+					"response": []
+				}
+			],
+			"description": "Graph API provides access to groupings of identities as linked in the identity graph."
+		}
+	]
+}

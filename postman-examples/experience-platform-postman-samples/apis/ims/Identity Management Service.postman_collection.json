@@ -1,0 +1,277 @@
+{
+	"info": {
+		"_postman_id": "20b3ea2e-3b52-46f0-8e12-43cdf1b9aa56",
+		"name": "Identity Management Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "4873115"
+	},
+	"item": [
+		{
+			"name": "JWT Deprecated",
+			"item": [
+				{
+					"name": "JWT Generate + Request Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"",
+									"if (data.access_token) {",
+									"    pm.environment.set(\"ACCESS_TOKEN\", data.access_token);",
+									"} else {",
+									"    console.log(\"Unable to acquire ACCESS_TOKEN from Adobe IMS to make further calls to Adobe I/O APIs.\")",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"",
+									"const ERROR_MESSAGE = \" not found in active environment. Please ensure the correct environment is selected and populated.\";",
+									"const ENV_JS_RSA_SIGN_LIBRARY = \"ADOBE_IO_ACCESS_TOKEN__JS_RSA_SIGN_LIBRARY\";",
+									"",
+									"const JS_RSA_SIGN_LIBRARY_REQUEST = {",
+									"    url: 'https://kjur.github.io/jsrsasign/jsrsasign-latest-all-min.js',",
+									"    method: 'GET'",
+									"};",
+									"",
+									"if (!pm.environment.get(ENV_JS_RSA_SIGN_LIBRARY)) {",
+									"    console.log(\"Loading JS RSA SIGN library from: \" + JS_RSA_SIGN_LIBRARY_REQUEST.url);",
+									"",
+									"    pm.sendRequest(JS_RSA_SIGN_LIBRARY_REQUEST, function (err, response) {",
+									"        if (err === null) {",
+									"            pm.environment.set(ENV_JS_RSA_SIGN_LIBRARY, response.text());",
+									"            console.log(\"Successfully loaded JS RSA Sign library.\");",
+									"            getAccessToken();",
+									"        } else {",
+									"            console.log(\"Could not load JS RSA Sign Library.\");",
+									"        }",
+									"    });",
+									"} else {",
+									"    // Already have the JS RSA Sign library loaded, so generate token immediately",
+									"    getAccessToken();",
+									"}",
+									"",
+									"// Tips from: https://github.com/kjur/jsrsasign/issues/199",
+									"// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-JWT-generation",
+									"function getAccessToken() {",
+									"    var navigator = {}; //fake a navigator object for the lib",
+									"    var window = {}; //fake a window object for the lib",
+									"",
+									"    if (!pm.environment.get(ENV_JS_RSA_SIGN_LIBRARY)) {",
+									"        throw new Error(\"Could not load JS RSA Sign Library from https://kjur.github.io/jsrsasign/jsrsasign-latest-all-min.js\");",
+									"    } else if (!pm.environment.get(\"IMS_ORG\")) {",
+									"        throw new Error(\"IMS_ORG\" + ERROR_MESSAGE);",
+									"    } else if (!pm.environment.get(\"TECHNICAL_ACCOUNT_ID\")) {",
+									"        throw new Error(\"TECHNICAL_ACCOUNT_ID\" + ERROR_MESSAGE);",
+									"    } else if (!pm.environment.get(\"IMS\")) {",
+									"        throw new Error(\"IMS\" + ERROR_MESSAGE);",
+									"    } else if (!pm.environment.get(\"API_KEY\")) {",
+									"        throw new Error(\"API_KEY\" + ERROR_MESSAGE);",
+									"    } else if (!pm.environment.get(\"META_SCOPE\")) {",
+									"        throw new Error(\"META_SCOPE\" + ERROR_MESSAGE);",
+									"    } else if (!pm.environment.get(\"PRIVATE_KEY\")) {",
+									"        throw new Error(\"Ensure the Private Key is added to both INITIAL and CURRENT VALUES in the active Postman environment's PRIVATE_KEY variable\");",
+									"    }",
+									"",
+									"    eval(pm.environment.get(ENV_JS_RSA_SIGN_LIBRARY)); //import javascript jsrsasign",
+									"",
+									"    var header = {",
+									"        \"alg\": \"RS256\"",
+									"    };",
+									"",
+									"    var data = {",
+									"        \"exp\": Math.round(87000 + Date.now() / 1000),",
+									"        \"iss\": pm.environment.get(\"IMS_ORG\"),",
+									"        \"sub\": pm.environment.get(\"TECHNICAL_ACCOUNT_ID\"),",
+									"        \"aud\": \"https://\" + pm.environment.get(\"IMS\") + \"/c/\" + pm.environment.get(\"API_KEY\")",
+									"    };",
+									"",
+									"    meta_scopes = pm.environment.get(\"META_SCOPE\");",
+									"",
+									"    if (typeof meta_scopes === 'string') {",
+									"        console.log(\"meta_scopes is a string, converting to string array\");",
+									"        meta_scopes = [ meta_scopes ];",
+									"    }",
+									"    ",
+									"    if (!Array.isArray(meta_scopes)) {",
+									"        throw new Error(\"Unable to coerce the META_SCOPE property value to a string array\");",
+									"    }",
+									"    ",
+									"    meta_scopes.forEach(function (scope) {",
+									"        var meta_scope = \"https://\" + pm.environment.get(\"IMS\") + \"/s/\" +",
+									"            scope;",
+									"        data[meta_scope] = true;",
+									"    });",
+									"",
+									"    var secret = pm.environment.get(\"PRIVATE_KEY\");",
+									"",
+									"    if (!secret) {",
+									"        console.log(\"Ensure the Private Key is added to both INITIAL and CURRENT VALUES in the active Postman environment's PRIVATE_KEY variable.\");",
+									"    }",
+									"",
+									"    console.log(data);",
+									"",
+									"    var sHeader = JSON.stringify(header);",
+									"    var sPayload = JSON.stringify(data);",
+									"    var sJWT = KJUR.jws.JWS.sign(\"RS256\", sHeader, sPayload, secret);",
+									"",
+									"    console.log(sJWT);",
+									"",
+									"    pm.environment.set(\"JWT_TOKEN\", sJWT);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "client_id",
+									"value": "{{API_KEY}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{CLIENT_SECRET}}",
+									"type": "text"
+								},
+								{
+									"key": "jwt_token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{IMS}}/ims/exchange/jwt/",
+							"protocol": "https",
+							"host": [
+								"{{IMS}}"
+							],
+							"path": [
+								"ims",
+								"exchange",
+								"jwt",
+								""
+							]
+						},
+						"description": "Local signing leverages a 3rd party JSR Assign Crypto library to be loaded and locally sign the JWT Token using the provided Private Key. Using this method the Private Key even leaves the local machine, however 3rd party JavaScript is loaded into the Postman context.\n\n"
+					},
+					"response": []
+				}
+			],
+			"description": "This API call genereated the signed JWT Token locally and the Private Key does not leave this machine, however this set of API calls does load the JSR Assign Crypto library from a non-Adone end-point (https://kjur.github.io/jsrsasign/jsrsasign-latest-all-min.js), therefore it not recommended for use with Production credentials.",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "OAuth",
+			"item": [
+				{
+					"name": "Request Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = JSON.parse(responseBody);\r",
+									"\r",
+									"if (data.access_token) {\r",
+									"    pm.environment.set(\"ACCESS_TOKEN\", data.access_token);\r",
+									"} else {\r",
+									"    console.log(\"Unable to acquire ACCESS_TOKEN from Adobe IMS to make further calls to Adobe I/O APIs.\")\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://{{IMS}}/ims/token/v2?grant_type=client_credentials&client_id={{API_KEY}}&client_secret={{CLIENT_SECRET}}&scope={{SCOPES}}",
+							"protocol": "https",
+							"host": [
+								"{{IMS}}"
+							],
+							"path": [
+								"ims",
+								"token",
+								"v2"
+							],
+							"query": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials"
+								},
+								{
+									"key": "client_id",
+									"value": "{{API_KEY}}"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{CLIENT_SECRET}}"
+								},
+								{
+									"key": "scope",
+									"value": "{{SCOPES}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

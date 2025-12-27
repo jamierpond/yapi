@@ -1,0 +1,2755 @@
+{
+	"info": {
+		"_postman_id": "51d72c16-0518-570d-91e1-f8a42215f3ca",
+		"name": "Destination Authoring API",
+		"description": "Adobe Experience Platform Destination SDK (also referred to as the *Destination Authoring API*) is a suite of configuration APIs that allow you to configure destination integration patterns for Experience Platform to deliver audience and profile data to your endpoint, based on data and authentication formats of your choice. \n- Related documentation:\n    - [Destination SDK overview](http://www.adobe.com/go/destination-sdk-overview-en)\n    - [Getting started](http://www.adobe.com/go/destination-sdk-getting-started-en)\n\n- API paths:\n    - PLATFORM Gateway URL: https://<span>platform.adobe.io\n    - Base path for this API: /data/core/activation/authoring\n    - Example of a complete path for making a call to \"/destinations\": https://<span>platform.adobe.io/data/core/activation/authoring/destinations\n\n- Required headers:\n    - All service calls require the headers `Authorization`, `x-gw-ims-org-id`, and `x-api-key`. For more information on how to obtain these values, see the [authentication tutorial](http://www.adobe.com/go/platform-api-authentication-en).\n    - All resources in Experience Platform are isolated to specific virtual sandboxes. All requests to Platform APIs require the header `x-sandbox-name` whose value is the all-lowercase name of the sandbox the operation will take place in (for example, \"prod\"). See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information.\n    - All requests with a payload in the request body (such as POST, PUT, and PATCH calls) must include the header `Content-Type` with a value of `application/json`.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Destination configurations",
+			"item": [
+				{
+					"name": "Retrieve a list of destination configurations",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "626cb0ee-f8cc-511e-bd2b-fba8cbd663ed",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations"
+							]
+						},
+						"description": "You can retrieve a list of all destination configurations for your IMS Organization by making a GET request to the `/destinations` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a destination configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "2980c8ba-3f90-596f-9104-801c6dda3567",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations"
+							]
+						},
+						"description": "You can create a new destination configuration by making a POST request to the `/destinations` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a destination configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "21e11ad1-36b8-57b5-8314-725043cf35c0",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/:DESTINATION_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								":DESTINATION_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_CONFIGURATION_ID}}",
+									"id": "DESTINATION_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can retrieve detailed information about a specific destination configuration by making a GET request to the `/destinations` endpoint and providing the ID of the destination configuration you want to retrieve."
+					},
+					"response": []
+				},
+				{
+					"name": "Update a destination configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "17f6ca10-4ad1-5b44-adca-6c7d995af87c",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/:DESTINATION_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								":DESTINATION_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_CONFIGURATION_ID}}",
+									"id": "DESTINATION_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can update a destination configuration by making a PUT request to the `/destinations` endpoint and providing the ID of the destination configuration you want to update. In the body of the call, provide the updated destination configuration."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a specific destination configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "9faff096-3528-5fb9-bfcb-9ca6b9e46b9f",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/:DESTINATION_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								":DESTINATION_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_CONFIGURATION_ID}}",
+									"id": "DESTINATION_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can delete the specified destination configuration by making a DELETE request to the `/destinations` endpoint and providing the ID of the destination configuration you wish to delete in the request path."
+					},
+					"response": []
+				}
+			],
+			"_postman_id": "1a32c0d3-2a33-5864-a339-e9ed7c6d1d58",
+			"description": "Destination configurations contain essential metadata for individual destinations, including their name, category, description, and more. The settings in this configuration also determine how Experience Platform users authenticate to your destination, how it appears in the Experience Platform user interface, and the identities that can be exported to your destination. <br><br> For a description of the functionality supported by this endpoint and an example configuration, see the overview on [destination configurations](http://www.adobe.com/go/destination-sdk-destination-configuration-en) in the Destination SDK documentation."
+		},
+		{
+			"name": "Destination servers and templates",
+			"item": [
+				{
+					"name": "Retrieve a list of destination server configurations",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "5fe04676-d5d2-5bb3-b025-4498bc2eefcb",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destination-servers",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destination-servers"
+							]
+						},
+						"description": "You can retrieve a list of all destination server configurations for your IMS Organization by making a GET request to the `/destination-servers` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a destination server configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "cd77baf0-0e18-551f-8688-8c493c9cea8f",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destination-servers",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destination-servers"
+							]
+						},
+						"description": "You can create a new destination server configuration by making a POST request to the `/destination-servers` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a specific destination server configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "2b6527bb-14b8-5c7e-8b25-35ebc473c18c",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destination-servers/:DESTINATION_SERVER_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destination-servers",
+								":DESTINATION_SERVER_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_SERVER_CONFIGURATION_ID}}",
+									"id": "DESTINATION_SERVER_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can retrieve detailed information about a specific destination server configuration by making a GET request to the `/destination-servers` endpoint and providing the ID of the destination server configuration you want to retrieve."
+					},
+					"response": []
+				},
+				{
+					"name": "Update a destination server configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "3aecc63b-63a5-55a4-9205-a34cb0695112",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destination-servers/:DESTINATION_SERVER_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destination-servers",
+								":DESTINATION_SERVER_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_SERVER_CONFIGURATION_ID}}",
+									"id": "DESTINATION_SERVER_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can update a destination server configuration by making a PUT request to the `/destination-servers` endpoint and providing the ID of the destination server configuration you want to update. In the body of the call, provide the updated destination server configuration."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a specific destination server configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "b077509d-944a-5717-b35e-f054cff9a490",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destination-servers/:DESTINATION_SERVER_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destination-servers",
+								":DESTINATION_SERVER_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_SERVER_CONFIGURATION_ID}}",
+									"id": "DESTINATION_SERVER_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can delete the specified destination server configuration by making a DELETE request to the `/destination-servers` endpoint and providing the ID of the destination server configuration you wish to delete in the request path."
+					},
+					"response": []
+				}
+			],
+			"_postman_id": "43bb7547-7670-559c-9548-dbfcc8476959",
+			"description": "Destination server configurations contain information about the server receiving the messages (the server on your side). Template configurations allow you to configure how to format the exported message to your destination. <br><br> For a description of the functionality provided by this endpoint, see the overview on [server and template specs](http://www.adobe.com/go/destination-sdk-server-template-configuration-en) in the Destination SDK documentation."
+		},
+		{
+			"name": "Audience metadata templates",
+			"item": [
+				{
+					"name": "Retrieve a list of audience templates",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "ead18326-77b7-5829-8976-64b7cb2cc511",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/audience-templates",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"audience-templates"
+							]
+						},
+						"description": "You can retrieve a list of all audience templates for your IMS Organization by making a GET request to the `/audience-templates` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new audience template",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "672b20e4-a623-5d53-89a2-62bfd3ab0e62",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/audience-templates",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"audience-templates"
+							]
+						},
+						"description": "You can create a new audience template by making a POST request to the `/audience-templates` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a specific audience template",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "311191ea-8815-5429-85ca-dd7e8586c13d",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/audience-templates/:AUDIENCE_TEMPLATE_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"audience-templates",
+								":AUDIENCE_TEMPLATE_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{AUDIENCE_TEMPLATE_CONFIGURATION_ID}}",
+									"id": "AUDIENCE_TEMPLATE_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can retrieve detailed information about a specific audience template by making a GET request to the `/audience-templates` endpoint and providing the ID of the audience template you want to retrieve."
+					},
+					"response": []
+				},
+				{
+					"name": "Update an audience template",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "a14ca306-5d50-5588-a772-ce4498ebc475",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/audience-templates/:AUDIENCE_TEMPLATE_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"audience-templates",
+								":AUDIENCE_TEMPLATE_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{AUDIENCE_TEMPLATE_CONFIGURATION_ID}}",
+									"id": "AUDIENCE_TEMPLATE_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can update an audience template by making a PUT request to the `/audience-templates` endpoint and providing the ID of the audience template you want to update. In the body of the call, provide the updated template."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a specific audience template",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "df78c0f9-3f93-5ae5-81da-f32bc7def720",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/audience-templates/:AUDIENCE_TEMPLATE_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"audience-templates",
+								":AUDIENCE_TEMPLATE_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{AUDIENCE_TEMPLATE_CONFIGURATION_ID}}",
+									"id": "AUDIENCE_TEMPLATE_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can delete the specified audience template by making a DELETE request to the `/audience-templates` endpoint and providing the ID of the audience template you wish to delete in the request path."
+					},
+					"response": []
+				}
+			],
+			"_postman_id": "e299c349-a80f-5d58-8202-7a36870a803d",
+			"description": "Audience metadata templates allow you to programmatically manage audiences in your destination. <br><br> For a description of when to use this endpoint, see the overview on [audience metadata management](http://www.adobe.com/go/destination-sdk-audience-metadata-en) in the Destination SDK documentation."
+		},
+		{
+			"name": "Credentials",
+			"item": [
+				{
+					"name": "Retrieve a list of credentials configurations",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "6631e541-14e6-5f09-91b5-7f89e8c5622d",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/credentials",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"credentials"
+							]
+						},
+						"description": "You can retrieve a list of all credentials configurations for your IMS Organization by making a GET request to the `/credentials` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a credentials configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "475a67ac-fc6d-562a-b42c-942a4f0745e7",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/credentials",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"credentials"
+							]
+						},
+						"description": "You can create a new credentials configuration by making a POST request to the `/credentials` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a specific credentials configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "a178e9a0-a6dc-54f1-9462-27508bc20983",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/credentials/:CREDENTIAL_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"credentials",
+								":CREDENTIAL_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{CREDENTIAL_CONFIGURATION_ID}}",
+									"id": "CREDENTIAL_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can retrieve detailed information about a specific credentials configuration by making a GET request to the `/credentials` endpoint and providing the ID of the credentials configuration you want to update."
+					},
+					"response": []
+				},
+				{
+					"name": "Update a credentials configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "22a08f09-2803-553f-8c5e-44ea2c057a1b",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/credentials/:CREDENTIAL_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"credentials",
+								":CREDENTIAL_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{CREDENTIAL_CONFIGURATION_ID}}",
+									"id": "CREDENTIAL_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can update a credentials configuration by making a PUT request to the `/credentials` endpoint and providing the ID of the credentials configuration you want to update. In the body of the call, provide the updated credentials configuration."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a specific credentials configuration",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "d1e1b9a4-e576-56e7-9c8a-e2989448ad0c",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/credentials/:CREDENTIAL_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"credentials",
+								":CREDENTIAL_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{CREDENTIAL_CONFIGURATION_ID}}",
+									"id": "CREDENTIAL_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can delete the specified credentials configuration by making a DELETE request to the `/credentials` endpoint and providing the ID of the credentials configuration you wish to delete in the request path."
+					},
+					"response": []
+				}
+			],
+			"_postman_id": "6fe7950f-55a9-5c21-9f3d-e152dfd11969",
+			"description": "If a Platform customer does not need to provide any authentication credentials to connect to your destination, a credentials configuration can provide the required credentials instead. Note that you must also select `PLATFORM_AUTHENTICATION` in the destination configuration in order to make use of this endpoint. <br><br> For more information when to use this endpoint, see the overview on [authentication configuration](http://www.adobe.com/go/destination-sdk-authentication-configuration-en) in the Destination SDK documentation. "
+		},
+		{
+			"name": "Destination testing",
+			"item": [
+				{
+					"name": "Retrieve a list of sample profiles for a given destination configuration or destination instance",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "4b209daa-0d77-5843-81ce-5fdd057c572f",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/sample-profiles?destinationInstanceId={{destinationInstanceId}}&destinationId={{destinationId}}&count={{count}}",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"sample-profiles"
+							],
+							"query": [
+								{
+									"key": "destinationInstanceId",
+									"value": "{{destinationInstanceId}}"
+								},
+								{
+									"key": "destinationId",
+									"value": "{{destinationId}}"
+								},
+								{
+									"key": "count",
+									"value": "{{count}}"
+								}
+							]
+						},
+						"description": "Use this endpoint as helper to generate sample profiles, either: <ul><li>to use [when making calls to test your destination](https://experienceleague.adobe.com/docs/experience-platform/destinations/destination-sdk/functionality/developer-tools/test-destination.html?lang=en#how-to-use) -  based on the [partner schema by using destination instance ID](https://experienceleague.adobe.com/docs/experience-platform/destinations/destination-sdk/api-reference/developer-tools-reference/sample-profile-generation-api.html?lang=en#generate-sample-profiles-source-schema) (also known as order ID) as a query parameter or </li><li> to use [when crafting your message transformation schema](https://experienceleague.adobe.com/docs/experience-platform/destinations/destination-sdk/functionality/developer-tools/create-template.html?lang=en#render-template-api) - by [using destination ID as a query parameter](https://experienceleague.adobe.com/docs/experience-platform/destinations/destination-sdk/api-reference/developer-tools-reference/sample-profile-generation-api.html?lang=en#generate-sample-profiles-target-schema).</li></ul>"
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a sample destination template",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "5eac608d-3271-59a4-af26-f126d54ceeb3",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "text/plain"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/testing/template/sample/:DESTINATION_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"testing",
+								"template",
+								"sample",
+								":DESTINATION_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_CONFIGURATION_ID}}",
+									"id": "DESTINATION_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "Retrieve a sample template corresponding to the destination's `destinationID`. For more information, see the functionality documentation on [generating a sample template](https://experienceleague.adobe.com/docs/experience-platform/destinations/destination-sdk/functionality/developer-tools/create-template.html?lang=en#sample-template-api)."
+					},
+					"response": []
+				},
+				{
+					"name": "Render test profiles based on a test destination template",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "1edd78dd-748d-5904-a462-62bd4080da7c",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json, text/plain, text/xml"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/testing/template/render",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"testing",
+								"template",
+								"render"
+							]
+						},
+						"description": "You can render exported data by making a POST request to the `testing/template/render` endpoint and providing the destination ID of the destination configuration and the template you created using the sample template API endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Send a message to the partner endpoint",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "90d6e69e-9b2f-5b46-b226-e80c9bc0bad3",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{profileListRequest}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/testing/destinationInstance/:DESTINATION_INSTANCE_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"testing",
+								"destinationInstance",
+								":DESTINATION_INSTANCE_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_INSTANCE_ID}}",
+									"id": "DESTINATION_INSTANCE_ID"
+								}
+							]
+						},
+						"description": "This API endpoint tests the connection to your destination by sending messages to the partner endpoint. Optionally, you can send a list of profiles in the request. If you do not send any profiles, Experience Platform generates those internally. In this case, you can view the profiles that were used for validation in the response you receive from your endpoint. <br><br> To use this endpoint, you must have a connection to your destination in the Experience Platform UI. Refer to the *important* note at the top of the [Destination testing API tutorial](https://experienceleague.adobe.com/docs/experience-platform/destinations/destination-sdk/api-reference/developer-tools-reference/destination-testing-api.html?lang=en)."
+					},
+					"response": []
+				}
+			],
+			"_postman_id": "54e897ad-6b04-5ad9-b259-43d1bad5d0f8",
+			"description": "The Destination Authoring API provides several tools for testing a destination: [Generate sample profiles](http://www.adobe.com/go/destination-sdk-generate-profiles-en), [generate sample templates](http://www.adobe.com/go/destination-sdk-create-template-en), [perform calls to your destination](http://www.adobe.com/go/destination-sdk-test-destination-en)."
+		},
+		{
+			"name": "Destination publishing",
+			"item": [
+				{
+					"name": "Retrieve a list of destination publish requests",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "2e33d579-65d9-57ba-9f4d-c05905ed94f6",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/publish",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								"publish"
+							]
+						},
+						"description": "You can retrieve a list of all destinations submitted for publishing for your IMS Organization by making a GET request to the `/destinations/publish` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit a destination configuration for publishing",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "96953cfd-d25f-51c5-8e81-7b6fd7d5b766",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/publish",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								"publish"
+							]
+						},
+						"description": "Submit a destination configuration for publishing by making a POST request to the `/destinations/publish` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve the status of a specific destination publish request",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "5ba88802-5825-58d7-a63f-9248fa71c410",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/publish/:DESTINATION_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								"publish",
+								":DESTINATION_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_CONFIGURATION_ID}}",
+									"id": "DESTINATION_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can retrieve detailed information about a specific destination publish request by making a GET request to the `/destinations/publish` endpoint and providing the ID of the destination configuration for which you want to retrieve the publishing status."
+					},
+					"response": []
+				},
+				{
+					"name": "Update a destination publish request",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.forEachHeader(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								]
+							}
+						}
+					],
+					"_postman_id": "61999af8-4858-5510-ac89-da5e9b14f385",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \". For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "The IMS Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en).",
+								"type": "string",
+								"enabled": true
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview](https://adobe.com/go/sandbox-overview-en) for more information. For more information on how to obtain this value, visit the [getting started tutorial](http://www.adobe.com/go/destination-sdk-getting-started-en)",
+								"type": "string",
+								"enabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{body}}"
+						},
+						"url": {
+							"raw": "https://platform.adobe.io/data/core/activation/authoring/destinations/publish/:DESTINATION_CONFIGURATION_ID",
+							"protocol": "https",
+							"host": [
+								"platform",
+								"adobe",
+								"io"
+							],
+							"path": [
+								"data",
+								"core",
+								"activation",
+								"authoring",
+								"destinations",
+								"publish",
+								":DESTINATION_CONFIGURATION_ID"
+							],
+							"variable": [
+								{
+									"value": "{{DESTINATION_CONFIGURATION_ID}}",
+									"id": "DESTINATION_CONFIGURATION_ID"
+								}
+							]
+						},
+						"description": "You can update the allowed organizations in a destination publish request by making a PUT request to the `/destinations/publish` endpoint and providing the ID of the destination for which you want to update the allowed organizations. In the body of the call, provide the updated allowed organizations."
+					},
+					"response": []
+				}
+			],
+			"_postman_id": "69d3c43d-dcda-5601-882c-333b9ec61e07",
+			"description": "After you have configured and tested your destination, you can use the destination publishing endpoint to submit it to Adobe for review and publishing. Read more in the [destination publishing API tutorial](http://www.adobe.com/go/destination-sdk-publish-en)."
+		}
+	]
+}

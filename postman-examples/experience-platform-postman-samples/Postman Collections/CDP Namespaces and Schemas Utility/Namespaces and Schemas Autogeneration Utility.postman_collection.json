@@ -1,0 +1,2749 @@
+{
+	"info": {
+		"_postman_id": "def167f3-a570-494b-a3e2-3e5b46d83cf8",
+		"name": "Namespaces and Schemas V3",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "8336612"
+	},
+	"item": [
+		{
+			"name": "Authorization",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseData = JSON.parse(responseBody);",
+							"pm.environment.set('ACCESS_TOKEN', responseData.access_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{API_KEY}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{CLIENT_SECRET}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "openid,session,AdobeID,read_organizations,additional_info.projectedProductContext",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://{{IMS}}/ims/token/v3",
+					"protocol": "https",
+					"host": [
+						"{{IMS}}"
+					],
+					"path": [
+						"ims",
+						"token",
+						"v3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Lists all identity namespaces available for the IMS Organization",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"/** Begin Adobe-provided Pre-Request Scripts **/",
+							"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+							"pm.request.forEachHeader(header => {",
+							"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+							"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+							"    }",
+							"});",
+							"",
+							"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+							"pm.request.url.query.remove(q => { ",
+							"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+							"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+							"    } ",
+							"});",
+							"/** End Adobe-provided Pre-Request Scripts **/"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Get response",
+							"var results = pm.response.json();",
+							"",
+							"var resultLength = results.length;",
+							"console.log(\"Namespace results size: \", resultLength);",
+							"pm.environment.set('namespacesLength', resultLength);",
+							"pm.environment.set('namespacesResult', JSON.stringify(results));"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"description": "The access token which can be copied from your Experience Platform integration, prefixed with \"Bearer \".  For more information on how to obtain this value, visit the [authentication tutorial](https://docs.adobe.com/content/help/en/experience-platform/tutorials/authentication.html).",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"description": "The API key which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [authentication tutorial](https://docs.adobe.com/content/help/en/experience-platform/tutorials/authentication.html).",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"description": "The Organization ID which can be copied from your Experience Platform integration. For more information on how to obtain this value, visit the [authentication tutorial](https://docs.adobe.com/content/help/en/experience-platform/tutorials/authentication.html).",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"description": "Identifies the Adobe Experience Platform sandbox to use. Default sandbox is 'prod'",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/core/idnamespace/identities",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"core",
+						"idnamespace",
+						"identities"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Identity Namespace",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"/** Begin Adobe-provided Pre-Request Scripts **/",
+							"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+							"pm.request.forEachHeader(header => {",
+							"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+							"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+							"    }",
+							"});",
+							"",
+							"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+							"pm.request.url.query.remove(q => {",
+							"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+							"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+							"    }",
+							"});",
+							"/** End Adobe-provided Pre-Request Scripts **/",
+							"",
+							"// TEST values",
+							"// Be sure to use test values, and not PROD values for the testing purposes",
+							"// Since once namespace has been created, it can not be deleted",
+							"// Change displayNames and codeSymbols once used as they are unique per IMS Org ",
+							"/*",
+							"var displayNames = [\"Test02 B2B Person\", \"Test02 B2B company\"];",
+							"var identityTypes = [\"CROSS_DEVICE\", \"B2B_ACCOUNT\"];",
+							"var codeSymbols = [\"test02_b2b_person\", \"test02_b2b_account\"];",
+							"*/",
+							"// PROD values ",
+							"",
+							"var displayNames = [\"B2B Account\", \"B2B Person\", \"B2B Opportunity\", \"B2B Opportunity Person Relation\", \"B2B Campaign\", \"B2B Campaign Member\", \"B2B Marketing List\", \"B2B Marketing List Member\", \"B2B Account Person Relation\",\"B2B Demandbase Account Intent\",\"B2B Bombora Account Intent\"];",
+							"",
+							"var identityTypes = [\"B2B_ACCOUNT\", \"CROSS_DEVICE\", \"B2B_OPPORTUNITY\", \"B2B_OPPORTUNITY_PERSON\", \"B2B_CAMPAIGN\", \"B2B_CAMPAIGN_MEMBER\", \"B2B_MARKETING_LIST\", \"B2B_MARKETING_LIST_MEMBER\", \"B2B_ACCOUNT_PERSON\",\"NON_PEOPLE\",\"NON_PEOPLE\"];",
+							"",
+							"var codeSymbols = [\"b2b_account\", \"b2b_person\", \"b2b_opportunity\", \"b2b_opportunity_person_relation\", \"b2b_campaign\",\"b2b_campaign_member\", \"b2b_marketing_list\", \"b2b_marketing_list_member\", \"b2b_account_person_relation\",\"b2b_demandbase_account_intent\",\"b2b_bombora_account_intent\"];",
+							"",
+							"var namespacesToCreate = pm.environment.get(\"namespacesToCreate\");",
+							"var allIdentityTypes = pm.environment.get(\"allIdentityTypes\");",
+							"var allCodeSymbols = pm.environment.get(\"allCodeSymbols\");",
+							"console.log(\"Coming here to create namespaces\");",
+							"var availableNamespaces = pm.environment.get(\"availableNamespaces\");",
+							"if (!availableNamespaces) {",
+							"    availableNamespaces = [];",
+							"    // build \"display-name\" list only for the first time",
+							"    // Utilize values set in env variables for the next times",
+							"    var namespacesResult = JSON.parse(pm.environment.get('namespacesResult'));",
+							"    var namespacesLength = pm.environment.get('namespacesLength');",
+							"",
+							"    // browse through existing namespaces and prepare list of available namespaces",
+							"    for (var i = 0; i < namespacesLength; i++) {",
+							"        availableNamespaces.push(namespacesResult[i].name);",
+							"    }",
+							"    // set available namespace \"display-names\"",
+							"    pm.environment.set(\"availableNamespaces\", availableNamespaces);",
+							"}",
+							"var checkIfFirstTime = namespacesToCreate;",
+							"if (!checkIfFirstTime) {",
+							"    namespacesToCreate = [];",
+							"    allCodeSymbols = [];",
+							"    allIdentityTypes = [];",
+							"    for (var i = 0; i < displayNames.length; i++) {",
+							"        namespacesToCreate.push(displayNames[i]);",
+							"        allIdentityTypes.push(identityTypes[i]);",
+							"        allCodeSymbols.push(codeSymbols[i]);",
+							"    }",
+							"    var namespaceArrayNames = namespacesToCreate.slice(); // store namespaces",
+							"    var namespaceArray = allCodeSymbols.slice(); // store code symbols for schema script",
+							"    pm.environment.set(\"namespaceArray\", namespaceArray);",
+							"    pm.environment.set(\"namespaceArrayNames\", namespaceArrayNames);",
+							"    console.log(\"value of namespaceArray is: \" , namespaceArrayNames);",
+							"}",
+							"",
+							"//     <!-- sample request body -->        ",
+							"// {",
+							"//     \"description\": \"{{currDescription}}\",",
+							"//     \"idType\": \"{{currIdentityType}}\",",
+							"//     \"name\": \"{{currDisplayName}}\",",
+							"//     \"code\": \"{{currCode}}\"",
+							"// }",
+							"",
+							"",
+							"var currDisplayName = namespacesToCreate.shift(); // display name ",
+							"var currIdentityType = allIdentityTypes.shift(); // identity type",
+							"var currCode = allCodeSymbols.shift(); // code symbol (identity symbol)",
+							"var currDescription = \"Namespace \" +  currDisplayName + \" created for B2B ingestion purpose\"; // description",
+							"",
+							"pm.environment.set(\"currDisplayName\", currDisplayName);",
+							"pm.environment.set(\"currIdentityType\", currIdentityType);",
+							"pm.environment.set(\"currDescription\", currDescription);",
+							"",
+							"pm.environment.set(\"namespacesToCreate\", namespacesToCreate);",
+							"pm.environment.set(\"allIdentityTypes\", allIdentityTypes);",
+							"pm.environment.set(\"currCode\", currCode);",
+							"pm.environment.set(\"allCodeSymbols\", allCodeSymbols);",
+							"",
+							"if (availableNamespaces.indexOf(currDisplayName) >= 0) {",
+							"    // it will still go ahead and try with creation of duplicate and fail",
+							"    // but we are providing customer with appropriate message",
+							"    console.warn(\"Namespace already exists with name \", currDisplayName);",
+							"} else {",
+							"    // Creating a new namespace",
+							"    console.log(\"Creating namespace \", currDisplayName);",
+							"    console.log(\"request parameters : \", currDescription, currCode, currIdentityType, currDescription);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var currDisplayName = pm.environment.get(\"currDisplayName\");",
+							"var currIdentityType = currIdentityType = pm.environment.get(\"currIdentityType\");",
+							"var currDescription = pm.environment.get(\"currDescription\");",
+							"var currCode = pm.environment.get(\"currCode\");",
+							"var namespacesToCreate = pm.environment.get(\"namespacesToCreate\");",
+							"",
+							"if(namespacesToCreate && namespacesToCreate.length > 0) {",
+							"    pm.execution.setNextRequest(pm.info.requestName);",
+							"}",
+							"else {",
+							"    console.log(\"End of creation of namespaces\");",
+							"    pm.execution.setNextRequest(\"Get Schemas\");",
+							"    // clear out env variables which were used in the script ",
+							"    pm.environment.unset(\"namespacesLength\");",
+							"    pm.environment.unset(\"namespacesResult\");",
+							"    pm.environment.unset(\"availableNamespaces\");",
+							"    pm.environment.unset(\"currDescription\");",
+							"    pm.environment.unset(\"currDisplayName\");",
+							"    pm.environment.unset(\"currIdentityType\");",
+							"    pm.environment.unset(\"currCode\");",
+							"    pm.environment.unset(\"namespacesToCreate\");",
+							"    pm.environment.unset(\"allIssuerEntityTypes\");",
+							"    pm.environment.unset(\"allIdentityTypes\");",
+							"    pm.environment.unset(\"allCodeSymbols\");",
+							"    pm.environment.unset(\"namespaceArrayNames\");",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"description\": \"{{currDescription}}\",\n    \"idType\": \"{{currIdentityType}}\",\n    \"name\": \"{{currDisplayName}}\",\n    \"code\": \"{{currCode}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/core/idnamespace/identities ",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"core",
+						"idnamespace",
+						"identities "
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Schemas",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"//Response info from get schemas",
+							"var resultsArray = pm.response.json().results;",
+							"var resultsArrayLength = resultsArray.length;",
+							"",
+							"let marketoEntityArray = [];",
+							"let entityMixinArray = [];",
+							"",
+							"//For all mixins",
+							"var mixinArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ",
+							"                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ",
+							"                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ",
+							"                  0, 0, 0, 0, 0, 0, 0, 0, 0];",
+							"pm.environment.set('mixinArray', mixinArray);",
+							"",
+							"//for all relationships",
+							"var relationshipArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];",
+							"pm.environment.set('relationshipArray', relationshipArray);",
+							"",
+							"//for all legacy relationships",
+							"let legacyRelationshipArray = [0,0,0,0];",
+							"pm.environment.set('legacyRelationshipArray', legacyRelationshipArray);",
+							"",
+							"//for all legacy relationship descriptors",
+							"let descriptorRefIdentityArray = [0,0,0,0];",
+							"pm.environment.set('descriptorRefIdentityArray',descriptorRefIdentityArray);",
+							"",
+							"//create array to store all values if profile is enabled on a schema",
+							"var profileEnabledArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];",
+							"pm.environment.set('profileEnabledArray', profileEnabledArray);",
+							"",
+							"//create an array to store our schema Ids in",
+							"var schemaIdArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];",
+							"pm.environment.set('schemaIdArray', schemaIdArray);",
+							"",
+							"//create an array to store schema alt Ids in",
+							"var schemaAltIdArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];",
+							"pm.environment.set('schemaAltIdArray', schemaAltIdArray);",
+							"",
+							"//create an array to store the entity types that we find",
+							"var discoveredEntityArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];",
+							"pm.environment.set('discoveredEntityArray', discoveredEntityArray);",
+							"",
+							"//create an array to store the entity types that we find",
+							"var relationshipSchemaArray = [0,0,0,0,0,0,0,0,0,0,0,0];",
+							"pm.environment.set('relationshipSchemaArray', relationshipSchemaArray);",
+							"",
+							"//create an array to store the merge policies that we find",
+							"var mpResultsArray = [0,0,0,0,0,0,0,0,0,0,0];",
+							"pm.environment.set('mpResultsArray', mpResultsArray);",
+							"",
+							"//friendly names used for logging to assist troubleshooting issues",
+							"entityMixinArray = [\"B2B Account\",\"B2B Person\",\"B2B Person Components\",\"B2B Opportunity\",\"B2B Campaign\",",
+							"    \"B2B Campaign Member\",\"Remove From List\", \"Visit Web Page\", \"Person Identifier\",\"Marketo Web URL\",",
+							"    \"New Lead\",\"Convert Lead\",\"Add To List\",\"Add To Opportunity\",\"Remove From Opportunity\",",
+							"    \"Interesting Moment\",\"Form Filled Out\",\"Link Clicks\",\"Email Delivered\",\"Email Bounced\",",
+							"    \"Email Unsubscribed\",\"Email Opened\",\"Email Clicked\",\"Email Bounced Soft\",\"Score Changed\",",
+							"    \"Opportunity Updated\",\"Status in Campaign Progression Changed\",\"Identity Map\",\"Consents and Preferences\",\"Account Contact Relation Identity Map\",",
+							"    \"Call Webhook\",\"Change Campaign Cadence\",\"Add to Nurture\",\"Change Nurture Track\",\"Change Revenue Stage\",",
+							"    \"Merge Leads\",\"Send Email\",\"XDM Demandbase Account Intent Details\",\"XDM Bombora Account Intent Details\"];",
+							"",
+							"pm.environment.set('relationshipSourcePropertyArray', '[\"/personComponents[*]/sourceAccountKey/sourceKey\",\"/accountKey/sourceKey\",\"/b2b/personKey/sourceKey\",\"/opportunityKey/sourceKey\",\"/personKey/sourceKey\",\"/campaignKey/sourceKey\",\"/personKey/sourceKey\",\"/marketingListKey/sourceKey\",\"/accountParentKey/sourceKey\",\"/accountID\"]');",
+							"pm.environment.set('relationshipDestinationPropertyArray','[\"/accountKey/sourceKey\",\"/b2b/personKey/sourceKey\",\"/opportunityKey/sourceKey\",\"/personKey/sourceKey\",\"/campaignKey/sourceKey\",\"/personKey/sourceKey\",\"/marketingListKey/sourceKey\"]');",
+							"",
+							"//setting up namespace arrays",
+							"let primaryIdentityArray = pm.environment.get('namespaceArray');",
+							"",
+							"pm.environment.set('mixinIdArray', '[\"https://ns.adobe.com/xdm/mixins/account-details\",\"https://ns.adobe.com/xdm/mixins/b2b-person-details\",\"https://ns.adobe.com/xdm/mixins/b2b-person-components\",\"https://ns.adobe.com/xdm/mixins/opportunity-details\",\"https://ns.adobe.com/xdm/mixins/campaign-details\",\"https://ns.adobe.com/xdm/context/campaign-member-details\",\"https://ns.adobe.com/xdm/mixins/events/remove-from-list\",\"https://ns.adobe.com/xdm/mixins/events/visit-webpage\",\"https://ns.adobe.com/xdm/mixins/person-identifier\",\"https://ns.adobe.com/b2b/marketo/marketo-web-url\",\"https://ns.adobe.com/xdm/mixins/events/new-lead\",\"https://ns.adobe.com/xdm/mixins/events/convert-lead\",\"https://ns.adobe.com/xdm/mixins/events/add-to-list\",\"https://ns.adobe.com/xdm/mixins/events/add-to-opportunity\",\"https://ns.adobe.com/xdm/mixins/events/remove-from-opportunity\",\"https://ns.adobe.com/xdm/mixins/events/interesting-moment\",\"https://ns.adobe.com/xdm/mixins/events/formfilledout\",\"https://ns.adobe.com/xdm/mixins/events/linkclicks\",\"https://ns.adobe.com/xdm/mixins/events/emaildelivered\",\"https://ns.adobe.com/xdm/mixins/events/emailbounced\",\"https://ns.adobe.com/xdm/mixins/events/emailunsubscribed\",\"https://ns.adobe.com/xdm/mixins/events/emailopened\",\"https://ns.adobe.com/xdm/mixins/events/emailclicked\",\"https://ns.adobe.com/xdm/mixins/events/emailbouncedsoft\",\"https://ns.adobe.com/xdm/mixins/events/scorechanged\",\"https://ns.adobe.com/xdm/mixins/events/opportunityupdated\",\"https://ns.adobe.com/xdm/mixins/events/statusincampaignprogressionchanged\",\"https://ns.adobe.com/xdm/context/identitymap\",\"https://ns.adobe.com/xdm/mixins/profile-consents\",\"https://ns.adobe.com/xdm/context/identitymap\",\"https://ns.adobe.com/xdm/mixins/events/callwebhook\", \"https://ns.adobe.com/xdm/mixins/events/change-campaign-cadence\",\"https://ns.adobe.com/xdm/mixins/events/add-to-campaign\",\"https://ns.adobe.com/xdm/mixins/events/change-campaign-stream\",\"https://ns.adobe.com/xdm/mixins/events/revenueStageChanged\",\"https://ns.adobe.com/xdm/mixins/events/emailsent\",\"https://ns.adobe.com/xdm/mixins/events/merge-leads\",\"https://ns.adobe.com/b2b/demandbase/fieldgroups/demandbase-account-intent-details\",\"https://ns.adobe.com/b2b/bombora/fieldgroups/bombora-account-intent-details\"]');",
+							"pm.environment.set('entityArray', '[\"B2B Account\",\"B2B Person\",\"B2B Opportunity\",\"B2B Opportunity Person Relation\",\"B2B Campaign\",\"B2B Campaign Member\",\"B2B Marketing List\",\"B2B Marketing List Member\",\"B2B Activity\",\"B2B Account Person Relation\",\"B2B Demandbase Account Intent\",\"B2B Bombora Account Intent\"]');",
+							"pm.environment.set('classIdArray', '[\"https://ns.adobe.com/xdm/context/account\",\"https://ns.adobe.com/xdm/context/profile\",\"https://ns.adobe.com/xdm/context/opportunity\",\"https://ns.adobe.com/xdm/classes/opportunity-person\",\"https://ns.adobe.com/xdm/classes/campaign\",\"https://ns.adobe.com/xdm/context/campaign-member\",\"https://ns.adobe.com/xdm/classes/marketing-list\",\"https://ns.adobe.com/xdm/classes/marketing-list-member\",\"https://ns.adobe.com/xdm/context/experienceevent\",\"https://ns.adobe.com/xdm/classes/account-person\",\"https://ns.adobe.com/b2b/demandbase/classes/demandbase-account-intent\",\"https://ns.adobe.com/b2b/bombora/classes/bombora-account-intent\"]');",
+							"pm.environment.set('sourcePropertyArray', '[\"/accountKey/sourceKey\",\"/b2b/personKey/sourceKey\",\"/opportunityKey/sourceKey\",\"/opportunityPersonKey/sourceKey\",\"/campaignKey/sourceKey\",\"/campaignMemberKey/sourceKey\",\"/marketingListKey/sourceKey\",\"/marketingListMemberKey/sourceKey\",\"/personKey/sourceKey\",\"/extSourceSystemAudit/externalKey/sourceKey\",\"/extSourceSystemAudit/externalKey/sourceKey\",\"/accountPersonKey/sourceKey\",\"/intentID\"]');",
+							"pm.environment.set('mpArray', '_xdm.context.account,_xdm.context.profile,_xdm.context.opportunity,_xdm.classes.opportunity-person,_xdm.classes.campaign,_xdm.context.campaign-member,_xdm.classes.marketing-list,_xdm.classes.marketing-list-member,_xdm.classes.account-person,_b2b.demandbase.classes.demandbase-account-intent,_b2b.bombora.classes.bombora-account-intent');",
+							"",
+							"",
+							"pm.environment.set('namespaceArray',primaryIdentityArray);",
+							"let mixinIdArray = JSON.parse(pm.environment.get('mixinIdArray'));",
+							"let entityArray = JSON.parse(pm.environment.get('entityArray'));",
+							"",
+							"//iterate through response array to grab important info for subsequent calls",
+							"for (let i = 0; i < resultsArrayLength; i++) {",
+							"    var arrayItem = resultsArray[i];",
+							"    if (arrayItem.title == entityArray[0]) {",
+							"        console.log('B2B Account Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 0);",
+							"        mixinArray.splice(0, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[0]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[1]) {",
+							"        console.log('B2B Person Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 1);",
+							"        mixinArray.splice(1, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[1]));",
+							"        mixinArray.splice(2, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[2]));",
+							"        mixinArray.splice(27, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[27]));",
+							"        mixinArray.splice(28, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[28]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[2]) {",
+							"        console.log('B2B Opportunity Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 2);",
+							"        mixinArray.splice(3, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[3]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[3]) {",
+							"        console.log('B2B Opportunity Person Relation Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 3);",
+							"    }",
+							"    if (arrayItem.title == entityArray[4]) {",
+							"        console.log('B2B Campaign Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 4);",
+							"        mixinArray.splice(4, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[4]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[5]) {",
+							"        console.log('B2B Campaign Member Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 5);",
+							"        mixinArray.splice(5, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[5]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[6]) {",
+							"        console.log('B2B Marketing List Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 6);",
+							"    }",
+							"    if (arrayItem.title == entityArray[7]) {",
+							"        console.log('B2B Marketing List Member Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 7);",
+							"    }",
+							"    if (arrayItem.title == entityArray[8]) {",
+							"        console.log('B2B Activity Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 8);",
+							"        mixinArray.splice(6, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[6]));",
+							"        mixinArray.splice(7, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[7]));",
+							"        mixinArray.splice(8, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[8]));",
+							"        mixinArray.splice(9, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[9]));",
+							"        mixinArray.splice(10, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[10]));",
+							"        mixinArray.splice(11, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[11]));",
+							"        mixinArray.splice(12, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[12]));",
+							"        mixinArray.splice(13, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[13]));",
+							"        mixinArray.splice(14, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[14]));",
+							"        mixinArray.splice(15, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[15]));",
+							"        mixinArray.splice(16, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[16]));",
+							"        mixinArray.splice(17, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[17]));",
+							"        mixinArray.splice(18, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[18]));",
+							"        mixinArray.splice(19, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[19]));",
+							"        mixinArray.splice(20, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[20]));",
+							"        mixinArray.splice(21, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[21]));",
+							"        mixinArray.splice(22, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[22]));",
+							"        mixinArray.splice(23, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[23]));",
+							"        mixinArray.splice(24, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[24]));",
+							"        mixinArray.splice(25, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[25]));",
+							"        mixinArray.splice(26, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[26]));",
+							"        mixinArray.splice(30, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[30]));",
+							"        mixinArray.splice(31, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[31]));",
+							"        mixinArray.splice(32, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[32]));",
+							"        mixinArray.splice(33, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[33]));",
+							"        mixinArray.splice(34, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[34]));",
+							"        mixinArray.splice(35, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[35]));",
+							"        mixinArray.splice(36, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[36]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[9]) {",
+							"        console.log('B2B Account Person Relation Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 9);",
+							"        mixinArray.splice(29, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[29]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[10]) {",
+							"        console.log('B2B Demandbase Account Intent Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 10);",
+							"        mixinArray.splice(37, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[37]));",
+							"    }",
+							"    if (arrayItem.title == entityArray[11]) {",
+							"        console.log('B2B Bombora Account Intent Schema already exists, adding to array');",
+							"        storeIdValues(arrayItem, 11);",
+							"        mixinArray.splice(38, 1, traverseAllOfArrayForRef(arrayItem.allOf, mixinIdArray[38]));",
+							"    }",
+							"}",
+							"",
+							"//Set the mixinArray after all splicing has been done",
+							"pm.environment.set('mixinArray', mixinArray);",
+							"pm.environment.set('discoveredEntityArray', discoveredEntityArray);",
+							"",
+							"//Store results array for future use - TEMPORARY FOR DEV",
+							"pm.environment.set('resultsArrayLength', resultsArrayLength);",
+							"pm.environment.set('resultsArray', JSON.stringify(resultsArray));",
+							"",
+							"//===============================Check What Exists===============================\\\\",
+							"var numberToCreate = 0;",
+							"let schemaListToCreate = [];",
+							"for (let i = 0; i < discoveredEntityArray.length; i++) {",
+							"    if (discoveredEntityArray[i] == 0) {",
+							"        numberToCreate++;",
+							"        console.warn('Entity ' + entityArray[i] + ' has not been created. Adding to list to be created.');",
+							"        schemaListToCreate.push(entityArray[i]);",
+							"    }",
+							"}",
+							"let numOfMixinsToCreate = 0;",
+							"let mixinsListToCreate = [];",
+							"checkForMixins(mixinArray, mixinsListToCreate);",
+							"//===============================Check What Exists===============================\\\\",
+							"",
+							"//If there are no more schemas to create, set next request to mixins",
+							"if (parseInt(numberToCreate) == 0 && parseInt(numOfMixinsToCreate) != 0) {",
+							"    console.log('All Schemas have been created. Setting next request to addin mixins.');",
+							"    pm.execution.setNextRequest('Add Field Groups');",
+							"}",
+							"if (numberToCreate == 0 && numOfMixinsToCreate == 0) {",
+							"    console.log('All Schemas and mixins have been created. Setting next request to add identities.');",
+							"    pm.execution.setNextRequest('Add Identities');",
+							"}",
+							"console.log('Number of schemas to be created is ' + numberToCreate);",
+							"console.log('Schemas to be created: ' + schemaListToCreate.join());",
+							"pm.environment.set('numberToCreate', numberToCreate);",
+							"console.log('Number of mixins to add to schemas is ' + numOfMixinsToCreate);",
+							"console.log('Mixins to be created: ' + mixinsListToCreate.join());",
+							"pm.environment.set('numOfMixinsToCreate', numOfMixinsToCreate);",
+							"pm.environment.set('entityMixinArray', entityMixinArray);",
+							"pm.environment.set('counter', 0);",
+							"pm.environment.set('mixinCounter',0);",
+							"pm.environment.set('identityCounter',0);",
+							"pm.environment.set('profileCounter',0);",
+							"pm.environment.set('relationshipCounter',0);",
+							"pm.environment.set('legacyRelationshipCounter',0);",
+							"pm.environment.set('secondaryIdentityCounter',0);",
+							"pm.environment.set('descriptorRefIdentityCounter',0);",
+							"pm.environment.set('mpCounter',0);",
+							"",
+							"",
+							"//===============================Functions===============================\\\\",
+							"function storeIdValues(arrayItem, index) {",
+							"    schemaIdArray.splice(index, 1, arrayItem['$id']);",
+							"    schemaAltIdArray.splice(index, 1, arrayItem['meta:altId']);",
+							"    discoveredEntityArray.splice(index, 1, arrayItem.title);",
+							"    console.log('Storing the following at index ' + index + '.\\nDiscovered Entity: ' + arrayItem.title + '\\nSchema Id: ' + arrayItem['$id'] + '\\nSchema Alt Id:' + arrayItem['meta:altId']);",
+							"}",
+							"",
+							"function traverseAllOfArrayForRef(allOfArray, itemToSearchFor) {",
+							"    for (let i = 0; i < allOfArray.length; i++) {",
+							"        var arrayItem = allOfArray[i];",
+							"        if (arrayItem['$ref'] == itemToSearchFor) {",
+							"            return arrayItem['$ref'];",
+							"        }",
+							"    }",
+							"    return 0;",
+							"}",
+							"",
+							"function checkForMixins(array, toBeCreatedArray) {",
+							"    for (let i = 0; i < array.length; i++) {",
+							"        if (array[i] == 0) {",
+							"            numOfMixinsToCreate++;",
+							"            toBeCreatedArray.push(entityMixinArray[i]);",
+							"        }",
+							"    }",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.environment.set('Start','B2B');"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{ACCESS_TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm+json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/schemas?start={{Start}}&orderby=title",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"schemas"
+					],
+					"query": [
+						{
+							"key": "start",
+							"value": "{{Start}}"
+						},
+						{
+							"key": "orderby",
+							"value": "title"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"//get the counter value and array length",
+							"let counter = pm.environment.get('counter');",
+							"let responseData = JSON.parse(responseBody);",
+							"let schemaId = responseData['$id'];",
+							"let schemaAltId = responseData['meta:altId'];",
+							"",
+							"//Grab the scehmaAltId and add it at the index of the array it should be in using the counter minus 1 since we added to the counter in the pre-req script",
+							"let schemaAltIdString = pm.environment.get('schemaAltIdArray');",
+							"let schemaAltIdArray = schemaAltIdString.toString().split(\",\");",
+							"let schemaIdArray = pm.environment.get('schemaIdArray');",
+							"",
+							"schemaAltIdArray.splice(counter - 1, 1, schemaAltId);",
+							"schemaIdArray.splice(counter - 1, 1, schemaId);",
+							"pm.environment.set('schemaAltIdArray', schemaAltIdArray);",
+							"pm.environment.set('schemaIdArray', schemaIdArray);",
+							"",
+							"//Number generated before the request so we know how many times we want to loop the create request.",
+							"let numberToCreate = parseInt(pm.environment.get('numberToCreate'));",
+							"numberToCreate--;",
+							"if (0 < numberToCreate)",
+							"{",
+							"    console.log('The number left to create is ' + numberToCreate);",
+							"    pm.environment.set('numberToCreate', numberToCreate);",
+							"    // using pm.info.requestName in place of the literal request name. This allows the request name to be changed without a code update.",
+							"    postman.setNextRequest(pm.info.requestName);",
+							"}",
+							"else",
+							"{",
+							"    console.log('All entity schemas have been created. Moving to Mixins')",
+							"    postman.setNextRequest(\"Add Field Groups\");",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let discoveredEntityArray = pm.environment.get('discoveredEntityArray');",
+							"let schemaAltIdString = pm.environment.get('schemaAltIdArray');",
+							"let schemaAltIdArray = schemaAltIdString.toString().split(\",\");",
+							"let schemaIdArray = pm.environment.get('schemaIdArray');",
+							"let schemaName = '';",
+							"let classId = '';",
+							"",
+							"if(!pm.environment.has('counter'))",
+							"{",
+							"    pm.environment.set('counter',0);",
+							"}",
+							"let counter = pm.environment.get('counter');",
+							"",
+							"pm.environment.set('entityArray', '[\"B2B Account\",\"B2B Person\",\"B2B Opportunity\",\"B2B Opportunity Person Relation\",\"B2B Campaign\",\"B2B Campaign Member\",\"B2B Marketing List\",\"B2B Marketing List Member\",\"B2B Activity\",\"B2B Account Person Relation\",\"B2B Demandbase Account Intent\",\"B2B Bombora Account Intent\"]');",
+							"pm.environment.set('classIdArray','[\"https://ns.adobe.com/xdm/context/account\",\"https://ns.adobe.com/xdm/context/profile\",\"https://ns.adobe.com/xdm/context/opportunity\",\"https://ns.adobe.com/xdm/classes/opportunity-person\",\"https://ns.adobe.com/xdm/classes/campaign\",\"https://ns.adobe.com/xdm/context/campaign-member\",\"https://ns.adobe.com/xdm/classes/marketing-list\",\"https://ns.adobe.com/xdm/classes/marketing-list-member\",\"https://ns.adobe.com/xdm/context/experienceevent\",\"https://ns.adobe.com/xdm/classes/account-person\",\"https://ns.adobe.com/b2b/demandbase/classes/demandbase-account-intent\",\"https://ns.adobe.com/b2b/bombora/classes/bombora-account-intent\"]');",
+							"",
+							"let entityArray = JSON.parse(pm.environment.get('entityArray'));",
+							"",
+							"//if the environment has been run before we want to reset the counter back to zero so we can rerun it. ",
+							"if(pm.environment.get('counter') >= entityArray.length)",
+							"{",
+							"    console.log('Entities have been run before, starting over.');",
+							"    pm.environment.set('counter', 0);",
+							"}",
+							"",
+							"",
+							"//get the counter value",
+							"counter = pm.environment.get('counter');",
+							"",
+							"let classIdArray = JSON.parse(pm.environment.get('classIdArray'));",
+							"console.log('class id array: ' + classIdArray);",
+							"",
+							"//Check to see if the entity was already created, if so skip this index and move to the next",
+							"let discoveredEntity = discoveredEntityArray[counter]",
+							"if (discoveredEntity != 0) {",
+							"    while(discoveredEntity != 0) {",
+							"        counter++",
+							"        console.log('The entity ' + discoveredEntity + ' was already created, skipping to the next.')",
+							"        discoveredEntity = discoveredEntityArray[counter];",
+							"    }",
+							"}",
+							"",
+							"//get the value of the idArray at the current iteration (counter)",
+							"schemaName = entityArray[counter];",
+							"console.log('schema name: ' + schemaName);",
+							"classId = classIdArray[counter];",
+							"console.log('class id: ' + classId);",
+							"",
+							"//swap out values for new request post with obtained values in array",
+							"pm.environment.set('schemaName', schemaName);",
+							"pm.environment.set('classId', classId);",
+							"",
+							"//incremement the counter, and store it in the environment",
+							"counter++;",
+							"pm.environment.set('counter',counter);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"type\": \"object\",\n  \"title\": \"{{schemaName}}\",\n  \"description\": \"\",\n  \"allOf\": [\n    {\n      \"$ref\": \"{{classId}}\"\n    }\n  ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/schemas",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"schemas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Field Groups",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"//console.warn('pre-request script called for mixins');",
+							"let mixinIdArray = JSON.parse(pm.environment.get('mixinIdArray'));",
+							"let schemaAltIdString = pm.environment.get('schemaAltIdArray');",
+							"let schemaAltIdArray = schemaAltIdString.toString().split(\",\");",
+							"let mixinString = pm.environment.get('mixinArray');",
+							"let mixinArray = mixinString.toString().split(\",\");",
+							"let mixinCounter = parseInt(pm.environment.get('mixinCounter'));",
+							"//console.log('schemaAltIdArray in pre-request for mixins: ' + schemaAltIdArray.join());",
+							"//console.log('mixinIdArray in pre-request for mixins: ' + mixinIdArray.join());",
+							"//console.log('mixinArray in pre-request for mixins: ' + mixinArray.join());",
+							"",
+							"if(mixinCounter == 0)",
+							"{",
+							"    //console.log('mixin counter is zero');",
+							"    for(let i = 0; i < mixinArray.length; i++)",
+							"    {",
+							"        //console.log('Forloop interation: ' + i);",
+							"        //console.log('mixin array at index: ' + mixinArray[i]);",
+							"        if(mixinArray[i] == 0)",
+							"        {",
+							"            switch(i)",
+							"            {",
+							"                case 0:",
+							"                case 1:",
+							"                case 4:",
+							"                case 5:",
+							"                    //onsole.warn('Case 0,1,4,5 has been hit with index ' + i);",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[i]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[i]);",
+							"                    break;",
+							"                case 2:",
+							"                case 3:",
+							"                    //console.warn('Case 2,3 has been hit with index ' + i);",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[i - 1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[i - 1]);",
+							"                    break;",
+							"                case 6:",
+							"                case 7:",
+							"                case 8:",
+							"                case 9:",
+							"                case 10:",
+							"                case 11:",
+							"                case 12:",
+							"                case 13:",
+							"                case 14:",
+							"                case 15:",
+							"                case 16:",
+							"                case 17:",
+							"                case 18:",
+							"                case 19:",
+							"                case 20:",
+							"                case 21:",
+							"                case 22:",
+							"                case 23:",
+							"                case 24:",
+							"                case 25:",
+							"                case 26:",
+							"                    //console.warn('Case 6 - 26 has been hit with index ' + i);",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[8]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[8]);",
+							"                    break;",
+							"                case 27:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[1]);",
+							"                    break;",
+							"                case 28:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[1]);",
+							"                    break;",
+							"                case 29:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[9]);",
+							"                    break;",
+							"                case 30:",
+							"                case 31:",
+							"                case 32:",
+							"                case 33:",
+							"                case 34:",
+							"                case 35:",
+							"                case 36:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[8]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[8]);",
+							"                    break;",
+							"                case 37:",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[10]);",
+							"                    break; ",
+							"            }",
+							"            pm.environment.set('mixinId', mixinIdArray[i]);",
+							"            pm.environment.set('mixinIndex', i);",
+							"            postman.setNextRequest(pm.info.requestName);",
+							"            break;",
+							"        }",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"//console.warn('test script called for mixins');",
+							"",
+							"var responseData = JSON.parse(responseBody);",
+							"let mixinString = pm.environment.get('mixinArray');",
+							"let mixinArray = mixinString.toString().split(\",\");",
+							"let schemaAltIdString = pm.environment.get('schemaAltIdArray');",
+							"let schemaAltIdArray = schemaAltIdString.toString().split(\",\");",
+							"let mixinIndex = pm.environment.get('mixinIndex'); ",
+							"let mixinIdArray = JSON.parse(pm.environment.get('mixinIdArray'));",
+							"pm.environment.set('mixinCounter', 1);",
+							"let mixinCounter = parseInt(pm.environment.get('mixinCounter'));",
+							"",
+							"//If we have a response with data, save what we added to the mixinArray so we don't repeat later",
+							"if(responseData.allOf)",
+							"{",
+							"    mixinArray.splice(mixinIndex, 1, traverseAllOfArrayForRef(responseData.allOf, mixinIdArray[mixinIndex]));",
+							"    //console.log('Mixin ' + mixinArray[mixinIndex] + ' successfully added to array:\\n' + mixinArray.join());",
+							"    //console.log('schemaAltIdArray: ' + schemaAltIdArray.join());",
+							"    pm.environment.set('mixinArray', mixinArray);",
+							"}",
+							"",
+							"let areMixinsAllCreated = checkIfMixinsAreCreated(mixinArray);",
+							"",
+							"",
+							"if (!areMixinsAllCreated)",
+							"{",
+							"    for(let i = 0; i < mixinArray.length; i++)",
+							"    {",
+							"        if(mixinArray[i] == 0)",
+							"        {",
+							"            switch(i)",
+							"            {",
+							"                case 0:",
+							"                case 1:",
+							"                case 4:",
+							"                case 5:",
+							"                    //console.warn('Case 0,1,4,5 has been hit with index ' + i);",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[i]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[i]);",
+							"                    break;",
+							"                case 2:",
+							"                case 3:",
+							"                    //console.warn('Case 2,3 has been hit with index ' + i);",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[i - 1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[i - 1]);",
+							"                    break;",
+							"                case 6:",
+							"                case 7:",
+							"                case 8:",
+							"                case 9:",
+							"                case 10:",
+							"                case 11:",
+							"                case 12:",
+							"                case 13:",
+							"                case 14:",
+							"                case 15:",
+							"                case 16:",
+							"                case 17:",
+							"                case 18:",
+							"                case 19:",
+							"                case 20:",
+							"                case 21:",
+							"                case 22:",
+							"                case 23:",
+							"                case 24:",
+							"                case 25:",
+							"                case 26:",
+							"                    //console.warn('Case 6 - 26 has been hit with index ' + i);",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[8]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[8]);",
+							"                    break;",
+							"                case 27:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[1]);",
+							"                    break;",
+							"                case 28:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[1]);",
+							"                    break;",
+							"                case 29:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[1]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[9]);",
+							"                    break;",
+							"                case 30:",
+							"                case 31:",
+							"                case 32:",
+							"                case 33:",
+							"                case 34:",
+							"                case 35:",
+							"                case 36:",
+							"                    //console.log('Setting schema to be added: ' + schemaAltIdArray[8]);",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[8]);",
+							"                    break;",
+							"                case 37:",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[10]);",
+							"                    break;  ",
+							"                case 38:",
+							"                    pm.environment.set('schemaAltId', schemaAltIdArray[11]);",
+							"                    break;    ",
+							"            }",
+							"            pm.environment.set('mixinId', mixinIdArray[i]);",
+							"            pm.environment.set('mixinIndex', i);",
+							"            postman.setNextRequest(pm.info.requestName);",
+							"            break;",
+							"        }",
+							"    }",
+							"} else {",
+							"    console.log('All mixins are created. Moving to adding identities');",
+							"    postman.setNextRequest('Add Identities');",
+							"}",
+							"",
+							"//===============================Functions===============================\\\\",
+							"",
+							"function checkIfMixinsAreCreated (arrayToCheck)",
+							"{",
+							"    console.log('checking if all mixins are created or not.')",
+							"    for(let i = 0; i < arrayToCheck.length; i++)",
+							"    {",
+							"        if(arrayToCheck[i] == 0)",
+							"        {",
+							"            console.warn('Found a mixin that needs to be created, returning false');",
+							"            return false;",
+							"        }",
+							"    }",
+							"    console.log('all mixins have been checked and are created. Returning true.')",
+							"    return true;",
+							"}",
+							"",
+							"function traverseAllOfArrayForRef(allOfArray, itemToSearchFor) {",
+							"    for (let i = 0; i < allOfArray.length; i++) {",
+							"        var arrayItem = allOfArray[i];",
+							"        if (arrayItem['$ref'] == itemToSearchFor) {",
+							"            return arrayItem['$ref'];",
+							"        }",
+							"    }",
+							"    return 0;",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{ACCESS_TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm+json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[{\n  \"op\": \"add\",\n  \"path\": \"/allOf/-\",\n  \"value\": {\n    \"$ref\": \"{{mixinId}}\"\n  }\n}]"
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/schemas/{{schemaAltId}}",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"schemas",
+						"{{schemaAltId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Identities",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"//console.warn('pre-request script called for identities');",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let sourcePropertyArray = JSON.parse(pm.environment.get('sourcePropertyArray'));",
+							"let identityCounter = pm.environment.get('identityCounter');",
+							"let connector = pm.environment.get('connector');",
+							"",
+							"if(identityCounter == 0)",
+							"{",
+							"    setupIdentitiesToAdd(0, true, schemaIdArray, sourcePropertyArray, primaryIdentityArray);",
+							"}",
+							"",
+							"identityCounter++;",
+							"//console.log('identityCounter after increment in pre-request: ' + identityCounter);",
+							"pm.environment.set('identityCounter', identityCounter);",
+							"",
+							"//===============================Functions===============================\\\\",
+							"function setupIdentitiesToAdd(index, isPrimary, schemasArray, propertyArray, identityNamespaceArray)",
+							"{",
+							"    //console.log('Setting Identity');",
+							"    pm.environment.set('schemaId', schemasArray[index]);",
+							"    pm.environment.set('sourceProperty', propertyArray[index]);",
+							"    pm.environment.set('namespace', identityNamespaceArray[index]);",
+							"    pm.environment.set('isPrimary', isPrimary);",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"//console.warn('test script of Add Identities called.')",
+							"var responseData = JSON.parse(responseBody);",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let identityCounter = pm.environment.get('identityCounter');",
+							"let sourcePropertyArray = JSON.parse(pm.environment.get('sourcePropertyArray'));",
+							"",
+							"//If we have a response with data, save what we added to the mixinArray so we don't repeat later",
+							"if(responseData['@id'])",
+							"{",
+							"    primaryIdentityArray.splice(identityCounter - 1, 1, responseData['@id']);",
+							"    //console.log('Identity ' + primaryIdentityArray[identityCounter - 1] + ' successfully added to array:\\n' + primaryIdentityArray.join());",
+							"}",
+							"if(parseInt(responseData.status) == 400)",
+							"{",
+							"    let report = responseData.report;",
+							"    //console.warn('Error with response:\\n' + report['detailed-message']);",
+							"}",
+							"",
+							"if (identityCounter < 18)",
+							"{",
+							"    //console.log( 'identityCounter: ' + identityCounter + '\\nidentity array at index: ' + primaryIdentityArray[identityCounter]);",
+							"    switch(identityCounter)",
+							"    {",
+							"        case 0:",
+							"        case 1:",
+							"        case 2:",
+							"        case 3:",
+							"        case 4:",
+							"        case 5:",
+							"        case 6:",
+							"        case 7:",
+							"            setupIdentitiesToAdd(identityCounter, true);",
+							"            break;",
+							"        case 8:",
+							"            pm.environment.set('schemaId', schemaIdArray[8]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[8]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[1]);",
+							"            pm.environment.set('isPrimary', true);",
+							"            break;",
+							"        case 9:",
+							"            pm.environment.set('schemaId', schemaIdArray[0]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[9]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[0]);",
+							"            pm.environment.set('isPrimary', false);",
+							"            break;",
+							"        case 10:",
+							"            pm.environment.set('schemaId', schemaIdArray[1]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[10]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[1]);",
+							"            pm.environment.set('isPrimary', false);",
+							"            break;",
+							"        case 11:",
+							"            pm.environment.set('schemaId', schemaIdArray[2]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[9]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[2]);",
+							"            pm.environment.set('isPrimary', false);",
+							"            break;",
+							"        case 12:",
+							"            //console.log('Setting Identity');",
+							"            pm.environment.set('schemaId', schemaIdArray[3]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[9]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[3]);",
+							"            pm.environment.set('isPrimary', false);",
+							"            break;",
+							"        case 13:",
+							"            //console.log('Setting Identity');",
+							"            pm.environment.set('schemaId', schemaIdArray[4]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[9]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[4]);",
+							"            pm.environment.set('isPrimary', false);",
+							"            break;",
+							"        case 14:",
+							"            //console.log('Setting Identity');",
+							"            pm.environment.set('schemaId', schemaIdArray[5]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[9]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[5]);",
+							"            pm.environment.set('isPrimary', false);",
+							"            break;",
+							"        case 15:",
+							"            //console.log('Setting Identity');",
+							"            pm.environment.set('schemaId', schemaIdArray[9]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[11]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[8]);",
+							"            pm.environment.set('isPrimary', true);",
+							"            break;",
+							"        case 16:",
+							"            console.log('Setting Identity for Demandbase Account Intent');",
+							"            pm.environment.set('schemaId', schemaIdArray[10]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[12]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[9]);",
+							"            pm.environment.set('isPrimary', true);",
+							"            break;",
+							"        case 17:",
+							"            console.log('Setting Identity for Bombora Account Intent');",
+							"            pm.environment.set('schemaId', schemaIdArray[11]);",
+							"            pm.environment.set('sourceProperty', sourcePropertyArray[12]);",
+							"            pm.environment.set('namespace', primaryIdentityArray[10]);",
+							"            pm.environment.set('isPrimary', true);",
+							"            break;",
+							"    }",
+							"    postman.setNextRequest(pm.info.requestName);",
+							"} else {",
+							"    //console.log('All identities are created. Moving to adding relationships');",
+							"    postman.setNextRequest('Add Relationships');",
+							"}",
+							"",
+							"//===============================Functions===============================\\\\",
+							"function setupIdentitiesToAdd(index, isPrimary)",
+							"{",
+							"    //console.log('identityCounter at setup: ' + index + '\\nSetting Identity request info\\nSchemaId: ' + schemaIdArray[index] + '\\nSource Property: ' + sourcePropertyArray[index] + '\\nnamespace: ' + primaryIdentityArray[index] + '\\nisPrimary: ' + isPrimary);",
+							"    pm.environment.set('schemaId', schemaIdArray[index]);",
+							"    pm.environment.set('sourceProperty', sourcePropertyArray[index]);",
+							"    pm.environment.set('namespace', primaryIdentityArray[index]);",
+							"    pm.environment.set('isPrimary', isPrimary);",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"@type\": \"xdm:descriptorIdentity\",\n   \"xdm:sourceSchema\" : \"{{schemaId}}\",\n   \"xdm:sourceVersion\" : 1,\n   \"xdm:sourceProperty\" : \"{{sourceProperty}}\",\n   \"xdm:namespace\" : \"{{namespace}}\",\n   \"xdm:property\" : \"xdm:code\",\n   \"xdm:isPrimary\": {{isPrimary}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/descriptors",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"descriptors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Relationships",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.warn('pre-request script called for relationships');",
+							"",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let relationshipSourcePropertyArray = JSON.parse(pm.environment.get('relationshipSourcePropertyArray'));",
+							"let relationshipDestinationPropertyArray = JSON.parse(pm.environment.get('relationshipDestinationPropertyArray'));",
+							"let relationshipCounter = parseInt(pm.environment.get('relationshipCounter'));",
+							"let relationshipSchemaString = pm.environment.get('relationshipSchemaArray');",
+							"let relationshipSchemaArray = relationshipSchemaString.toString().split(\",\");",
+							"let relationshipIndex = pm.environment.get('relationshipIndex');",
+							"",
+							"console.log('Entering relationship switch in pre-request script')",
+							"pm.environment.set('entityArray', '[\"Account\",\"People\",\"Opportunities\",\"Opportunity\",\"Lists\",\"List\",\"Activity\",\"Parent\",\"Child\",\"Person\",\"Campaign\",\"Campaigns\"]');",
+							"let entityArray = JSON.parse(pm.environment.get('entityArray'));",
+							"",
+							"if(relationshipCounter == 0)",
+							"{",
+							"    console.log('relationship counter is zero');",
+							"    for(let i = 0; i < relationshipSchemaArray.length; i++)",
+							"    {",
+							"        console.log('For loop interation: ' + i);",
+							"        console.log('relationshipSchemaArray at index: ' + relationshipSchemaArray[i]);",
+							"        if(relationshipSchemaArray[i] == 0)",
+							"        {",
+							"            switch(i)",
+							"            {",
+							"                case 0:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[1] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[0]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[0]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 1:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[2] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: ' + entityArray[0] + '\\nsourceToDestinationTitle:' + entityArray[1]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[2]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Opportunities\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[1]);",
+							"                    pm.environment.set('destinationProperty', relationshipSourcePropertyArray[1]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 2:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[3] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: ' + entityArray[2] + '\\nsourceToDestinationTitle:' + entityArray[9]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[3]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Opportunities\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[4]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[1]);",
+							"                    break;",
+							"                case 3:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[4] + '\\ndestinationSchema: ' + schemaIdArray[2] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: ' + entityArray[2] + '\\nsourceToDestinationTitle:' + entityArray[11]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[3]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[2]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[2]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Opportunity\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[3]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[2]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 4:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[5] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: ' + \"Person\" + '\\nsourceToDestinationTitle: Campaigns');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[5]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Campaigns\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[4]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[1]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 5:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[5] + '\\ndestinationSchema: ' + schemaIdArray[4] + '\\ndestinationNamespace: ' + primaryIdentityArray[4] + '\\ndestinationToSouceTitle: Campaign' + '\\nsourceToDestinationTitle: People');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[5]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[4]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[4]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Campaign\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[5]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[4]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 6:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[7] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: Lists' + '\\nsourceToDestinationTitle: Person');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[7]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Lists\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[4]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[1]);",
+							"                    break;",
+							"                case 7:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[7] + '\\ndestinationSchema: ' + schemaIdArray[6] + '\\ndestinationNamespace: ' + primaryIdentityArray[6] + '\\ndestinationToSouceTitle: List' + '\\nsourceToDestinationTitle: People');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[7]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[6]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[6]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"List\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[7]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[6]);",
+							"                    break;",
+							"                case 8:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[9] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: Account' + '\\nsourceToDestinationTitle: People');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[9]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Account\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account-Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[6]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[5]);",
+							"                    break;",
+							"                case 9:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[9] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[9]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Account-Person\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[1]);",
+							"                    pm.environment.set('destinationProperty', \"/accountKey/sourceKey\");",
+							"                    break;",
+							"                case 10:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[10] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[10]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Demandbase Account Intent\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[9]);",
+							"                    pm.environment.set('destinationProperty', \"/accountKey/sourceKey\");",
+							"                    break;",
+							"                case 11:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[11] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[11]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Bombora Account Intent\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[9]);",
+							"                    pm.environment.set('destinationProperty', \"/accountKey/sourceKey\");",
+							"                    break;",
+							"            }",
+							"            pm.environment.set('relationshipIndex', i);",
+							"            break;",
+							"        }",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.warn('Test script called for relationships');",
+							"",
+							"let responseData = JSON.parse(responseBody);",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let relationshipSourcePropertyArray = JSON.parse(pm.environment.get('relationshipSourcePropertyArray'));",
+							"let relationshipDestinationPropertyArray = JSON.parse(pm.environment.get('relationshipDestinationPropertyArray'));",
+							"let relationshipSchemaString = pm.environment.get('relationshipSchemaArray');",
+							"let relationshipSchemaArray = relationshipSchemaString.toString().split(\",\");",
+							"let relationshipIndex = pm.environment.get('relationshipIndex');",
+							"",
+							"pm.environment.set('relationshipCounter', 1);",
+							"",
+							"if(parseInt(responseData.status) == 400)",
+							"{",
+							"    let report = responseData.report;",
+							"    console.warn('Error with response:\\n' + report['detailed-message']);",
+							"    relationshipSchemaArray.splice(relationshipIndex, 1, report['detailed-message']);",
+							"    pm.environment.set('relationshipSchemaArray', relationshipSchemaArray);",
+							"}",
+							"",
+							"//If we have a response with data, save what we added to the mixinArray so we don't repeat later",
+							"if(responseData['@id'])",
+							"{",
+							"    relationshipSchemaArray.splice(relationshipIndex, 1, responseData['@id']);",
+							"    console.log('relationship ' + relationshipSchemaArray[relationshipIndex] + ' successfully added to array:\\n' + relationshipSchemaArray.join());",
+							"    pm.environment.set('relationshipSchemaArray', relationshipSchemaArray);",
+							"}",
+							"",
+							"//Check to see if all array elements exist yet or if we need to create more",
+							"console.log('relationshipSchemaArray before check:\\n' + relationshipSchemaArray.join());",
+							"let areRelationshipsCreated = checkIfRelationshipsAreCreated(relationshipSchemaArray);",
+							"",
+							"if(!areRelationshipsCreated)",
+							"{",
+							"    while(relationshipIndex < relationshipSchemaArray.length)",
+							"    {",
+							"        console.log('while loop hit, relationshipIndex is: ' + relationshipIndex + '\\nrelationshipSchemaArray at index: ' + relationshipSchemaArray[relationshipIndex]);",
+							"        if(relationshipSchemaArray[relationshipIndex] == 0)",
+							"        {",
+							"            console.log('Entering relationship switch in test script, ')",
+							"            let entityArray = JSON.parse(pm.environment.get('entityArray'));",
+							"            switch(relationshipIndex) ",
+							"            {",
+							"                case 0:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[1] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[0]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[0]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 1:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[2] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: ' + entityArray[0] + '\\nsourceToDestinationTitle:' + entityArray[1]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[2]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Opportunities\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[1]);",
+							"                    pm.environment.set('destinationProperty', relationshipSourcePropertyArray[1]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 2:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[3] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: ' + entityArray[2] + '\\nsourceToDestinationTitle:' + entityArray[9]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[3]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Opportunities\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[4]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[1]);",
+							"                    break;",
+							"                case 3:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[4] + '\\ndestinationSchema: ' + schemaIdArray[2] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: ' + entityArray[2] + '\\nsourceToDestinationTitle:' + entityArray[11]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[3]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[2]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[2]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Opportunity\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[3]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[2]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 4:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[5] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: ' + \"Person\" + '\\nsourceToDestinationTitle: Campaigns');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[5]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Campaigns\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[4]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[1]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 5:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[5] + '\\ndestinationSchema: ' + schemaIdArray[4] + '\\ndestinationNamespace: ' + primaryIdentityArray[4] + '\\ndestinationToSouceTitle: Campaign' + '\\nsourceToDestinationTitle: People');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[5]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[4]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[4]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Campaign\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[5]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[4]);",
+							"                    pm.environment.set('cardinality',\"M:1\");",
+							"                    break;",
+							"                case 6:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[7] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: Lists' + '\\nsourceToDestinationTitle: Person');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[7]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Lists\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[4]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[1]);",
+							"                    break;",
+							"                case 7:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[7] + '\\ndestinationSchema: ' + schemaIdArray[6] + '\\ndestinationNamespace: ' + primaryIdentityArray[6] + '\\ndestinationToSouceTitle: List' + '\\nsourceToDestinationTitle: People');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[7]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[6]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[6]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"People\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"List\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[7]);",
+							"                    pm.environment.set('destinationProperty', relationshipDestinationPropertyArray[6]);",
+							"                    break;",
+							"                case 8:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[9] + '\\ndestinationSchema: ' + schemaIdArray[1] + '\\ndestinationNamespace: ' + primaryIdentityArray[1] + '\\ndestinationToSouceTitle: Account' + '\\nsourceToDestinationTitle: People');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[9]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[1]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[1]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Account\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account-Person\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[6]);",
+							"                    pm.environment.set('destinationProperty', \"/b2b/personKey/sourceKey\");",
+							"                    break;",
+							"                case 9:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[9] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[9]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Account-Person\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[1]);",
+							"                    pm.environment.set('destinationProperty', \"/accountKey/sourceKey\");",
+							"                    break;",
+							"                case 10:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[10] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[10]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Demandbase Account Intent\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[9]);",
+							"                    pm.environment.set('destinationProperty', \"/accountKey/sourceKey\");",
+							"                    break;",
+							"                case 11:",
+							"                    console.log('Setting relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[10] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\ndestinationNamespace: ' + primaryIdentityArray[0] + '\\ndestinationToSouceTitle: People' + '\\nsourceToDestinationTitle: Account');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[11]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationNamespace', primaryIdentityArray[0]);",
+							"                    pm.environment.set('destinationToSouceTitle', \"Bombora Account Intent\");",
+							"                    pm.environment.set('sourceToDestinationTitle', \"Account\");",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[9]);",
+							"                    pm.environment.set('destinationProperty', \"/accountKey/sourceKey\");",
+							"                    break;",
+							"                }",
+							"            pm.environment.set('relationshipIndex', relationshipIndex);",
+							"            relationshipIndex++;",
+							"            break;",
+							"        }",
+							"        relationshipIndex++;",
+							"    }",
+							"    postman.setNextRequest(pm.info.requestName);",
+							"} else {",
+							"    console.log('All relationships are created. Moving to secondary identities.');",
+							"    postman.setNextRequest('Add Secondary Identities');",
+							"}",
+							"",
+							"//===============================Functions===============================\\\\",
+							"function checkIfRelationshipsAreCreated (arrayToCheck)",
+							"{",
+							"    console.log('checking if all relationships are created or not.')",
+							"    for(let i = 0; i < arrayToCheck.length; i++) ",
+							"    {",
+							"        console.log('for loop index inside check: ' + i);",
+							"        console.log('array to check at index: ' + arrayToCheck[i]);",
+							"        if(arrayToCheck[i] == 0)",
+							"        {",
+							"            console.warn('Found a relationship that needs to be created, returning false');",
+							"            return false;",
+							"        }",
+							"    }",
+							"    console.log('all relationships have been checked and are created. Returning true.')",
+							"    return true;",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"@type\": \"xdm:descriptorRelationship\",\n   \"xdm:sourceSchema\" : \"{{sourceSchema}}\",\n   \"xdm:sourceVersion\" : 1,\n   \"xdm:sourceProperty\" : \"{{sourceProperty}}\",\n   \"xdm:destinationSchema\" : \"{{destinationSchema}}\",\n   \"xdm:destinationVersion\" : 1,\n   \"xdm:destinationProperty\": \"{{destinationProperty}}\",\n   \"xdm:destinationNamespace\" : \"{{destinationNamespace}}\",\n   \"xdm:destinationToSourceTitle\" : \"{{destinationToSouceTitle}}\",\n   \"xdm:sourceToDestinationTitle\" : \"{{sourceToDestinationTitle}}\",\n   \"xdm:cardinality\": \"{{cardinality}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/descriptors",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"descriptors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Secondary Identities",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let secondaryIdentityCounter = pm.environment.get('secondaryIdentityCounter');",
+							"console.warn('entering pre-request script of secondary identities call')",
+							"",
+							"if(secondaryIdentityCounter == 0)",
+							"{",
+							"    pm.environment.set('schemaId', schemaIdArray[1]);",
+							"    pm.environment.set('sourceProperty', '/workEmail/address');",
+							"    pm.environment.set('namespace', 'Email')",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.log('All secondary identities are created. Moving to adding Descriptor Reference Identities.');",
+							"pm.execution.setNextRequest('Add Legacy Relationships');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"@type\": \"xdm:descriptorIdentity\",\n   \"xdm:sourceSchema\" : \"{{schemaId}}\",\n   \"xdm:sourceVersion\" : 1,\n   \"xdm:sourceProperty\" : \"{{sourceProperty}}\",\n   \"xdm:namespace\" : \"{{namespace}}\",\n   \"xdm:property\" : \"xdm:code\",\n   \"xdm:isPrimary\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/descriptors",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"descriptors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Legacy Relationships",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.warn('pre-request script called for legacy relationships');",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let relationshipSourcePropertyArray = JSON.parse(pm.environment.get('relationshipSourcePropertyArray'));",
+							"let relationshipDestinationPropertyArray = JSON.parse(pm.environment.get('relationshipDestinationPropertyArray'));",
+							"let legacyRelationshipCounter = parseInt(pm.environment.get('legacyRelationshipCounter'));",
+							"let legacyRelationshipString = pm.environment.get('legacyRelationshipArray');",
+							"let legacyRelationshipArray = legacyRelationshipString.toString().split(\",\");",
+							"",
+							"let relationshipIndex = pm.environment.get('relationshipIndex');",
+							"pm.environment.set('entityArray', '[\"Account\",\"People\",\"Opportunities\",\"Opportunity\",\"Campaigns\",\"Campaign\",\"Lists\",\"List\",\"Activity\",\"Parent\",\"Child\"]');",
+							"let entityArray = JSON.parse(pm.environment.get('entityArray'));",
+							"",
+							"if(legacyRelationshipCounter == 0)",
+							"{",
+							"    console.log('legacy relationship counter is zero');",
+							"    for(let i = 0; i < legacyRelationshipArray.length; i++)",
+							"    {",
+							"        console.log('For loop interation: ' + i);",
+							"        console.log('legacyRelationshipArray at index: ' + legacyRelationshipArray[i]);",
+							"        if(legacyRelationshipArray[i] == 0)",
+							"        {",
+							"            switch(i)",
+							"            {",
+							"                case 0:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[0] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\nSource Property: ' + relationshipSourcePropertyArray[8] + '\\nDestination Property: /accountKey/sourceKey');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[8]);",
+							"                    pm.environment.set('destinationProperty', '/accountKey/sourceKey');",
+							"                    break;",
+							"                case 1:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[8] + '\\ndestinationSchema: ' + schemaIdArray[6]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[6]);",
+							"                    pm.environment.set('sourceProperty', '/listOperations/listKey/sourceKey');",
+							"                    pm.environment.set('destinationProperty', '/marketingListKey/sourceKey');",
+							"                    break;",
+							"                case 2:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[8] + '\\ndestinationSchema: ' + schemaIdArray[2]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[2]);",
+							"                    pm.environment.set('sourceProperty', '/opportunityEvent/opportunityKey/sourceKey');",
+							"                    pm.environment.set('destinationProperty', '/opportunityKey/sourceKey');",
+							"                    break;",
+							"                case 3:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[9] + '\\ndestinationSchema: ' + schemaIdArray[4]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[4]);",
+							"                    pm.environment.set('sourceProperty', '/leadOperation/campaignProgression/campaignKey/sourceKey');",
+							"                    pm.environment.set('destinationProperty', '/campaignKey/sourceKey');",
+							"                    break;",
+							"            }",
+							"            pm.environment.set('relationshipIndex', i);",
+							"            break;",
+							"        }",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.warn('Test script called for legacy relationships');",
+							"let responseData = JSON.parse(responseBody);",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let relationshipSourcePropertyArray = JSON.parse(pm.environment.get('relationshipSourcePropertyArray'));",
+							"let relationshipDestinationPropertyArray = JSON.parse(pm.environment.get('relationshipDestinationPropertyArray'));",
+							"let legacyRelationshipString = pm.environment.get('legacyRelationshipArray');",
+							"let legacyRelationshipArray = legacyRelationshipString.toString().split(\",\");",
+							"let relationshipIndex = pm.environment.get('relationshipIndex');",
+							"pm.environment.set('legacyRelationshipCounter', 1);",
+							"",
+							"if(parseInt(responseData.status) == 400)",
+							"{",
+							"    let report = responseData.report;",
+							"    console.warn('Error with response:\\n' + report['detailed-message']);",
+							"    legacyRelationshipArray.splice(relationshipIndex, 1, report['detailed-message']);",
+							"    pm.environment.set('legacyRelationshipArray', legacyRelationshipArray);",
+							"}",
+							"",
+							"//If we have a response with data, save what we added to the mixinArray so we don't repeat later",
+							"if(responseData['@id'])",
+							"{",
+							"    legacyRelationshipArray.splice(relationshipIndex, 1, responseData['@id']);",
+							"    console.log('relationship ' + legacyRelationshipArray[relationshipIndex] + ' successfully added to array:\\n' + legacyRelationshipArray.join());",
+							"    pm.environment.set('legacyRelationshipArray', legacyRelationshipArray);",
+							"}",
+							"",
+							"//Check to see if all array elements exist yet or if we need to create more",
+							"console.log('legacyRelationshipArray before check:\\n' + legacyRelationshipArray.join());",
+							"let areRelationshipsCreated = checkIfRelationshipsAreCreated(legacyRelationshipArray);",
+							"",
+							"if(!areRelationshipsCreated)",
+							"{",
+							"    while(relationshipIndex < legacyRelationshipArray.length)",
+							"    {",
+							"        console.log('while loop hit, relationshipIndex is: ' + relationshipIndex + '\\nlegacyRelationshipArray at index: ' + legacyRelationshipArray[relationshipIndex]);",
+							"        if(legacyRelationshipArray[relationshipIndex] == 0)",
+							"        {",
+							"            switch(relationshipIndex)",
+							"            {",
+							"                case 0:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[0] + '\\ndestinationSchema: ' + schemaIdArray[0] + '\\nSource Property: ' + relationshipSourcePropertyArray[8] + '\\nDestination Property: /accountKey/sourceKey');",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[8]);",
+							"                    pm.environment.set('destinationProperty', '/accountKey/sourceKey');",
+							"                    break;",
+							"                case 1:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[8] + '\\ndestinationSchema: ' + schemaIdArray[6]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[6]);",
+							"                    pm.environment.set('sourceProperty', '/listOperations/listKey/sourceKey');",
+							"                    pm.environment.set('destinationProperty', '/marketingListKey/sourceKey');",
+							"                    break;",
+							"                case 2:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[8] + '\\ndestinationSchema: ' + schemaIdArray[2]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[2]);",
+							"                    pm.environment.set('sourceProperty', '/opportunityEvent/opportunityKey/sourceKey');",
+							"                    pm.environment.set('destinationProperty', '/opportunityKey/sourceKey');",
+							"                    break;",
+							"                case 3:",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[8] + '\\ndestinationSchema: ' + schemaIdArray[4]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('destinationSchema', schemaIdArray[4]);",
+							"                    pm.environment.set('sourceProperty', '/leadOperation/campaignProgression/campaignKey/sourceKey');",
+							"                    pm.environment.set('destinationProperty', '/campaignKey/sourceKey');",
+							"                    break;",
+							"            }",
+							"            pm.environment.set('relationshipIndex', relationshipIndex);",
+							"            relationshipIndex++;",
+							"            break;",
+							"        }",
+							"        relationshipIndex++;",
+							"    }",
+							"    pm.execution.setNextRequest(pm.info.requestName);",
+							"} else {",
+							"    console.log('All legacy relationships are created. Moving to enabling profile.');",
+							"    pm.environment.set('relationshipIndex', 0);",
+							"    pm.execution.setNextRequest('Add Descriptor Reference Identity');",
+							"}",
+							"",
+							"//===============================Functions===============================\\\\",
+							"function checkIfRelationshipsAreCreated (arrayToCheck)",
+							"{",
+							"    console.log('checking if all relationships are created or not.')",
+							"    for(let i = 0; i < arrayToCheck.length; i++) ",
+							"    {",
+							"        console.log('for loop index inside check: ' + i);",
+							"        console.log('array to check at index: ' + arrayToCheck[i]);",
+							"        if(arrayToCheck[i] == 0)",
+							"        {",
+							"            console.warn('Found a relationship that needs to be created, returning false');",
+							"            return false;",
+							"        }",
+							"    }",
+							"    console.log('all relationships have been checked and are created. Returning true.')",
+							"    return true;",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"@type\": \"xdm:descriptorOneToOne\",\n    \"xdm:sourceSchema\": \"{{sourceSchema}}\",\n    \"xdm:sourceVersion\": 1,\n    \"xdm:sourceProperty\": \"{{sourceProperty}}\",\n    \"xdm:destinationSchema\": \"{{destinationSchema}}\",\n    \"xdm:destinationVersion\": 1,\n    \"xdm:destinationProperty\": \"{{destinationProperty}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/descriptors",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"descriptors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Descriptor Reference Identity",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.warn('pre-request script called for descriptor reference identity');",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let relationshipSourcePropertyArray = JSON.parse(pm.environment.get('relationshipSourcePropertyArray'));",
+							"let descriptorRefIdentityCounter = parseInt(pm.environment.get('descriptorRefIdentityCounter'));",
+							"let descriptorRefIdentityString = pm.environment.get('descriptorRefIdentityArray');",
+							"let descriptorRefIdentityArray = descriptorRefIdentityString.toString().split(\",\");",
+							"let relationshipIndex = pm.environment.get('relationshipIndex');",
+							"",
+							"if(descriptorRefIdentityCounter == 0)",
+							"{",
+							"    console.log('descriptorRefIdentity counter is zero');",
+							"    for(let i = 0; i < descriptorRefIdentityArray.length; i++)",
+							"    {",
+							"        console.log('For loop interation: ' + i);",
+							"        console.log('descriptorRefIdentityArray at index: ' + descriptorRefIdentityArray[i]);",
+							"        if(descriptorRefIdentityArray[i] == 0)",
+							"        {",
+							"            switch(i)",
+							"            {",
+							"                case 0:",
+							"                //for /accountParentKey/sourceKey on account schema",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[0] + '\\nSource Property: ' + relationshipSourcePropertyArray[8]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[8]);",
+							"                    pm.environment.set('namespace', primaryIdentityArray[0]);",
+							"                    break;",
+							"                case 1:",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('sourceProperty', \"/listOperations/listKey/sourceKey\");",
+							"                    pm.environment.set('namespace', primaryIdentityArray[6]);",
+							"                    break;",
+							"                case 2:",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('sourceProperty', \"/opportunityEvent/opportunityKey/sourceKey\");",
+							"                    pm.environment.set('namespace', primaryIdentityArray[2]);",
+							"                    break;",
+							"                case 3:",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('sourceProperty', \"/leadOperation/campaignProgression/campaignKey/sourceKey\");",
+							"                    pm.environment.set('namespace', primaryIdentityArray[4]);",
+							"                    break;",
+							"            }",
+							"            pm.environment.set('relationshipIndex', i);",
+							"            break;",
+							"        }",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.warn('Test script called for descriptor reference identity');",
+							"",
+							"let responseData = JSON.parse(responseBody);",
+							"let primaryIdentityString = pm.environment.get('namespaceArray');",
+							"let primaryIdentityArray = primaryIdentityString.toString().split(\",\");",
+							"let schemaIdString = pm.environment.get('schemaIdArray');",
+							"let schemaIdArray = schemaIdString.toString().split(\",\");",
+							"let relationshipSourcePropertyArray = JSON.parse(pm.environment.get('relationshipSourcePropertyArray'));",
+							"let descriptorRefIdentityString = pm.environment.get('descriptorRefIdentityArray');",
+							"let descriptorRefIdentityArray = descriptorRefIdentityString.toString().split(\",\");",
+							"let relationshipIndex = pm.environment.get('relationshipIndex');",
+							"pm.environment.set('descriptorRefIdentityCounter', 1);",
+							"",
+							"if(parseInt(responseData.status) == 400)",
+							"{",
+							"    let report = responseData.report;",
+							"    console.warn('Error with response:\\n' + report['detailed-message']);",
+							"    descriptorRefIdentityArray.splice(relationshipIndex, 1, report['detailed-message']);",
+							"    pm.environment.set('descriptorRefIdentityArray', descriptorRefIdentityArray);",
+							"}",
+							"",
+							"//If we have a response with data, save what we added to the mixinArray so we don't repeat later",
+							"if(responseData['@id'])",
+							"{",
+							"    descriptorRefIdentityArray.splice(relationshipIndex, 1, responseData['@id']);",
+							"    console.log('relationship ' + descriptorRefIdentityArray[relationshipIndex] + ' successfully added to array:\\n' + descriptorRefIdentityArray.join());",
+							"    pm.environment.set('descriptorRefIdentityArray', descriptorRefIdentityArray);",
+							"}",
+							"//Check to see if all array elements exist yet or if we need to create more",
+							"console.log('descriptorRefIdentityArray before check:\\n' + descriptorRefIdentityArray.join());",
+							"let areRelationshipsCreated = checkIfRelationshipsAreCreated(descriptorRefIdentityArray);",
+							"",
+							"if(!areRelationshipsCreated)",
+							"{",
+							"    while(relationshipIndex < descriptorRefIdentityArray.length)",
+							"    {",
+							"        console.log('while loop hit, relationshipIndex is: ' + relationshipIndex + '\\ndescriptorRefIdentityArray at index: ' + descriptorRefIdentityArray[relationshipIndex]);",
+							"        if(descriptorRefIdentityArray[relationshipIndex] == 0)",
+							"        {",
+							"            switch(relationshipIndex)",
+							"            {",
+							"                case 0:",
+							"                //for /accountParentKey/sourceKey on account schema",
+							"                    console.log('Setting legacy relationship info: ' + '\\nsourceSchema: ' + schemaIdArray[0] + '\\nSource Property: ' + relationshipSourcePropertyArray[8]);",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[0]);",
+							"                    pm.environment.set('sourceProperty', relationshipSourcePropertyArray[8]);",
+							"                    pm.environment.set('namespace', primaryIdentityArray[0]);",
+							"                    break;",
+							"                case 1:",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('sourceProperty', \"/listOperations/listKey/sourceKey\");",
+							"                    pm.environment.set('namespace', primaryIdentityArray[6]);",
+							"                    break;",
+							"                case 2:",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('sourceProperty', \"/opportunityEvent/opportunityKey/sourceKey\");",
+							"                    pm.environment.set('namespace', primaryIdentityArray[2]);",
+							"                    break;",
+							"                case 3:",
+							"                    pm.environment.set('sourceSchema', schemaIdArray[8]);",
+							"                    pm.environment.set('sourceProperty', \"/leadOperation/campaignProgression/campaignKey/sourceKey\");",
+							"                    pm.environment.set('namespace', primaryIdentityArray[4]);",
+							"                    break;",
+							"            }",
+							"            pm.environment.set('relationshipIndex', relationshipIndex);",
+							"            relationshipIndex++;",
+							"            break;",
+							"        }",
+							"        relationshipIndex++;",
+							"    }",
+							"    pm.execution.setNextRequest(pm.info.requestName);",
+							"} else {",
+							"    console.log('All descriptor reference identities are created. Moving to adding legacy relationships.');",
+							"    pm.execution.setNextRequest('Enable Profile');",
+							"}",
+							"",
+							"//===============================Functions===============================\\\\",
+							"function checkIfRelationshipsAreCreated (arrayToCheck)",
+							"{",
+							"    console.log('checking if all descriptor reference identities are created or not.')",
+							"    for(let i = 0; i < arrayToCheck.length; i++) ",
+							"    {",
+							"        console.log('for loop index inside check: ' + i);",
+							"        console.log('array to check at index: ' + arrayToCheck[i]);",
+							"        if(arrayToCheck[i] == 0)",
+							"        {",
+							"            console.warn('Found a descriptor reference identity that needs to be created, returning false');",
+							"            return false;",
+							"        }",
+							"    }",
+							"    console.log('all descriptor reference identities have been checked and are created. Returning true.')",
+							"    return true;",
+							"}",
+							"//===============================Functions===============================\\\\"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"@type\": \"xdm:descriptorReferenceIdentity\",\n  \"xdm:sourceSchema\": \"{{sourceSchema}}\",\n  \"xdm:sourceVersion\": 1,\n  \"xdm:sourceProperty\": \"{{sourceProperty}}\",\n  \"xdm:identityNamespace\": \"{{namespace}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/descriptors",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"descriptors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Enable Profile",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.warn('pre-request script of enabling profile');",
+							"let schemaAltIdString = pm.environment.get('schemaAltIdArray');",
+							"let schemaAltIdArray = schemaAltIdString.toString().split(\",\");",
+							"let profileCounter = parseInt(pm.environment.get('profileCounter'));",
+							"let profileEnabledString = pm.environment.get('profileEnabledArray');",
+							"let profileEnabledArray = profileEnabledString.toString().split(\",\");",
+							"console.log('profileCounter: ' + profileCounter);",
+							"",
+							"if(profileCounter == 0)",
+							"{",
+							"    pm.environment.set('schemaAltId', schemaAltIdArray[profileCounter]);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.warn('test script of enabling profile')",
+							"let schemaAltIdString = pm.environment.get('schemaAltIdArray');",
+							"let schemaAltIdArray = schemaAltIdString.toString().split(\",\");",
+							"let profileEnabledString = pm.environment.get('profileEnabledArray');",
+							"let profileEnabledArray = profileEnabledString.toString().split(\",\");",
+							"let profileCounter = parseInt(pm.environment.get('profileCounter'));",
+							"let responseData = JSON.parse(responseBody);",
+							"",
+							"if (responseData['@id'])",
+							"{",
+							"    console.log('Profile Enabling Successful, response ID: ' + responseData['@id']);",
+							"    profileEnabledArray.splice(profileCounter, 1, responseData['@id']);",
+							"    pm.environment.set('profileEnabledArray',profileEnabledArray);",
+							"    profileCounter++;",
+							"}",
+							"",
+							"while(profileCounter <= profileEnabledArray.length)",
+							"{",
+							"    if(profileEnabledArray[profileCounter] == 0)",
+							"    {",
+							"        console.log('Found profile that needs enabled on schema: ' + schemaAltIdArray[profileCounter]);",
+							"        pm.environment.set('schemaAltId', schemaAltIdArray[profileCounter]);",
+							"        profileCounter++;",
+							"        postman.setNextRequest(pm.info.requestName);",
+							"        break;",
+							"    } ",
+							"    profileCounter++;",
+							"}",
+							"console.log('Profile Counter: ' + profileCounter);",
+							"pm.environment.set('profileCounter', profileCounter);",
+							"if(profileCounter > profileEnabledArray.length)",
+							"{",
+							"    postman.setNextRequest('Get Merge Policies');",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[{\n  \"op\": \"add\",\n  \"path\": \"/meta:immutableTags\",\n  \"value\": [\"union\"]\n}]",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/foundation/schemaregistry/tenant/schemas/{{schemaAltId}}",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"foundation",
+						"schemaregistry",
+						"tenant",
+						"schemas",
+						"{{schemaAltId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Merge Policies",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.warn('pre-request script of enabling profile');",
+							"let mpString = pm.environment.get('mpArray');",
+							"let mpArray = mpString.toString().split(\",\");",
+							"let mpCounter = parseInt(pm.environment.get('mpCounter'));",
+							"let mpResultsString = pm.environment.get('mpResultsArray');",
+							"let mpResultsArray = mpResultsString.toString().split(\",\");",
+							"console.log('mpCounter: ' + mpCounter);",
+							"",
+							"if(mpCounter == 0)",
+							"{",
+							"    pm.environment.set('mpId', mpArray[mpCounter]);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.warn('test script of getting merge policies')",
+							"let mpCounter = parseInt(pm.environment.get('mpCounter'));",
+							"let mpString = pm.environment.get('mpArray');",
+							"let mpArray = mpString.toString().split(\",\");",
+							"let mpResultsString = pm.environment.get('mpResultsArray');",
+							"let mpResultsArray = mpResultsString.toString().split(\",\");",
+							"let profilmpCounterCounter = parseInt(pm.environment.get('mpCounter'));",
+							"let responseData = JSON.parse(responseBody);",
+							"",
+							"if (responseData['_page']['totalCount'] > 0)",
+							"{",
+							"    console.log('Profile Enabling Successful, response ID: ' + responseData['@id']);",
+							"    mpResultsArray.splice(mpCounter, 1, 1);",
+							"    pm.environment.set('mpResultsArray',mpResultsArray);",
+							"    mpCounter++;",
+							"}",
+							"",
+							"while(mpCounter <= mpResultsArray.length)",
+							"{",
+							"    if(mpResultsArray[mpCounter] == 0)",
+							"    {",
+							"        console.log('Found merge policy that needs enabled on schema: ' + mpArray[mpCounter]);",
+							"        pm.environment.set('mpId', mpArray[mpCounter]);",
+							"        postman.setNextRequest(pm.info.requestName);",
+							"        break;",
+							"    } ",
+							"    mpCounter++;",
+							"}",
+							"console.log('MP Counter: ' + mpCounter);",
+							"pm.environment.set('mpCounter', mpCounter);",
+							"if(mpCounter > mpResultsArray.length)",
+							"{",
+							"    pm.environment.unset('namespaceArray');",
+							"    pm.environment.unset('secondaryNamespaceArray');",
+							"    pm.environment.unset('mixinArray');",
+							"    pm.environment.unset('relationshipArray');",
+							"    pm.environment.unset('profileEnabledArray');",
+							"    pm.environment.unset('schemaIdArray');",
+							"    pm.environment.unset('schemaAltIdArray');",
+							"    pm.environment.unset('discoveredEntityArray');",
+							"    pm.environment.unset('relationshipSchemaArray');",
+							"    pm.environment.unset('relationshipSourcePropertyArray');",
+							"    pm.environment.unset('relationshipDestinationPropertyArray');",
+							"    pm.environment.unset('mixinIdArray');",
+							"    pm.environment.unset('marketoEntityArray');",
+							"    pm.environment.unset('salesforceEntityArray');",
+							"    pm.environment.unset('microsoftEntityArray');",
+							"    pm.environment.unset('classIdArray');",
+							"    pm.environment.unset('sourcePropertyArray');",
+							"    pm.environment.unset('resultsArrayLength');",
+							"    pm.environment.unset('resultsArray');",
+							"    pm.environment.unset('numberToCreate');",
+							"    pm.environment.unset('numOfMixinsToCreate');",
+							"    pm.environment.unset('entityMixinArray');",
+							"    pm.environment.unset('counter');",
+							"    pm.environment.unset('mixinCounter');",
+							"    pm.environment.unset('identityCounter');",
+							"    pm.environment.unset('profileCounter');",
+							"    pm.environment.unset('relationshipCounter');",
+							"    pm.environment.unset('hasRemovedAbmElement');",
+							"    pm.environment.unset('schemaName');",
+							"    pm.environment.unset('classId');",
+							"    pm.environment.unset('schemaAltId');",
+							"    pm.environment.unset('mixinId');",
+							"    pm.environment.unset('mixinIndex');",
+							"    pm.environment.unset('primaryIdentityArray');",
+							"    pm.environment.unset('secondaryIdentityArray');",
+							"    pm.environment.unset('identityArray');",
+							"    pm.environment.unset('schemasToAddIdentitiesTo');",
+							"    pm.environment.unset('schemaId');",
+							"    pm.environment.unset('sourceProperty');",
+							"    pm.environment.unset('namespace');",
+							"    pm.environment.unset('isPrimary');",
+							"    pm.environment.unset('legacyRelationshipCounter');",
+							"    pm.environment.unset('sourceSchema');",
+							"    pm.environment.unset('destinationSchema');",
+							"    pm.environment.unset('destinationNamespace');",
+							"    pm.environment.unset('destinationToSouceTitle');",
+							"    pm.environment.unset('sourceToDestinationTitle');",
+							"    pm.environment.unset('relationshipIndex');",
+							"    pm.environment.unset('destinationProperty');",
+							"    pm.environment.unset('hasSecondary');",
+							"    pm.environment.unset('legacyRelationshipArray');",
+							"    pm.environment.unset('descriptorRefIdentityArray');",
+							"    pm.environment.unset('entityArray');",
+							"    pm.environment.unset('secondaryIdentityCounter');",
+							"    pm.environment.unset('descriptorRefIdentityCounter');",
+							"    pm.environment.unset('cardinality');",
+							"    pm.environment.unset('Start');",
+							"    pm.environment.unset('mpCounter');",
+							"    pm.environment.unset('mpArray');",
+							"    pm.environment.unset('mpResultsArray');",
+							"    console.warn('Everything is complete!')",
+							"    postman.setNextRequest(null);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				},
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{ACCESS_TOKEN}}",
+						"type": "text"
+					},
+					{
+						"key": "x-api-key",
+						"value": "{{API_KEY}}",
+						"type": "text"
+					},
+					{
+						"key": "x-gw-ims-org-id",
+						"value": "{{IMS_ORG}}",
+						"type": "text"
+					},
+					{
+						"key": "x-sandbox-name",
+						"value": "{{SANDBOX_NAME}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.adobe.xdm-id+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{PLATFORM_URL}}/data/core/ups/config/mergePolicies?default=true&schema.name={{mpId}}",
+					"protocol": "https",
+					"host": [
+						"{{PLATFORM_URL}}"
+					],
+					"path": [
+						"data",
+						"core",
+						"ups",
+						"config",
+						"mergePolicies"
+					],
+					"query": [
+						{
+							"key": "default",
+							"value": "true"
+						},
+						{
+							"key": "schema.name",
+							"value": "{{mpId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
