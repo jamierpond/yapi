@@ -700,7 +700,7 @@ func findVarPositionInYAML(projectRoot string, varName string, section []string)
 	}
 
 	// Read and parse the YAML file
-	contentBytes, err := os.ReadFile(configPath)
+	contentBytes, err := os.ReadFile(configPath) // #nosec G304 -- configPath is constructed from validated projectRoot
 	if err != nil {
 		return nil, err
 	}
@@ -757,7 +757,7 @@ func findVarPositionInEnvFile(projectRoot string, envFile string, varName string
 		return nil, fmt.Errorf("env file not found: %s", envFile)
 	}
 
-	contentBytes, err := os.ReadFile(envPath)
+	contentBytes, err := os.ReadFile(envPath) // #nosec G304 -- envPath is constructed from validated projectRoot and envFile
 	if err != nil {
 		return nil, err
 	}

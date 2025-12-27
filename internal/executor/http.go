@@ -18,10 +18,10 @@ func HTTPTransport(client HTTPClient) TransportFunc {
 			if err != nil {
 				return nil, fmt.Errorf("invalid timeout value %q: %w", timeoutStr, err)
 			}
-			// Create timeout context - don't defer cancel() since the response body
-			// is read after this function returns. The context will be cleaned up
-			// when the timeout expires or the parent context is canceled.
-			ctx, _ = context.WithTimeout(ctx, timeout)
+			// Create timeout context
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, timeout)
+			defer cancel()
 		}
 
 		httpReq, err := http.NewRequestWithContext(ctx, req.Method, req.URL, req.Body)

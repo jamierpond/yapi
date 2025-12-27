@@ -339,10 +339,10 @@ func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
 	if c.JSON != "" {
 		bodyFieldCount++
 	}
-	if c.Body != nil && len(c.Body) > 0 {
+	if len(c.Body) > 0 {
 		bodyFieldCount++
 	}
-	if c.Form != nil && len(c.Form) > 0 {
+	if len(c.Form) > 0 {
 		bodyFieldCount++
 	}
 	if bodyFieldCount > 1 {
@@ -370,7 +370,7 @@ func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
 	}
 
 	// Handle form data
-	if c.Form != nil && len(c.Form) > 0 {
+	if len(c.Form) > 0 {
 		// Default to urlencoded if no content type specified
 		if c.ContentType == "" {
 			c.ContentType = "application/x-www-form-urlencoded"
