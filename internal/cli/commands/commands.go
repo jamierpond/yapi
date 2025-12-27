@@ -108,6 +108,7 @@ var cmdManifest = []CommandSpec{
 		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "json", Type: "bool", Default: false, Usage: "Output diagnostics as JSON"},
+			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Validate all *.yapi.yml files in current directory or specified directory"},
 		},
 	},
 	{

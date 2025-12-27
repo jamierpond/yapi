@@ -525,6 +525,12 @@ func aboutE(cmd *cobra.Command, args []string) error {
 
 func validateE(cmd *cobra.Command, args []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
+	all, _ := cmd.Flags().GetBool("all")
+
+	// Handle --all flag
+	if all {
+		return validateAllFiles(args, jsonOutput)
+	}
 
 	var path string
 	var err error
@@ -703,6 +709,146 @@ func outputValidateText(analysis *validation.Analysis, path string, data []byte)
 		return errors.New("validation errors")
 	}
 	return nil
+}
+
+// validateAllFiles validates all yapi files in a directory
+func validateAllFiles(args []string, jsonOutput bool) error {
+	// Determine search directory
+	searchDir := "."
+	if len(args) > 0 {
+		searchDir = args[0]
+	}
+
+	// Find all yapi files
+	yapiFiles, err := findAllYapiFiles(searchDir)
+	if err != nil {
+		return fmt.Errorf("failed to find yapi files: %w", err)
+	}
+
+	if len(yapiFiles) == 0 {
+		if jsonOutput {
+			// Output empty JSON array
+			fmt.Println("[]")
+		} else {
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.yapi.yml files found"))
+		}
+		return nil
+	}
+
+	if !jsonOutput {
+		fmt.Fprintf(os.Stderr, "%s\n\n", color.Accent(fmt.Sprintf("Validating %d file(s)...", len(yapiFiles))))
+	}
+
+	// Validate each file
+	type validationResult struct {
+		file     string
+		valid    bool
+		analysis *validation.Analysis
+		err      error
+	}
+
+	var results []validationResult
+	validCount := 0
+
+	for _, filePath := range yapiFiles {
+		relPath, _ := filepath.Rel(searchDir, filePath)
+
+		// Read file
+		data, err := os.ReadFile(filePath) // #nosec G304 -- filePath is from filesystem walk
+		if err != nil {
+			results = append(results, validationResult{
+				file:  relPath,
+				valid: false,
+				err:   err,
+			})
+			continue
+		}
+
+		// Validate
+		analysis, err := validation.AnalyzeConfigString(string(data))
+		if err != nil {
+			results = append(results, validationResult{
+				file:  relPath,
+				valid: false,
+				err:   err,
+			})
+			continue
+		}
+
+		valid := !analysis.HasErrors()
+		if valid {
+			validCount++
+		}
+
+		results = append(results, validationResult{
+			file:     relPath,
+			valid:    valid,
+			analysis: analysis,
+		})
+
+		if !jsonOutput {
+			if valid {
+				fmt.Fprintf(os.Stderr, "%s %s\n", color.Green("✓"), relPath)
+			} else {
+				fmt.Fprintf(os.Stderr, "%s %s\n", color.Red("✗"), relPath)
+			}
+		}
+	}
+
+	if jsonOutput {
+		// Output JSON array of results
+		type jsonResult struct {
+			File        string                     `json:"file"`
+			Valid       bool                       `json:"valid"`
+			Diagnostics []validation.JSONDiagnostic `json:"diagnostics,omitempty"`
+			Error       string                     `json:"error,omitempty"`
+		}
+
+		jsonResults := make([]jsonResult, len(results))
+		for i, r := range results {
+			result := jsonResult{
+				File:  r.file,
+				Valid: r.valid,
+			}
+			if r.err != nil {
+				result.Error = r.err.Error()
+			} else if r.analysis != nil {
+				result.Diagnostics = r.analysis.ToJSON().Diagnostics
+			}
+			jsonResults[i] = result
+		}
+
+		return json.NewEncoder(os.Stdout).Encode(jsonResults)
+	}
+
+	// Text output - print summary
+	fmt.Fprintf(os.Stderr, "\n")
+	if validCount == len(results) {
+		fmt.Fprintf(os.Stderr, "%s\n", color.Green(fmt.Sprintf("All %d file(s) are valid", validCount)))
+		return nil
+	}
+
+	invalidCount := len(results) - validCount
+	fmt.Fprintf(os.Stderr, "%s\n", color.Red(fmt.Sprintf("%d of %d file(s) have errors", invalidCount, len(results))))
+
+	// List files with errors
+	fmt.Fprintf(os.Stderr, "\n%s\n", color.Red("Files with errors:"))
+	for _, r := range results {
+		if !r.valid {
+			fmt.Fprintf(os.Stderr, "  %s %s\n", color.Red("✗"), r.file)
+			if r.err != nil {
+				fmt.Fprintf(os.Stderr, "    %s\n", color.Dim(r.err.Error()))
+			} else if r.analysis != nil && len(r.analysis.Diagnostics) > 0 {
+				for _, d := range r.analysis.Diagnostics {
+					if d.Severity == validation.SeverityError {
+						fmt.Fprintf(os.Stderr, "    %s\n", color.Dim(d.Message))
+					}
+				}
+			}
+		}
+	}
+
+	return fmt.Errorf("%d file(s) have validation errors", invalidCount)
 }
 
 func shareE(cmd *cobra.Command, args []string) error {
