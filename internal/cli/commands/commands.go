@@ -161,6 +161,7 @@ var cmdManifest = []CommandSpec{
 		Args:  cobra.ExactArgs(1),
 		Flags: []FlagSpec{
 			{Name: "output", Shorthand: "o", Type: "string", Default: "./imported", Usage: "Directory to save imported yapi files"},
+			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Postman environment file (.json) to import variables from"},
 		},
 	},
 }

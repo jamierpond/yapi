@@ -1523,6 +1523,7 @@ func isTerminal(f *os.File) bool {
 func importE(cmd *cobra.Command, args []string) error {
 	inputPath := args[0]
 	outDir, _ := cmd.Flags().GetString("output")
+	envPath, _ := cmd.Flags().GetString("env")
 
 	// Check if input file exists
 	if _, err := os.Stat(inputPath); err != nil {
@@ -1544,9 +1545,36 @@ func importE(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Import environment file if specified
+	var envVars map[string]string
+	if envPath != "" {
+		if _, err := os.Stat(envPath); err != nil {
+			return fmt.Errorf("environment file not found: %w", err)
+		}
+		envVars, err = importer.ImportPostmanEnvironment(envPath)
+		if err != nil {
+			return fmt.Errorf("failed to import environment: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "%s Imported %d environment variables\n\n", color.Green("✓"), len(envVars))
+	}
+
 	// Create output directory
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Write environment file if we have variables
+	if len(envVars) > 0 {
+		envFilePath := filepath.Join(outDir, ".env")
+		var envContent strings.Builder
+		envContent.WriteString("# Imported from Postman environment\n")
+		for key, value := range envVars {
+			envContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		}
+		if err := os.WriteFile(envFilePath, []byte(envContent.String()), 0644); err != nil {
+			return fmt.Errorf("failed to write .env file: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "  %s .env (environment variables)\n", color.Green("✓"))
 	}
 
 	// Write all files
