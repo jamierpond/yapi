@@ -51,6 +51,7 @@ func Run() {
 		TextDocumentDidSave:    textDocumentDidSave,
 		TextDocumentCompletion: textDocumentCompletion,
 		TextDocumentHover:      textDocumentHover,
+		TextDocumentDefinition: textDocumentDefinition,
 	}
 
 	srv := server.NewServer(&handler, lsName, false)
@@ -586,6 +587,270 @@ func textDocumentHover(ctx *glsp.Context, params *protocol.HoverParams) (*protoc
 	}
 
 	return nil, nil
+}
+
+func textDocumentDefinition(ctx *glsp.Context, params *protocol.DefinitionParams) (any, error) {
+	uri := params.TextDocument.URI
+	doc, ok := docs[uri]
+	if !ok {
+		return nil, nil
+	}
+
+	// No project context - can't find definitions
+	if doc.Project == nil {
+		return nil, nil
+	}
+
+	line := int(params.Position.Line)
+	char := int(params.Position.Character)
+
+	// Find all env var references in the document
+	refs := validation.FindEnvVarRefs(doc.Text)
+
+	// Check if cursor is within any env var reference
+	for _, ref := range refs {
+		if ref.Line == line && char >= ref.Col && char <= ref.EndIndex {
+			// Skip chain references (e.g., ${step.field})
+			if strings.Contains(ref.Name, ".") {
+				return nil, nil
+			}
+
+			// Find where this variable is defined
+			location, err := findVariableDefinition(ref.Name, doc.Project, doc.ProjectRoot)
+			if err != nil {
+				return nil, nil
+			}
+
+			return location, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// findVariableDefinition locates where a variable is defined
+// Returns location in yapi.config.yml or .env file
+func findVariableDefinition(varName string, project *config.ProjectConfigV1, projectRoot string) (*protocol.Location, error) {
+	// Determine which environment to use
+	envName := getEffectiveEnvironment(project)
+
+	// Resolve environment variables to check where the variable is defined
+	envVars, err := project.ResolveEnvFiles(projectRoot, envName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if variable exists at all
+	_, varExists := envVars[varName]
+	if !varExists {
+		// Variable not defined anywhere
+		return nil, nil
+	}
+
+	// Check if variable is defined in yapi.config.yml
+	// First check the specific environment's vars section
+	if env, ok := project.Environments[envName]; ok {
+		if _, inEnvVars := env.Vars[varName]; inEnvVars {
+			// Variable is in environments.[envName].vars
+			return findVarPositionInYAML(projectRoot, varName, []string{"environments", envName, "vars"})
+		}
+	}
+
+	// Check defaults.vars
+	if _, inDefaultVars := project.Defaults.Vars[varName]; inDefaultVars {
+		return findVarPositionInYAML(projectRoot, varName, []string{"defaults", "vars"})
+	}
+
+	// Variable must be in .env file - try to find it there
+	if env, ok := project.Environments[envName]; ok {
+		for _, envFile := range env.EnvFiles {
+			location, err := findVarPositionInEnvFile(projectRoot, envFile, varName)
+			if err == nil && location != nil {
+				return location, nil
+			}
+		}
+	}
+
+	// Also check defaults.env_files
+	for _, envFile := range project.Defaults.EnvFiles {
+		location, err := findVarPositionInEnvFile(projectRoot, envFile, varName)
+		if err == nil && location != nil {
+			return location, nil
+		}
+	}
+
+	// Variable exists but we couldn't find its definition (might be in OS env)
+	return nil, nil
+}
+
+// findVarPositionInYAML finds the position of a variable in yapi.config.yml
+func findVarPositionInYAML(projectRoot string, varName string, section []string) (*protocol.Location, error) {
+	// Try both .yml and .yaml extensions
+	var configPath string
+	ymlPath := filepath.Join(projectRoot, constants.ProjectConfigFile)
+	yamlPath := filepath.Join(projectRoot, "yapi.config.yaml")
+
+	if utils.FileExists(ymlPath) {
+		configPath = ymlPath
+	} else if utils.FileExists(yamlPath) {
+		configPath = yamlPath
+	} else {
+		return nil, fmt.Errorf("config file not found")
+	}
+
+	// Read and parse the YAML file
+	content, err := utils.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var root yaml.Node
+	if err := yaml.Unmarshal([]byte(content), &root); err != nil {
+		return nil, err
+	}
+
+	// Navigate to the section (e.g., ["environments", "dev", "vars"])
+	currentNode := &root
+	if len(root.Content) > 0 {
+		currentNode = root.Content[0] // Get the document content
+	}
+
+	for _, key := range section {
+		valueNode := findNodeInMapping(currentNode, key)
+		if valueNode == nil {
+			return nil, fmt.Errorf("section not found: %s", key)
+		}
+		currentNode = valueNode
+	}
+
+	// Now find the key node for the variable
+	keyNode := findKeyNodeInMapping(currentNode, varName)
+	if keyNode == nil {
+		return nil, fmt.Errorf("variable not found in section")
+	}
+
+	// Convert YAML position (1-indexed) to LSP position (0-indexed)
+	startPos := protocol.Position{
+		Line:      protocol.UInteger(keyNode.Line - 1),
+		Character: protocol.UInteger(keyNode.Column - 1),
+	}
+	endPos := protocol.Position{
+		Line:      protocol.UInteger(keyNode.Line - 1),
+		Character: protocol.UInteger(keyNode.Column - 1 + len(varName)),
+	}
+
+	return &protocol.Location{
+		URI: protocol.DocumentUri("file://" + configPath),
+		Range: protocol.Range{
+			Start: startPos,
+			End:   endPos,
+		},
+	}, nil
+}
+
+// findVarPositionInEnvFile finds the position of a variable in an .env file
+func findVarPositionInEnvFile(projectRoot string, envFile string, varName string) (*protocol.Location, error) {
+	envPath := filepath.Join(projectRoot, envFile)
+	if !utils.FileExists(envPath) {
+		return nil, fmt.Errorf("env file not found: %s", envFile)
+	}
+
+	content, err := utils.ReadFile(envPath)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(content, "\n")
+	for lineNum, line := range lines {
+		// Skip comments and empty lines
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		// Parse KEY=VALUE format
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) < 1 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		if key == varName {
+			// Found the variable - calculate its position
+			col := strings.Index(line, key)
+			startPos := protocol.Position{
+				Line:      protocol.UInteger(lineNum),
+				Character: protocol.UInteger(col),
+			}
+			endPos := protocol.Position{
+				Line:      protocol.UInteger(lineNum),
+				Character: protocol.UInteger(col + len(key)),
+			}
+
+			return &protocol.Location{
+				URI: protocol.DocumentUri("file://" + envPath),
+				Range: protocol.Range{
+					Start: startPos,
+					End:   endPos,
+				},
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("variable not found in env file")
+}
+
+// findNodeInMapping finds the value node for a given key in a YAML mapping
+func findNodeInMapping(node *yaml.Node, key string) *yaml.Node {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	// MappingNode content is [key, value, key, value, ...]
+	for i := 0; i < len(node.Content); i += 2 {
+		if i+1 < len(node.Content) && node.Content[i].Value == key {
+			return node.Content[i+1]
+		}
+	}
+
+	return nil
+}
+
+// findKeyNodeInMapping finds the key node itself (not the value) in a YAML mapping
+func findKeyNodeInMapping(node *yaml.Node, key string) *yaml.Node {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	// MappingNode content is [key, value, key, value, ...]
+	for i := 0; i < len(node.Content); i += 2 {
+		if node.Content[i].Value == key {
+			return node.Content[i]
+		}
+	}
+
+	return nil
+}
+
+// getEffectiveEnvironment returns the environment name to use for lookups
+func getEffectiveEnvironment(project *config.ProjectConfigV1) string {
+	// Use default_environment if set
+	if project.DefaultEnvironment != "" {
+		return project.DefaultEnvironment
+	}
+
+	// Otherwise use the first environment alphabetically
+	if len(project.Environments) > 0 {
+		var firstEnv string
+		for envName := range project.Environments {
+			if firstEnv == "" || envName < firstEnv {
+				firstEnv = envName
+			}
+		}
+		return firstEnv
+	}
+
+	return ""
 }
 
 // uriToPath converts a file:// URI to a filesystem path.
