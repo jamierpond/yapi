@@ -799,10 +799,10 @@ func validateAllFiles(args []string, jsonOutput bool) error {
 	if jsonOutput {
 		// Output JSON array of results
 		type jsonResult struct {
-			File        string                     `json:"file"`
-			Valid       bool                       `json:"valid"`
+			File        string                      `json:"file"`
+			Valid       bool                        `json:"valid"`
 			Diagnostics []validation.JSONDiagnostic `json:"diagnostics,omitempty"`
-			Error       string                     `json:"error,omitempty"`
+			Error       string                      `json:"error,omitempty"`
 		}
 
 		jsonResults := make([]jsonResult, len(results))

@@ -72,17 +72,17 @@ type ConfigV1 struct {
 	ContentType    string            `yaml:"content_type,omitempty"`
 	Headers        map[string]string `yaml:"headers,omitempty"`
 	Body           map[string]any    `yaml:"body,omitempty"`
-	JSON           string            `yaml:"json,omitempty"`         // Raw JSON override
-	Form           map[string]string `yaml:"form,omitempty"`         // Form data (application/x-www-form-urlencoded or multipart/form-data)
+	JSON           string            `yaml:"json,omitempty"` // Raw JSON override
+	Form           map[string]string `yaml:"form,omitempty"` // Form data (application/x-www-form-urlencoded or multipart/form-data)
 	Query          map[string]string `yaml:"query,omitempty"`
-	Graphql        string            `yaml:"graphql,omitempty"`      // GraphQL query/mutation
-	Variables      map[string]any    `yaml:"variables,omitempty"`    // GraphQL variables
-	Service        string            `yaml:"service,omitempty"`      // gRPC
-	RPC            string            `yaml:"rpc,omitempty"`          // gRPC
-	Proto          string            `yaml:"proto,omitempty"`        // gRPC
+	Graphql        string            `yaml:"graphql,omitempty"`   // GraphQL query/mutation
+	Variables      map[string]any    `yaml:"variables,omitempty"` // GraphQL variables
+	Service        string            `yaml:"service,omitempty"`   // gRPC
+	RPC            string            `yaml:"rpc,omitempty"`       // gRPC
+	Proto          string            `yaml:"proto,omitempty"`     // gRPC
 	ProtoPath      string            `yaml:"proto_path,omitempty"`
-	Data           string            `yaml:"data,omitempty"`         // TCP raw data
-	Encoding       string            `yaml:"encoding,omitempty"`     // text, hex, base64
+	Data           string            `yaml:"data,omitempty"`     // TCP raw data
+	Encoding       string            `yaml:"encoding,omitempty"` // text, hex, base64
 	JQFilter       string            `yaml:"jq_filter,omitempty"`
 	Insecure       bool              `yaml:"insecure,omitempty"`     // For gRPC
 	Plaintext      bool              `yaml:"plaintext,omitempty"`    // For gRPC

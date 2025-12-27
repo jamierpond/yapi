@@ -223,7 +223,7 @@ func TestSanitizeFileName(t *testing.T) {
 // Helper function to check for path separators
 func containsPathSeparator(s string) bool {
 	return len(s) > 0 && (s[0] == '/' || s[0] == '\\' ||
-		   len(s) > 1 && (s[len(s)-1] == '/' || s[len(s)-1] == '\\'))
+		len(s) > 1 && (s[len(s)-1] == '/' || s[len(s)-1] == '\\'))
 }
 
 // Helper function to check for dots

@@ -19,17 +19,17 @@ type PostmanInfo struct {
 
 // PostmanItem represents either a folder or a request in the collection
 type PostmanItem struct {
-	Name    string         `json:"name"`
+	Name    string          `json:"name"`
 	Request *PostmanRequest `json:"request,omitempty"`
-	Item    []PostmanItem  `json:"item,omitempty"` // For nested folders
+	Item    []PostmanItem   `json:"item,omitempty"` // For nested folders
 }
 
 // PostmanRequest represents an HTTP request in Postman format
 type PostmanRequest struct {
-	Method string             `json:"method"`
-	Header []PostmanHeader    `json:"header,omitempty"`
-	Body   *PostmanBody       `json:"body,omitempty"`
-	URL    PostmanURL         `json:"url"`
+	Method string          `json:"method"`
+	Header []PostmanHeader `json:"header,omitempty"`
+	Body   *PostmanBody    `json:"body,omitempty"`
+	URL    PostmanURL      `json:"url"`
 }
 
 // PostmanHeader represents a request header
@@ -41,11 +41,11 @@ type PostmanHeader struct {
 
 // PostmanBody represents a request body
 type PostmanBody struct {
-	Mode       string              `json:"mode"` // raw, urlencoded, formdata, etc.
-	Raw        string              `json:"raw,omitempty"`
-	URLEncoded []PostmanFormField  `json:"urlencoded,omitempty"`
-	FormData   []PostmanFormField  `json:"formdata,omitempty"`
-	Options    *PostmanOptions     `json:"options,omitempty"`
+	Mode       string             `json:"mode"` // raw, urlencoded, formdata, etc.
+	Raw        string             `json:"raw,omitempty"`
+	URLEncoded []PostmanFormField `json:"urlencoded,omitempty"`
+	FormData   []PostmanFormField `json:"formdata,omitempty"`
+	Options    *PostmanOptions    `json:"options,omitempty"`
 }
 
 // PostmanFormField represents a form field in formdata or urlencoded body
@@ -68,10 +68,10 @@ type PostmanRawOptions struct {
 
 // PostmanURL can be either a string or an object
 type PostmanURL struct {
-	Raw      string   `json:"raw"`
-	Protocol string   `json:"protocol,omitempty"`
-	Host     []string `json:"host,omitempty"`
-	Path     []string `json:"path,omitempty"`
+	Raw      string              `json:"raw"`
+	Protocol string              `json:"protocol,omitempty"`
+	Host     []string            `json:"host,omitempty"`
+	Path     []string            `json:"path,omitempty"`
 	Query    []PostmanQueryParam `json:"query,omitempty"`
 }
 
@@ -103,9 +103,9 @@ type PostmanQueryParam struct {
 
 // PostmanEnvironment represents a Postman environment file
 type PostmanEnvironment struct {
-	ID     string                 `json:"id"`
-	Name   string                 `json:"name"`
-	Values []PostmanEnvVariable   `json:"values"`
+	ID     string               `json:"id"`
+	Name   string               `json:"name"`
+	Values []PostmanEnvVariable `json:"values"`
 }
 
 // PostmanEnvVariable represents a single environment variable
