@@ -394,11 +394,6 @@ func (e *ExpectationResult) AllPassed() bool {
 	return e.Error == nil
 }
 
-// CheckExpectations validates the response against expected values
-func CheckExpectations(expect config.Expectation, result *Result) *ExpectationResult {
-	return CheckExpectationsWithEnv(expect, result, nil)
-}
-
 // CheckExpectationsWithEnv validates the response against expected values with environment variables
 func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars map[string]string) *ExpectationResult {
 	totalAssertions := len(expect.Assert.Body) + len(expect.Assert.Headers)

@@ -13,6 +13,11 @@ import (
 	"yapi.run/cli/internal/filter"
 )
 
+// CheckExpectations is a test helper that wraps CheckExpectationsWithEnv with nil environment
+func CheckExpectations(expect config.Expectation, result *Result) *ExpectationResult {
+	return CheckExpectationsWithEnv(expect, result, nil)
+}
+
 func TestCheckExpectations_Status(t *testing.T) {
 	tests := []struct {
 		name        string
