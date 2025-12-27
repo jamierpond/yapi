@@ -1,0 +1,1 @@
+Only members of the Plaid Developer Relations team have edit access to the collection. Contact Plaid Developer Relations to request changes to the collection. If you are an external user (not a Plaid employee), you can file a GitHub issue to request a change. 
