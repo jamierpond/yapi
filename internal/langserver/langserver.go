@@ -4,6 +4,7 @@ package langserver
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -15,7 +16,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/compiler"
 	"yapi.run/cli/internal/config"
-	"yapi.run/cli/internal/constants"
 	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
 	"yapi.run/cli/internal/vars"
@@ -687,22 +687,23 @@ func findVariableDefinition(varName string, project *config.ProjectConfigV1, pro
 func findVarPositionInYAML(projectRoot string, varName string, section []string) (*protocol.Location, error) {
 	// Try both .yml and .yaml extensions
 	var configPath string
-	ymlPath := filepath.Join(projectRoot, constants.ProjectConfigFile)
+	ymlPath := filepath.Join(projectRoot, "yapi.config.yml")
 	yamlPath := filepath.Join(projectRoot, "yapi.config.yaml")
 
-	if utils.FileExists(ymlPath) {
+	if _, err := os.Stat(ymlPath); err == nil {
 		configPath = ymlPath
-	} else if utils.FileExists(yamlPath) {
+	} else if _, err := os.Stat(yamlPath); err == nil {
 		configPath = yamlPath
 	} else {
 		return nil, fmt.Errorf("config file not found")
 	}
 
 	// Read and parse the YAML file
-	content, err := utils.ReadFile(configPath)
+	contentBytes, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
+	content := string(contentBytes)
 
 	var root yaml.Node
 	if err := yaml.Unmarshal([]byte(content), &root); err != nil {
@@ -751,14 +752,15 @@ func findVarPositionInYAML(projectRoot string, varName string, section []string)
 // findVarPositionInEnvFile finds the position of a variable in an .env file
 func findVarPositionInEnvFile(projectRoot string, envFile string, varName string) (*protocol.Location, error) {
 	envPath := filepath.Join(projectRoot, envFile)
-	if !utils.FileExists(envPath) {
+	if _, err := os.Stat(envPath); err != nil {
 		return nil, fmt.Errorf("env file not found: %s", envFile)
 	}
 
-	content, err := utils.ReadFile(envPath)
+	contentBytes, err := os.ReadFile(envPath)
 	if err != nil {
 		return nil, err
 	}
+	content := string(contentBytes)
 
 	lines := strings.Split(content, "\n")
 	for lineNum, line := range lines {
