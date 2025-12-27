@@ -1746,16 +1746,28 @@ func importE(cmd *cobra.Command, args []string) error {
 	}
 
 	// Import environment file if specified
-	var envVars map[string]string
+	var envResult *importer.EnvironmentImportResult
 	if envPath != "" {
 		if _, err := os.Stat(envPath); err != nil {
 			return fmt.Errorf("environment file not found: %w", err)
 		}
-		envVars, err = importer.ImportPostmanEnvironment(envPath)
+		envResult, err = importer.ImportPostmanEnvironment(envPath)
 		if err != nil {
 			return fmt.Errorf("failed to import environment: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "%s Imported %d environment variables\n\n", color.Green("✓"), len(envVars))
+
+		totalVars := len(envResult.ConfigVars) + len(envResult.SecretVars)
+		fmt.Fprintf(os.Stderr, "%s Imported %d variables (%d config, %d secrets)\n",
+			color.Green("✓"), totalVars, len(envResult.ConfigVars), len(envResult.SecretVars))
+
+		// Show warnings about detected secrets
+		if len(envResult.SecretWarnings) > 0 {
+			fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("⚠ Security Warnings:"))
+			for _, warning := range envResult.SecretWarnings {
+				fmt.Fprintf(os.Stderr, "  %s\n", color.Yellow("• "+warning))
+			}
+		}
+		fmt.Fprintf(os.Stderr, "\n")
 	}
 
 	// Create output directory

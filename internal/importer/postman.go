@@ -17,6 +17,15 @@ type ImportResult struct {
 	Environment map[string]string          // environment variables
 }
 
+// EnvironmentImportResult represents the result of importing a Postman environment
+type EnvironmentImportResult struct {
+	Name             string            // Environment name from Postman
+	ConfigVars       map[string]string // Non-secret vars for yapi.config.yml
+	SecretVars       map[string]string // Secret vars for .env file
+	SecretWarnings   []string          // Warnings about detected secrets
+	UndefinedSecrets []string          // Current-only secrets (no initial value)
+}
+
 // ImportPostmanCollection imports a Postman collection from a JSON file
 func ImportPostmanCollection(filePath string) (*ImportResult, error) {
 	data, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided file path
@@ -41,7 +50,8 @@ func ImportPostmanCollection(filePath string) (*ImportResult, error) {
 }
 
 // ImportPostmanEnvironment imports a Postman environment file
-func ImportPostmanEnvironment(filePath string) (map[string]string, error) {
+// Returns structured data separating config vars from secrets
+func ImportPostmanEnvironment(filePath string) (*EnvironmentImportResult, error) {
 	data, err := os.ReadFile(filePath) // #nosec G304 -- filePath is validated user-provided file path
 	if err != nil {
 		return nil, fmt.Errorf("failed to read environment file: %w", err)
@@ -52,14 +62,91 @@ func ImportPostmanEnvironment(filePath string) (map[string]string, error) {
 		return nil, fmt.Errorf("failed to parse Postman environment: %w", err)
 	}
 
-	envVars := make(map[string]string)
+	result := &EnvironmentImportResult{
+		Name:             env.Name,
+		ConfigVars:       make(map[string]string),
+		SecretVars:       make(map[string]string),
+		SecretWarnings:   []string{},
+		UndefinedSecrets: []string{},
+	}
+
 	for _, v := range env.Values {
-		if v.Enabled {
-			envVars[v.Key] = v.Value
+		if !v.Enabled {
+			continue
+		}
+
+		// Determine the effective value
+		// If only "value" (current) is set, it's likely a secret
+		// If "initial" is set, it's intended to be shared
+		hasInitial := v.Initial != ""
+		hasCurrent := v.Value != ""
+
+		effectiveValue := v.Initial
+		if effectiveValue == "" {
+			effectiveValue = v.Value
+		}
+
+		isSecret := looksLikeSecret(v.Key, effectiveValue)
+
+		// Classify the variable
+		if !hasInitial && hasCurrent {
+			// Current-only variable - treat as secret
+			result.UndefinedSecrets = append(result.UndefinedSecrets, v.Key)
+			result.SecretVars[v.Key] = ""  // Placeholder in .env
+		} else if isSecret {
+			// Looks like a secret based on name/value
+			result.SecretWarnings = append(result.SecretWarnings,
+				fmt.Sprintf("Variable '%s' looks like a secret but is in 'initial' value (will be shared)", v.Key))
+			result.SecretVars[v.Key] = effectiveValue
+		} else {
+			// Regular config variable
+			result.ConfigVars[v.Key] = effectiveValue
 		}
 	}
 
-	return envVars, nil
+	return result, nil
+}
+
+// looksLikeSecret detects if a variable name or value looks like a secret
+func looksLikeSecret(key, value string) bool {
+	// Check for secret-like keywords in the key name
+	secretKeywords := []string{
+		"token", "key", "secret", "password", "pwd", "pass",
+		"auth", "credential", "api_key", "apikey", "private",
+		"session", "cookie", "bearer",
+	}
+
+	lowerKey := strings.ToLower(key)
+	for _, keyword := range secretKeywords {
+		if strings.Contains(lowerKey, keyword) {
+			return true
+		}
+	}
+
+	// Check for high-entropy values (likely tokens/keys)
+	if len(value) > 20 && hasHighEntropy(value) {
+		return true
+	}
+
+	return false
+}
+
+// hasHighEntropy checks if a string has high entropy (random-looking)
+func hasHighEntropy(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	// Simple entropy check: count unique characters
+	// High-entropy strings have many unique characters
+	uniqueChars := make(map[rune]bool)
+	for _, c := range s {
+		uniqueChars[c] = true
+	}
+
+	// If more than 70% of characters are unique, it's likely high-entropy
+	uniqueRatio := float64(len(uniqueChars)) / float64(len(s))
+	return uniqueRatio > 0.7 && len(s) > 20
 }
 
 // convertItems recursively converts Postman items to yapi configs

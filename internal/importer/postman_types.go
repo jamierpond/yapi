@@ -111,6 +111,8 @@ type PostmanEnvironment struct {
 // PostmanEnvVariable represents a single environment variable
 type PostmanEnvVariable struct {
 	Key     string `json:"key"`
-	Value   string `json:"value"`
+	Value   string `json:"value"`   // Current value (local, may be secret)
+	Initial string `json:"initial"` // Initial value (exported, shareable)
 	Enabled bool   `json:"enabled"`
+	Type    string `json:"type,omitempty"` // "default", "secret", etc.
 }
