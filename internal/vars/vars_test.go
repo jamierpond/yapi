@@ -77,7 +77,7 @@ func FuzzExpandString(f *testing.F) {
 	f.Add("https://example.com/${PATH}")
 	f.Add(`{"key": "${VALUE}"}`)
 	f.Add("$2a$12$bcrypthash") // bcrypt hash should not match
-	f.Add("price: $100")        // dollar amounts should not match
+	f.Add("price: $100")       // dollar amounts should not match
 
 	// Resolver that always succeeds
 	resolver := func(key string) (string, error) {
