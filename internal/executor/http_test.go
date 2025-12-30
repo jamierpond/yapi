@@ -206,3 +206,43 @@ json: '{"status":"active","code":42}'`,
 		})
 	}
 }
+
+func TestHTTPTransport_InsecureTLS(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	insecureRes, err := config.LoadFromString(`
+yapi: v1
+url: https://example.com
+method: GET
+insecure: true`)
+	if err != nil {
+		t.Fatalf("LoadFromString failed: %v", err)
+	}
+	insecureReq := insecureRes.Request
+	insecureReq.URL = srv.URL
+
+	client := &http.Client{}
+	execFn := executor.HTTPTransport(client)
+	resp, err := execFn(context.Background(), insecureReq)
+	if err != nil {
+		t.Fatalf("Execute failed with insecure TLS: %v", err)
+	}
+	_ = resp.Body.Close()
+
+	secureRes, err := config.LoadFromString(`
+yapi: v1
+url: https://example.com
+method: GET`)
+	if err != nil {
+		t.Fatalf("LoadFromString failed: %v", err)
+	}
+	secureReq := secureRes.Request
+	secureReq.URL = srv.URL
+
+	if _, err := execFn(context.Background(), secureReq); err == nil {
+		t.Fatalf("expected TLS verification error without insecure flag")
+	}
+}

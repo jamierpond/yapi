@@ -35,6 +35,7 @@ type watchModel struct {
 	ready       bool
 	status      string
 	statusStyle lipgloss.Style
+	opts        runner.Options
 }
 
 type tickMsg time.Time
@@ -64,12 +65,12 @@ func checkFileCmd(path string, lastMod time.Time) tea.Cmd {
 	}
 }
 
-func runYapiCmd(path string) tea.Cmd {
+func runYapiCmd(path string, opts runner.Options) tea.Cmd {
 	return func() tea.Msg {
 		runRes := engine.RunConfig(
 			context.Background(),
 			path,
-			runner.Options{NoColor: false},
+			opts,
 		)
 
 		if runRes.Error != nil && runRes.Analysis == nil {
@@ -134,19 +135,20 @@ func runYapiCmd(path string) tea.Cmd {
 }
 
 // NewWatchModel creates a new watch mode TUI model.
-func NewWatchModel(path string) watchModel {
+func NewWatchModel(path string, opts runner.Options) watchModel {
 	return watchModel{
 		filepath:    path,
 		content:     "Loading...",
 		status:      "starting",
 		statusStyle: theme.Info,
+		opts:        opts,
 	}
 }
 
 func (m watchModel) Init() tea.Cmd {
 	return tea.Batch(
 		tickCmd(),
-		runYapiCmd(m.filepath),
+		runYapiCmd(m.filepath, m.opts),
 	)
 }
 
@@ -162,7 +164,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			m.status = "running..."
 			m.statusStyle = theme.Info
-			return m, runYapiCmd(m.filepath)
+			return m, runYapiCmd(m.filepath, m.opts)
 		}
 
 	case tea.WindowSizeMsg:
@@ -193,7 +195,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.status = "running..."
 		m.statusStyle = theme.Info
-		cmds = append(cmds, runYapiCmd(m.filepath))
+		cmds = append(cmds, runYapiCmd(m.filepath, m.opts))
 
 	case runResultMsg:
 		m.lastRun = time.Now()
@@ -265,7 +267,7 @@ func (m watchModel) View() string {
 }
 
 // RunWatch starts watch mode TUI for the given config file.
-func RunWatch(path string) error {
+func RunWatch(path string, opts runner.Options) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -277,7 +279,7 @@ func RunWatch(path string) error {
 		return err
 	}
 
-	model := NewWatchModel(absPath)
+	model := NewWatchModel(absPath, opts)
 	model.lastMod = info.ModTime()
 
 	p := tea.NewProgram(

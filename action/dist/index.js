@@ -54079,40 +54079,56 @@ async function run() {
         const waitUrls = core.getMultilineInput('wait-on');
         const timeout = parseInt(core.getInput('wait-on-timeout') || '60000', 10);
         const command = core.getInput('command') || 'yapi run .';
-        const version = core.getInput('version') || 'latest';
+        const skipInstall = core.getBooleanInput('skip-install');
+        // Get version from the action ref (e.g., 'v0.5.0' or 'main')
+        const actionRef = process.env.GITHUB_ACTION_REF || 'main';
+        const version = actionRef === 'main' ? 'latest' : actionRef;
         // -------------------------------------------------------------------------
         // 2. INSTALL YAPI
         // -------------------------------------------------------------------------
-        if (version === 'local') {
-            core.startGroup('Verifying local Yapi installation');
-            core.info('Using pre-installed yapi (version: local)');
+        if (skipInstall) {
+            core.startGroup('Verifying pre-installed Yapi');
             try {
                 await exec.exec('yapi', ['version']);
-                core.info('Local yapi installation verified successfully');
+                core.info('Using local/pre-installed yapi');
             }
-            catch (error) {
-                throw new Error('version set to "local" but yapi is not installed or not in PATH');
+            catch {
+                core.setFailed('skip-install is enabled but yapi is not found in PATH. Please install yapi before running this action.');
+                process.exit(1);
             }
             core.endGroup();
         }
         else {
-            core.startGroup('Installing Yapi');
-            // Use the unified install script that works across platforms
-            const installCmd = 'curl -fsSL https://yapi.run/install/linux.sh | bash';
-            // If a specific version is requested (not 'latest'), we'll need to handle it
-            // The install script installs the latest by default
-            if (version !== 'latest') {
-                core.info(`Requesting specific version: ${version}`);
-                // The install.sh script may support YAPI_VERSION env var or similar
-                // For now, we'll install latest and note this limitation
-                core.warning('Version selection not yet implemented - installing latest');
+            // Check if yapi is already installed
+            let yapiInstalled = false;
+            try {
+                await exec.exec('yapi', ['version'], { silent: true });
+                yapiInstalled = true;
             }
-            // Use sh -c to properly handle the pipe operator
-            await exec.exec('sh', ['-c', installCmd]);
-            // Add yapi to PATH for the rest of this step
-            const yapiPath = `${process.env.HOME}/.yapi/bin`;
-            core.addPath(yapiPath);
-            core.endGroup();
+            catch {
+                yapiInstalled = false;
+            }
+            if (yapiInstalled) {
+                core.startGroup('Using pre-installed Yapi');
+                await exec.exec('yapi', ['version']);
+                core.endGroup();
+            }
+            else {
+                core.startGroup(`Installing Yapi ${version}`);
+                // Use the unified install script that works across platforms
+                let installCmd = 'curl -fsSL https://yapi.run/install/linux.sh | bash';
+                // If a specific version is requested (not 'latest'), set YAPI_VERSION env var
+                if (version !== 'latest') {
+                    core.info(`Installing yapi version: ${version}`);
+                    installCmd = `curl -fsSL https://yapi.run/install/linux.sh | YAPI_VERSION=${version} bash`;
+                }
+                // Use sh -c to properly handle the pipe operator
+                await exec.exec('sh', ['-c', installCmd]);
+                // Add yapi to PATH for the rest of this step
+                const yapiPath = `${process.env.HOME}/.yapi/bin`;
+                core.addPath(yapiPath);
+                core.endGroup();
+            }
         }
         // -------------------------------------------------------------------------
         // 3. START BACKGROUND SERVERS

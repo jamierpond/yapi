@@ -84,7 +84,7 @@ type ConfigV1 struct {
 	Data           string            `yaml:"data,omitempty"`     // TCP raw data
 	Encoding       string            `yaml:"encoding,omitempty"` // text, hex, base64
 	JQFilter       string            `yaml:"jq_filter,omitempty"`
-	Insecure       bool              `yaml:"insecure,omitempty"`     // For gRPC
+	Insecure       bool              `yaml:"insecure,omitempty"`     // Skip TLS verification for HTTP/GraphQL; uses insecure transport for gRPC
 	Plaintext      bool              `yaml:"plaintext,omitempty"`    // For gRPC
 	ReadTimeout    int               `yaml:"read_timeout,omitempty"` // TCP read timeout in seconds
 	IdleTimeout    int               `yaml:"idle_timeout,omitempty"` // TCP idle timeout in milliseconds (default 500)
@@ -427,6 +427,7 @@ func (c *ConfigV1) buildURL() string {
 func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
 	transport := domain.DetectTransport(c.URL, c.Graphql != "")
 	req.Metadata["transport"] = transport
+	req.Metadata["insecure"] = fmt.Sprintf("%t", c.Insecure)
 
 	switch transport {
 	case constants.TransportGRPC:
@@ -434,7 +435,6 @@ func (c *ConfigV1) enrichMetadata(req *domain.Request) error {
 		req.Metadata["rpc"] = c.RPC
 		req.Metadata["proto"] = c.Proto
 		req.Metadata["proto_path"] = c.ProtoPath
-		req.Metadata["insecure"] = fmt.Sprintf("%t", c.Insecure)
 		req.Metadata["plaintext"] = fmt.Sprintf("%t", c.Plaintext)
 	case constants.TransportTCP:
 		req.Metadata["data"] = c.Data

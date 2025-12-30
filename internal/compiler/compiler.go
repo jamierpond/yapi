@@ -87,6 +87,7 @@ func Compile(cfg *config.ConfigV1, resolver vars.Resolver) *CompiledRequest {
 	// 6. Protocol Detection and Validation
 	transport := domain.DetectTransport(req.URL, interpolated.Graphql != "")
 	req.Metadata["transport"] = transport
+	req.Metadata["insecure"] = fmt.Sprintf("%t", interpolated.Insecure)
 
 	switch transport {
 	case constants.TransportGRPC:
@@ -100,7 +101,6 @@ func Compile(cfg *config.ConfigV1, resolver vars.Resolver) *CompiledRequest {
 		req.Metadata["rpc"] = interpolated.RPC
 		req.Metadata["proto"] = interpolated.Proto
 		req.Metadata["proto_path"] = interpolated.ProtoPath
-		req.Metadata["insecure"] = fmt.Sprintf("%t", interpolated.Insecure)
 		req.Metadata["plaintext"] = fmt.Sprintf("%t", interpolated.Plaintext)
 
 	case constants.TransportTCP:

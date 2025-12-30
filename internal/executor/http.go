@@ -2,8 +2,10 @@ package executor
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"yapi.run/cli/internal/domain"
@@ -34,7 +36,15 @@ func HTTPTransport(client HTTPClient) TransportFunc {
 			httpReq.Header.Set(k, v)
 		}
 
-		res, err := client.Do(httpReq)
+		clientToUse := client
+		if insecureStr, ok := req.Metadata["insecure"]; ok && insecureStr != "" {
+			insecure, err := strconv.ParseBool(insecureStr)
+			if err == nil && insecure {
+				clientToUse = insecureHTTPClient(client)
+			}
+		}
+
+		res, err := clientToUse.Do(httpReq)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute request: %w", err)
 		}
@@ -53,4 +63,38 @@ func HTTPTransport(client HTTPClient) TransportFunc {
 			Body:       res.Body,
 		}, nil
 	}
+}
+
+func insecureHTTPClient(base HTTPClient) *http.Client {
+	var baseClient *http.Client
+	if client, ok := base.(*http.Client); ok {
+		baseClient = client
+	}
+
+	transport := cloneTransport(baseClient)
+	tlsConfig := &tls.Config{InsecureSkipVerify: true} //nolint:gosec // user-controlled insecure TLS option
+	if transport.TLSClientConfig != nil {
+		tlsConfig = transport.TLSClientConfig.Clone()
+		tlsConfig.InsecureSkipVerify = true
+	}
+	transport.TLSClientConfig = tlsConfig
+
+	client := &http.Client{
+		Transport: transport,
+	}
+	if baseClient != nil {
+		client.Timeout = baseClient.Timeout
+		client.Jar = baseClient.Jar
+		client.CheckRedirect = baseClient.CheckRedirect
+	}
+	return client
+}
+
+func cloneTransport(base *http.Client) *http.Transport {
+	if base != nil && base.Transport != nil {
+		if transport, ok := base.Transport.(*http.Transport); ok {
+			return transport.Clone()
+		}
+	}
+	return http.DefaultTransport.(*http.Transport).Clone()
 }

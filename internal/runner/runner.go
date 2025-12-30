@@ -35,6 +35,7 @@ type Options struct {
 	URLOverride  string
 	NoColor      bool
 	BinaryOutput bool
+	Insecure     bool
 	EnvOverrides map[string]string // Environment variables from project config
 	ProjectRoot  string            // Path to project root (for validation)
 	ProjectEnv   string            // Selected environment name (for validation)
@@ -42,6 +43,13 @@ type Options struct {
 
 // Run executes a yapi request and returns the result.
 func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, warnings []string, opts Options) (*Result, error) {
+	if opts.Insecure {
+		if req.Metadata == nil {
+			req.Metadata = make(map[string]string)
+		}
+		req.Metadata["insecure"] = "true"
+	}
+
 	// Apply URL override
 	if opts.URLOverride != "" {
 		req.URL = opts.URLOverride

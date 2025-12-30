@@ -441,7 +441,7 @@ var topLevelKeys = []struct {
 	{"data", "Raw data for TCP requests"},
 	{"encoding", "Data encoding (text, hex, base64)"},
 	{"jq_filter", "JQ filter to apply to response"},
-	{"insecure", "Skip TLS verification (boolean)"},
+	{"insecure", "Skip TLS verification for HTTP/GraphQL; use insecure transport for gRPC (boolean)"},
 	{"plaintext", "Use plaintext gRPC (boolean)"},
 	{"read_timeout", "TCP read timeout in seconds"},
 	{"close_after_send", "Close TCP connection after sending (boolean)"},

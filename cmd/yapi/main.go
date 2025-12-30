@@ -71,6 +71,7 @@ type rootCommand struct {
 	urlOverride  string
 	noColor      bool
 	binaryOutput bool
+	insecure     bool
 	httpClient   *http.Client
 	engine       *core.Engine
 }
@@ -157,6 +158,7 @@ func main() {
 		app.urlOverride = cfg.URLOverride
 		app.noColor = cfg.NoColor
 		app.binaryOutput = cfg.BinaryOutput
+		app.insecure = cfg.Insecure
 		color.SetNoColor(app.noColor)
 	}
 	rootCmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
@@ -209,7 +211,13 @@ func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
 	usePretty := pretty || (fromTUI && !noPretty)
 
 	if usePretty {
-		return tui.RunWatch(path)
+		opts := runner.Options{
+			URLOverride:  app.urlOverride,
+			NoColor:      app.noColor,
+			BinaryOutput: app.binaryOutput,
+			Insecure:     app.insecure,
+		}
+		return tui.RunWatch(path, opts)
 	}
 	return app.watchConfigPath(path, envName)
 }
@@ -310,6 +318,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		URLOverride:  app.urlOverride,
 		NoColor:      app.noColor,
 		BinaryOutput: app.binaryOutput,
+		Insecure:     app.insecure,
 	}
 
 	// Load project and environment configuration

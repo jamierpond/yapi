@@ -10,6 +10,7 @@ type Config struct {
 	URLOverride  string
 	NoColor      bool
 	BinaryOutput bool
+	Insecure     bool
 	Environment  string // Target environment from project config
 }
 
@@ -52,6 +53,7 @@ func BuildRoot(cfg *Config, handlers *Handlers) *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&cfg.URLOverride, "url", "u", "", "Override the URL specified in the config file")
 	rootCmd.PersistentFlags().BoolVar(&cfg.NoColor, "no-color", false, "Disable color output")
 	rootCmd.PersistentFlags().BoolVar(&cfg.BinaryOutput, "binary-output", false, "Display binary content to stdout (by default binary content is hidden)")
+	rootCmd.PersistentFlags().BoolVar(&cfg.Insecure, "insecure", false, "Skip TLS verification for HTTPS requests; use insecure transport for gRPC")
 
 	// Build commands from manifest
 	for _, spec := range cmdManifest {
