@@ -33,27 +33,42 @@ func TestConvertVariables(t *testing.T) {
 		{
 			name:     "postman dynamic variable - guid",
 			input:    "{{$guid}}",
-			expected: "${$guid}",
+			expected: "${guid}",
 		},
 		{
 			name:     "postman dynamic variable - timestamp",
 			input:    "{{$timestamp}}",
-			expected: "${$timestamp}",
+			expected: "${timestamp}",
 		},
 		{
 			name:     "postman dynamic variable - randomInt",
 			input:    "{{$randomInt}}",
-			expected: "${$randomInt}",
+			expected: "${randomInt}",
 		},
 		{
 			name:     "postman dynamic variable - isoTimestamp",
 			input:    "{{$isoTimestamp}}",
-			expected: "${$isoTimestamp}",
+			expected: "${isoTimestamp}",
+		},
+		{
+			name:     "postman dynamic variable - randomUUID",
+			input:    "{{$randomUUID}}",
+			expected: "${randomUUID}",
+		},
+		{
+			name:     "postman dynamic variable with context",
+			input:    "id: {{$guid}}",
+			expected: "id: ${guid}",
 		},
 		{
 			name:     "mixed regular and dynamic variables",
 			input:    "{{baseUrl}}/api/{{$guid}}/{{userId}}",
-			expected: "${baseUrl}/api/${$guid}/${userId}",
+			expected: "${baseUrl}/api/${guid}/${userId}",
+		},
+		{
+			name:     "variable starting with dollar but not Postman builtin",
+			input:    "{{$myCustomVar}}",
+			expected: "${myCustomVar}",
 		},
 		{
 			name:     "variable with underscores",

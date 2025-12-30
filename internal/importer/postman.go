@@ -364,13 +364,20 @@ func extractQueryParams(url PostmanURL) map[string]string {
 // but will need manual handling as yapi doesn't have built-in dynamic variables
 func convertVariables(s string) string {
 	// Replace {{variable}} with ${variable}
-	// This includes Postman dynamic variables like:
-	// - {{$guid}} -> ${$guid} (will need manual UUID generation)
-	// - {{$timestamp}} -> ${$timestamp} (will need manual timestamp)
-	// - {{$randomInt}} -> ${$randomInt} (will need manual random number)
-	// - {{$isoTimestamp}} -> ${$isoTimestamp} (will need manual ISO timestamp)
+	// Strip the leading $ from Postman dynamic variables:
+	// - {{$guid}} -> ${guid}
+	// - {{$timestamp}} -> ${timestamp}
+	// - {{$randomInt}} -> ${randomInt}
+	// - {{$isoTimestamp}} -> ${isoTimestamp}
+	// - {{normalVar}} -> ${normalVar}
 	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
-	return re.ReplaceAllString(s, `${$1}`)
+	return re.ReplaceAllStringFunc(s, func(match string) string {
+		// Extract the variable name (without {{ and }})
+		varName := match[2 : len(match)-2]
+		// Strip leading $ if present (Postman dynamic variable prefix)
+		varName = strings.TrimPrefix(varName, "$")
+		return "${" + varName + "}"
+	})
 }
 
 // sanitizeFileName converts a name to a safe filename
