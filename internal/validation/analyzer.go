@@ -552,12 +552,24 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 			}
 
 			var varName string
+			isLazyForm := false
 			if match[2] != -1 {
 				// ${VAR} style
 				varName = lineWithoutComment[match[2]:match[3]]
 			} else if match[4] != -1 {
 				// $VAR style
 				varName = lineWithoutComment[match[4]:match[5]]
+				isLazyForm = true
+			}
+
+			// For lazy form ($VAR), check if preceded by alphanumeric/underscore
+			// This prevents matching "$k..." in bcrypt hashes like "$2a$12$k..."
+			if isLazyForm && fullStart > 0 {
+				prevChar := lineWithoutComment[fullStart-1]
+				if isAlphanumericOrUnderscore(prevChar) {
+					// Skip this match - it's part of a larger token (e.g., bcrypt hash)
+					continue
+				}
 			}
 
 			if varName == "" {
@@ -589,6 +601,11 @@ func FindEnvVarRefs(text string) []EnvVarInfo {
 		}
 	}
 	return refs
+}
+
+// isAlphanumericOrUnderscore checks if a byte is alphanumeric or underscore
+func isAlphanumericOrUnderscore(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
 }
 
 // RedactValue redacts a value for display, showing only first/last chars

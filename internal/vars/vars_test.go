@@ -12,6 +12,8 @@ func TestExpandString(t *testing.T) {
 			return "bar", nil
 		case "NESTED":
 			return "nested_value", nil
+		case "FOO123":
+			return "bar123", nil
 		default:
 			return "", fmt.Errorf("unknown var: %s", key)
 		}
@@ -29,6 +31,16 @@ func TestExpandString(t *testing.T) {
 		{"multiple vars", "$FOO and ${NESTED}", "bar and nested_value", false},
 		{"unknown var", "$UNKNOWN", "", true},
 		{"empty string", "", "", false},
+		// Bcrypt hashes should NOT be treated as variables
+		{"bcrypt hash", "$2a$12$k0LsiR40ZNcMxbyD80g5nebjB9R0/VqilwfFLLr6m/XTOc9WRf8Om", "$2a$12$k0LsiR40ZNcMxbyD80g5nebjB9R0/VqilwfFLLr6m/XTOc9WRf8Om", false},
+		{"bcrypt hash $2y", "$2y$10$abcdefghijklmnopqrstuv1234567890ABCDEFGHIJKLMNOPQR", "$2y$10$abcdefghijklmnopqrstuv1234567890ABCDEFGHIJKLMNOPQR", false},
+		// Dollar signs followed by digits should be preserved
+		{"dollar digit", "price is $100", "price is $100", false},
+		{"dollar digits only", "$123", "$123", false},
+		{"dollar with numbers", "$1test", "$1test", false},
+		// Valid variables should still work
+		{"var starts with letter", "$FOO123", "bar123", false},
+		{"var starts with underscore", "${_private}", "", true}, // _private not defined
 	}
 
 	for _, tt := range tests {

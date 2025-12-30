@@ -7,9 +7,15 @@ import (
 )
 
 // Expansion matches $VAR and ${VAR} patterns, including dots for chain references.
+// The strict form ${VAR} is always recognized.
+// The lazy form $VAR requires the variable to:
+//  1. Start with a letter or underscore (not a digit)
+//  2. Not be preceded by alphanumeric or underscore (checked in ExpandString)
+//
+// This prevents matching dollar signs in bcrypt hashes ($2a$12$...) or other literals.
 // Group 1: contents inside ${...}
-// Group 2: token after $...
-var Expansion = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z0-9_\-\.]+)`)
+// Group 2: token after $... (must start with letter or underscore)
+var Expansion = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z_][a-zA-Z0-9_\-\.]*)`)
 
 // EnvOnly matches $VAR and ${VAR} patterns without dots (environment variables only).
 // Group 1: contents inside ${...}
@@ -20,7 +26,8 @@ var EnvOnly = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-
 type Resolver func(key string) (string, error)
 
 // ChainVar matches ${step.field} patterns (contains a dot).
-var ChainVar = regexp.MustCompile(`\$\{[^}]*\.[^}]+\}|\$[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-\.]+`)
+// Variables must start with a letter or underscore.
+var ChainVar = regexp.MustCompile(`\$\{[^}]*\.[^}]+\}|\$[a-zA-Z_][a-zA-Z0-9_\-]*\.[a-zA-Z0-9_\-\.]+`)
 
 // HasChainVars returns true if the string contains chain variable references (${step.field}).
 func HasChainVars(s string) bool {
@@ -48,6 +55,17 @@ func ExpandString(input string, resolver Resolver) (string, error) {
 		} else {
 			// Lazy: $key
 			key = match[1:]
+
+			// For lazy form, check if preceded by alphanumeric/underscore
+			// This prevents matching "$k..." in bcrypt hashes like "$2a$12$k..."
+			matchIndex := strings.Index(input, match)
+			if matchIndex > 0 {
+				prevChar := input[matchIndex-1]
+				if isAlphanumericOrUnderscore(prevChar) {
+					// Skip this match - it's part of a larger token (e.g., bcrypt hash)
+					return match
+				}
+			}
 		}
 
 		val, err := resolver(key)
@@ -62,4 +80,9 @@ func ExpandString(input string, resolver Resolver) (string, error) {
 		return "", capturedErr
 	}
 	return result, nil
+}
+
+// isAlphanumericOrUnderscore checks if a byte is alphanumeric or underscore
+func isAlphanumericOrUnderscore(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
 }
