@@ -480,9 +480,9 @@ variables:
 
 func TestFindEnvVarRefs_MixedGraphQLAndEnvVars(t *testing.T) {
 	yaml := `yapi: v1
-url: $API_URL
+url: ${API_URL}
 headers:
-  Authorization: Bearer $TOKEN
+  Authorization: Bearer ${TOKEN}
 graphql: |
   query getUser($userId: ID!) {
     user(id: $userId) {
@@ -490,7 +490,7 @@ graphql: |
     }
   }
 variables:
-  userId: $USER_ID`
+  userId: ${USER_ID}`
 
 	refs := FindEnvVarRefs(yaml)
 
@@ -562,7 +562,7 @@ url: https://api.example.com/graphql
 graphql: |
   query { users { name } }
 headers:
-  X-Custom: $CUSTOM_HEADER`
+  X-Custom: ${CUSTOM_HEADER}`
 
 	refs := FindEnvVarRefs(yaml)
 
@@ -582,11 +582,11 @@ headers:
 
 func TestFindEnvVarRefs_NoGraphQLBlock(t *testing.T) {
 	yaml := `yapi: v1
-url: $BASE_URL/api/users
+url: ${BASE_URL}/api/users
 method: GET
 headers:
-  Authorization: Bearer $AUTH_TOKEN
-  X-Request-ID: $REQUEST_ID`
+  Authorization: Bearer ${AUTH_TOKEN}
+  X-Request-ID: ${REQUEST_ID}`
 
 	refs := FindEnvVarRefs(yaml)
 

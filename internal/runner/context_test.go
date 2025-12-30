@@ -34,8 +34,8 @@ func TestChainContext_ExpandVariables_EnvVars(t *testing.T) {
 		},
 		{
 			name:     "unknown env var stays as is",
-			input:    "$UNKNOWN_VAR",
-			expected: "$UNKNOWN_VAR",
+			input:    "${UNKNOWN_VAR}",
+			expected: "${UNKNOWN_VAR}",
 		},
 		{
 			name:     "no variables",
