@@ -217,7 +217,7 @@ func TestResolvers_WithExpandString(t *testing.T) {
 	defer os.Unsetenv("TEST_ENV")
 
 	t.Run("EnvResolver with ExpandString", func(t *testing.T) {
-		input := "Value is $TEST_ENV"
+		input := "Value is ${TEST_ENV}"
 		result, err := ExpandString(input, EnvResolver)
 		if err != nil {
 			t.Fatalf("ExpandString() error = %v", err)
@@ -228,7 +228,7 @@ func TestResolvers_WithExpandString(t *testing.T) {
 	})
 
 	t.Run("MockResolver with ExpandString", func(t *testing.T) {
-		input := "Server at $HOST:$PORT"
+		input := "Server at ${HOST}:${PORT}"
 		result, err := ExpandString(input, MockResolver)
 		if err != nil {
 			t.Fatalf("ExpandString() error = %v", err)

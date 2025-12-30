@@ -297,7 +297,7 @@ func TestInterpolateBody(t *testing.T) {
 		{
 			name: "type preservation - int",
 			body: map[string]any{
-				"track_index": "$step1.result.index",
+				"track_index": "${step1.result.index}",
 			},
 			expected: map[string]any{
 				"track_index": float64(7), // Preserved as number, not string
@@ -307,7 +307,7 @@ func TestInterpolateBody(t *testing.T) {
 		{
 			name: "mixed string stays string",
 			body: map[string]any{
-				"message": "Track $step1.result.index created",
+				"message": "Track ${step1.result.index} created",
 			},
 			expected: map[string]any{
 				"message": "Track 7 created", // Interpolated as string
@@ -318,8 +318,8 @@ func TestInterpolateBody(t *testing.T) {
 			name: "array with variable references",
 			body: map[string]any{
 				"track_indices": []any{
-					"$step1.result.index",
-					"$prev.token",
+					"${step1.result.index}",
+					"${prev.token}",
 				},
 			},
 			expected: map[string]any{
@@ -335,7 +335,7 @@ func TestInterpolateBody(t *testing.T) {
 			body: map[string]any{
 				"params": map[string]any{
 					"indices": []any{
-						"$step1.result.index",
+						"${step1.result.index}",
 					},
 				},
 			},

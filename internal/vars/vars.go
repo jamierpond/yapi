@@ -3,31 +3,23 @@ package vars
 
 import (
 	"regexp"
-	"strings"
 )
 
-// Expansion matches $VAR and ${VAR} patterns, including dots for chain references.
-// The strict form ${VAR} is always recognized.
-// The lazy form $VAR requires the variable to:
-//  1. Start with a letter or underscore (not a digit)
-//  2. Not be preceded by alphanumeric or underscore (checked in ExpandString)
-//
-// This prevents matching dollar signs in bcrypt hashes ($2a$12$...) or other literals.
+// Expansion matches ${VAR} patterns only (strict form required).
+// This prevents ambiguity with dollar signs in bcrypt hashes, dollar amounts, etc.
+// Variables can contain dots for chain references: ${step.field}
 // Group 1: contents inside ${...}
-// Group 2: token after $... (must start with letter or underscore)
-var Expansion = regexp.MustCompile(`\$\{([^}]+)\}|\$([a-zA-Z_][a-zA-Z0-9_\-\.]*)`)
+var Expansion = regexp.MustCompile(`\$\{([^}]+)\}`)
 
-// EnvOnly matches $VAR and ${VAR} patterns without dots (environment variables only).
+// EnvOnly matches ${VAR} patterns without dots (environment variables only).
 // Group 1: contents inside ${...}
-// Group 2: token after $...
-var EnvOnly = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)`)
+var EnvOnly = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 
 // Resolver resolves a variable key to its value.
 type Resolver func(key string) (string, error)
 
 // ChainVar matches ${step.field} patterns (contains a dot).
-// Variables must start with a letter or underscore.
-var ChainVar = regexp.MustCompile(`\$\{[^}]*\.[^}]+\}|\$[a-zA-Z_][a-zA-Z0-9_\-]*\.[a-zA-Z0-9_\-\.]+`)
+var ChainVar = regexp.MustCompile(`\$\{[^}]*\.[^}]+\}`)
 
 // HasChainVars returns true if the string contains chain variable references (${step.field}).
 func HasChainVars(s string) bool {
@@ -39,7 +31,7 @@ func HasEnvVars(s string) bool {
 	return EnvOnly.MatchString(s)
 }
 
-// ExpandString replaces all $VAR and ${VAR} occurrences in input using the resolver.
+// ExpandString replaces all ${VAR} occurrences in input using the resolver.
 func ExpandString(input string, resolver Resolver) (string, error) {
 	var capturedErr error
 
@@ -48,25 +40,8 @@ func ExpandString(input string, resolver Resolver) (string, error) {
 			return match
 		}
 
-		var key string
-		if strings.HasPrefix(match, "${") {
-			// Strict: ${key}
-			key = match[2 : len(match)-1]
-		} else {
-			// Lazy: $key
-			key = match[1:]
-
-			// For lazy form, check if preceded by alphanumeric/underscore
-			// This prevents matching "$k..." in bcrypt hashes like "$2a$12$k..."
-			matchIndex := strings.Index(input, match)
-			if matchIndex > 0 {
-				prevChar := input[matchIndex-1]
-				if isAlphanumericOrUnderscore(prevChar) {
-					// Skip this match - it's part of a larger token (e.g., bcrypt hash)
-					return match
-				}
-			}
-		}
+		// Extract key from ${key}
+		key := match[2 : len(match)-1]
 
 		val, err := resolver(key)
 		if err != nil {
@@ -80,9 +55,4 @@ func ExpandString(input string, resolver Resolver) (string, error) {
 		return "", capturedErr
 	}
 	return result, nil
-}
-
-// isAlphanumericOrUnderscore checks if a byte is alphanumeric or underscore
-func isAlphanumericOrUnderscore(b byte) bool {
-	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
 }

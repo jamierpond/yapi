@@ -21,7 +21,7 @@ func TestExpandAll(t *testing.T) {
 		}
 
 		config := &Config{
-			URL:  "http://$TEST_VAR/api",
+			URL:  "http://${TEST_VAR}/api",
 			Path: "/v1/${TEST_VAR}",
 		}
 
@@ -42,7 +42,7 @@ func TestExpandAll(t *testing.T) {
 
 		config := &Config{
 			Headers: map[string]string{
-				"Host":   "$TEST_VAR",
+				"Host":   "${TEST_VAR}",
 				"Port":   "${TEST_PORT}",
 				"Static": "no_expansion",
 			},
@@ -70,7 +70,7 @@ func TestExpandAll(t *testing.T) {
 		}
 
 		config := &Config{
-			Outer: Inner{Value: "$TEST_VAR"},
+			Outer: Inner{Value: "${TEST_VAR}"},
 		}
 
 		ExpandAll(config, EnvResolver)
@@ -89,7 +89,7 @@ func TestExpandAll(t *testing.T) {
 		}
 
 		config := &Config{
-			Ptr: &Inner{Value: "$TEST_VAR"},
+			Ptr: &Inner{Value: "${TEST_VAR}"},
 		}
 
 		ExpandAll(config, EnvResolver)
@@ -122,8 +122,8 @@ func TestExpandAll(t *testing.T) {
 		}
 
 		config := &Config{
-			Public:  "$TEST_VAR",
-			private: "$TEST_VAR",
+			Public:  "${TEST_VAR}",
+			private: "${TEST_VAR}",
 		}
 
 		// Should not panic on unexported field
@@ -133,8 +133,8 @@ func TestExpandAll(t *testing.T) {
 			t.Errorf("Public = %v, want expanded_value", config.Public)
 		}
 		// private field should remain unchanged (can't be set via reflection)
-		if config.private != "$TEST_VAR" {
-			t.Errorf("private = %v, want $TEST_VAR", config.private)
+		if config.private != "${TEST_VAR}" {
+			t.Errorf("private = %v, want ${TEST_VAR}", config.private)
 		}
 	})
 
@@ -174,7 +174,7 @@ func TestExpandAll(t *testing.T) {
 		}
 
 		config := &Config{
-			Value: "$CUSTOM",
+			Value: "${CUSTOM}",
 		}
 
 		customResolver := func(key string) (string, error) {
@@ -197,7 +197,7 @@ func TestExpandAll(t *testing.T) {
 		}
 
 		config := &Config{
-			Value: "$NONEXISTENT",
+			Value: "${NONEXISTENT}",
 		}
 
 		// EnvResolver returns empty string for non-existent vars
@@ -230,16 +230,16 @@ func TestExpandAll_ComplexStruct(t *testing.T) {
 	}
 
 	config := &ComplexConfig{
-		URL: "https://$TEST_URL",
+		URL: "https://${TEST_URL}",
 		Headers: map[string]string{
-			"Authorization": "Bearer $TEST_KEY",
-			"Host":          "$TEST_URL",
+			"Authorization": "Bearer ${TEST_KEY}",
+			"Host":          "${TEST_URL}",
 		},
 		Nested: NestedConfig{
-			API: "https://$TEST_URL/api",
+			API: "https://${TEST_URL}/api",
 		},
 		Ptr: &NestedConfig{
-			API: "https://$TEST_URL/v2",
+			API: "https://${TEST_URL}/v2",
 		},
 	}
 
@@ -277,7 +277,7 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 
 		config := &Config{
 			Body: map[string]any{
-				"name":   "$TEST_VAR",
+				"name":   "${TEST_VAR}",
 				"value":  "${TEST_VAR}",
 				"static": "no_change",
 			},
@@ -334,7 +334,7 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 		config := &Config{
 			Body: map[string]any{
 				"nested": map[string]any{
-					"key": "$TEST_VAR",
+					"key": "${TEST_VAR}",
 					"deep": map[string]any{
 						"value": "${TEST_VAR}",
 					},
@@ -363,12 +363,12 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 		config := &Config{
 			Body: map[string]any{
 				"array": []any{
-					"$TEST_VAR",
+					"${TEST_VAR}",
 					"${TEST_VAR}",
 					42,
 					true,
 					map[string]any{
-						"nested": "$TEST_VAR",
+						"nested": "${TEST_VAR}",
 					},
 				},
 			},
@@ -437,7 +437,7 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 
 		config := &Config{
 			Body: map[string]any{
-				"url":      "https://$TEST_VAR/api",
+				"url":      "https://${TEST_VAR}/api",
 				"message":  "Value is: ${TEST_VAR}",
 				"template": "Start ${TEST_VAR} end",
 			},
@@ -463,7 +463,7 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 
 		config := &Config{
 			Body: map[string]any{
-				"undefined": "$UNDEFINED_VAR",
+				"undefined": "${UNDEFINED_VAR}",
 			},
 		}
 
@@ -485,19 +485,19 @@ func TestExpandAll_MapStringAny(t *testing.T) {
 			Body: map[string]any{
 				"query": "query { user { name } }",
 				"user": map[string]any{
-					"name":  "$TEST_VAR",
+					"name":  "${TEST_VAR}",
 					"id":    123,
 					"email": "test@${TEST_VAR}.com",
 					"settings": map[string]any{
-						"theme": "$TEST_VAR",
+						"theme": "${TEST_VAR}",
 						"lang":  "en",
 					},
 				},
-				"tags": []any{"$TEST_VAR", "static", "${TEST_VAR}"},
+				"tags": []any{"${TEST_VAR}", "static", "${TEST_VAR}"},
 			},
 			Variables: map[string]any{
 				"id":   "${TEST_NUM}",
-				"name": "$TEST_VAR",
+				"name": "${TEST_VAR}",
 			},
 		}
 
