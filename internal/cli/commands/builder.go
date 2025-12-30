@@ -93,7 +93,7 @@ func wrapArgsWithUsage(validator cobra.PositionalArgs) cobra.PositionalArgs {
 		if err != nil {
 			// Show usage when args validation fails
 			_ = cmd.Usage()
-			fmt.Fprintln(cmd.ErrOrStderr())
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr())
 			// Return the original error (main.go will print it)
 			return err
 		}
