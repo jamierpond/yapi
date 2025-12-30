@@ -168,25 +168,25 @@ func TestResolveVariableRaw(t *testing.T) {
 	}{
 		{
 			name:    "pure int reference",
-			input:   "$step1.result.index",
+			input:   "${step1.result.index}",
 			wantVal: float64(7),
 			wantOk:  true,
 		},
 		{
 			name:    "pure bool reference",
-			input:   "$step1.result.enabled",
+			input:   "${step1.result.enabled}",
 			wantVal: true,
 			wantOk:  true,
 		},
 		{
 			name:    "pure float reference",
-			input:   "$step1.result.ratio",
+			input:   "${step1.result.ratio}",
 			wantVal: 3.14,
 			wantOk:  true,
 		},
 		{
 			name:    "pure string reference",
-			input:   "$step1.result.name",
+			input:   "${step1.result.name}",
 			wantVal: "test",
 			wantOk:  true,
 		},
@@ -198,13 +198,13 @@ func TestResolveVariableRaw(t *testing.T) {
 		},
 		{
 			name:    "mixed string not resolved",
-			input:   "prefix-$step1.result.index",
+			input:   "prefix-${step1.result.index}",
 			wantVal: nil,
 			wantOk:  false,
 		},
 		{
 			name:    "env var not resolved",
-			input:   "$HOME",
+			input:   "${HOME}",
 			wantVal: nil,
 			wantOk:  false,
 		},

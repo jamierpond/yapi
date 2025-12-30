@@ -19,7 +19,7 @@ func TestChainContext_ExpandVariables_EnvVars(t *testing.T) {
 	}{
 		{
 			name:     "simple env var with $",
-			input:    "$TEST_VAR",
+			input:    "${TEST_VAR}",
 			expected: "test_value",
 		},
 		{
@@ -29,7 +29,7 @@ func TestChainContext_ExpandVariables_EnvVars(t *testing.T) {
 		},
 		{
 			name:     "env var in URL",
-			input:    "https://example.com/$TEST_VAR/path",
+			input:    "https://example.com/${TEST_VAR}/path",
 			expected: "https://example.com/test_value/path",
 		},
 		{
