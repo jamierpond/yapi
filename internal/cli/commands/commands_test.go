@@ -107,3 +107,45 @@ func findCommandByName(root *cobra.Command, name string) *cobra.Command {
 	}
 	return nil
 }
+
+func TestWrapArgsWithUsage(t *testing.T) {
+	t.Run("nil validator returns nil", func(t *testing.T) {
+		wrapped := wrapArgsWithUsage(nil)
+		if wrapped != nil {
+			t.Error("wrapArgsWithUsage(nil) should return nil")
+		}
+	})
+
+	t.Run("validator that passes returns no error", func(t *testing.T) {
+		validator := cobra.ExactArgs(1)
+		wrapped := wrapArgsWithUsage(validator)
+
+		cmd := &cobra.Command{Use: "test"}
+		err := wrapped(cmd, []string{"arg1"})
+		if err != nil {
+			t.Errorf("wrapped validator should pass with valid args, got error: %v", err)
+		}
+	})
+
+	t.Run("validator that fails returns error", func(t *testing.T) {
+		validator := cobra.ExactArgs(1)
+		wrapped := wrapArgsWithUsage(validator)
+
+		cmd := &cobra.Command{Use: "test"}
+		err := wrapped(cmd, []string{})
+		if err == nil {
+			t.Error("wrapped validator should return error with invalid args")
+		}
+	})
+
+	t.Run("validator that fails with too many args returns error", func(t *testing.T) {
+		validator := cobra.MaximumNArgs(1)
+		wrapped := wrapArgsWithUsage(validator)
+
+		cmd := &cobra.Command{Use: "test"}
+		err := wrapped(cmd, []string{"arg1", "arg2"})
+		if err == nil {
+			t.Error("wrapped validator should return error with too many args")
+		}
+	})
+}
