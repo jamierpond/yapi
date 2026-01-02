@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/web/**'
+      - 'packages/**'
       - 'cmd/**'
       - 'internal/**'
       - '.github/workflows/web-tests.yml'
@@ -12,6 +13,7 @@ on:
     branches: [ main ]
     paths:
       - 'apps/web/**'
+      - 'packages/**'
       - 'cmd/**'
       - 'internal/**'
       - '.github/workflows/web-tests.yml'
@@ -39,6 +41,12 @@ jobs:
 
       - name: Build madea-blog-core
         run: pnpm --filter madea-blog-core build
+
+      - name: Build packages
+        run: |
+          pnpm --filter @yapi/styles build
+          pnpm --filter @yapi/client build
+          pnpm --filter @yapi/ui build
 
       - name: Run unit tests
         run: pnpm test
