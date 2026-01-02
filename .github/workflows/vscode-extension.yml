@@ -2,23 +2,19 @@ name: VS Code Extension
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'extensions/vscode-extension/**'
       - 'apps/vscode-webview/**'
-      - 'packages/ui/**'
-      - 'packages/styles/**'
-      - 'packages/client/**'
+      - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/vscode-extension.yml'
   pull_request:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'extensions/vscode-extension/**'
       - 'apps/vscode-webview/**'
-      - 'packages/ui/**'
-      - 'packages/styles/**'
-      - 'packages/client/**'
+      - 'packages/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/vscode-extension.yml'
   workflow_dispatch:
@@ -27,16 +23,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -44,22 +39,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: |
-          pnpm --filter @yapi/styles build
-          pnpm --filter @yapi/client build
-          pnpm --filter @yapi/ui build
-
       - name: Build extension
-        run: pnpm --filter @yapi/vscode-extension build
+        run: pnpm build:extension
 
       - name: Package extension
         run: |
           cd extensions/vscode-extension
           npx @vscode/vsce package --no-dependencies
 
-      - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: vscode-extension
           path: extensions/vscode-extension/*.vsix
@@ -70,16 +58,15 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -87,14 +74,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: |
-          pnpm --filter @yapi/styles build
-          pnpm --filter @yapi/client build
-          pnpm --filter @yapi/ui build
-
       - name: Build extension
-        run: pnpm --filter @yapi/vscode-extension build
+        run: pnpm build:extension
 
       - name: Publish to VS Code Marketplace
         if: ${{ secrets.VSCE_PAT != '' }}
