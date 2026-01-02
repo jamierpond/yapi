@@ -9,7 +9,7 @@
     "build:ui": "pnpm --filter @yapi/ui build",
     "build:vscode-webview": "pnpm --filter @yapi/vscode-webview build",
     "build:vscode-extension": "pnpm --filter @yapi/vscode-extension build",
-    "build:extension": "pnpm --filter @yapi/ui build && pnpm build:vscode-webview && pnpm --filter @yapi/vscode-extension run copy:webview && pnpm build:vscode-extension",
+    "build:extension": "pnpm --filter @yapi/ui build && pnpm build:vscode-extension",
     "dev": "pnpm --filter @yapi/web dev",
     "dev:webview": "pnpm --filter @yapi/vscode-webview dev",
     "lint": "pnpm --filter @yapi/web lint",

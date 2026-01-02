@@ -34,6 +34,11 @@ body {
   color: var(--color-yapi-fg);
 }
 
+/* Ensure text is visible in content areas */
+pre, code {
+  color: var(--color-yapi-fg);
+}
+
 /* Custom scrollbar - dark theme */
 ::-webkit-scrollbar {
   width: 12px;

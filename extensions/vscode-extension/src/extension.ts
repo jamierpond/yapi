@@ -175,19 +175,26 @@ async function runYapi(context: vscode.ExtensionContext) {
     child.on('close', (code) => {
         console.log('[yapi] Command output:', { code, stdout, stderr });
 
-        let result: YapiJsonOutput | null = null;
+        let cliOutput: YapiJsonOutput | null = null;
 
         try {
             // Try to parse JSON output from CLI
-            result = JSON.parse(stdout);
+            cliOutput = JSON.parse(stdout);
         } catch (e) {
             // If JSON parsing fails, treat as error
-            result = {
+            cliOutput = {
                 success: false,
                 body: stdout || 'No output',
                 error: code !== 0 ? `Process exited with code ${code}` : 'Failed to parse JSON output',
             };
         }
+
+        // Transform CLI output to match UI contract (body -> responseBody)
+        const result = cliOutput ? {
+            ...cliOutput,
+            responseBody: cliOutput.body,
+            errorType: cliOutput.success ? undefined : 'UNKNOWN' as const,
+        } : null;
 
         // Send result to webview
         if (panel) {
