@@ -158,7 +158,7 @@ async function runYapiCommand(context: vscode.ExtensionContext) {
 
     const yapiPath = findYapiExecutable();
     if (!yapiPath) {
-        vscode.window.showErrorMessage('yapi executable not found');
+        vscode.window.showErrorMessage('yapi executable not found. Please install yapi or configure the path in settings.');
         return;
     }
 
@@ -235,9 +235,9 @@ function findYapiExecutable(): string | null {
     // Try common locations
     const homeDir = process.env.HOME || process.env.USERPROFILE;
     const commonPaths = [
-        path.join(homeDir || '', 'go', 'bin', 'yapi'),
         '/usr/local/bin/yapi',
         '/usr/bin/yapi',
+        path.join(homeDir || '', 'go', 'bin', 'yapi'),
     ];
 
     for (const p of commonPaths) {
@@ -277,9 +277,11 @@ export function activate(context: vscode.ExtensionContext) {
     if (!yapiPath) {
         const message = 'yapi executable not found. Please install yapi or configure the path in settings.';
         outputChannel.appendLine(`ERROR: ${message}`);
-        vscode.window.showErrorMessage(message, 'Open Settings').then(selection => {
+        vscode.window.showErrorMessage(message, 'Open Settings', 'Install yapi').then(selection => {
             if (selection === 'Open Settings') {
                 vscode.commands.executeCommand('workbench.action.openSettings', 'yapi.executablePath');
+            } else if (selection === 'Install yapi') {
+                vscode.env.openExternal(vscode.Uri.parse('https://pond.audio/yapi/install'));
             }
         });
     } else {

@@ -1,0 +1,1 @@
+../../../apps/web/public/install/mac.sh

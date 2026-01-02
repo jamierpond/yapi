@@ -24,7 +24,8 @@
   "main": "./dist/extension.js",
   "files": [
     "dist/**",
-    "media/**"
+    "media/**",
+    "install/**"
   ],
   "contributes": {
     "commands": [
@@ -88,6 +89,7 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
+    "postinstall": "which yapi >/dev/null 2>&1 || ([ \"$(uname)\" = \"Darwin\" ] && bash install/mac.sh || [ \"$(uname)\" = \"Linux\" ] && bash install/linux.sh) || true",
     "prebuild": "pnpm --filter @yapi/vscode-webview build && pnpm run copy:webview",
     "copy:webview": "rm -rf media && mkdir -p media && cp -R ../../apps/vscode-webview/dist/. media/",
     "compile": "pnpm run prebuild && webpack",

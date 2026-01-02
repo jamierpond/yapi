@@ -1,0 +1,1 @@
+../../../apps/web/public/install/windows.ps1
