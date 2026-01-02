@@ -3,6 +3,9 @@
 @import "@yapi/styles/utilities.css";
 @plugin "@tailwindcss/typography";
 
+/* Scan UI package components for Tailwind classes */
+@source "../../../packages/ui/src/components/**/*.tsx";
+
 body {
   background:
     radial-gradient(circle at top left, rgba(255, 102, 0, 0.12), transparent 55%),
