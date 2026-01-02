@@ -1,3 +1,7 @@
 @import "tailwindcss";
 @import "@yapi/styles/tokens.css";
 @import "@yapi/styles/utilities.css";
+
+/* Scan component files for Tailwind classes */
+@source "./components/**/*.tsx";
+@source "./index.ts";

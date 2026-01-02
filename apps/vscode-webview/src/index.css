@@ -1,5 +1,10 @@
-/* Import pre-built UI styles that include all Tailwind utilities */
-@import "@yapi/ui/styles.css";
+@import "tailwindcss";
+@import "@yapi/styles/tokens.css";
+@import "@yapi/styles/utilities.css";
+
+/* Scan UI package components for Tailwind classes */
+@source "../../../packages/ui/src/components/**/*.tsx";
+@source "./App.tsx";
 
 * {
   margin: 0;
