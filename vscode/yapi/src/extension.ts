@@ -1,14 +1,24 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
+import {
+    LanguageClient,
+    LanguageClientOptions,
+    ServerOptions,
+    Executable
+} from 'vscode-languageclient/node';
 
+let client: LanguageClient;
 let panel: vscode.WebviewPanel | undefined;
-let diagnosticCollection: vscode.DiagnosticCollection;
-let validationTimeout: NodeJS.Timeout | undefined;
+let outputChannel: vscode.OutputChannel;
 
 function isYapiFile(fileName: string): boolean {
     return fileName.endsWith('.yapi') ||
            fileName.endsWith('.yapi.yml') ||
-           fileName.endsWith('.yapi.yaml');
+           fileName.endsWith('.yapi.yaml') ||
+           fileName.endsWith('yapi.config.yml') ||
+           fileName.endsWith('yapi.config.yaml');
 }
 
 const EXAMPLES = {
@@ -238,118 +248,6 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
     return panel;
 }
 
-function validateYapiDocument(document: vscode.TextDocument) {
-    if (!isYapiFile(document.fileName)) {
-        return;
-    }
-
-    if (validationTimeout) {
-        clearTimeout(validationTimeout);
-    }
-
-    validationTimeout = setTimeout(() => {
-        const diagnostics: vscode.Diagnostic[] = [];
-        const text = document.getText();
-
-        try {
-            const lines = text.split('\n');
-            let parsed: any = {};
-
-            try {
-                parsed = require('js-yaml').load(text);
-            } catch (e: any) {
-                const errorLine = e.mark?.line || 0;
-                const diag = new vscode.Diagnostic(
-                    new vscode.Range(errorLine, 0, errorLine, lines[errorLine]?.length || 0),
-                    `YAML parse error: ${e.message}`,
-                    vscode.DiagnosticSeverity.Error
-                );
-                diagnostics.push(diag);
-                diagnosticCollection.set(document.uri, diagnostics);
-                return;
-            }
-
-            if (!parsed || typeof parsed !== 'object') {
-                const diag = new vscode.Diagnostic(
-                    new vscode.Range(0, 0, 0, 0),
-                    'Invalid YAML structure',
-                    vscode.DiagnosticSeverity.Error
-                );
-                diagnostics.push(diag);
-            } else {
-                if (!parsed.url) {
-                    const urlLine = lines.findIndex(l => l.trim().startsWith('url:'));
-                    const line = urlLine >= 0 ? urlLine : 0;
-                    const diag = new vscode.Diagnostic(
-                        new vscode.Range(line, 0, line, lines[line]?.length || 0),
-                        'Missing required field: url',
-                        vscode.DiagnosticSeverity.Error
-                    );
-                    diagnostics.push(diag);
-                }
-
-                const hasBody = 'body' in parsed;
-                const hasJson = 'json' in parsed;
-
-                if (hasBody && hasJson) {
-                    const bodyLine = lines.findIndex(l => l.trim().startsWith('body:'));
-                    const jsonLine = lines.findIndex(l => l.trim().startsWith('json:'));
-                    const line = Math.max(bodyLine, jsonLine);
-                    const diag = new vscode.Diagnostic(
-                        new vscode.Range(line, 0, line, lines[line]?.length || 0),
-                        'Cannot specify both "body" and "json" fields',
-                        vscode.DiagnosticSeverity.Error
-                    );
-                    diagnostics.push(diag);
-                }
-
-                if ((hasBody || hasJson) && !parsed.content_type && !parsed.url?.startsWith('grpc')) {
-                    const bodyLine = lines.findIndex(l => l.trim().startsWith('body:') || l.trim().startsWith('json:'));
-                    const line = bodyLine >= 0 ? bodyLine : 0;
-                    const diag = new vscode.Diagnostic(
-                        new vscode.Range(line, 0, line, lines[line]?.length || 0),
-                        'content_type is required when body or json is present',
-                        vscode.DiagnosticSeverity.Warning
-                    );
-                    diagnostics.push(diag);
-                }
-
-                if (parsed.url?.startsWith('grpc://') || parsed.url?.startsWith('grpcs://')) {
-                    if (!parsed.service) {
-                        const serviceLine = lines.findIndex(l => l.trim().startsWith('service:'));
-                        const line = serviceLine >= 0 ? serviceLine : 0;
-                        const diag = new vscode.Diagnostic(
-                            new vscode.Range(line, 0, line, lines[line]?.length || 0),
-                            'service field is required for gRPC requests',
-                            vscode.DiagnosticSeverity.Error
-                        );
-                        diagnostics.push(diag);
-                    }
-                    if (!parsed.rpc) {
-                        const rpcLine = lines.findIndex(l => l.trim().startsWith('rpc:'));
-                        const line = rpcLine >= 0 ? rpcLine : 0;
-                        const diag = new vscode.Diagnostic(
-                            new vscode.Range(line, 0, line, lines[line]?.length || 0),
-                            'rpc field is required for gRPC requests',
-                            vscode.DiagnosticSeverity.Error
-                        );
-                        diagnostics.push(diag);
-                    }
-                }
-            }
-        } catch (error) {
-            const diag = new vscode.Diagnostic(
-                new vscode.Range(0, 0, 0, 0),
-                `Validation error: ${error}`,
-                vscode.DiagnosticSeverity.Error
-            );
-            diagnostics.push(diag);
-        }
-
-        diagnosticCollection.set(document.uri, diagnostics);
-    }, 300);
-}
-
 async function runYapi(context: vscode.ExtensionContext) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -363,13 +261,10 @@ async function runYapi(context: vscode.ExtensionContext) {
         return;
     }
 
-    const diagnostics = diagnosticCollection.get(editor.document.uri);
-    if (diagnostics && diagnostics.length > 0) {
-        const hasErrors = diagnostics.some(d => d.severity === vscode.DiagnosticSeverity.Error);
-        if (hasErrors) {
-            vscode.window.showErrorMessage('Cannot run: file has validation errors');
-            return;
-        }
+    const yapiPath = findYapiExecutable();
+    if (!yapiPath) {
+        vscode.window.showErrorMessage('yapi executable not found');
+        return;
     }
 
     await editor.document.save();
@@ -380,7 +275,7 @@ async function runYapi(context: vscode.ExtensionContext) {
     const startTime = Date.now();
 
     // Use yapi run command with proper environment
-    cp.exec(`yapi run "${filePath}"`, {
+    cp.exec(`"${yapiPath}" run "${filePath}"`, {
         shell: '/bin/bash',
         env: { ...process.env }
     }, (error, stdout, stderr) => {
@@ -435,18 +330,119 @@ async function showExamplePicker() {
     }
 }
 
+function findYapiExecutable(): string | null {
+    // First, try the configured path
+    const config = vscode.workspace.getConfiguration('yapi');
+    const configuredPath = config.get<string>('executablePath', 'yapi');
+
+    if (configuredPath !== 'yapi') {
+        // User specified a custom path
+        if (fs.existsSync(configuredPath)) {
+            outputChannel.appendLine(`Using configured yapi path: ${configuredPath}`);
+            return configuredPath;
+        } else {
+            outputChannel.appendLine(`Configured path not found: ${configuredPath}`);
+        }
+    }
+
+    // Try common locations
+    const homeDir = process.env.HOME || process.env.USERPROFILE;
+    const commonPaths = [
+        path.join(homeDir || '', 'go', 'bin', 'yapi'),
+        '/usr/local/bin/yapi',
+        '/usr/bin/yapi',
+    ];
+
+    for (const p of commonPaths) {
+        if (fs.existsSync(p)) {
+            outputChannel.appendLine(`Found yapi at: ${p}`);
+            return p;
+        }
+    }
+
+    // Try which/where command
+    try {
+        const result = cp.execSync(process.platform === 'win32' ? 'where yapi' : 'which yapi', {
+            encoding: 'utf8',
+            env: { ...process.env }
+        });
+        const yapiPath = result.trim().split('\n')[0];
+        if (yapiPath && fs.existsSync(yapiPath)) {
+            outputChannel.appendLine(`Found yapi via which/where: ${yapiPath}`);
+            return yapiPath;
+        }
+    } catch (error) {
+        outputChannel.appendLine(`Failed to find yapi via which/where: ${error}`);
+    }
+
+    return null;
+}
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('yapi extension is now active');
 
-    diagnosticCollection = vscode.languages.createDiagnosticCollection('yapi');
-    context.subscriptions.push(diagnosticCollection);
+    // Create output channel for debugging
+    outputChannel = vscode.window.createOutputChannel('yapi');
+    context.subscriptions.push(outputChannel);
 
+    // Find yapi executable
+    const yapiPath = findYapiExecutable();
+    if (!yapiPath) {
+        const message = 'yapi executable not found. Please install yapi or configure the path in settings.';
+        outputChannel.appendLine(`ERROR: ${message}`);
+        vscode.window.showErrorMessage(message, 'Open Settings').then(selection => {
+            if (selection === 'Open Settings') {
+                vscode.commands.executeCommand('workbench.action.openSettings', 'yapi.executablePath');
+            }
+        });
+    } else {
+        outputChannel.appendLine(`Starting yapi language server with: ${yapiPath}`);
+
+        // Set up LSP client
+        const serverOptions: Executable = {
+            command: yapiPath,
+            args: ['lsp'],
+            options: {
+                env: { ...process.env }
+            }
+        };
+
+        const clientOptions: LanguageClientOptions = {
+            documentSelector: [
+                { scheme: 'file', pattern: '**/*.yapi' },
+                { scheme: 'file', pattern: '**/*.yapi.yml' },
+                { scheme: 'file', pattern: '**/*.yapi.yaml' },
+                { scheme: 'file', pattern: '**/yapi.config.yml' },
+                { scheme: 'file', pattern: '**/yapi.config.yaml' }
+            ],
+            synchronize: {
+                fileEvents: vscode.workspace.createFileSystemWatcher('**/*.yapi*')
+            },
+            outputChannel: outputChannel
+        };
+
+        client = new LanguageClient(
+            'yapiLanguageServer',
+            'yapi Language Server',
+            serverOptions,
+            clientOptions
+        );
+
+        // Start the LSP client
+        client.start().catch(err => {
+            outputChannel.appendLine(`Failed to start language server: ${err}`);
+            vscode.window.showErrorMessage(`Failed to start yapi language server: ${err.message}`);
+        });
+    }
+
+    // Register commands
     const runCommand = vscode.commands.registerCommand('yapi.runCurrent', () => runYapi(context));
     context.subscriptions.push(runCommand);
 
     const examplesCommand = vscode.commands.registerCommand('yapi.insertExample', showExamplePicker);
     context.subscriptions.push(examplesCommand);
 
+    // Status bar
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBar.text = '$(play) Run';
     statusBar.command = 'yapi.runCurrent';
@@ -467,28 +463,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.window.onDidChangeActiveTextEditor(editor => {
         updateStatusBar();
-        if (editor) {
-            validateYapiDocument(editor.document);
-        }
     }, null, context.subscriptions);
-
-    vscode.workspace.onDidChangeTextDocument(event => {
-        validateYapiDocument(event.document);
-    }, null, context.subscriptions);
-
-    vscode.workspace.onDidOpenTextDocument(doc => {
-        validateYapiDocument(doc);
-    }, null, context.subscriptions);
-
-    if (vscode.window.activeTextEditor) {
-        validateYapiDocument(vscode.window.activeTextEditor.document);
-    }
 
     updateStatusBar();
 }
 
-export function deactivate() {
-    if (validationTimeout) {
-        clearTimeout(validationTimeout);
+export function deactivate(): Thenable<void> | undefined {
+    if (!client) {
+        return undefined;
     }
+    return client.stop();
 }

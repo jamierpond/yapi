@@ -306,7 +306,7 @@ func validateProjectConfig(ctx *glsp.Context, uri protocol.DocumentUri, text str
 			},
 			Severity: ptr(protocol.DiagnosticSeverityError),
 			Source:   ptr("yapi"),
-			Message:  fmt.Sprintf("YAML syntax error: %v", err),
+			Message:  fmt.Sprintf("invalid yapi: %v", err),
 		})
 		ctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 			URI:         uri,

@@ -15,6 +15,9 @@
     "workspaceContains:**/*.yapi",
     "workspaceContains:**/*.yapi.yml",
     "workspaceContains:**/*.yapi.yaml",
+    "workspaceContains:**/yapi.config.yml",
+    "workspaceContains:**/yapi.config.yaml",
+    "onLanguage:yaml",
     "onCommand:yapi.runCurrent",
     "onCommand:yapi.insertExample"
   ],
@@ -64,12 +67,19 @@
     "languages": [
       {
         "id": "yaml",
-        "extensions": [".yapi", ".yapi.yml", ".yapi.yaml"]
+        "extensions": [".yapi", ".yapi.yml", ".yapi.yaml"],
+        "filenames": ["yapi.config.yml", "yapi.config.yaml"]
       }
     ],
     "configuration": {
       "title": "yapi",
-      "properties": {}
+      "properties": {
+        "yapi.executablePath": {
+          "type": "string",
+          "default": "yapi",
+          "description": "Path to the yapi executable. By default, will search for 'yapi' in PATH."
+        }
+      }
     }
   },
   "scripts": {
@@ -98,6 +108,7 @@
     "@types/js-yaml": "^4.0.9"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "vscode-languageclient": "^9.0.1"
   }
 }
