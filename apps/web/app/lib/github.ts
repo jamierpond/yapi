@@ -92,7 +92,9 @@ async function fetchAllReleases(token: string) {
 
 export async function getGitHubStats(): Promise<{ stars: number | null; forks: number | null }> {
   try {
+    const token = process.env.GITHUB_PAT;
     const res = await fetch("https://api.github.com/repos/jamierpond/yapi", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       next: { revalidate: 3600 },
     });
     if (!res.ok) return { stars: null, forks: null };
@@ -196,3 +198,4 @@ export async function getOpenVSXDownloads(): Promise<number | null> {
     return null;
   }
 }
+

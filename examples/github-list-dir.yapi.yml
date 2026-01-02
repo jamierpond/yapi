@@ -1,0 +1,17 @@
+yapi: v1
+# List contents of a GitHub directory
+
+env_files:
+  - ../apps/web/.env.local
+
+url: https://api.github.com/repos/jamierpond/madea.blog/contents/yapi
+method: GET
+
+headers:
+  Authorization: Bearer ${GITHUB_TOKEN}
+  Accept: application/vnd.github.v3+json
+
+expect:
+  status: 200
+
+jq_filter: '[.[] | {name, type, size}]'

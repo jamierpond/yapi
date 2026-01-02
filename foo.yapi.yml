@@ -1,0 +1,12 @@
+yapi: v1
+url: https://api.example.com/v1
+env_files:
+  - .env.local # defines API_KEY
+headers:
+  Content-Type: application/json
+body:
+  key: ${API_KEY}
+
+
+
+

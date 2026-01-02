@@ -18,16 +18,19 @@ async function getStats() {
 
     const release = releasesRes.ok ? await releasesRes.json() : { tag_name: null };
 
+    const cliDownloads = totalDownloads || 0;
+    const extensionInstalls = (vscodeInstalls || 0) + (openVSXDownloads || 0);
+
     return {
-      totalDownloads: totalDownloads || 0,
       latestVersion: release.tag_name || null,
-      vscodeInstalls: vscodeInstalls || 0,
-      openVSXDownloads: openVSXDownloads || 0,
       githubStars: githubStats.stars || 0,
       githubForks: githubStats.forks || 0,
+      cliDownloads,
+      extensionInstalls,
+      totalInstalls: cliDownloads + extensionInstalls,
     };
   } catch {
-    return { totalDownloads: 0, latestVersion: null, vscodeInstalls: 0, openVSXDownloads: 0, githubStars: 0, githubForks: 0 };
+    return { latestVersion: null, githubStars: 0, githubForks: 0, cliDownloads: 0, extensionInstalls: 0, totalInstalls: 0 };
   }
 }
 
@@ -195,11 +198,11 @@ export default async function Landing() {
 
         {/* Vanity Metrics */}
         <div className="w-full px-6 mt-20">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-3xl mx-auto">
             <MetricCard
               href="https://github.com/jamierpond/yapi/stargazers"
               value={stats.githubStars}
-              label="GitHub Stars"
+              label="Stars"
             />
             <MetricCard
               href="https://github.com/jamierpond/yapi/forks"
@@ -208,24 +211,18 @@ export default async function Landing() {
             />
             <MetricCard
               href="https://github.com/jamierpond/yapi/releases"
-              value={stats.totalDownloads}
-              label="CLI Downloads"
+              value={stats.cliDownloads}
+              label="CLI"
             />
             <MetricCard
               href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
-              value={stats.vscodeInstalls}
-              label="VS Code"
+              value={stats.extensionInstalls}
+              label="Extension"
               hoverColor="blue"
             />
-            <MetricCard
-              href="https://open-vsx.org/extension/yapi/yapi-extension"
-              value={stats.openVSXDownloads}
-              label="Open VSX"
-              hoverColor="purple"
-            />
-            <div className="p-4 rounded-xl border border-yapi-border bg-gradient-to-br from-yapi-accent/10 to-purple-500/10 text-center">
+            <div className="p-4 rounded-xl border border-yapi-border bg-gradient-to-br from-yapi-accent/10 to-purple-500/10 text-center col-span-2 sm:col-span-1">
               <div className="text-2xl font-bold bg-gradient-to-r from-yapi-accent to-purple-400 bg-clip-text text-transparent">
-                {(stats.totalDownloads + stats.vscodeInstalls + stats.openVSXDownloads).toLocaleString()}
+                {stats.totalInstalls.toLocaleString()}
               </div>
               <div className="text-[10px] text-yapi-fg-muted mt-1 font-mono uppercase tracking-wide">Total</div>
             </div>

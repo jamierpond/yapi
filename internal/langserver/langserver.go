@@ -446,6 +446,7 @@ var topLevelKeys = []struct {
 	{"read_timeout", "TCP read timeout in seconds"},
 	{"close_after_send", "Close TCP connection after sending (boolean)"},
 	{"delay", "Wait before executing this step (e.g. 5s, 500ms)"},
+	{"env_files", "Paths to .env files to load variables from (array of strings)"},
 }
 
 var methodValues = []valDesc{
