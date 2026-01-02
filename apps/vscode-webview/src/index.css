@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "@yapi/styles/tokens.css";
+@import "@yapi/styles/utilities.css";
 
 * {
   margin: 0;
@@ -22,15 +24,4 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-/* Map yapi design tokens to VS Code theme variables */
-:root {
-  --yapi-bg: var(--vscode-editor-background);
-  --yapi-bg-elevated: var(--vscode-input-background);
-  --yapi-text: var(--vscode-editor-foreground);
-  --yapi-text-muted: var(--vscode-descriptionForeground);
-  --yapi-border: var(--vscode-panel-border);
-  --yapi-border-strong: var(--vscode-focusBorder);
-  --yapi-accent: var(--vscode-focusBorder);
 }

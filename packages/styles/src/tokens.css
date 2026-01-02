@@ -1,0 +1,31 @@
+@theme inline {
+  /* Font families - use JetBrains Mono for everything */
+  --font-sans: var(--font-jetbrains-mono, ui-monospace, monospace);
+  --font-mono: var(--font-jetbrains-mono, ui-monospace, monospace);
+
+  /* Dark Theme - Premium Palette */
+  --color-yapi-bg: #0a0a0a;
+  --color-yapi-bg-elevated: #111111;
+  --color-yapi-bg-subtle: #1a1a1a;
+
+  --color-yapi-fg: #ededed;
+  --color-yapi-fg-muted: #a1a1a1;
+  --color-yapi-fg-subtle: #737373;
+
+  --color-yapi-border: #262626;
+  --color-yapi-border-strong: #404040;
+
+  --color-yapi-accent: #ff6600;
+  --color-yapi-accent-hover: #ff8533;
+  --color-yapi-accent-muted: #cc5200;
+
+  --color-yapi-success: #00e676;
+  --color-yapi-error: #ff5252;
+  --color-yapi-warning: #ffc107;
+
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-glow: 0 0 20px rgb(255 102 0 / 0.15);
+}

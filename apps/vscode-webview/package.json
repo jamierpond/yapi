@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@yapi/styles": "workspace:*",
     "@yapi/ui": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
