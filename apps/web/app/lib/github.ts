@@ -196,3 +196,4 @@ export async function getOpenVSXDownloads(): Promise<number | null> {
     return null;
   }
 }
+
