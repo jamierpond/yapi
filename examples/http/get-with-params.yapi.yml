@@ -4,3 +4,4 @@ url: https://jsonplaceholder.typicode.com/posts
 query:
   userId: 1
   _limit: 3
+

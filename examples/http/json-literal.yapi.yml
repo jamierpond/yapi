@@ -16,3 +16,4 @@ json: |
   }
 
 jq_filter: .json
+

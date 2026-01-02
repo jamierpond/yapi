@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,13 +33,14 @@ type Result struct {
 
 // Options for execution
 type Options struct {
-	URLOverride  string
-	NoColor      bool
-	BinaryOutput bool
-	Insecure     bool
-	EnvOverrides map[string]string // Environment variables from project config
-	ProjectRoot  string            // Path to project root (for validation)
-	ProjectEnv   string            // Selected environment name (for validation)
+	URLOverride    string
+	NoColor        bool
+	BinaryOutput   bool
+	Insecure       bool
+	EnvOverrides   map[string]string // Environment variables from project config
+	ProjectRoot    string            // Path to project root (for validation)
+	ProjectEnv     string            // Selected environment name (for validation)
+	ConfigFilePath string            // Path to the yapi config file (for relative output_file resolution)
 }
 
 // Run executes a yapi request and returns the result.
@@ -79,6 +81,10 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 
 	// Write to output file if specified
 	if outputFile, ok := req.Metadata["output_file"]; ok && outputFile != "" {
+		// Resolve relative paths against the config file directory
+		if !filepath.IsAbs(outputFile) && opts.ConfigFilePath != "" {
+			outputFile = filepath.Join(filepath.Dir(opts.ConfigFilePath), outputFile)
+		}
 		if err := os.WriteFile(outputFile, []byte(body), 0600); err != nil {
 			return nil, fmt.Errorf("failed to write output file '%s': %w", outputFile, err)
 		}

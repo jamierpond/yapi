@@ -58,6 +58,9 @@ func (e *Engine) RunConfig(
 	path string,
 	opts runner.Options,
 ) *RunConfigResult {
+	// Set config file path for relative output_file resolution
+	opts.ConfigFilePath = path
+
 	// Load project config if available for validation
 	var project *config.ProjectConfigV1
 	if opts.ProjectRoot != "" {
