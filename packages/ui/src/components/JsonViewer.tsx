@@ -26,6 +26,7 @@ const Highlighter = SyntaxHighlighter as unknown as ComponentType<{
   wrapLongLines?: boolean;
   customStyle?: Record<string, unknown>;
   lineNumberStyle?: Record<string, unknown>;
+  codeTagProps?: Record<string, unknown>;
   children: string;
 }>;
 
@@ -46,12 +47,20 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           fontSize: "13px",
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           minHeight: "100%",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
         }}
         lineNumberStyle={{
           minWidth: "3em",
           paddingRight: "1em",
-          color: "#6e7681",
+          color: "#4a4a4a",
           userSelect: "none",
+        }}
+        codeTagProps={{
+          style: {
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          },
         }}
       >
         {value}
