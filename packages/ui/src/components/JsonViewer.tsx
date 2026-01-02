@@ -75,16 +75,15 @@ export default function JsonViewer({ value }: JsonViewerProps) {
         language={language}
         style={customTheme}
         showLineNumbers
-        wrapLongLines
+        wrapLongLines={false}
         customStyle={{
           margin: 0,
           padding: "16px",
           background: "var(--color-yapi-bg-editor)",
-          fontSize: "14px",
+          fontSize: "var(--vscode-editor-font-size, 14px)",
           fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
-          minWidth: "100%",
-          overflowWrap: "break-word",
+          whiteSpace: "pre",
         }}
         lineNumberStyle={{
           minWidth: "3em",
