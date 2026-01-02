@@ -45,7 +45,7 @@ export const ExecuteSuccessResponseSchema = z.object({
   timing: z.number(),
 
   /** Response metadata (headers for HTTP/GraphQL, can be empty for gRPC/TCP) */
-  headers: z.record(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
 
   /** The full request URL/endpoint that was executed */
   requestUrl: z.string().optional(),

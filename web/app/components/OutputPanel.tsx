@@ -12,7 +12,13 @@ interface OutputPanelProps {
   isLoading: boolean;
 }
 
-type Tab = "body" | "headers" | "info" | "warnings";
+type Tab = "body" | "headers" | "cookies" | "info" | "warnings";
+
+// Helper function to strip ANSI color codes
+function stripAnsiCodes(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*m/g, '').replace(/\x1b\[/g, '');
+}
 
 export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("body");
@@ -127,17 +133,19 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
           {isSuccessResponse(result) && (
             <div className="relative flex items-center gap-4">
-              <span
-                className={`text-xs font-mono font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm ${
-                  result.statusCode >= 200 && result.statusCode < 300
-                    ? "bg-yapi-success/10 text-yapi-success border border-yapi-success/30"
-                    : result.statusCode >= 400
-                    ? "bg-yapi-error/10 text-yapi-error border border-yapi-error/30"
-                    : "bg-yapi-warning/10 text-yapi-warning border border-yapi-warning/30"
-                }`}
-              >
-                {result.statusCode}
-              </span>
+              {result.statusCode !== undefined && result.statusCode > 0 && (
+                <span
+                  className={`text-xs font-mono font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm ${
+                    result.statusCode >= 200 && result.statusCode < 300
+                      ? "bg-yapi-success/10 text-yapi-success border border-yapi-success/30"
+                      : result.statusCode >= 400
+                      ? "bg-yapi-error/10 text-yapi-error border border-yapi-error/30"
+                      : "bg-yapi-warning/10 text-yapi-warning border border-yapi-warning/30"
+                  }`}
+                >
+                  {result.statusCode}
+                </span>
+              )}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-yapi-bg-elevated/70 border border-yapi-border/60 rounded-lg backdrop-blur-sm">
                 <div className="w-1 h-1 rounded-full bg-yapi-accent animate-pulse"></div>
                 <span className="text-xs text-yapi-fg-muted font-mono font-medium">
@@ -164,19 +172,33 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
                 Body
               </button>
               {result.headers && Object.keys(result.headers).length > 0 && (
-                <button
-                  onClick={() => setActiveTab("headers")}
-                  className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
-                    activeTab === "headers"
-                      ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
-                      : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
-                  }`}
-                >
-                  Headers
-                  <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-yapi-bg-elevated/70 rounded">
-                    {Object.keys(result.headers).length}
-                  </span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setActiveTab("headers")}
+                    className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
+                      activeTab === "headers"
+                        ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
+                        : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
+                    }`}
+                  >
+                    Headers
+                    <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-yapi-bg-elevated/70 rounded">
+                      {Object.keys(result.headers).length}
+                    </span>
+                  </button>
+                  {Object.keys(result.headers).some(key => key.toLowerCase() === 'set-cookie') && (
+                    <button
+                      onClick={() => setActiveTab("cookies")}
+                      className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
+                        activeTab === "cookies"
+                          ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
+                          : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
+                      }`}
+                    >
+                      Cookies
+                    </button>
+                  )}
+                </>
               )}
               <button
                 onClick={() => setActiveTab("info")}
@@ -218,132 +240,159 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
               )}
 
               {activeTab === "headers" && result.headers && (
-                <div className="h-full overflow-auto p-6">
-                  <div className="space-y-2">
-                    {Object.entries(result.headers).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg hover:border-yapi-border/60 transition-colors"
-                      >
-                        <span className="text-xs font-mono font-semibold text-yapi-accent min-w-[140px]">
-                          {key}:
-                        </span>
-                        <span className="text-xs font-mono text-yapi-fg-muted flex-1 break-all">
-                          {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="h-full overflow-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-yapi-bg-elevated/80 backdrop-blur-sm border-b border-yapi-border/50">
+                      <tr>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Name
+                        </th>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(result.headers).map(([key, value], idx) => (
+                        <tr
+                          key={key}
+                          className={`border-b border-yapi-border/20 hover:bg-yapi-bg-elevated/30 transition-colors ${
+                            idx % 2 === 0 ? 'bg-yapi-bg/50' : 'bg-yapi-bg-elevated/10'
+                          }`}
+                        >
+                          <td className="px-6 py-3 text-xs font-mono font-semibold text-yapi-accent">
+                            {key}
+                          </td>
+                          <td className="px-6 py-3 text-xs font-mono text-yapi-fg break-all">
+                            {value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {activeTab === "cookies" && result.headers && (
+                <div className="h-full overflow-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-yapi-bg-elevated/80 backdrop-blur-sm border-b border-yapi-border/50">
+                      <tr>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Name
+                        </th>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Value
+                        </th>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Attributes
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(result.headers)
+                        .filter(([key]) => key.toLowerCase() === 'set-cookie')
+                        .flatMap(([_, value]) => {
+                          // Parse cookie string
+                          const parts = value.split(';').map(p => p.trim());
+                          const [nameValue, ...attributes] = parts;
+                          const [name, cookieValue] = nameValue.split('=');
+                          return [{
+                            name: name.trim(),
+                            value: cookieValue?.trim() || '',
+                            attributes: attributes.join('; ')
+                          }];
+                        })
+                        .map((cookie, idx) => (
+                          <tr
+                            key={`${cookie.name}-${idx}`}
+                            className={`border-b border-yapi-border/20 hover:bg-yapi-bg-elevated/30 transition-colors ${
+                              idx % 2 === 0 ? 'bg-yapi-bg/50' : 'bg-yapi-bg-elevated/10'
+                            }`}
+                          >
+                            <td className="px-6 py-3 text-xs font-mono font-semibold text-yapi-accent">
+                              {cookie.name}
+                            </td>
+                            <td className="px-6 py-3 text-xs font-mono text-yapi-fg break-all">
+                              {cookie.value}
+                            </td>
+                            <td className="px-6 py-3 text-xs font-mono text-yapi-fg-muted">
+                              {cookie.attributes || '-'}
+                            </td>
+                          </tr>
+                        ))
+                      }
+                    </tbody>
+                  </table>
                 </div>
               )}
 
               {activeTab === "info" && (
-                <div className="h-full overflow-auto p-6">
-                  <div className="space-y-4">
-                    {/* Transport type */}
-                    {result.transport && (
-                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          Transport
-                        </span>
-                        <span className="px-2 py-1 text-xs font-mono font-semibold bg-yapi-accent/10 text-yapi-accent border border-yapi-accent/30 rounded">
-                          {result.transport.toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Request URL */}
-                    {result.requestUrl && (
-                      <div className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          URL
-                        </span>
-                        <span className="text-xs font-mono text-yapi-fg break-all flex-1">
-                          {result.requestUrl}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Method */}
-                    {result.method && (
-                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          Method
-                        </span>
-                        <span className="px-2 py-1 text-xs font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded">
-                          {result.method}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Service (gRPC) */}
-                    {result.service && (
-                      <div className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          Service
-                        </span>
-                        <span className="text-xs font-mono text-yapi-fg flex-1">
-                          {result.service}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Status Code */}
-                    {result.statusCode !== undefined && (
-                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          Status
-                        </span>
-                        <span
-                          className={`px-2 py-1 text-xs font-mono font-semibold rounded ${
-                            result.statusCode >= 200 && result.statusCode < 300
-                              ? "bg-yapi-success/10 text-yapi-success border border-yapi-success/30"
-                              : result.statusCode >= 400
-                              ? "bg-yapi-error/10 text-yapi-error border border-yapi-error/30"
-                              : "bg-yapi-warning/10 text-yapi-warning border border-yapi-warning/30"
+                <div className="h-full overflow-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-yapi-bg-elevated/80 backdrop-blur-sm border-b border-yapi-border/50">
+                      <tr>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Property
+                        </th>
+                        <th className="text-left text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider px-6 py-3">
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        result.transport && { key: 'Transport', value: (
+                          <span className="px-2 py-1 text-xs font-mono font-semibold bg-yapi-accent/10 text-yapi-accent border border-yapi-accent/30 rounded">
+                            {result.transport.toUpperCase()}
+                          </span>
+                        )},
+                        result.requestUrl && { key: 'URL', value: result.requestUrl },
+                        result.method && { key: 'Method', value: (
+                          <span className="px-2 py-1 text-xs font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded">
+                            {result.method}
+                          </span>
+                        )},
+                        result.service && { key: 'Service', value: result.service },
+                        result.statusCode !== undefined && { key: 'Status', value: (
+                          <span
+                            className={`px-2 py-1 text-xs font-mono font-semibold rounded ${
+                              result.statusCode >= 200 && result.statusCode < 300
+                                ? "bg-yapi-success/10 text-yapi-success border border-yapi-success/30"
+                                : result.statusCode >= 400
+                                ? "bg-yapi-error/10 text-yapi-error border border-yapi-error/30"
+                                : "bg-yapi-warning/10 text-yapi-warning border border-yapi-warning/30"
+                            }`}
+                          >
+                            {result.statusCode}
+                          </span>
+                        )},
+                        { key: 'Time', value: `${result.timing}ms` },
+                        result.sizeBytes !== undefined && { key: 'Size', value: (
+                          <>
+                            {result.sizeBytes} bytes
+                            {result.sizeLines !== undefined && ` • ${result.sizeLines} lines`}
+                            {result.sizeChars !== undefined && ` • ${result.sizeChars} chars`}
+                          </>
+                        )},
+                        result.contentType && { key: 'Content-Type', value: result.contentType },
+                      ].filter(Boolean).map((item: any, idx) => (
+                        <tr
+                          key={item.key}
+                          className={`border-b border-yapi-border/20 hover:bg-yapi-bg-elevated/30 transition-colors ${
+                            idx % 2 === 0 ? 'bg-yapi-bg/50' : 'bg-yapi-bg-elevated/10'
                           }`}
                         >
-                          {result.statusCode}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Timing */}
-                    <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                      <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                        Time
-                      </span>
-                      <span className="text-xs font-mono text-yapi-fg">
-                        {result.timing}ms
-                      </span>
-                    </div>
-
-                    {/* Size */}
-                    {result.sizeBytes !== undefined && (
-                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          Size
-                        </span>
-                        <span className="text-xs font-mono text-yapi-fg">
-                          {result.sizeBytes} bytes
-                          {result.sizeLines !== undefined && ` • ${result.sizeLines} lines`}
-                          {result.sizeChars !== undefined && ` • ${result.sizeChars} chars`}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Content Type */}
-                    {result.contentType && (
-                      <div className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
-                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
-                          Content-Type
-                        </span>
-                        <span className="text-xs font-mono text-yapi-fg flex-1 break-all">
-                          {result.contentType}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                          <td className="px-6 py-3 text-xs font-semibold text-yapi-fg-muted">
+                            {item.key}
+                          </td>
+                          <td className="px-6 py-3 text-xs font-mono text-yapi-fg break-all">
+                            {item.value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
 
@@ -367,32 +416,45 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-hidden bg-yapi-bg">
-            <div className="h-full w-full px-6 py-4">
-              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yapi-error/10 via-yapi-error/5 to-transparent border border-yapi-error/30 p-6 backdrop-blur-sm animate-error-pulse">
+          <div className="flex-1 overflow-auto bg-yapi-bg p-6">
+            <div className="max-w-3xl mx-auto">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yapi-error/10 via-yapi-error/5 to-transparent border border-yapi-error/30 backdrop-blur-sm">
                 {/* Error glow effect */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-yapi-error/20 rounded-full blur-3xl"></div>
 
-                <div className="relative flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yapi-error/20 border border-yapi-error/30 flex items-center justify-center">
-                    <span className="text-yapi-error text-lg">⚠</span>
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-px flex-1 bg-gradient-to-r from-yapi-error/30 to-transparent"></div>
+                <div className="relative p-6">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yapi-error/20 border border-yapi-error/30 flex items-center justify-center">
+                      <span className="text-yapi-error text-lg">⚠</span>
                     </div>
-                    <h4 className="text-sm font-bold text-yapi-error tracking-wide">
-                      {result.errorType}
-                    </h4>
-                    <p className="text-sm text-yapi-fg leading-relaxed">{result.error}</p>
-                    {!!result.details && (
-                      <div className="mt-4 p-4 bg-yapi-bg/50 border border-yapi-border/50 rounded-lg backdrop-blur-sm">
-                        <pre className="text-xs text-yapi-fg-subtle font-mono overflow-x-auto leading-relaxed">
-                          {JSON.stringify(result.details, null, 2)}
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-yapi-error tracking-wide mb-2">
+                        {result.errorType.replace(/_/g, ' ')}
+                      </h4>
+                      <p className="text-sm text-yapi-fg leading-relaxed">
+                        {stripAnsiCodes(result.error)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!!result.details && (
+                    <div className="border-t border-yapi-error/20 pt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-semibold text-yapi-fg-muted uppercase tracking-wider">
+                          Details
+                        </span>
+                        <div className="h-px flex-1 bg-gradient-to-r from-yapi-border/50 to-transparent"></div>
+                      </div>
+                      <div className="p-4 bg-yapi-bg/50 border border-yapi-border/50 rounded-lg">
+                        <pre className="text-xs text-yapi-fg-subtle font-mono overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                          {typeof result.details === 'string'
+                            ? stripAnsiCodes(result.details)
+                            : JSON.stringify(result.details, null, 2)
+                          }
                         </pre>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -400,15 +462,6 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         )}
       </div>
 
-      <style>{`
-        @keyframes error-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.95; }
-        }
-        .animate-error-pulse {
-          animation: error-pulse 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
