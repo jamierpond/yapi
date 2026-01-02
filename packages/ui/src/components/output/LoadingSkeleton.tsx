@@ -18,7 +18,7 @@ export default function LoadingSkeleton() {
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-yapi-accent animate-pulse shadow-[0_0_12px_rgba(255,102,0,0.6)]" />
-            <span className="text-sm font-semibold text-yapi-fg tracking-wider">YAPI</span>
+            <span className="text-sm font-semibold text-yapi-fg tracking-wider">yapi</span>
           </div>
           <span className="text-xs text-yapi-fg-muted animate-pulse">Executing request...</span>
         </div>
