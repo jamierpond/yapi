@@ -19,5 +19,11 @@ export function getYapiPath(): string {
     return altPath;
   }
 
-  throw new Error(`yapi binary not found. Searched: ${vercelPath}, ${altPath}`);
+  // Monorepo structure: /var/task/apps/web -> /var/task/bin/yapi
+  const monorepoPath = path.join(process.cwd(), "..", "..", "bin", "yapi");
+  if (existsSync(monorepoPath)) {
+    return monorepoPath;
+  }
+
+  throw new Error(`yapi binary not found. Searched: ${vercelPath}, ${altPath}, ${monorepoPath}`);
 }

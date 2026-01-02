@@ -5,8 +5,9 @@ const nextConfig: NextConfig = {
 
   },
   // Include the yapi binary in serverless function deployment
+  // Path relative to apps/web -> monorepo root bin/yapi
   outputFileTracingIncludes: {
-    "/api/**/*": ["../bin/yapi"],
+    "/api/**/*": ["../../bin/yapi"],
   },
 };
 
