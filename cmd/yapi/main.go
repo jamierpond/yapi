@@ -332,8 +332,13 @@ type jsonOutputParams struct {
 
 // printResultAsJSON outputs the result as structured JSON (handles both single and chain results)
 func (app *rootCommand) printResultAsJSON(params jsonOutputParams) error {
+	// Success means we got a response - assertion failures are NOT errors
+	// Only true execution failures (network errors, etc.) should set success to false
+	hasResult := params.result != nil || (params.chainResult != nil && len(params.chainResult.Results) > 0)
+	isAssertionFailure := params.expectRes != nil && params.expectRes.Error != nil
+
 	output := jsonOutput{
-		Success: params.execErr == nil,
+		Success: hasResult && (params.execErr == nil || isAssertionFailure),
 	}
 
 	// Handle chain results
@@ -439,8 +444,8 @@ func (app *rootCommand) printResultAsJSON(params jsonOutputParams) error {
 		}
 	}
 
-	// Add error if execution failed
-	if params.execErr != nil {
+	// Add error if execution failed (but not for assertion failures - those are shown in assertions)
+	if params.execErr != nil && !isAssertionFailure {
 		output.Error = params.execErr.Error()
 	}
 
