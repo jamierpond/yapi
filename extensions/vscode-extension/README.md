@@ -1,10 +1,10 @@
 # yapi for VSCode
 
-YAML API Testing Tool for VSCode - supports HTTP/REST, gRPC, and TCP protocols.
+The API client that lives in your editor. **yapi** is a CLI-first, offline-first, git-friendly API client for HTTP, gRPC, GraphQL, and TCP. This extension provides first-class support for `.yapi.yml` files in VSCode.
 
 ## Features
 
-- **Multi-Protocol Support**: HTTP, gRPC, and TCP requests
+- **Multi-Protocol Support**: HTTP, gRPC, GraphQL, and TCP requests
 - **Real-time Validation**: Inline diagnostics with error highlighting
 - **Live Response Panel**: Split-pane view with syntax-highlighted JSON responses
 - **Quick Examples**: Insert example configurations with one command
@@ -15,8 +15,18 @@ YAML API Testing Tool for VSCode - supports HTTP/REST, gRPC, and TCP protocols.
 ## Requirements
 
 - [yapi CLI](https://github.com/jamierpond/yapi) must be installed and available in your PATH
-- For gRPC: `grpcurl` (optional, for gRPC requests)
-- For TCP: `nc` / `netcat` (usually pre-installed)
+
+Install yapi:
+```bash
+# macOS
+curl -fsSL https://yapi.run/install/mac.sh | bash
+
+# Linux
+curl -fsSL https://yapi.run/install/linux.sh | bash
+
+# Or with Homebrew
+brew tap jamierpond/yapi && brew install --cask yapi
+```
 
 ## Usage
 
@@ -29,6 +39,7 @@ YAML API Testing Tool for VSCode - supports HTTP/REST, gRPC, and TCP protocols.
 
 ```yaml
 # hello.yapi.yml
+yapi: v1
 url: https://httpbin.org/post
 method: POST
 content_type: application/json
@@ -37,6 +48,8 @@ body:
   message: "Hello from yapi"
   timestamp: "2024-01-01"
 ```
+
+> **Note:** The `yapi: v1` version tag is required at the top of all config files.
 
 ## Commands
 
@@ -66,6 +79,7 @@ The extension provides real-time validation for yapi files:
 
 ### HTTP/REST
 ```yaml
+yapi: v1
 url: https://api.example.com
 method: POST
 path: /users
@@ -76,20 +90,38 @@ body:
 
 ### gRPC
 ```yaml
+yapi: v1
 url: grpc://localhost:50051
-service: hello.HelloService
+service: helloworld.Greeter
 rpc: SayHello
-plaintext: true
 body:
-  greeting: "World"
+  name: "yapi User"
 ```
 
 ### TCP
 ```yaml
+yapi: v1
 url: tcp://localhost:9877
 method: tcp
 data: "Hello!\n"
 encoding: text
+```
+
+### GraphQL
+```yaml
+yapi: v1
+url: https://countries.trevorblades.com/graphql
+
+graphql: |
+  query getCountry($code: ID!) {
+    country(code: $code) {
+      name
+      capital
+    }
+  }
+
+variables:
+  code: "BR"
 ```
 
 ## Release Notes
@@ -97,7 +129,7 @@ encoding: text
 ### 0.0.1
 
 Initial release with:
-- Multi-protocol support (HTTP, gRPC, TCP)
+- Multi-protocol support (HTTP, gRPC, GraphQL, TCP)
 - Real-time validation
 - Live response panel
 - Example snippets
