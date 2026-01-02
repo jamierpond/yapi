@@ -136,7 +136,7 @@ function getWebviewContent(result: YapiJsonOutput | null, isLoading: boolean): s
         <table class="headers-table">
             ${Object.entries(result.headers!).map(([key, value]) => `
                 <tr>
-                    <td class="header-name">${escapeHtml(key)}</td>
+                    <td class="header-key">${escapeHtml(key)}</td>
                     <td class="header-value">${escapeHtml(value)}</td>
                 </tr>
             `).join('')}
@@ -359,28 +359,41 @@ function getStyles(): string {
 
         .headers-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0 8px;
         }
 
         .headers-table tr {
-            border-bottom: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
         }
 
         .headers-table td {
             padding: 12px;
+            border: 1px solid var(--vscode-input-border);
             font-size: 12px;
-            font-family: var(--vscode-editor-font-family);
         }
 
-        .header-name {
+        .headers-table tr td:first-child {
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .headers-table tr td:last-child {
+            border-left: none;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .header-key {
             font-weight: 600;
             color: var(--vscode-descriptionForeground);
-            width: 30%;
+            width: 40%;
+            font-family: var(--vscode-editor-font-family);
             vertical-align: top;
         }
 
         .header-value {
             color: var(--vscode-editor-foreground);
+            font-family: var(--vscode-editor-font-family);
             word-break: break-all;
         }
 
