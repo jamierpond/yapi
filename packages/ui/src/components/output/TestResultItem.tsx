@@ -42,9 +42,9 @@ export default function TestResultItem({ assertion, index }: TestResultItemProps
     >
       <StatusIcon passed={assertion.passed} />
       <div className="flex-1 min-w-0">
-        <code className="text-sm font-mono text-yapi-fg break-all">
+        <span className="text-sm font-mono text-yapi-fg break-all">
           {assertion.expression}
-        </code>
+        </span>
 
         {showDetails && (
           <div className="mt-2 p-3 bg-yapi-error/10 rounded-lg border border-yapi-error/20">

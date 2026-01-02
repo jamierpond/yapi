@@ -13,4 +13,5 @@ body:
 expect: 
    assert: 
     body:
-        - .body == "Updated content"
+        - '.body == "Updated content"'
+        
