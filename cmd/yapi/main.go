@@ -539,37 +539,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 	// Check if this is a chain config
 	if runRes.Analysis != nil && len(runRes.Analysis.Chain) > 0 {
-		chainResult, chainErr := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts, runRes.Analysis)
-
-		// Handle JSON output mode for chains
-		if ctx.jsonOutput {
-			return app.printResultAsJSON(jsonOutputParams{chainResult: chainResult, execErr: chainErr})
-		}
-
-		// Print results from all completed steps (even if chain failed)
-		if chainResult != nil {
-			for i, stepResult := range chainResult.Results {
-				fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
-				var expectRes *runner.ExpectationResult
-				if i < len(chainResult.ExpectationResults) {
-					expectRes = chainResult.ExpectationResults[i]
-				}
-				app.printResult(stepResult, expectRes)
-			}
-		}
-
-		if chainErr != nil {
-			if ctx.strict || ctx.returnErrors {
-				return chainErr
-			}
-			fmt.Println(color.Red(chainErr.Error()))
-			return nil
-		}
-
-		fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
-		out, noColor := app.io(ctx.strict)
-		validation.PrintWarnings(runRes.Analysis, out, noColor)
-		return nil
+		return app.executeChain(ctx, runRes, opts)
 	}
 
 	if runRes.Analysis == nil || runRes.Analysis.Request == nil {
@@ -611,14 +581,44 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	return nil
 }
 
+// executeChain handles chain config execution and output.
+func (app *rootCommand) executeChain(ctx runContext, runRes *core.RunConfigResult, opts runner.Options) error {
+	chainResult, chainErr := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts, runRes.Analysis)
+
+	// Handle JSON output mode for chains
+	if ctx.jsonOutput {
+		return app.printResultAsJSON(jsonOutputParams{chainResult: chainResult, execErr: chainErr})
+	}
+
+	// Print results from all completed steps (even if chain failed)
+	if chainResult != nil {
+		for i, stepResult := range chainResult.Results {
+			fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
+			var expectRes *runner.ExpectationResult
+			if i < len(chainResult.ExpectationResults) {
+				expectRes = chainResult.ExpectationResults[i]
+			}
+			app.printResult(stepResult, expectRes)
+		}
+	}
+
+	if chainErr != nil {
+		if ctx.strict || ctx.returnErrors {
+			return chainErr
+		}
+		fmt.Println(color.Red(chainErr.Error()))
+		return nil
+	}
+
+	fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
+	out, noColor := app.io(ctx.strict)
+	validation.PrintWarnings(runRes.Analysis, out, noColor)
+	return nil
+}
+
 // runConfigPathE runs a config file in strict mode (returns error)
 func (app *rootCommand) runConfigPathE(path string) error {
 	return app.executeRunE(runContext{path: path, strict: true})
-}
-
-// runConfigPathWithEnvE runs a config file with a specific environment in strict mode
-func (app *rootCommand) runConfigPathWithEnvE(path string, envName string) error {
-	return app.executeRunE(runContext{path: path, strict: true, envName: envName})
 }
 
 // runConfigPathWithEnvAndJSONE runs a config file with a specific environment and optional JSON output in strict mode
