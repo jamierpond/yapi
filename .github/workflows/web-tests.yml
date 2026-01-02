@@ -45,16 +45,6 @@ jobs:
       - name: Run unit tests
         run: pnpm test
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-
-      - name: Build & Install Yapi CLI
-        run: |
-          make build
-          sudo cp ./bin/yapi /usr/local/bin/yapi
-          yapi version
-
       - name: Run yapi integration tests
         uses: ./action  # jamierpond/yapi/action@main
         with:
@@ -62,3 +52,4 @@ jobs:
           start: pnpm --filter web start --port 3000
           wait-on: http://localhost:3000/healthz
           command: yapi test ./apps/web/yapi -a -p 16
+
