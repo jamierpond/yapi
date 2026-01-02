@@ -35,7 +35,6 @@ export default function JsonViewer({ value }: JsonViewerProps) {
 
   return (
     <div className="h-full w-full overflow-auto">
-      <style>{`.linenumber { color: #858585 !important; }`}</style>
       <Highlighter
         language={language}
         style={vscDarkPlus}
