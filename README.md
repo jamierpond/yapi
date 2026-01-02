@@ -486,3 +486,6 @@ Found a bug? Want to add WebSocket support? PRs are welcome\!
 -----
 
 *Made with ☕ and Go.*
+
+
+Hi Denis! jamiepond259@gmail.com
