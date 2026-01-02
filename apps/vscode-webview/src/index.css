@@ -19,6 +19,11 @@
   font-display: swap;
 }
 
+/* Define the CSS variable that tokens.css references */
+:root {
+  --font-jetbrains-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 /* Scan UI package components for Tailwind classes */
 @source "../../../packages/ui/src/components/**/*.tsx";
 @source "./App.tsx";
