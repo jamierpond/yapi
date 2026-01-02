@@ -41,3 +41,4 @@ vscode/yapi/dist
 apps/vscode-webview/dist
 extensions/vscode-extension/dist
 web/.next/dev
+packages/ui/dist

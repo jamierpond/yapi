@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as monaco from "monaco-editor";
 
 // Configure Monaco workers for Vite
@@ -26,6 +26,7 @@ interface JsonViewerProps {
 export default function JsonViewer({ value }: JsonViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -34,59 +35,82 @@ export default function JsonViewer({ value }: JsonViewerProps) {
     // If React re-runs the effect, do not re-create the editor
     if (editorRef.current) return;
 
-    // Detect content type
-    let language = "plaintext";
-    try {
-      JSON.parse(value);
-      language = "json";
-    } catch {
-      // Keep as plaintext for non-JSON
-    }
+    // Delay initialization to let container settle
+    const initTimeout = setTimeout(() => {
+      // Detect content type
+      let language = "plaintext";
+      try {
+        JSON.parse(value);
+        language = "json";
+      } catch {
+        // Keep as plaintext for non-JSON
+      }
 
-    // Create a model with detected language
-    const model = monaco.editor.createModel(value, language);
+      // Create a model with detected language
+      const model = monaco.editor.createModel(value, language);
 
-    // Create the editor instance
-    editorRef.current = monaco.editor.create(container, {
-      model,
-      automaticLayout: true,
-      minimap: { enabled: false },
-      theme: "vs-dark",
-      fontSize: 13,
-      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-      lineNumbers: "on",
-      scrollBeyondLastLine: false,
-      wordWrap: "on",
-      padding: { top: 16, bottom: 16 },
-      renderLineHighlight: "none",
-      cursorBlinking: "solid",
-      readOnly: true,
-      domReadOnly: true,
-      contextmenu: false,
-      scrollbar: {
-        vertical: "visible",
-        horizontal: "visible",
-      },
-      // Disable all language features that require workers
-      quickSuggestions: false,
-      parameterHints: { enabled: false },
-      suggestOnTriggerCharacters: false,
-      acceptSuggestionOnEnter: "off",
-      tabCompletion: "off",
-      wordBasedSuggestions: "off",
+      // Create the editor instance - disable automaticLayout, we'll handle it manually
+      editorRef.current = monaco.editor.create(container, {
+        model,
+        automaticLayout: false,
+        minimap: { enabled: false },
+        theme: "vs-dark",
+        fontSize: 13,
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        lineNumbers: "on",
+        scrollBeyondLastLine: false,
+        wordWrap: "on",
+        padding: { top: 16, bottom: 16 },
+        renderLineHighlight: "none",
+        cursorBlinking: "solid",
+        readOnly: true,
+        domReadOnly: true,
+        contextmenu: false,
+        scrollbar: {
+          vertical: "visible",
+          horizontal: "visible",
+          useShadows: false,
+        },
+        overviewRulerLanes: 0,
+        hideCursorInOverviewRuler: true,
+        overviewRulerBorder: false,
+        // Disable all language features that require workers
+        quickSuggestions: false,
+        parameterHints: { enabled: false },
+        suggestOnTriggerCharacters: false,
+        acceptSuggestionOnEnter: "off",
+        tabCompletion: "off",
+        wordBasedSuggestions: "off",
+      });
+
+      // Initial layout
+      editorRef.current.layout();
+      setIsReady(true);
+    }, 50);
+
+    // Manual resize handling with ResizeObserver
+    const resizeObserver = new ResizeObserver(() => {
+      if (editorRef.current) {
+        // Use requestAnimationFrame to debounce and sync with rendering
+        requestAnimationFrame(() => {
+          editorRef.current?.layout();
+        });
+      }
     });
+    resizeObserver.observe(container);
 
     // Cleanup on unmount
     return () => {
+      clearTimeout(initTimeout);
+      resizeObserver.disconnect();
       editorRef.current?.dispose();
       editorRef.current = null;
-      model.dispose();
     };
   }, []);
 
   // Update editor content and language when value prop changes
   useEffect(() => {
-    if (editorRef.current) {
+    if (editorRef.current && isReady) {
       const currentValue = editorRef.current.getValue();
       if (currentValue !== value) {
         // Detect new language
@@ -107,7 +131,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
         editorRef.current.setValue(value);
       }
     }
-  }, [value]);
+  }, [value, isReady]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }
