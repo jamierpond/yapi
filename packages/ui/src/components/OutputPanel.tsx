@@ -12,6 +12,7 @@ import {
   KeyValueTable,
   ErrorDisplay,
   WarningsDisplay,
+  TestResultsTab,
   type KeyValueRow,
 } from "./output";
 
@@ -20,7 +21,7 @@ interface OutputPanelProps {
   isLoading: boolean;
 }
 
-type Tab = "body" | "headers" | "cookies" | "info" | "warnings";
+type Tab = "body" | "headers" | "cookies" | "info" | "warnings" | "tests";
 
 export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("body");
@@ -81,6 +82,8 @@ function SuccessContent({ result, activeTab, setActiveTab }: SuccessContentProps
     (key) => key.toLowerCase() === "set-cookie"
   );
   const hasWarnings = result.warnings && result.warnings.length > 0;
+  const hasTests = result.assertions && result.assertions.total > 0;
+  const testsFailed = hasTests && result.assertions!.passed < result.assertions!.total;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-yapi-bg">
@@ -91,6 +94,15 @@ function SuccessContent({ result, activeTab, setActiveTab }: SuccessContentProps
           isActive={activeTab === "body"}
           onClick={() => setActiveTab("body")}
         />
+        {hasTests && (
+          <TabButton
+            label="Tests"
+            isActive={activeTab === "tests"}
+            onClick={() => setActiveTab("tests")}
+            count={result.assertions!.total}
+            countVariant={testsFailed ? "warning" : "default"}
+          />
+        )}
         {hasHeaders && (
           <>
             <TabButton
@@ -134,6 +146,10 @@ function SuccessContent({ result, activeTab, setActiveTab }: SuccessContentProps
                 : JSON.stringify(result.responseBody, null, 2)
             }
           />
+        )}
+
+        {activeTab === "tests" && result.assertions && (
+          <TestResultsTab assertions={result.assertions} />
         )}
 
         {activeTab === "headers" && result.headers && (

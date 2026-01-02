@@ -5,3 +5,6 @@ export { default as TabButton } from "./TabButton";
 export { default as KeyValueTable, type KeyValueRow } from "./KeyValueTable";
 export { default as ErrorDisplay } from "./ErrorDisplay";
 export { default as WarningsDisplay } from "./WarningsDisplay";
+export { default as TestResultItem } from "./TestResultItem";
+export { default as TestSummaryBanner } from "./TestSummaryBanner";
+export { default as TestResultsTab } from "./TestResultsTab";

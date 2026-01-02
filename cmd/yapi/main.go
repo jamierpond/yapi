@@ -286,6 +286,17 @@ type runContext struct {
 	jsonOutput   bool   // If true, output structured JSON instead of formatted output
 }
 
+// jsonAssertionResult represents a single assertion result in JSON output
+type jsonAssertionResult struct {
+	Expression    string `json:"expression"`
+	Passed        bool   `json:"passed"`
+	ActualValue   string `json:"actual,omitempty"`
+	ExpectedValue string `json:"expected,omitempty"`
+	LeftSide      string `json:"leftSide,omitempty"`
+	Operator      string `json:"operator,omitempty"`
+	Error         string `json:"error,omitempty"`
+}
+
 // jsonOutput represents the structured JSON output for --json flag
 type jsonOutput struct {
 	Success     bool              `json:"success"`
@@ -304,8 +315,9 @@ type jsonOutput struct {
 	Warnings    []string          `json:"warnings,omitempty"`
 	Error       string            `json:"error,omitempty"`
 	Assertions  *struct {
-		Total  int `json:"total"`
-		Passed int `json:"passed"`
+		Total   int                   `json:"total"`
+		Passed  int                   `json:"passed"`
+		Results []jsonAssertionResult `json:"results,omitempty"`
 	} `json:"assertions,omitempty"`
 }
 
@@ -399,12 +411,31 @@ func (app *rootCommand) printResultAsJSON(params jsonOutputParams) error {
 
 	// Add assertions if present
 	if params.expectRes != nil {
+		// Convert assertion results to JSON format
+		var results []jsonAssertionResult
+		for _, ar := range params.expectRes.AssertionResults {
+			result := jsonAssertionResult{
+				Expression:    ar.Expression,
+				Passed:        ar.Passed,
+				ActualValue:   ar.ActualValue,
+				ExpectedValue: ar.ExpectedValue,
+				LeftSide:      ar.LeftSide,
+				Operator:      ar.Operator,
+			}
+			if ar.Error != nil {
+				result.Error = ar.Error.Error()
+			}
+			results = append(results, result)
+		}
+
 		output.Assertions = &struct {
-			Total  int `json:"total"`
-			Passed int `json:"passed"`
+			Total   int                   `json:"total"`
+			Passed  int                   `json:"passed"`
+			Results []jsonAssertionResult `json:"results,omitempty"`
 		}{
-			Total:  params.expectRes.AssertionsTotal,
-			Passed: params.expectRes.AssertionsPassed,
+			Total:   params.expectRes.AssertionsTotal,
+			Passed:  params.expectRes.AssertionsPassed,
+			Results: results,
 		}
 	}
 

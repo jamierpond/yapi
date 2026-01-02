@@ -30,6 +30,33 @@ export const ErrorType = z.enum([
 export type ErrorType = z.infer<typeof ErrorType>;
 
 /**
+ * Schema for individual assertion result.
+ * Mirrors jsonAssertionResult struct in cmd/yapi/main.go.
+ */
+export const AssertionResultSchema = z.object({
+  expression: z.string(),
+  passed: z.boolean(),
+  actual: z.string().optional(),
+  expected: z.string().optional(),
+  leftSide: z.string().optional(),
+  operator: z.string().optional(),
+  error: z.string().optional(),
+});
+
+export type AssertionResult = z.infer<typeof AssertionResultSchema>;
+
+/**
+ * Schema for assertion summary with results.
+ */
+export const AssertionsSchema = z.object({
+  total: z.number(),
+  passed: z.number(),
+  results: z.array(AssertionResultSchema).optional(),
+});
+
+export type Assertions = z.infer<typeof AssertionsSchema>;
+
+/**
  * Schema for CLI JSON output.
  * Mirrors the jsonOutput struct in cmd/yapi/main.go.
  */
@@ -49,6 +76,7 @@ export const YapiResultSchema = z.object({
   timing: z.number(),
   warnings: z.array(z.string()).optional(),
   error: z.string().optional(),
+  assertions: AssertionsSchema.optional(),
 });
 
 export type YapiResult = z.infer<typeof YapiResultSchema>;
@@ -71,6 +99,7 @@ export interface YapiUISuccess {
   sizeLines?: number;
   sizeChars?: number;
   warnings?: string[];
+  assertions?: Assertions;
 }
 
 /**
@@ -151,5 +180,6 @@ export function transformResultForUI(result: YapiResult): YapiUIResult {
     sizeLines: result.sizeLines,
     sizeChars: result.sizeChars,
     warnings: result.warnings,
+    assertions: result.assertions,
   };
 }
