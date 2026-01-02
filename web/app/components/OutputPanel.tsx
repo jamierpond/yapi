@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import type { ExecuteResponse } from "../types/api-contract";
 import { isSuccessResponse } from "../types/api-contract";
@@ -11,7 +12,10 @@ interface OutputPanelProps {
   isLoading: boolean;
 }
 
+type Tab = "body" | "headers" | "info" | "warnings";
+
 export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
+  const [activeTab, setActiveTab] = useState<Tab>("body");
 
   if (isLoading) {
     return (
@@ -146,8 +150,221 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
         {/* Content */}
         {isSuccessResponse(result) ? (
-          <div className="flex-1 overflow-hidden bg-yapi-bg">
-            <JsonViewer value={JSON.stringify(result.responseBody, null, 2)} />
+          <div className="flex-1 flex flex-col overflow-hidden bg-yapi-bg">
+            {/* Tabs */}
+            <div className="flex items-center gap-1 px-4 pt-2 border-b border-yapi-border/30 bg-yapi-bg-elevated/30">
+              <button
+                onClick={() => setActiveTab("body")}
+                className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
+                  activeTab === "body"
+                    ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
+                    : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
+                }`}
+              >
+                Body
+              </button>
+              {result.headers && Object.keys(result.headers).length > 0 && (
+                <button
+                  onClick={() => setActiveTab("headers")}
+                  className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
+                    activeTab === "headers"
+                      ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
+                      : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
+                  }`}
+                >
+                  Headers
+                  <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-yapi-bg-elevated/70 rounded">
+                    {Object.keys(result.headers).length}
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab("info")}
+                className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
+                  activeTab === "info"
+                    ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
+                    : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
+                }`}
+              >
+                Info
+              </button>
+              {result.warnings && result.warnings.length > 0 && (
+                <button
+                  onClick={() => setActiveTab("warnings")}
+                  className={`px-4 py-2 text-xs font-medium rounded-t-lg transition-all ${
+                    activeTab === "warnings"
+                      ? "bg-yapi-bg text-yapi-accent border-b-2 border-yapi-accent"
+                      : "text-yapi-fg-muted hover:text-yapi-fg hover:bg-yapi-bg-elevated/50"
+                  }`}
+                >
+                  Warnings
+                  <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-yapi-warning/20 text-yapi-warning rounded">
+                    {result.warnings.length}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-hidden">
+              {activeTab === "body" && (
+                <JsonViewer
+                  value={
+                    typeof result.responseBody === 'string'
+                      ? result.responseBody
+                      : JSON.stringify(result.responseBody, null, 2)
+                  }
+                />
+              )}
+
+              {activeTab === "headers" && result.headers && (
+                <div className="h-full overflow-auto p-6">
+                  <div className="space-y-2">
+                    {Object.entries(result.headers).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg hover:border-yapi-border/60 transition-colors"
+                      >
+                        <span className="text-xs font-mono font-semibold text-yapi-accent min-w-[140px]">
+                          {key}:
+                        </span>
+                        <span className="text-xs font-mono text-yapi-fg-muted flex-1 break-all">
+                          {value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "info" && (
+                <div className="h-full overflow-auto p-6">
+                  <div className="space-y-4">
+                    {/* Transport type */}
+                    {result.transport && (
+                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          Transport
+                        </span>
+                        <span className="px-2 py-1 text-xs font-mono font-semibold bg-yapi-accent/10 text-yapi-accent border border-yapi-accent/30 rounded">
+                          {result.transport.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Request URL */}
+                    {result.requestUrl && (
+                      <div className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          URL
+                        </span>
+                        <span className="text-xs font-mono text-yapi-fg break-all flex-1">
+                          {result.requestUrl}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Method */}
+                    {result.method && (
+                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          Method
+                        </span>
+                        <span className="px-2 py-1 text-xs font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded">
+                          {result.method}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Service (gRPC) */}
+                    {result.service && (
+                      <div className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          Service
+                        </span>
+                        <span className="text-xs font-mono text-yapi-fg flex-1">
+                          {result.service}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Status Code */}
+                    {result.statusCode !== undefined && (
+                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          Status
+                        </span>
+                        <span
+                          className={`px-2 py-1 text-xs font-mono font-semibold rounded ${
+                            result.statusCode >= 200 && result.statusCode < 300
+                              ? "bg-yapi-success/10 text-yapi-success border border-yapi-success/30"
+                              : result.statusCode >= 400
+                              ? "bg-yapi-error/10 text-yapi-error border border-yapi-error/30"
+                              : "bg-yapi-warning/10 text-yapi-warning border border-yapi-warning/30"
+                          }`}
+                        >
+                          {result.statusCode}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Timing */}
+                    <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                      <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                        Time
+                      </span>
+                      <span className="text-xs font-mono text-yapi-fg">
+                        {result.timing}ms
+                      </span>
+                    </div>
+
+                    {/* Size */}
+                    {result.sizeBytes !== undefined && (
+                      <div className="flex items-center gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          Size
+                        </span>
+                        <span className="text-xs font-mono text-yapi-fg">
+                          {result.sizeBytes} bytes
+                          {result.sizeLines !== undefined && ` • ${result.sizeLines} lines`}
+                          {result.sizeChars !== undefined && ` • ${result.sizeChars} chars`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Content Type */}
+                    {result.contentType && (
+                      <div className="flex items-start gap-4 p-3 bg-yapi-bg-elevated/50 border border-yapi-border/30 rounded-lg">
+                        <span className="text-xs font-semibold text-yapi-fg-muted min-w-[120px]">
+                          Content-Type
+                        </span>
+                        <span className="text-xs font-mono text-yapi-fg flex-1 break-all">
+                          {result.contentType}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "warnings" && result.warnings && (
+                <div className="h-full overflow-auto p-6">
+                  <div className="space-y-3">
+                    {result.warnings.map((warning, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-4 bg-yapi-warning/5 border border-yapi-warning/20 rounded-lg"
+                      >
+                        <span className="text-yapi-warning text-sm flex-shrink-0 mt-0.5">⚠</span>
+                        <p className="text-sm text-yapi-fg-muted leading-relaxed flex-1">
+                          {warning}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex-1 overflow-hidden bg-yapi-bg">

@@ -148,53 +148,59 @@ export async function POST(request: NextRequest) {
     console.log("Executing yapi with file:", tempFile);
     console.log("YAML content:", yaml);
 
-    // Execute yapi command with timing
+    // Execute yapi command with --json flag for structured output
     const startTime = Date.now();
-    const { stdout, stderr } = await execAsync(`${getYapiPath()} run "${tempFile}"`, {
+    const { stdout, stderr } = await execAsync(`${getYapiPath()} run --json "${tempFile}"`, {
       timeout: 30000, // 30 second timeout
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer
     });
     const timing = Date.now() - startTime;
 
-    // Parse yapi output
-    let responseBody: unknown;
-    let statusCode = 200;
-
+    // Parse JSON output from CLI
+    let cliOutput: any;
     try {
-      // Try to parse as JSON
-      responseBody = JSON.parse(stdout);
-    } catch {
-      // If not single JSON, try parsing as newline-delimited JSON (chain output)
-      const lines = stdout.trim().split('\n');
-      const jsonObjects: unknown[] = [];
-      let currentJson = '';
-
-      for (const line of lines) {
-        currentJson += line;
-        try {
-          jsonObjects.push(JSON.parse(currentJson));
-          currentJson = '';
-        } catch {
-          // Continue accumulating lines for multi-line JSON
-          currentJson += '\n';
-        }
-      }
-
-      if (jsonObjects.length > 0 && currentJson.trim() === '') {
-        // Successfully parsed as array of JSON objects
-        responseBody = jsonObjects.length === 1 ? jsonObjects[0] : jsonObjects;
-      } else {
-        // Return as raw text
-        responseBody = stdout;
-      }
+      cliOutput = JSON.parse(stdout);
+    } catch (e) {
+      // Fallback: if JSON parsing fails, treat as raw output
+      const response = ExecuteSuccessResponseSchema.parse({
+        success: true,
+        responseBody: stdout,
+        timing,
+      });
+      return NextResponse.json(response);
     }
 
-    // Build success response
+    // The body from CLI is a string - try to parse it as JSON if possible
+    // If it's already valid JSON, parse it so the frontend can display it nicely
+    // If it's not JSON, keep it as a string
+    let responseBody: unknown;
+    if (typeof cliOutput.body === 'string' && cliOutput.body.trim().length > 0) {
+      try {
+        responseBody = JSON.parse(cliOutput.body);
+      } catch {
+        // Not JSON, keep as string
+        responseBody = cliOutput.body;
+      }
+    } else {
+      responseBody = cliOutput.body;
+    }
+
+    // Build comprehensive success response from CLI output
     const response = ExecuteSuccessResponseSchema.parse({
-      success: true,
-      responseBody,
-      statusCode,
-      timing,
+      success: cliOutput.success !== false,
+      responseBody: responseBody,
+      transport: cliOutput.transport,
+      statusCode: cliOutput.statusCode,
+      timing: cliOutput.timing || timing,
+      headers: cliOutput.headers,
+      requestUrl: cliOutput.requestUrl,
+      method: cliOutput.method,
+      service: cliOutput.service,
+      contentType: cliOutput.contentType,
+      sizeBytes: cliOutput.sizeBytes,
+      sizeLines: cliOutput.sizeLines,
+      sizeChars: cliOutput.sizeChars,
+      warnings: cliOutput.warnings,
     });
 
     return NextResponse.json(response);

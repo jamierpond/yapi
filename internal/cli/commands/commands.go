@@ -72,6 +72,7 @@ var cmdManifest = []CommandSpec{
 		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
+			{Name: "json", Type: "bool", Default: false, Usage: "Output result as JSON with full metadata"},
 		},
 	},
 	{

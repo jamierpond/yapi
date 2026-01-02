@@ -195,7 +195,8 @@ func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
 
 	// Get --env flag if specified
 	envName, _ := cmd.Flags().GetString("env")
-	return app.runConfigPathWithEnvE(path, envName)
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+	return app.runConfigPathWithEnvAndJSONE(path, envName, jsonOutput)
 }
 
 func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
@@ -281,6 +282,96 @@ type runContext struct {
 	strict       bool   // If true, return error on failures; if false, print and return nil
 	returnErrors bool   // If true, return errors even when strict is false (for stress tests)
 	envName      string // Target environment from yapi.config.yml
+	jsonOutput   bool   // If true, output structured JSON instead of formatted output
+}
+
+// jsonOutput represents the structured JSON output for --json flag
+type jsonOutput struct {
+	Success     bool              `json:"success"`
+	Body        string            `json:"body"`
+	Transport   string            `json:"transport,omitempty"`
+	StatusCode  int               `json:"statusCode,omitempty"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	RequestURL  string            `json:"requestUrl,omitempty"`
+	Method      string            `json:"method,omitempty"`
+	Service     string            `json:"service,omitempty"`
+	ContentType string            `json:"contentType,omitempty"`
+	SizeBytes   int               `json:"sizeBytes,omitempty"`
+	SizeLines   int               `json:"sizeLines,omitempty"`
+	SizeChars   int               `json:"sizeChars,omitempty"`
+	Timing      int64             `json:"timing"` // milliseconds
+	Warnings    []string          `json:"warnings,omitempty"`
+	Error       string            `json:"error,omitempty"`
+	Assertions  *struct {
+		Total  int `json:"total"`
+		Passed int `json:"passed"`
+	} `json:"assertions,omitempty"`
+}
+
+// printResultAsJSON outputs the result as structured JSON
+func (app *rootCommand) printResultAsJSON(result *runner.Result, expectRes *runner.ExpectationResult, analysis *validation.Analysis, execErr error) error {
+	output := jsonOutput{
+		Success: execErr == nil,
+		Timing:  result.Duration.Milliseconds(),
+	}
+
+	// Determine transport type from config
+	if analysis != nil && analysis.Base != nil {
+		cfg := analysis.Base
+		if cfg.Graphql != "" {
+			output.Transport = "graphql"
+		} else if cfg.Service != "" || cfg.RPC != "" {
+			output.Transport = "grpc"
+			output.Service = cfg.Service
+		} else if cfg.Data != "" {
+			output.Transport = "tcp"
+		} else {
+			output.Transport = "http"
+		}
+	}
+
+	// Add result data
+	if result != nil {
+		output.Body = result.Body
+		output.StatusCode = result.StatusCode
+		output.Headers = result.Headers
+		output.RequestURL = result.RequestURL
+		output.ContentType = result.ContentType
+		output.SizeBytes = result.BodyBytes
+		output.SizeLines = result.BodyLines
+		output.SizeChars = result.BodyChars
+		output.Warnings = result.Warnings
+
+		// Add method from analysis request
+		if analysis != nil && analysis.Request != nil {
+			output.Method = analysis.Request.Method
+		}
+	}
+
+	// Add assertions if present
+	if expectRes != nil {
+		output.Assertions = &struct {
+			Total  int `json:"total"`
+			Passed int `json:"passed"`
+		}{
+			Total:  expectRes.AssertionsTotal,
+			Passed: expectRes.AssertionsPassed,
+		}
+	}
+
+	// Add error if execution failed
+	if execErr != nil {
+		output.Error = execErr.Error()
+	}
+
+	// Marshal and print JSON
+	jsonBytes, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	fmt.Println(string(jsonBytes))
+	return execErr
 }
 
 // printResult outputs a single result with optional expectation.
@@ -397,6 +488,11 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		return nil
 	}
 
+	// Handle JSON output mode
+	if ctx.jsonOutput {
+		return app.printResultAsJSON(runRes.Result, runRes.ExpectRes, runRes.Analysis, runRes.Error)
+	}
+
 	app.printResult(runRes.Result, runRes.ExpectRes)
 
 	if runRes.Error != nil {
@@ -420,6 +516,11 @@ func (app *rootCommand) runConfigPathE(path string) error {
 // runConfigPathWithEnvE runs a config file with a specific environment in strict mode
 func (app *rootCommand) runConfigPathWithEnvE(path string, envName string) error {
 	return app.executeRunE(runContext{path: path, strict: true, envName: envName})
+}
+
+// runConfigPathWithEnvAndJSONE runs a config file with a specific environment and optional JSON output in strict mode
+func (app *rootCommand) runConfigPathWithEnvAndJSONE(path string, envName string, jsonOutput bool) error {
+	return app.executeRunE(runContext{path: path, strict: true, envName: envName, jsonOutput: jsonOutput})
 }
 
 // projectEnvResult holds the result of loading a project and optional environment

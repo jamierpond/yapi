@@ -32,14 +32,44 @@ export const ExecuteSuccessResponseSchema = z.object({
   /** Whether the execution was successful */
   success: z.literal(true),
 
-  /** The HTTP response body (parsed JSON or raw string) */
+  /** The response body (parsed JSON or raw string) */
   responseBody: z.unknown(),
 
-  /** HTTP status code */
-  statusCode: z.number(),
+  /** Transport type used (http, grpc, tcp, graphql) */
+  transport: z.enum(["http", "grpc", "tcp", "graphql"]).optional(),
 
-  /** Request timing in milliseconds (measured server-side) */
+  /** Status code (HTTP only, 0 or omitted for gRPC/TCP) */
+  statusCode: z.number().optional(),
+
+  /** Request timing in milliseconds */
   timing: z.number(),
+
+  /** Response metadata (headers for HTTP/GraphQL, can be empty for gRPC/TCP) */
+  headers: z.record(z.string()).optional(),
+
+  /** The full request URL/endpoint that was executed */
+  requestUrl: z.string().optional(),
+
+  /** Method/RPC name (GET/POST for HTTP, RPC method for gRPC, "tcp" for TCP) */
+  method: z.string().optional(),
+
+  /** Service name (gRPC only) */
+  service: z.string().optional(),
+
+  /** Content-Type of the response */
+  contentType: z.string().optional(),
+
+  /** Response size in bytes */
+  sizeBytes: z.number().optional(),
+
+  /** Number of lines in response body */
+  sizeLines: z.number().optional(),
+
+  /** Number of characters in response body */
+  sizeChars: z.number().optional(),
+
+  /** Warnings generated during execution */
+  warnings: z.array(z.string()).optional(),
 
   /** Optional: The parsed YAML config (for debugging) */
   parsedConfig: z.unknown().optional(),

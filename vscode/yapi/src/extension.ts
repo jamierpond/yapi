@@ -69,21 +69,90 @@ close_after_send: true
     }
 };
 
-function getWebviewContent(body: string, stderr: string, isLoading: boolean, executionTime?: number): string {
-    const stderrSection = stderr ? `
-        <div class="info-section">
-            <div class="info-header">Info</div>
-            <pre class="info-content">${escapeHtml(stderr)}</pre>
+interface YapiJsonOutput {
+    success: boolean;
+    body: string;
+    transport?: string;
+    statusCode?: number;
+    headers?: Record<string, string>;
+    requestUrl?: string;
+    method?: string;
+    service?: string;
+    contentType?: string;
+    sizeBytes?: number;
+    sizeLines?: number;
+    sizeChars?: number;
+    timing?: number;
+    warnings?: string[];
+    error?: string;
+}
+
+function getWebviewContent(result: YapiJsonOutput | null, isLoading: boolean): string {
+    if (isLoading) {
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yapi Response</title>
+    <style>${getStyles()}</style>
+</head>
+<body>
+    <div class="loading"><div class="spinner"></div><span>Running yapi...</span></div>
+</body>
+</html>`;
+    }
+
+    if (!result) {
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yapi Response</title>
+    <style>${getStyles()}</style>
+</head>
+<body>
+    <div class="empty-state">Ready to execute</div>
+</body>
+</html>`;
+    }
+
+    const hasHeaders = result.headers && Object.keys(result.headers).length > 0;
+    const hasWarnings = result.warnings && result.warnings.length > 0;
+
+    const tabsHtml = `
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('body')">Body</button>
+            ${hasHeaders ? `<button class="tab" onclick="switchTab('headers')">Headers <span class="badge">${Object.keys(result.headers!).length}</span></button>` : ''}
+            <button class="tab" onclick="switchTab('info')">Info</button>
+            ${hasWarnings ? `<button class="tab" onclick="switchTab('warnings')">Warnings <span class="badge warning">${result.warnings!.length}</span></button>` : ''}
         </div>
-    ` : '';
+    `;
 
-    const timeSection = executionTime !== undefined ? `
-        <div class="timing">Request completed in ${executionTime}ms</div>
-    ` : '';
+    const bodyHtml = `<pre class="json">${syntaxHighlightJson(result.body)}</pre>`;
 
-    const bodyContent = isLoading
-        ? '<div class="loading"><div class="spinner"></div><span>Running yapi...</span></div>'
-        : `<pre class="json">${body}</pre>`;
+    const headersHtml = hasHeaders ? Object.entries(result.headers!).map(([key, value]) => `
+        <div class="info-row">
+            <span class="info-label">${escapeHtml(key)}:</span>
+            <span class="info-value">${escapeHtml(value)}</span>
+        </div>
+    `).join('') : '';
+
+    const infoHtml = `
+        ${result.transport ? `<div class="info-row"><span class="info-label">Transport</span><span class="badge">${result.transport.toUpperCase()}</span></div>` : ''}
+        ${result.requestUrl ? `<div class="info-row"><span class="info-label">URL</span><span class="info-value">${escapeHtml(result.requestUrl)}</span></div>` : ''}
+        ${result.method ? `<div class="info-row"><span class="info-label">Method</span><span class="badge">${escapeHtml(result.method)}</span></div>` : ''}
+        ${result.service ? `<div class="info-row"><span class="info-label">Service</span><span class="info-value">${escapeHtml(result.service)}</span></div>` : ''}
+        ${result.statusCode !== undefined ? `<div class="info-row"><span class="info-label">Status</span><span class="badge status-${getStatusClass(result.statusCode)}">${result.statusCode}</span></div>` : ''}
+        ${result.timing !== undefined ? `<div class="info-row"><span class="info-label">Time</span><span class="info-value">${result.timing}ms</span></div>` : ''}
+        ${result.sizeBytes !== undefined ? `<div class="info-row"><span class="info-label">Size</span><span class="info-value">${result.sizeBytes} bytes${result.sizeLines !== undefined ? ` • ${result.sizeLines} lines` : ''}${result.sizeChars !== undefined ? ` • ${result.sizeChars} chars` : ''}</span></div>` : ''}
+        ${result.contentType ? `<div class="info-row"><span class="info-label">Content-Type</span><span class="info-value">${escapeHtml(result.contentType)}</span></div>` : ''}
+    `;
+
+    const warningsHtml = hasWarnings ? result.warnings!.map(warning => `
+        <div class="warning-item">⚠ ${escapeHtml(warning)}</div>
+    `).join('') : '';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -91,7 +160,36 @@ function getWebviewContent(body: string, stderr: string, isLoading: boolean, exe
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>yapi Response</title>
-    <style>
+    <style>${getStyles()}</style>
+</head>
+<body>
+    ${tabsHtml}
+    <div class="tab-content">
+        <div id="tab-body" class="tab-panel active">${bodyHtml}</div>
+        ${hasHeaders ? `<div id="tab-headers" class="tab-panel">${headersHtml}</div>` : ''}
+        <div id="tab-info" class="tab-panel">${infoHtml}</div>
+        ${hasWarnings ? `<div id="tab-warnings" class="tab-panel">${warningsHtml}</div>` : ''}
+    </div>
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+    </script>
+</body>
+</html>`;
+}
+
+function getStatusClass(statusCode: number): string {
+    if (statusCode >= 200 && statusCode < 300) return 'success';
+    if (statusCode >= 400) return 'error';
+    return 'warning';
+}
+
+function getStyles(): string {
+    return `
         * {
             margin: 0;
             padding: 0;
@@ -101,10 +199,88 @@ function getWebviewContent(body: string, stderr: string, isLoading: boolean, exe
         body {
             font-family: var(--vscode-editor-font-family);
             font-size: var(--vscode-editor-font-size);
-            padding: 24px;
             color: var(--vscode-editor-foreground);
             background: var(--vscode-editor-background);
             line-height: 1.6;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            padding: 8px 16px;
+            background: var(--vscode-editorGroupHeader-tabsBackground);
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+
+        .tab {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: var(--vscode-tab-inactiveForeground);
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: var(--vscode-tab-hoverBackground);
+        }
+
+        .tab.active {
+            color: var(--vscode-tab-activeForeground);
+            border-bottom-color: var(--vscode-focusBorder);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            margin-left: 6px;
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge.warning {
+            background: var(--vscode-editorWarning-foreground);
+            color: var(--vscode-editor-background);
+        }
+
+        .badge.status-success {
+            background: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+
+        .badge.status-error {
+            background: var(--vscode-testing-iconFailed);
+            color: var(--vscode-editor-background);
+        }
+
+        .badge.status-warning {
+            background: var(--vscode-editorWarning-foreground);
+            color: var(--vscode-editor-background);
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .tab-panel {
+            display: none;
+            padding: 16px;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .tab-panel.active {
+            display: block;
         }
 
         .json {
@@ -117,15 +293,26 @@ function getWebviewContent(body: string, stderr: string, isLoading: boolean, exe
             background: var(--vscode-editor-background);
             border-radius: 6px;
             border: 1px solid var(--vscode-panel-border);
+            margin: 0;
         }
 
         .loading {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 12px;
             color: var(--vscode-descriptionForeground);
             font-size: 14px;
-            padding: 32px 0;
+            height: 100vh;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-center;
+            height: 100vh;
+            color: var(--vscode-descriptionForeground);
+            font-size: 14px;
         }
 
         .spinner {
@@ -141,39 +328,38 @@ function getWebviewContent(body: string, stderr: string, isLoading: boolean, exe
             to { transform: rotate(360deg); }
         }
 
-        .info-section {
-            margin-top: 24px;
-            padding: 16px;
-            background: var(--vscode-textBlockQuote-background);
-            border-left: 3px solid var(--vscode-textBlockQuote-border);
+        .info-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 12px;
+            background: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
             border-radius: 4px;
-        }
-
-        .info-header {
-            font-weight: 600;
-            color: var(--vscode-foreground);
             margin-bottom: 8px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.8;
         }
 
-        .info-content {
+        .info-label {
+            font-weight: 600;
+            min-width: 120px;
             color: var(--vscode-descriptionForeground);
             font-size: 12px;
-            line-height: 1.5;
         }
 
-        .timing {
-            margin-top: 16px;
-            padding: 8px 12px;
-            background: var(--vscode-badge-background);
-            color: var(--vscode-badge-foreground);
+        .info-value {
+            flex: 1;
+            font-family: var(--vscode-editor-font-family);
+            font-size: 12px;
+            word-break: break-all;
+        }
+
+        .warning-item {
+            padding: 12px;
+            background: var(--vscode-inputValidation-warningBackground);
+            border: 1px solid var(--vscode-inputValidation-warningBorder);
             border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-            display: inline-block;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
 
         /* JSON syntax highlighting */
@@ -182,14 +368,7 @@ function getWebviewContent(body: string, stderr: string, isLoading: boolean, exe
         .boolean { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
         .null { color: var(--vscode-debugTokenExpression-value, #569cd6); }
         .key { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
-    </style>
-</head>
-<body>
-    ${bodyContent}
-    ${timeSection}
-    ${stderrSection}
-</body>
-</html>`;
+    `;
 }
 
 function escapeHtml(text: string): string {
@@ -238,7 +417,7 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
         'yapiResponse',
         'RESPONSE',
         { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-        { enableScripts: false }
+        { enableScripts: true } // Enable scripts for tab switching
     );
 
     panel.onDidDispose(() => {
@@ -270,28 +449,31 @@ async function runYapi(context: vscode.ExtensionContext) {
     await editor.document.save();
 
     const webview = getOrCreatePanel(context);
-    webview.webview.html = getWebviewContent('', '', true);
+    webview.webview.html = getWebviewContent(null, true);
 
-    const startTime = Date.now();
-
-    // Use yapi run command with proper environment
-    cp.exec(`"${yapiPath}" run "${filePath}"`, {
+    // Use yapi run command with --json flag for structured output
+    cp.exec(`"${yapiPath}" run --json "${filePath}"`, {
         shell: '/bin/bash',
         env: { ...process.env }
     }, (error, stdout, stderr) => {
-        const executionTime = Date.now() - startTime;
-        let body = stdout || '';
-
         console.log('[yapi] Command output:', { error, stdout, stderr });
 
-        if (error && !stdout && !stderr) {
-            body = `Error: ${error.message}`;
+        let result: YapiJsonOutput | null = null;
+
+        try {
+            // Try to parse JSON output from CLI
+            result = JSON.parse(stdout);
+        } catch (e) {
+            // If JSON parsing fails, treat as error
+            result = {
+                success: false,
+                body: stdout || 'No output',
+                error: error ? error.message : 'Failed to parse JSON output',
+            };
         }
 
-        const highlightedBody = syntaxHighlightJson(body.trim());
-
         if (panel) {
-            panel.webview.html = getWebviewContent(highlightedBody, stderr, false, executionTime);
+            panel.webview.html = getWebviewContent(result, false);
         }
     });
 }
