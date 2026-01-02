@@ -14,7 +14,7 @@ chain:
     body:
       type: "create_arrangement_audio_clip"
       params:
-        track_index: $create_track.result.index
+        track_index: ${create_track.result.index}
         file_path: "/Users/jamiepond/Downloads/yungchaiboy_after.wav"
         start_time: 400
         clip_name: "Hi Matt"

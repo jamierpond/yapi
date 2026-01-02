@@ -543,6 +543,13 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 	// Handle JSON output mode
 	if ctx.jsonOutput {
+		// If we have an error and no result, still output JSON with error info
+		if runRes.Result == nil && runRes.Error != nil {
+			return app.printResultAsJSON(jsonOutputParams{
+				analysis: runRes.Analysis,
+				execErr:  runRes.Error,
+			})
+		}
 		return app.printResultAsJSON(jsonOutputParams{
 			result:    runRes.Result,
 			expectRes: runRes.ExpectRes,
