@@ -213,10 +213,11 @@ func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
 
 	if usePretty {
 		opts := runner.Options{
-			URLOverride:  app.urlOverride,
-			NoColor:      app.noColor,
-			BinaryOutput: app.binaryOutput,
-			Insecure:     app.insecure,
+			URLOverride:    app.urlOverride,
+			NoColor:        app.noColor,
+			BinaryOutput:   app.binaryOutput,
+			Insecure:       app.insecure,
+			ConfigFilePath: path,
 		}
 		return tui.RunWatch(path, opts)
 	}
@@ -454,10 +455,11 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 // Returns error for middleware to capture.
 func (app *rootCommand) executeRunE(ctx runContext) error {
 	opts := runner.Options{
-		URLOverride:  app.urlOverride,
-		NoColor:      app.noColor,
-		BinaryOutput: app.binaryOutput,
-		Insecure:     app.insecure,
+		URLOverride:    app.urlOverride,
+		NoColor:        app.noColor,
+		BinaryOutput:   app.binaryOutput,
+		Insecure:       app.insecure,
+		ConfigFilePath: ctx.path,
 	}
 
 	// Load project and environment configuration
