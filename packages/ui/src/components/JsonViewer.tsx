@@ -1,8 +1,23 @@
 "use client";
 
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+/**
+ * JsonViewer - Syntax-highlighted code viewer
+ *
+ * Uses the light build of react-syntax-highlighter to minimize bundle size.
+ * Only json language is registered since that's all we need for API responses.
+ *
+ * NOTE: The React 19 type issue with react-syntax-highlighter is a known issue.
+ * See: https://github.com/react-syntax-highlighter/react-syntax-highlighter/issues/539
+ * Once the library updates its types for React 19, the type assertion can be removed.
+ */
+
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import type { ComponentType } from "react";
+import type { CSSProperties, FC, ReactNode } from "react";
+
+// Register only the languages we need (reduces bundle size significantly)
+SyntaxHighlighter.registerLanguage("json", json);
 
 interface JsonViewerProps {
   value: string;
@@ -18,17 +33,22 @@ function detectLanguage(value: string): string {
   }
 }
 
-// Cast to work around React 19 type incompatibility
-const Highlighter = SyntaxHighlighter as unknown as ComponentType<{
+// Type definition for SyntaxHighlighter props
+// This is needed because react-syntax-highlighter types are not compatible with React 19
+interface HighlighterProps {
   language: string;
-  style: Record<string, unknown>;
+  style: Record<string, CSSProperties>;
   showLineNumbers?: boolean;
   wrapLongLines?: boolean;
-  customStyle?: Record<string, unknown>;
-  lineNumberStyle?: Record<string, unknown>;
-  codeTagProps?: Record<string, unknown>;
-  children: string;
-}>;
+  customStyle?: CSSProperties;
+  lineNumberStyle?: CSSProperties;
+  codeTagProps?: { style?: CSSProperties };
+  children: ReactNode;
+}
+
+// Type assertion for React 19 compatibility
+// TODO: Remove this once react-syntax-highlighter updates its types for React 19
+const Highlighter = SyntaxHighlighter as unknown as FC<HighlighterProps>;
 
 export default function JsonViewer({ value }: JsonViewerProps) {
   const language = detectLanguage(value);
@@ -43,7 +63,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
         customStyle={{
           margin: 0,
           padding: "16px",
-          background: "#1e1e1e",
+          background: "var(--color-yapi-bg-editor)",
           fontSize: "14px",
           fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
@@ -54,6 +74,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           minWidth: "3em",
           paddingRight: "1em",
           userSelect: "none",
+          color: "var(--color-yapi-fg-linenumber)",
         }}
         codeTagProps={{
           style: {

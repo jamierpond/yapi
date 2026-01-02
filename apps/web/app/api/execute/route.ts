@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { writeFile, unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
 import { parse } from "yaml";
+import { runYapi, type YapiResult } from "@yapi/client";
 import {
   ExecuteRequestSchema,
   ExecuteSuccessResponseSchema,
   ExecuteErrorResponseSchema,
 } from "@yapi/ui";
 import { getYapiPath } from "@/app/lib/yapi-path";
-
-const execAsync = promisify(exec);
 
 // SSRF Protection: Define blocked IP ranges
 const IS_IP_V4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
@@ -51,9 +45,64 @@ function isSafeUrl(urlStr: string): boolean {
     // To fix that requires a custom DNS resolver, which is not a "quick fix".
 
     return true;
-  } catch (e) {
+  } catch {
     return false; // Invalid URL
   }
+}
+
+/**
+ * Transform CLI YapiResult to UI ExecuteResponse format
+ */
+function transformResult(result: YapiResult) {
+  if (!result.success) {
+    return ExecuteErrorResponseSchema.parse({
+      success: false,
+      error: result.error || 'Unknown error',
+      errorType: categorizeError(result.error || ''),
+      details: result.body || undefined,
+    });
+  }
+
+  // Try to parse body as JSON for nicer display
+  let responseBody: unknown;
+  if (typeof result.body === 'string' && result.body.trim().length > 0) {
+    try {
+      responseBody = JSON.parse(result.body);
+    } catch {
+      responseBody = result.body;
+    }
+  } else {
+    responseBody = result.body;
+  }
+
+  return ExecuteSuccessResponseSchema.parse({
+    success: true,
+    responseBody,
+    transport: result.transport,
+    statusCode: result.statusCode,
+    timing: result.timing,
+    headers: result.headers,
+    requestUrl: result.requestUrl,
+    method: result.method,
+    service: result.service,
+    contentType: result.contentType,
+    sizeBytes: result.sizeBytes,
+    sizeLines: result.sizeLines,
+    sizeChars: result.sizeChars,
+    warnings: result.warnings,
+  });
+}
+
+/**
+ * Categorize error message to determine error type
+ */
+function categorizeError(errorMessage: string): "YAML_PARSE_ERROR" | "VALIDATION_ERROR" | "NETWORK_ERROR" | "SSRF_BLOCKED" | "TIMEOUT" | "UNKNOWN" {
+  const lowerMsg = errorMessage.toLowerCase();
+  if (lowerMsg.includes('timeout')) return 'TIMEOUT';
+  if (lowerMsg.includes('yaml') || lowerMsg.includes('parse')) return 'YAML_PARSE_ERROR';
+  if (lowerMsg.includes('validation') || lowerMsg.includes('invalid')) return 'VALIDATION_ERROR';
+  if (lowerMsg.includes('network') || lowerMsg.includes('connection')) return 'NETWORK_ERROR';
+  return 'UNKNOWN';
 }
 
 /**
@@ -62,8 +111,6 @@ function isSafeUrl(urlStr: string): boolean {
  * Executes a yapi YAML request and returns the response.
  */
 export async function POST(request: NextRequest) {
-  let tempFile: string | null = null;
-
   try {
     // Parse and validate request body
     const body = await request.json();
@@ -130,7 +177,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(errorResponse, { status: 403 });
         }
       }
-    } catch (e) {
+    } catch {
       const errorResponse = ExecuteErrorResponseSchema.parse({
         success: false,
         error: "Invalid YAML",
@@ -139,113 +186,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    // Write YAML to temporary file
-    const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substring(7);
-    tempFile = join(tmpdir(), `yapi-${timestamp}-${randomId}.yaml`);
-    await writeFile(tempFile, yaml, "utf-8");
-
-    console.log("Executing yapi with file:", tempFile);
-    console.log("YAML content:", yaml);
-
-    // Execute yapi command with --json flag for structured output
-    const startTime = Date.now();
-    const { stdout, stderr } = await execAsync(`${getYapiPath()} run --json "${tempFile}"`, {
-      timeout: 30000, // 30 second timeout
-      maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-    });
-    const timing = Date.now() - startTime;
-
-    // Parse JSON output from CLI
-    let cliOutput: any;
-    try {
-      cliOutput = JSON.parse(stdout);
-    } catch (e) {
-      // Fallback: if JSON parsing fails, treat as raw output
-      const response = ExecuteSuccessResponseSchema.parse({
-        success: true,
-        responseBody: stdout,
-        timing,
-      });
-      return NextResponse.json(response);
-    }
-
-    // The body from CLI is a string - try to parse it as JSON if possible
-    // If it's already valid JSON, parse it so the frontend can display it nicely
-    // If it's not JSON, keep it as a string
-    let responseBody: unknown;
-    if (typeof cliOutput.body === 'string' && cliOutput.body.trim().length > 0) {
-      try {
-        responseBody = JSON.parse(cliOutput.body);
-      } catch {
-        // Not JSON, keep as string
-        responseBody = cliOutput.body;
-      }
-    } else {
-      responseBody = cliOutput.body;
-    }
-
-    // Build comprehensive success response from CLI output
-    const response = ExecuteSuccessResponseSchema.parse({
-      success: cliOutput.success !== false,
-      responseBody: responseBody,
-      transport: cliOutput.transport,
-      statusCode: cliOutput.statusCode,
-      timing: cliOutput.timing || timing,
-      headers: cliOutput.headers,
-      requestUrl: cliOutput.requestUrl,
-      method: cliOutput.method,
-      service: cliOutput.service,
-      contentType: cliOutput.contentType,
-      sizeBytes: cliOutput.sizeBytes,
-      sizeLines: cliOutput.sizeLines,
-      sizeChars: cliOutput.sizeChars,
-      warnings: cliOutput.warnings,
+    // Execute yapi using shared client
+    const result = await runYapi({
+      executablePath: getYapiPath(),
+      input: { type: 'content', yaml },
+      timeout: 30000,
     });
 
+    // Transform to UI format
+    const response = transformResult(result);
     return NextResponse.json(response);
-  } catch (error: any) {
+
+  } catch (error: unknown) {
     console.error("Error in /api/execute:", error);
 
-    let errorType: "YAML_PARSE_ERROR" | "VALIDATION_ERROR" | "NETWORK_ERROR" | "SSRF_BLOCKED" | "TIMEOUT" | "UNKNOWN" = "UNKNOWN";
-    let errorMessage = "An unexpected error occurred";
-
-    if (error.killed || error.signal === "SIGTERM") {
-      errorType = "TIMEOUT";
-      errorMessage = "Request timed out after 30 seconds";
-    } else if (error.code === "ENOENT") {
-      errorType = "UNKNOWN";
-      errorMessage = "yapi command not found in PATH";
-    } else if (error.stderr) {
-      errorMessage = error.stderr;
-      // Try to categorize based on stderr content
-      if (error.stderr.includes("YAML") || error.stderr.includes("parse")) {
-        errorType = "YAML_PARSE_ERROR";
-      } else if (error.stderr.includes("validation") || error.stderr.includes("invalid")) {
-        errorType = "VALIDATION_ERROR";
-      } else if (error.stderr.includes("network") || error.stderr.includes("connection")) {
-        errorType = "NETWORK_ERROR";
-      }
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
 
     const errorResponse = ExecuteErrorResponseSchema.parse({
       success: false,
       error: errorMessage,
-      errorType,
-      details: error.stderr || error.stdout || undefined,
+      errorType: categorizeError(errorMessage),
     });
 
     return NextResponse.json(errorResponse, { status: 500 });
-  } finally {
-    // Clean up temp file
-    if (tempFile) {
-      try {
-        await unlink(tempFile);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
   }
 }

@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
-import { spawn, execSync } from 'child_process';
+import { execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
     LanguageClient,
     LanguageClientOptions,
-    ServerOptions,
     Executable
 } from 'vscode-languageclient/node';
 import { getWebviewHtml } from './webview';
+import { runYapi, type YapiResult } from '@yapi/client';
 
 let client: LanguageClient;
 let panel: vscode.WebviewPanel | undefined;
@@ -70,22 +70,35 @@ close_after_send: true
     }
 };
 
-interface YapiJsonOutput {
-    success: boolean;
-    body: string;
-    transport?: string;
-    statusCode?: number;
-    headers?: Record<string, string>;
-    requestUrl?: string;
-    method?: string;
-    service?: string;
-    contentType?: string;
-    sizeBytes?: number;
-    sizeLines?: number;
-    sizeChars?: number;
-    timing?: number;
-    warnings?: string[];
-    error?: string;
+/**
+ * Transform YapiResult to the format expected by the webview UI
+ */
+function transformResultForWebview(result: YapiResult) {
+    if (!result.success) {
+        return {
+            success: false,
+            error: result.error || 'Unknown error',
+            errorType: 'UNKNOWN' as const,
+            details: result.body || undefined,
+        };
+    }
+
+    return {
+        success: true,
+        responseBody: result.body,
+        transport: result.transport,
+        statusCode: result.statusCode,
+        timing: result.timing,
+        headers: result.headers,
+        requestUrl: result.requestUrl,
+        method: result.method,
+        service: result.service,
+        contentType: result.contentType,
+        sizeBytes: result.sizeBytes,
+        sizeLines: result.sizeLines,
+        sizeChars: result.sizeChars,
+        warnings: result.warnings,
+    };
 }
 
 function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel {
@@ -130,7 +143,7 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
     return panel;
 }
 
-async function runYapi(context: vscode.ExtensionContext) {
+async function runYapiCommand(context: vscode.ExtensionContext) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('No active editor');
@@ -156,51 +169,18 @@ async function runYapi(context: vscode.ExtensionContext) {
     // Send loading message
     webview.webview.postMessage({ type: 'setLoading', loading: true });
 
-    // Use yapi run command with --json flag for structured output
-    const child = spawn(yapiPath, ['run', '--json', filePath], {
-        env: { ...process.env }
+    // Execute using shared client
+    const result = await runYapi({
+        executablePath: yapiPath,
+        input: { type: 'file', path: filePath },
+        timeout: 30000,
     });
 
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (data) => {
-        stdout += data.toString();
-    });
-
-    child.stderr.on('data', (data) => {
-        stderr += data.toString();
-    });
-
-    child.on('close', (code) => {
-        console.log('[yapi] Command output:', { code, stdout, stderr });
-
-        let cliOutput: YapiJsonOutput | null = null;
-
-        try {
-            // Try to parse JSON output from CLI
-            cliOutput = JSON.parse(stdout);
-        } catch (e) {
-            // If JSON parsing fails, treat as error
-            cliOutput = {
-                success: false,
-                body: stdout || 'No output',
-                error: code !== 0 ? `Process exited with code ${code}` : 'Failed to parse JSON output',
-            };
-        }
-
-        // Transform CLI output to match UI contract (body -> responseBody)
-        const result = cliOutput ? {
-            ...cliOutput,
-            responseBody: cliOutput.body,
-            errorType: cliOutput.success ? undefined : 'UNKNOWN' as const,
-        } : null;
-
-        // Send result to webview
-        if (panel) {
-            panel.webview.postMessage({ type: 'setResult', result });
-        }
-    });
+    // Transform and send result to webview
+    const transformedResult = transformResultForWebview(result);
+    if (panel) {
+        panel.webview.postMessage({ type: 'setResult', result: transformedResult });
+    }
 }
 
 async function insertExample(exampleKey: keyof typeof EXAMPLES) {
@@ -343,7 +323,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Register commands
-    const runCommand = vscode.commands.registerCommand('yapi.runCurrent', () => runYapi(context));
+    const runCommand = vscode.commands.registerCommand('yapi.runCurrent', () => runYapiCommand(context));
     context.subscriptions.push(runCommand);
 
     const examplesCommand = vscode.commands.registerCommand('yapi.insertExample', showExamplePicker);
@@ -368,7 +348,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     };
 
-    vscode.window.onDidChangeActiveTextEditor(editor => {
+    vscode.window.onDidChangeActiveTextEditor(() => {
         updateStatusBar();
     }, null, context.subscriptions);
 

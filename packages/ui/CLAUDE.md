@@ -11,5 +11,6 @@ The OutputPanel and JsonViewer in this package are used by BOTH:
 ## Styling
 
 - Font: JetBrains Mono, 14px
-- Background: #1e1e1e
-- Line numbers: #858585 (grey) - set via `.linenumber` CSS override in both apps
+- Use CSS variables from `@yapi/styles/tokens.css`:
+  - `--color-yapi-bg-editor` for editor background (#1e1e1e)
+  - `--color-yapi-fg-linenumber` for line numbers (#858585)

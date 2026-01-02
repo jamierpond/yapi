@@ -42,3 +42,5 @@ apps/vscode-webview/dist
 extensions/vscode-extension/dist
 web/.next/dev
 packages/ui/dist
+foo.md
+packages/client/dist
