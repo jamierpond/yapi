@@ -1,6 +1,5 @@
 import Link from "next/link";
 import CopyInstallButton from "./CopyInstallButton";
-import LandingStyles from "./LandingStyles";
 import Navbar from "./Navbar";
 import { getTotalDownloads } from "@/app/lib/github";
 
@@ -247,8 +246,6 @@ export default async function Landing() {
           </div>
         </div>
       </footer>
-
-      <LandingStyles />
     </div>
   );
 }
