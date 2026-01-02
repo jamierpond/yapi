@@ -1,0 +1,15 @@
+yapi: v1
+
+default_environment: local
+
+environments:
+  local:
+    url: http://localhost:3000
+    vars:
+      some_param: default_value
+
+  prod:
+    url: https://yapi.run
+    vars:
+      some_param: some_value
+

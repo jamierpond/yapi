@@ -1,0 +1,7 @@
+yapi: v1
+path: /manifest.webmanifest
+method: GET
+expect:
+  status: 200
+  assert:
+    - '.name == "yapi"'

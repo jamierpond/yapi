@@ -1,0 +1,5 @@
+yapi: v1
+path: /blog/what-is-yapi
+method: GET
+expect:
+  status: 200

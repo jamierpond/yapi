@@ -1,0 +1,54 @@
+import Navbar from "../../components/Navbar";
+import Playground from "../../components/Playground";
+import ShareButton from "../../components/ShareButton";
+import { yapiDecode } from "../../_lib/yapi-encode";
+import type { Metadata } from "next";
+
+type Props = {
+  params: Promise<{ encoded: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  try {
+    const { encoded } = await params;
+    const decoded = yapiDecode(encoded);
+    const preview = decoded.length > 200 ? decoded.slice(0, 200) + "..." : decoded;
+
+    return {
+      title: "yapi playground",
+      description: preview,
+      robots: {
+        index: false,
+        follow: false,
+      },
+      openGraph: {
+        title: "yapi playground",
+        description: preview,
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "yapi playground",
+        description: preview,
+      },
+    };
+  } catch {
+    return {
+      title: "yapi playground",
+      description: "Offline-first YAML API client for HTTP, gRPC, and TCP",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+}
+
+export default function Home() {
+  return (
+    <div className="flex flex-col h-screen">
+      <Navbar rightContent={<ShareButton />} />
+      <Playground />
+    </div>
+  );
+}
