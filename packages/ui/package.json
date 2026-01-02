@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@yapi/styles": "workspace:*",
+    "monaco-editor": "^0.52.2",
     "zod": "^3.22.0"
   }
 }

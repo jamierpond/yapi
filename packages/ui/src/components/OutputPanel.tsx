@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ExecuteResponse } from "../types/api-contract";
 import { isSuccessResponse } from "../types/api-contract";
+import JsonViewer from "./JsonViewer";
 
 interface OutputPanelProps {
   result: ExecuteResponse | null;
@@ -227,11 +228,13 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
             {/* Tab Content */}
             <div className="flex-1 overflow-hidden">
               {activeTab === "body" && (
-                <pre className="h-full overflow-auto p-4 font-mono text-sm whitespace-pre-wrap break-words">
-                  {typeof result.responseBody === 'string'
-                    ? result.responseBody
-                    : JSON.stringify(result.responseBody, null, 2)}
-                </pre>
+                <JsonViewer
+                  value={
+                    typeof result.responseBody === "string"
+                      ? result.responseBody
+                      : JSON.stringify(result.responseBody, null, 2)
+                  }
+                />
               )}
 
               {activeTab === "headers" && result.headers && (
