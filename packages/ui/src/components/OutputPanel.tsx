@@ -50,6 +50,7 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           statusCode={isSuccess ? result.statusCode : undefined}
           timing={isSuccess ? result.timing : 0}
           onCopy={isSuccess ? getBodyForCopy : undefined}
+          assertions={isSuccess ? result.assertions : undefined}
         />
 
         {isSuccess ? (

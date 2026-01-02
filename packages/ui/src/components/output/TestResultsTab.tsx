@@ -1,7 +1,6 @@
 "use client";
 
 import type { Assertions } from "../../types/api-contract";
-import TestSummaryBanner from "./TestSummaryBanner";
 import TestResultItem from "./TestResultItem";
 
 interface TestResultsTabProps {
@@ -13,9 +12,6 @@ export default function TestResultsTab({ assertions }: TestResultsTabProps) {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Summary Banner */}
-      <TestSummaryBanner assertions={assertions} />
-
       {/* Results List */}
       <div className="flex-1 overflow-auto">
         {results.length > 0 ? (
@@ -48,18 +44,6 @@ export default function TestResultsTab({ assertions }: TestResultsTabProps) {
           to {
             opacity: 1;
             transform: translateY(0);
-          }
-        }
-
-        @keyframes successPulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(0, 230, 118, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
           }
         }
       `}</style>

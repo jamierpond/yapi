@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import type { Assertions } from "../../types/api-contract";
 
 interface ResponseHeaderProps {
   statusCode?: number;
   timing: number;
   onCopy?: () => string | undefined;
+  assertions?: Assertions;
 }
 
 function getStatusClass(statusCode: number): string {
@@ -18,7 +20,7 @@ function getStatusClass(statusCode: number): string {
   return "bg-yapi-warning/10 text-yapi-warning border border-yapi-warning/30";
 }
 
-export default function ResponseHeader({ statusCode, timing, onCopy }: ResponseHeaderProps) {
+export default function ResponseHeader({ statusCode, timing, onCopy, assertions }: ResponseHeaderProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -34,6 +36,9 @@ export default function ResponseHeader({ statusCode, timing, onCopy }: ResponseH
       console.error("Failed to copy:", err);
     }
   }, [onCopy]);
+
+  const hasTests = assertions && assertions.total > 0;
+  const allTestsPassed = hasTests && assertions.passed === assertions.total;
 
   return (
     <div className="relative flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
@@ -61,6 +66,19 @@ export default function ResponseHeader({ statusCode, timing, onCopy }: ResponseH
       </div>
 
       <div className="relative flex items-center gap-3">
+        {/* Test Status Badge */}
+        {hasTests && (
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded-lg border backdrop-blur-sm ${
+              allTestsPassed
+                ? "bg-yapi-success/10 text-yapi-success border-yapi-success/30"
+                : "bg-yapi-error/10 text-yapi-error border-yapi-error/30"
+            }`}
+          >
+            {allTestsPassed ? <TestPassIcon /> : <TestFailIcon />}
+            {assertions.passed}/{assertions.total}
+          </div>
+        )}
         {onCopy && (
           <button
             onClick={handleCopy}
@@ -118,6 +136,22 @@ function IssueIcon() {
     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
       <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
       <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z" />
+    </svg>
+  );
+}
+
+function TestPassIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function TestFailIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
 }
