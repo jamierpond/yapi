@@ -18,6 +18,8 @@ archives:
     ids: [yapi]
     format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
     format_overrides:
       - goos: windows
         format: zip
@@ -44,8 +46,13 @@ aurs:
       - "Jamie Pond <yapi@pond.audio>"
     private_key: "{{ .Env.AUR_SSH_KEY }}"
     git_url: "ssh://aur@aur.archlinux.org/yapi-bin.git"
+    provides:
+      - yapi
+    conflicts:
+      - yapi
     package: |-
       install -Dm755 "./yapi" "${pkgdir}/usr/bin/yapi"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/yapi/LICENSE"
 
 homebrew_casks:
   - name: yapi
