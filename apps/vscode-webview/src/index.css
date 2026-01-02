@@ -24,6 +24,12 @@
   --font-jetbrains-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* Override Tailwind's font-mono to use JetBrains Mono */
+@theme {
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 /* Scan UI package components for Tailwind classes */
 @source "../../../packages/ui/src/components/**/*.tsx";
 @source "./App.tsx";
