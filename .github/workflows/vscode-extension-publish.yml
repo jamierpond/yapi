@@ -1,0 +1,30 @@
+name: VS Code Extension Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-vscode-extension
+
+      - name: Publish to VS Code Marketplace
+        run: |
+          cd extensions/vscode-extension
+          npx @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX
+        run: |
+          cd extensions/vscode-extension
+          npx ovsx publish --no-dependencies -p ${{ secrets.OVSX_PAT }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}

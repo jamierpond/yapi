@@ -1,0 +1,22 @@
+name: Setup VS Code Extension
+description: Install dependencies and build the VS Code extension
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Build extension
+      shell: bash
+      run: pnpm build:extension
