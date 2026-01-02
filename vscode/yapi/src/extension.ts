@@ -132,12 +132,16 @@ function getWebviewContent(result: YapiJsonOutput | null, isLoading: boolean): s
 
     const bodyHtml = `<pre class="json">${syntaxHighlightJson(result.body)}</pre>`;
 
-    const headersHtml = hasHeaders ? Object.entries(result.headers!).map(([key, value]) => `
-        <div class="info-row">
-            <span class="info-label">${escapeHtml(key)}:</span>
-            <span class="info-value">${escapeHtml(value)}</span>
-        </div>
-    `).join('') : '';
+    const headersHtml = hasHeaders ? `
+        <table class="headers-table">
+            ${Object.entries(result.headers!).map(([key, value]) => `
+                <tr>
+                    <td class="header-name">${escapeHtml(key)}</td>
+                    <td class="header-value">${escapeHtml(value)}</td>
+                </tr>
+            `).join('')}
+        </table>
+    ` : '';
 
     const infoHtml = `
         ${result.transport ? `<div class="info-row"><span class="info-label">Transport</span><span class="badge">${result.transport.toUpperCase()}</span></div>` : ''}
@@ -350,6 +354,33 @@ function getStyles(): string {
             flex: 1;
             font-family: var(--vscode-editor-font-family);
             font-size: 12px;
+            word-break: break-all;
+        }
+
+        .headers-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .headers-table tr {
+            border-bottom: 1px solid var(--vscode-input-border);
+        }
+
+        .headers-table td {
+            padding: 12px;
+            font-size: 12px;
+            font-family: var(--vscode-editor-font-family);
+        }
+
+        .header-name {
+            font-weight: 600;
+            color: var(--vscode-descriptionForeground);
+            width: 30%;
+            vertical-align: top;
+        }
+
+        .header-value {
+            color: var(--vscode-editor-foreground);
             word-break: break-all;
         }
 

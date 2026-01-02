@@ -127,7 +127,7 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           <div className="relative flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse"></div>
             <h3 className="text-xs font-semibold text-yapi-fg tracking-wider">
-              RESPONSE
+              YAPI
             </h3>
           </div>
 
