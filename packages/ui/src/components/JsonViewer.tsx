@@ -70,7 +70,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
   const language = detectLanguage(value);
 
   return (
-    <div className="h-full w-full overflow-auto" style={{ maxWidth: "100%" }}>
+    <div className="h-full w-full overflow-auto" style={{ background: "var(--color-yapi-bg-editor)" }}>
       <Highlighter
         language={language}
         style={customTheme}
@@ -83,6 +83,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           fontSize: "14px",
           fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
+          minWidth: "100%",
           overflowWrap: "break-word",
         }}
         lineNumberStyle={{

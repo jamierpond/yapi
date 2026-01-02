@@ -1,6 +1,6 @@
 yapi: v1
 # GET request with query parameters
 url: https://jsonplaceholder.typicode.com/posts
-params:
+query:
   userId: 1
   _limit: 3
