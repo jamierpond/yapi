@@ -12,7 +12,8 @@
     "./styles.css": "./dist/styles.css"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build"
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite build --watch"
   },
   "peerDependencies": {
     "react": "^18 || ^19",
