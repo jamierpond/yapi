@@ -39,10 +39,8 @@ interface HighlighterProps {
   language: string;
   style: Record<string, CSSProperties>;
   showLineNumbers?: boolean;
-  wrapLongLines?: boolean;
   customStyle?: CSSProperties;
   lineNumberStyle?: CSSProperties;
-  codeTagProps?: { style?: CSSProperties };
   children: ReactNode;
 }
 
@@ -59,7 +57,6 @@ export default function JsonViewer({ value }: JsonViewerProps) {
         language={language}
         style={vscDarkPlus}
         showLineNumbers
-        wrapLongLines
         customStyle={{
           margin: 0,
           padding: "16px",
@@ -67,20 +64,12 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           fontSize: "14px",
           fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
         }}
         lineNumberStyle={{
           minWidth: "3em",
           paddingRight: "1em",
           userSelect: "none",
           color: "var(--color-yapi-fg-linenumber)",
-        }}
-        codeTagProps={{
-          style: {
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          },
         }}
       >
         {value}
