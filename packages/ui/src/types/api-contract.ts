@@ -12,7 +12,7 @@
 
 import { z } from "zod";
 
-// Re-export types from @yapi/client for UI consumption
+// Re-export types from @yapi/client/types (browser-safe, no Node APIs)
 export {
   type YapiResult,
   type YapiUIResult,
@@ -23,7 +23,7 @@ export {
   ErrorType as ErrorTypeEnum,
   categorizeError,
   transformResultForUI,
-} from "@yapi/client";
+} from "@yapi/client/types";
 
 // =============================================================================
 // Request Schema: POST /api/execute
@@ -44,7 +44,7 @@ export type ExecuteRequest = z.infer<typeof ExecuteRequestSchema>;
 // =============================================================================
 
 // For backwards compatibility, alias the types
-import type { YapiUISuccess, YapiUIError, YapiUIResult } from "@yapi/client";
+import type { YapiUISuccess, YapiUIError, YapiUIResult } from "@yapi/client/types";
 
 export type ExecuteSuccessResponse = YapiUISuccess;
 export type ExecuteErrorResponse = YapiUIError;

@@ -455,6 +455,11 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	if runRes.Analysis != nil && len(runRes.Analysis.Chain) > 0 {
 		chainResult, chainErr := app.engine.RunChain(context.Background(), runRes.Analysis.Base, runRes.Analysis.Chain, opts, runRes.Analysis)
 
+		// Handle JSON output mode for chains
+		if ctx.jsonOutput {
+			return app.printChainResultAsJSON(chainResult, chainErr)
+		}
+
 		// Print results from all completed steps (even if chain failed)
 		if chainResult != nil {
 			for i, stepResult := range chainResult.Results {
