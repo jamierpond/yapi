@@ -2,6 +2,23 @@
 @import "@yapi/styles/tokens.css";
 @import "@yapi/styles/utilities.css";
 
+/* JetBrains Mono font */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrains_Mono/JetBrainsMono-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 800;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* Scan UI package components for Tailwind classes */
 @source "../../../packages/ui/src/components/**/*.tsx";
 @source "./App.tsx";
@@ -14,7 +31,7 @@
       radial-gradient(circle at bottom right, rgba(255, 102, 0, 0.12), transparent 55%),
       var(--color-yapi-bg);
     color: var(--color-yapi-fg);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 13px;
     line-height: 1.6;
     overflow: hidden;
