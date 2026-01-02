@@ -1,5 +1,0 @@
-yapi: v1
-path: /sitemap.xml
-method: GET
-expect:
-  status: 200

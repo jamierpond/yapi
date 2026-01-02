@@ -4,11 +4,15 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "bash ./scripts/vercel-build.sh",
-    "build:web": "pnpm --filter web build",
-    "dev": "pnpm --filter web dev",
-    "lint": "pnpm --filter web lint",
-    "test": "pnpm --filter web test"
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @yapi/web build",
+    "build:ui": "pnpm --filter @yapi/ui build",
+    "build:vscode-webview": "pnpm --filter @yapi/vscode-webview build",
+    "build:vscode-extension": "pnpm --filter @yapi/vscode-extension build",
+    "dev": "pnpm --filter @yapi/web dev",
+    "dev:webview": "pnpm --filter @yapi/vscode-webview dev",
+    "lint": "pnpm --filter @yapi/web lint",
+    "test": "pnpm --filter @yapi/web test"
   },
   "devDependencies": {
     "next": "^16.0.8"

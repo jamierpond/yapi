@@ -1,0 +1,116 @@
+{
+  "name": "@yapi/vscode-extension",
+  "displayName": "yapi",
+  "description": "YAML API Testing Tool - HTTP, gRPC, and TCP support",
+  "version": "0.0.1",
+  "publisher": "yapi",
+  "engines": {
+    "vscode": "^1.107.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.yapi",
+    "workspaceContains:**/*.yapi.yml",
+    "workspaceContains:**/*.yapi.yaml",
+    "workspaceContains:**/yapi.config.yml",
+    "workspaceContains:**/yapi.config.yaml",
+    "onLanguage:yaml",
+    "onCommand:yapi.runCurrent",
+    "onCommand:yapi.insertExample"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "yapi.runCurrent",
+        "title": "Run yapi",
+        "category": "yapi",
+        "icon": {
+          "light": "media/sheep.svg",
+          "dark": "media/sheep.svg"
+        }
+      },
+      {
+        "command": "yapi.insertExample",
+        "title": "Insert Example",
+        "category": "yapi"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "yapi.runCurrent",
+        "key": "cmd+enter",
+        "mac": "cmd+enter",
+        "win": "ctrl+enter",
+        "linux": "ctrl+enter",
+        "when": "editorTextFocus && (resourceExtname == .yapi || resourceExtname == .yml || resourceExtname == .yaml) && resourceFilename =~ /\\.yapi/"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "yapi.runCurrent",
+          "group": "navigation",
+          "when": "(resourceExtname == .yapi || resourceExtname == .yml || resourceExtname == .yaml) && resourceFilename =~ /\\.yapi/"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "yapi.runCurrent",
+          "when": "(resourceExtname == .yapi || resourceExtname == .yml || resourceExtname == .yaml) && resourceFilename =~ /\\.yapi/"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "yaml",
+        "extensions": [".yapi", ".yapi.yml", ".yapi.yaml"],
+        "filenames": ["yapi.config.yml", "yapi.config.yaml"]
+      }
+    ],
+    "configuration": {
+      "title": "yapi",
+      "properties": {
+        "yapi.executablePath": {
+          "type": "string",
+          "default": "yapi",
+          "description": "Path to the yapi executable. By default, will search for 'yapi' in PATH."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "prebuild": "pnpm --filter @yapi/vscode-webview build",
+    "compile": "pnpm run prebuild && webpack",
+    "watch": "webpack --watch",
+    "package": "pnpm run prebuild && webpack --mode production --devtool hidden-source-map",
+    "build": "pnpm run compile",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.107.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.48.1",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "ts-loader": "^9.5.4",
+    "webpack": "^5.103.0",
+    "webpack-cli": "^6.0.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@types/js-yaml": "^4.0.9"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "vscode-languageclient": "^9.0.1"
+  }
+}

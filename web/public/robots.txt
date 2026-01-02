@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /c/
-
-Sitemap: https://yapi.run/sitemap.xml

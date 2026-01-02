@@ -35,3 +35,6 @@ here
 fish
 internal/cli/.DS_Store
 vscode/yapi/dist
+apps/vscode-webview/dist
+extensions/vscode-extension/dist
+web/.next/dev
