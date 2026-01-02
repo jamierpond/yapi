@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "dev": "concurrently -n next,madea -c cyan,magenta \"next dev\" \"pnpm --filter madea-blog-core dev\"",
+    "dev": "concurrently -n next,madea,ui -c cyan,magenta,yellow \"next dev\" \"pnpm --filter madea-blog-core dev\" \"pnpm --filter @yapi/ui dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
