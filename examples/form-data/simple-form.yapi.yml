@@ -4,6 +4,6 @@ method: POST
 form:
   name: John Doe
   email: john@example.com
-  message: Hello from yapi!
+  message: Hello from steve!
 expect:
   status: 200

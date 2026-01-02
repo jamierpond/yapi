@@ -48,6 +48,22 @@ interface HighlighterProps {
 // TODO: Remove this once react-syntax-highlighter updates its types for React 19
 const Highlighter = SyntaxHighlighter as unknown as FC<HighlighterProps>;
 
+// Strip background colors from all theme tokens to prevent banding
+const customTheme: Record<string, CSSProperties> = {};
+for (const [key, value] of Object.entries(vscDarkPlus)) {
+  if (typeof value === "object" && value !== null) {
+    const { background, backgroundColor, ...rest } = value as Record<string, unknown>;
+    customTheme[key] = rest as CSSProperties;
+  }
+}
+customTheme['pre[class*="language-"]'] = {
+  background: "var(--color-yapi-bg-editor)",
+  margin: 0,
+};
+customTheme['code[class*="language-"]'] = {
+  background: "transparent",
+};
+
 export default function JsonViewer({ value }: JsonViewerProps) {
   const language = detectLanguage(value);
 
@@ -55,7 +71,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
     <div className="h-full w-full overflow-auto">
       <Highlighter
         language={language}
-        style={vscDarkPlus}
+        style={customTheme}
         showLineNumbers
         customStyle={{
           margin: 0,
