@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'web/public/install/**'
+      - 'apps/web/public/install/**'
       - '.github/workflows/installer-tests.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'web/public/install/**'
+      - 'apps/web/public/install/**'
       - '.github/workflows/installer-tests.yml'
   workflow_dispatch:
 
@@ -22,8 +22,8 @@ jobs:
 
       - name: Run installer script
         run: |
-          chmod +x web/public/install/linux.sh
-          sudo bash web/public/install/linux.sh
+          chmod +x apps/web/public/install/linux.sh
+          sudo bash apps/web/public/install/linux.sh
 
       - name: Verify installation
         run: |
@@ -38,8 +38,8 @@ jobs:
 
       - name: Run installer script
         run: |
-          chmod +x web/public/install/mac.sh
-          sudo bash web/public/install/mac.sh
+          chmod +x apps/web/public/install/mac.sh
+          sudo bash apps/web/public/install/mac.sh
 
       - name: Verify installation
         run: |
@@ -55,7 +55,7 @@ jobs:
       - name: Run installer script
         shell: pwsh
         run: |
-          & web/public/install/windows.ps1
+          & apps/web/public/install/windows.ps1
           # Verify it installed correctly
           $yapiPath = "$env:LOCALAPPDATA\yapi\yapi.exe"
           if (-not (Test-Path $yapiPath)) {
