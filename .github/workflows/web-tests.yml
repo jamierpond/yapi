@@ -39,20 +39,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build madea-blog-core
-        run: pnpm --filter madea-blog-core build
-
-      - name: Build packages
-        run: |
-          pnpm --filter @yapi/styles build
-          pnpm --filter @yapi/client build
-          pnpm --filter @yapi/ui build
+      - name: Build web
+        run: pnpm build:web
 
       - name: Run unit tests
         run: pnpm test
-
-      - name: Build web
-        run: pnpm build:web
 
       - uses: actions/setup-go@v5
         with:

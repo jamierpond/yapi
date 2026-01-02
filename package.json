@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "pnpm -r build",
-    "build:web": "pnpm --filter @yapi/web build",
+    "build:web": "pnpm --filter @yapi/web... build",
     "build:ui": "pnpm --filter @yapi/ui build",
     "build:vscode-webview": "pnpm --filter @yapi/vscode-webview build",
     "build:vscode-extension": "pnpm --filter yapi-extension build",
