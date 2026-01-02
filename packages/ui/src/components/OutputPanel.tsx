@@ -12,6 +12,7 @@ import {
   KeyValueTable,
   ErrorDisplay,
   WarningsDisplay,
+  type KeyValueRow,
 } from "./output";
 
 interface OutputPanelProps {
@@ -264,7 +265,7 @@ function InfoTable({ result }: { result: Extract<ExecuteResponse, { success: tru
       ),
     },
     result.contentType && { key: "Content-Type", value: result.contentType },
-  ].filter(Boolean) as { key: string; value: React.ReactNode }[];
+  ].filter(Boolean) as KeyValueRow[];
 
   return (
     <KeyValueTable

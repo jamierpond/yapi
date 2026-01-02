@@ -1,10 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
-
-interface KeyValueRow {
+export interface KeyValueRow {
   key: string;
-  value: ReactNode;
+  // Using any to avoid React 18/19 ReactNode type conflicts across packages
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
 }
 
 interface KeyValueTableProps {
