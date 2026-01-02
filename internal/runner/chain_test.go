@@ -1364,3 +1364,320 @@ func TestCheckExpectations_AllAssertionsEvaluated(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckStatusMatch(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected any
+		actual   int
+		want     bool
+	}{
+		{
+			name:     "int match",
+			expected: 200,
+			actual:   200,
+			want:     true,
+		},
+		{
+			name:     "int no match",
+			expected: 200,
+			actual:   404,
+			want:     false,
+		},
+		{
+			name:     "float64 match",
+			expected: float64(201),
+			actual:   201,
+			want:     true,
+		},
+		{
+			name:     "float64 no match",
+			expected: float64(200),
+			actual:   500,
+			want:     false,
+		},
+		{
+			name:     "array match first",
+			expected: []any{float64(200), float64(201), float64(204)},
+			actual:   200,
+			want:     true,
+		},
+		{
+			name:     "array match middle",
+			expected: []any{float64(200), float64(201), float64(204)},
+			actual:   201,
+			want:     true,
+		},
+		{
+			name:     "array match last",
+			expected: []any{float64(200), float64(201), float64(204)},
+			actual:   204,
+			want:     true,
+		},
+		{
+			name:     "array no match",
+			expected: []any{float64(200), float64(201)},
+			actual:   404,
+			want:     false,
+		},
+		{
+			name:     "array with int types",
+			expected: []any{200, 201},
+			actual:   200,
+			want:     true,
+		},
+		{
+			name:     "array mixed int and float64",
+			expected: []any{200, float64(201)},
+			actual:   201,
+			want:     true,
+		},
+		{
+			name:     "unsupported type returns false",
+			expected: "200",
+			actual:   200,
+			want:     false,
+		},
+		{
+			name:     "empty array returns false",
+			expected: []any{},
+			actual:   200,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := checkStatusMatch(tt.expected, tt.actual)
+			if got != tt.want {
+				t.Errorf("checkStatusMatch(%v, %d) = %v, want %v", tt.expected, tt.actual, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPrepareJQVars(t *testing.T) {
+	tests := []struct {
+		name    string
+		envVars map[string]string
+		wantNil bool
+		check   func(t *testing.T, result map[string]any)
+	}{
+		{
+			name:    "nil env vars returns nil",
+			envVars: nil,
+			wantNil: true,
+		},
+		{
+			name:    "empty env vars returns nil",
+			envVars: map[string]string{},
+			wantNil: true,
+		},
+		{
+			name: "single env var",
+			envVars: map[string]string{
+				"API_KEY": "secret123",
+			},
+			wantNil: false,
+			check: func(t *testing.T, result map[string]any) {
+				env, ok := result["env"].(map[string]any)
+				if !ok {
+					t.Fatal("expected 'env' key with map value")
+				}
+				if env["API_KEY"] != "secret123" {
+					t.Errorf("expected API_KEY=secret123, got %v", env["API_KEY"])
+				}
+			},
+		},
+		{
+			name: "multiple env vars",
+			envVars: map[string]string{
+				"HOST":    "localhost",
+				"PORT":    "8080",
+				"API_KEY": "test",
+			},
+			wantNil: false,
+			check: func(t *testing.T, result map[string]any) {
+				env, ok := result["env"].(map[string]any)
+				if !ok {
+					t.Fatal("expected 'env' key with map value")
+				}
+				if len(env) != 3 {
+					t.Errorf("expected 3 env vars, got %d", len(env))
+				}
+				if env["HOST"] != "localhost" {
+					t.Errorf("expected HOST=localhost, got %v", env["HOST"])
+				}
+				if env["PORT"] != "8080" {
+					t.Errorf("expected PORT=8080, got %v", env["PORT"])
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := prepareJQVars(tt.envVars)
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("prepareJQVars() = %v, want nil", got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("prepareJQVars() = nil, want non-nil")
+			}
+			if tt.check != nil {
+				tt.check(t, got)
+			}
+		})
+	}
+}
+
+func TestEvalAssertion(t *testing.T) {
+	tests := []struct {
+		name       string
+		jsonData   string
+		assertion  string
+		jqVars     map[string]any
+		wantPassed bool
+		wantErr    bool
+	}{
+		{
+			name:       "simple equality pass",
+			jsonData:   `{"name": "John"}`,
+			assertion:  `.name == "John"`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "simple equality fail",
+			jsonData:   `{"name": "John"}`,
+			assertion:  `.name == "Jane"`,
+			wantPassed: false,
+			wantErr:    false,
+		},
+		{
+			name:       "numeric comparison pass",
+			jsonData:   `{"count": 42}`,
+			assertion:  `.count > 10`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "numeric comparison fail",
+			jsonData:   `{"count": 5}`,
+			assertion:  `.count > 10`,
+			wantPassed: false,
+			wantErr:    false,
+		},
+		{
+			name:       "null check pass",
+			jsonData:   `{"id": 1}`,
+			assertion:  `.id != null`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "null check fail",
+			jsonData:   `{"id": null}`,
+			assertion:  `.id != null`,
+			wantPassed: false,
+			wantErr:    false,
+		},
+		{
+			name:       "array length check",
+			jsonData:   `{"items": [1, 2, 3]}`,
+			assertion:  `.items | length == 3`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "nested field access",
+			jsonData:   `{"user": {"profile": {"age": 30}}}`,
+			assertion:  `.user.profile.age >= 18`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "invalid json returns error",
+			jsonData:   `not valid json`,
+			assertion:  `.foo == "bar"`,
+			wantPassed: false,
+			wantErr:    true,
+		},
+		{
+			name:       "with env var substitution",
+			jsonData:   `{"status": "active"}`,
+			assertion:  `env.EXPECTED_STATUS`,
+			jqVars:     map[string]any{"env": map[string]any{"EXPECTED_STATUS": "active"}},
+			wantPassed: false, // This returns the string, not a boolean
+			wantErr:    true,
+		},
+		{
+			name:       "env var comparison",
+			jsonData:   `{"status": "active"}`,
+			assertion:  `.status == env.EXPECTED`,
+			jqVars:     map[string]any{"env": map[string]any{"EXPECTED": "active"}},
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "contains check",
+			jsonData:   `{"message": "hello world"}`,
+			assertion:  `.message | contains("world")`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+		{
+			name:       "type check",
+			jsonData:   `{"count": 42}`,
+			assertion:  `.count | type == "number"`,
+			wantPassed: true,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outcome := evalAssertion(tt.jsonData, tt.assertion, tt.jqVars)
+
+			if (outcome.err != nil) != tt.wantErr {
+				t.Errorf("evalAssertion() error = %v, wantErr %v", outcome.err, tt.wantErr)
+			}
+
+			if outcome.passed != tt.wantPassed {
+				t.Errorf("evalAssertion() passed = %v, want %v", outcome.passed, tt.wantPassed)
+			}
+
+			// Verify result struct is populated correctly
+			if outcome.result.Expression != tt.assertion {
+				t.Errorf("result.Expression = %q, want %q", outcome.result.Expression, tt.assertion)
+			}
+
+			if outcome.result.Passed != tt.wantPassed {
+				t.Errorf("result.Passed = %v, want %v", outcome.result.Passed, tt.wantPassed)
+			}
+		})
+	}
+}
+
+func TestEvalAssertion_CapturesDetails(t *testing.T) {
+	outcome := evalAssertion(`{"id": 1}`, `.id == 999`, nil)
+
+	if outcome.passed {
+		t.Error("expected assertion to fail")
+	}
+
+	if outcome.result.LeftSide == "" {
+		t.Error("expected LeftSide to be captured")
+	}
+
+	if outcome.result.Operator == "" {
+		t.Error("expected Operator to be captured")
+	}
+
+	if outcome.errorDetail == nil {
+		t.Error("expected errorDetail to be captured for failed assertion")
+	}
+}
