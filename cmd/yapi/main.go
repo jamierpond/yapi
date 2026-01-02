@@ -308,94 +308,38 @@ type jsonOutput struct {
 	} `json:"assertions,omitempty"`
 }
 
-// printResultAsJSON outputs the result as structured JSON
-func (app *rootCommand) printResultAsJSON(result *runner.Result, expectRes *runner.ExpectationResult, analysis *validation.Analysis, execErr error) error {
-	output := jsonOutput{
-		Success: execErr == nil,
-		Timing:  result.Duration.Milliseconds(),
-	}
-
-	// Determine transport type from config
-	if analysis != nil && analysis.Base != nil {
-		cfg := analysis.Base
-		if cfg.Graphql != "" {
-			output.Transport = "graphql"
-		} else if cfg.Service != "" || cfg.RPC != "" {
-			output.Transport = "grpc"
-			output.Service = cfg.Service
-		} else if cfg.Data != "" {
-			output.Transport = "tcp"
-		} else {
-			output.Transport = "http"
-		}
-	}
-
-	// Add result data
-	if result != nil {
-		output.Body = result.Body
-		output.StatusCode = result.StatusCode
-		output.Headers = result.Headers
-		output.RequestURL = result.RequestURL
-		output.ContentType = result.ContentType
-		output.SizeBytes = result.BodyBytes
-		output.SizeLines = result.BodyLines
-		output.SizeChars = result.BodyChars
-		output.Warnings = result.Warnings
-
-		// Add method from analysis request
-		if analysis != nil && analysis.Request != nil {
-			output.Method = analysis.Request.Method
-		}
-	}
-
-	// Add assertions if present
-	if expectRes != nil {
-		output.Assertions = &struct {
-			Total  int `json:"total"`
-			Passed int `json:"passed"`
-		}{
-			Total:  expectRes.AssertionsTotal,
-			Passed: expectRes.AssertionsPassed,
-		}
-	}
-
-	// Add error if execution failed
-	if execErr != nil {
-		output.Error = execErr.Error()
-	}
-
-	// Marshal and print JSON
-	jsonBytes, err := json.MarshalIndent(output, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
-	}
-
-	fmt.Println(string(jsonBytes))
-	return execErr
+// jsonOutputParams holds parameters for building JSON output
+type jsonOutputParams struct {
+	result      *runner.Result
+	chainResult *runner.ChainResult
+	expectRes   *runner.ExpectationResult
+	analysis    *validation.Analysis
+	execErr     error
 }
 
-// printChainResultAsJSON outputs chain results as structured JSON
-func (app *rootCommand) printChainResultAsJSON(chainResult *runner.ChainResult, chainErr error) error {
+// printResultAsJSON outputs the result as structured JSON (handles both single and chain results)
+func (app *rootCommand) printResultAsJSON(params jsonOutputParams) error {
 	output := jsonOutput{
-		Success:   chainErr == nil,
-		Transport: "chain",
+		Success: params.execErr == nil,
 	}
 
-	if chainResult != nil && len(chainResult.Results) > 0 {
+	// Handle chain results
+	if params.chainResult != nil && len(params.chainResult.Results) > 0 {
+		output.Transport = "chain"
+
 		// Calculate total timing
 		var totalTiming int64
-		for _, r := range chainResult.Results {
+		for _, r := range params.chainResult.Results {
 			totalTiming += r.Duration.Milliseconds()
 		}
 		output.Timing = totalTiming
 
 		// Build combined body as JSON array of step results
 		var stepBodies []any
-		for i, r := range chainResult.Results {
+		for i, r := range params.chainResult.Results {
 			stepBody := map[string]any{
-				"step": chainResult.StepNames[i],
+				"step": params.chainResult.StepNames[i],
 			}
-			// Try to parse body as JSON, otherwise use string
 			var bodyJSON any
 			if err := json.Unmarshal([]byte(r.Body), &bodyJSON); err == nil {
 				stepBody["body"] = bodyJSON
@@ -406,13 +350,11 @@ func (app *rootCommand) printChainResultAsJSON(chainResult *runner.ChainResult, 
 			stepBody["timing"] = r.Duration.Milliseconds()
 			stepBodies = append(stepBodies, stepBody)
 		}
-
-		// Marshal step bodies as the combined body
 		bodyBytes, _ := json.MarshalIndent(stepBodies, "", "  ")
 		output.Body = string(bodyBytes)
 
 		// Use last step's result for metadata
-		lastResult := chainResult.Results[len(chainResult.Results)-1]
+		lastResult := params.chainResult.Results[len(params.chainResult.Results)-1]
 		output.StatusCode = lastResult.StatusCode
 		output.Headers = lastResult.Headers
 		output.RequestURL = lastResult.RequestURL
@@ -421,11 +363,53 @@ func (app *rootCommand) printChainResultAsJSON(chainResult *runner.ChainResult, 
 		output.SizeLines = lastResult.BodyLines
 		output.SizeChars = lastResult.BodyChars
 		output.Warnings = lastResult.Warnings
+	} else if params.result != nil {
+		// Handle single result
+		output.Timing = params.result.Duration.Milliseconds()
+		output.Body = params.result.Body
+		output.StatusCode = params.result.StatusCode
+		output.Headers = params.result.Headers
+		output.RequestURL = params.result.RequestURL
+		output.ContentType = params.result.ContentType
+		output.SizeBytes = params.result.BodyBytes
+		output.SizeLines = params.result.BodyLines
+		output.SizeChars = params.result.BodyChars
+		output.Warnings = params.result.Warnings
+
+		// Determine transport type from config
+		if params.analysis != nil && params.analysis.Base != nil {
+			cfg := params.analysis.Base
+			if cfg.Graphql != "" {
+				output.Transport = "graphql"
+			} else if cfg.Service != "" || cfg.RPC != "" {
+				output.Transport = "grpc"
+				output.Service = cfg.Service
+			} else if cfg.Data != "" {
+				output.Transport = "tcp"
+			} else {
+				output.Transport = "http"
+			}
+		}
+
+		if params.analysis != nil && params.analysis.Request != nil {
+			output.Method = params.analysis.Request.Method
+		}
 	}
 
-	// Add error if chain failed
-	if chainErr != nil {
-		output.Error = chainErr.Error()
+	// Add assertions if present
+	if params.expectRes != nil {
+		output.Assertions = &struct {
+			Total  int `json:"total"`
+			Passed int `json:"passed"`
+		}{
+			Total:  params.expectRes.AssertionsTotal,
+			Passed: params.expectRes.AssertionsPassed,
+		}
+	}
+
+	// Add error if execution failed
+	if params.execErr != nil {
+		output.Error = params.execErr.Error()
 	}
 
 	// Marshal and print JSON
@@ -435,7 +419,7 @@ func (app *rootCommand) printChainResultAsJSON(chainResult *runner.ChainResult, 
 	}
 
 	fmt.Println(string(jsonBytes))
-	return chainErr
+	return params.execErr
 }
 
 // printResult outputs a single result with optional expectation.
@@ -521,7 +505,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 		// Handle JSON output mode for chains
 		if ctx.jsonOutput {
-			return app.printChainResultAsJSON(chainResult, chainErr)
+			return app.printResultAsJSON(jsonOutputParams{chainResult: chainResult, execErr: chainErr})
 		}
 
 		// Print results from all completed steps (even if chain failed)
@@ -559,7 +543,12 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 	// Handle JSON output mode
 	if ctx.jsonOutput {
-		return app.printResultAsJSON(runRes.Result, runRes.ExpectRes, runRes.Analysis, runRes.Error)
+		return app.printResultAsJSON(jsonOutputParams{
+			result:    runRes.Result,
+			expectRes: runRes.ExpectRes,
+			analysis:  runRes.Analysis,
+			execErr:   runRes.Error,
+		})
 	}
 
 	app.printResult(runRes.Result, runRes.ExpectRes)
