@@ -1,21 +1,107 @@
 {
   "name": "yapi",
   "displayName": "yapi",
-  "description": "",
+  "description": "YAML API Testing Tool - HTTP, gRPC, and TCP support",
   "version": "0.0.1",
+  "publisher": "yapi",
   "engines": {
     "vscode": "^1.107.0"
   },
   "categories": [
+    "Testing",
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "workspaceContains:**/*.yapi.yml",
+    "workspaceContains:**/*.yapi.yaml"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "yapi.helloWorld",
-        "title": "Hello World"
+        "command": "yapi.runCurrent",
+        "title": "Run yapi",
+        "category": "yapi",
+        "icon": {
+          "light": "media/sheep.svg",
+          "dark": "media/sheep.svg"
+        }
+      },
+      {
+        "command": "yapi.insertExample",
+        "title": "Insert Example",
+        "category": "yapi"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "yapi.runCurrent",
+        "key": "cmd+enter",
+        "mac": "cmd+enter",
+        "win": "ctrl+enter",
+        "linux": "ctrl+enter",
+        "when": "editorTextFocus && resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
+      },
+      {
+        "command": "yapi.runCurrent",
+        "key": "cmd+s",
+        "mac": "cmd+s",
+        "win": "ctrl+s",
+        "linux": "ctrl+s",
+        "when": "editorTextFocus && resourceFilename =~ /\\.yapi\\.(yml|yaml)$/ && config.yapi.runOnSave"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "yapi.runCurrent",
+          "group": "navigation",
+          "when": "resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "yapi.runCurrent",
+          "when": "resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
+        },
+        {
+          "command": "yapi.insertExample",
+          "when": "editorLangId == yaml"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "yaml",
+        "extensions": [
+          ".yapi.yml",
+          ".yapi.yaml"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "yapi",
+      "properties": {
+        "yapi.autoRunOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically run yapi when a .yapi.yml file is saved"
+        },
+        "yapi.runOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run yapi on Cmd+S / Ctrl+S instead of just saving"
+        }
+      }
+    },
+    "yamlValidation": [
+      {
+        "fileMatch": [
+          "*.yapi.yml",
+          "*.yapi.yaml"
+        ],
+        "url": "https://pond.audio/yapi/schema"
       }
     ]
   },
@@ -41,6 +127,10 @@
     "webpack": "^5.103.0",
     "webpack-cli": "^6.0.1",
     "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "@types/js-yaml": "^4.0.9"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
   }
 }

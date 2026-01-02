@@ -1,71 +1,104 @@
-# yapi README
+# yapi for VSCode
 
-This is the README for your extension "yapi". After writing up a brief description, we recommend including the following sections.
+YAML API Testing Tool for VSCode - supports HTTP/REST, gRPC, and TCP protocols.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- **Multi-Protocol Support**: HTTP, gRPC, and TCP requests
+- **Real-time Validation**: Inline diagnostics with error highlighting
+- **Live Response Panel**: Split-pane view with syntax-highlighted JSON responses
+- **Quick Examples**: Insert example configurations with one command
+- **Hot Reload**: Auto-run on save (configurable)
+- **Keyboard Shortcuts**: `Cmd+Enter` / `Ctrl+Enter` to run requests
+- **Execution Timing**: See request completion times
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- [yapi CLI](https://github.com/jamierpond/yapi) must be installed and available in your PATH
+- For gRPC: `grpcurl` (optional, for gRPC requests)
+- For TCP: `nc` / `netcat` (usually pre-installed)
+
+## Usage
+
+1. Create a `.yapi.yml` or `.yapi.yaml` file
+2. Write your API request configuration
+3. Press `Cmd+Enter` / `Ctrl+Enter` or click the "Run" button in the toolbar
+4. View the response in the side panel
+
+### Example
+
+```yaml
+# hello.yapi.yml
+url: https://httpbin.org/post
+method: POST
+content_type: application/json
+
+body:
+  message: "Hello from yapi"
+  timestamp: "2024-01-01"
+```
+
+## Commands
+
+- **yapi: Run yapi** - Execute the current yapi file (`Cmd+Enter` / `Ctrl+Enter`)
+- **yapi: Insert Example** - Quick insert example configurations
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+- `yapi.autoRunOnSave`: Automatically run yapi when a .yapi.yml file is saved (default: `true`)
+- `yapi.runOnSave`: Run yapi on `Cmd+S` / `Ctrl+S` instead of just saving (default: `false`)
 
-For example:
+## Validation
 
-This extension contributes the following settings:
+The extension provides real-time validation for yapi files:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- Missing required fields (e.g., `url`)
+- Conflicting fields (e.g., both `body` and `json`)
+- Protocol-specific requirements (e.g., gRPC needs `service` and `rpc`)
+- YAML syntax errors with line-level diagnostics
 
-## Known Issues
+## Keyboard Shortcuts
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- `Cmd+Enter` / `Ctrl+Enter` - Run the current yapi file
+- `Cmd+S` / `Ctrl+S` - Save (or run if `yapi.runOnSave` is enabled)
+
+## Supported Protocols
+
+### HTTP/REST
+```yaml
+url: https://api.example.com
+method: POST
+path: /users
+content_type: application/json
+body:
+  name: "John Doe"
+```
+
+### gRPC
+```yaml
+url: grpc://localhost:50051
+service: hello.HelloService
+rpc: SayHello
+plaintext: true
+body:
+  greeting: "World"
+```
+
+### TCP
+```yaml
+url: tcp://localhost:9877
+method: tcp
+data: "Hello!\n"
+encoding: text
+```
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release with:
+- Multi-protocol support (HTTP, gRPC, TCP)
+- Real-time validation
+- Live response panel
+- Example snippets
+- Keyboard shortcuts
