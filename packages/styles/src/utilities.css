@@ -27,6 +27,9 @@
   .border-yapi-border\/60 { border-color: rgb(from var(--color-yapi-border) r g b / 0.6); }
   .border-yapi-accent { border-color: var(--color-yapi-accent); }
   .border-yapi-accent\/30 { border-color: rgb(from var(--color-yapi-accent) r g b / 0.3); }
+  .border-yapi-accent\/50 { border-color: rgb(from var(--color-yapi-accent) r g b / 0.5); }
+  .border-t-yapi-accent { border-top-color: var(--color-yapi-accent); }
+  .border-b-yapi-accent\/50 { border-bottom-color: rgb(from var(--color-yapi-accent) r g b / 0.5); }
   .border-yapi-success\/30 { border-color: rgb(from var(--color-yapi-success) r g b / 0.3); }
   .border-yapi-warning\/20 { border-color: rgb(from var(--color-yapi-warning) r g b / 0.2); }
   .border-yapi-warning\/30 { border-color: rgb(from var(--color-yapi-warning) r g b / 0.3); }
