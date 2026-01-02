@@ -6,7 +6,7 @@ const vscode = getVSCodeAPI();
 
 function App() {
   const [result, setResult] = useState<ExecuteResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Listen for messages from extension host
