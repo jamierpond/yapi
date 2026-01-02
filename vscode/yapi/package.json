@@ -12,6 +12,7 @@
     "Other"
   ],
   "activationEvents": [
+    "workspaceContains:**/*.yapi",
     "workspaceContains:**/*.yapi.yml",
     "workspaceContains:**/*.yapi.yaml",
     "onCommand:yapi.runCurrent",
@@ -42,7 +43,7 @@
         "mac": "cmd+enter",
         "win": "ctrl+enter",
         "linux": "ctrl+enter",
-        "when": "editorTextFocus && resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
+        "when": "editorTextFocus && (resourceExtname == .yapi || resourceExtname == .yml || resourceExtname == .yaml) && resourceFilename =~ /\\.yapi/"
       }
     ],
     "menus": {
@@ -50,33 +51,26 @@
         {
           "command": "yapi.runCurrent",
           "group": "navigation",
-          "when": "resourceLangId == yaml && (resourceFilename =~ /\\.yapi\\.yml$/ || resourceFilename =~ /\\.yapi\\.yaml$/)"
+          "when": "(resourceExtname == .yapi || resourceExtname == .yml || resourceExtname == .yaml) && resourceFilename =~ /\\.yapi/"
         }
       ],
       "commandPalette": [
         {
           "command": "yapi.runCurrent",
-          "when": "resourceLangId == yaml && (resourceFilename =~ /\\.yapi\\.yml$/ || resourceFilename =~ /\\.yapi\\.yaml$/)"
-        },
-        {
-          "command": "yapi.insertExample",
-          "when": "editorLangId == yaml"
+          "when": "(resourceExtname == .yapi || resourceExtname == .yml || resourceExtname == .yaml) && resourceFilename =~ /\\.yapi/"
         }
       ]
     },
+    "languages": [
+      {
+        "id": "yaml",
+        "extensions": [".yapi", ".yapi.yml", ".yapi.yaml"]
+      }
+    ],
     "configuration": {
       "title": "yapi",
       "properties": {}
-    },
-    "yamlValidation": [
-      {
-        "fileMatch": [
-          "*.yapi.yml",
-          "*.yapi.yaml"
-        ],
-        "url": "https://pond.audio/yapi/schema"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",

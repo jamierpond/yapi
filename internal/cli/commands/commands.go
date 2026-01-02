@@ -110,7 +110,7 @@ var cmdManifest = []CommandSpec{
 		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
 			{Name: "json", Type: "bool", Default: false, Usage: "Output diagnostics as JSON"},
-			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Validate all *.yapi.yml files in current directory or specified directory"},
+			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Validate all *.yapi, *.yapi.yml, *.yapi.yaml files in current directory or specified directory"},
 		},
 	},
 	{
@@ -120,10 +120,10 @@ var cmdManifest = []CommandSpec{
 	},
 	{
 		Use:   "test [directory]",
-		Short: "Run all *.test.yapi.yml files in the current directory or specified directory",
+		Short: "Run all *.test.yapi, *.test.yapi.yml, *.test.yapi.yaml files in the current directory or specified directory",
 		Args:  cobra.MaximumNArgs(1),
 		Flags: []FlagSpec{
-			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Run all *.yapi.yml files (not just *.test.yapi.yml)"},
+			{Name: "all", Shorthand: "a", Type: "bool", Default: false, Usage: "Run all *.yapi, *.yapi.yml, *.yapi.yaml files (not just test files)"},
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 			{Name: "parallel", Shorthand: "p", Type: "int", Default: 1, Usage: "Number of parallel threads to run tests on"},

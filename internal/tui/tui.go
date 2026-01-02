@@ -46,8 +46,8 @@ func getTTY() (in, out *os.File, cleanup func()) {
 	return nil, nil, cleanup
 }
 
-// yapiFilePattern matches *.yapi.yaml or *.yapi.yml in subdirectories only
-var yapiFilePattern = regexp.MustCompile(`^.+/.+\.yapi\.ya?ml$`)
+// yapiFilePattern matches *.yapi, *.yapi.yaml or *.yapi.yml in subdirectories only
+var yapiFilePattern = regexp.MustCompile(`^.+/.+\.yapi(\.ya?ml)?$`)
 
 // FindConfigFiles returns all git-tracked yapi config files relative to the current directory
 func FindConfigFiles() ([]string, error) {
@@ -118,7 +118,7 @@ func findFiles(includeProjectConfig bool) ([]string, error) {
 	}
 
 	if len(configFiles) == 0 {
-		return nil, fmt.Errorf("no .yapi.yaml/.yapi.yml files found in subdirectories")
+		return nil, fmt.Errorf("no .yapi/.yapi.yaml/.yapi.yml files found in subdirectories")
 	}
 
 	sort.Strings(configFiles)
@@ -126,13 +126,13 @@ func findFiles(includeProjectConfig bool) ([]string, error) {
 }
 
 // FindConfigFileSingle prompts the user to select a single config file.
-// Only shows .yapi.yml files, not project config files.
+// Only shows .yapi/.yapi.yml/.yapi.yaml files, not project config files.
 func FindConfigFileSingle() (string, error) {
 	return findConfigFileSingle(false)
 }
 
 // FindConfigFileSingleIncludingProject prompts the user to select a single config file.
-// Shows both .yapi.yml files and project config files (yapi.config.yml).
+// Shows both .yapi/.yapi.yml/.yapi.yaml files and project config files (yapi.config.yml).
 func FindConfigFileSingleIncludingProject() (string, error) {
 	return findConfigFileSingle(true)
 }
@@ -143,7 +143,7 @@ func findConfigFileSingle(includeProjectConfig bool) (string, error) {
 		return "", err
 	}
 	if len(files) == 0 {
-		return "", fmt.Errorf("no .yapi.yml files found")
+		return "", fmt.Errorf("no .yapi/.yapi.yml/.yapi.yaml files found")
 	}
 
 	in, out, cleanup := getTTY()

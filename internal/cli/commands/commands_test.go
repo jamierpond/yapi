@@ -21,7 +21,7 @@ func TestTestCmdFromManifest(t *testing.T) {
 	}
 
 	// Test command properties from manifest
-	if testSpec.Short != "Run all *.test.yapi.yml files in the current directory or specified directory" {
+	if testSpec.Short != "Run all *.test.yapi, *.test.yapi.yml, *.test.yapi.yaml files in the current directory or specified directory" {
 		t.Errorf("test command Short = %v, want expected description", testSpec.Short)
 	}
 

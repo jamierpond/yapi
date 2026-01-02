@@ -5,6 +5,12 @@ let panel: vscode.WebviewPanel | undefined;
 let diagnosticCollection: vscode.DiagnosticCollection;
 let validationTimeout: NodeJS.Timeout | undefined;
 
+function isYapiFile(fileName: string): boolean {
+    return fileName.endsWith('.yapi') ||
+           fileName.endsWith('.yapi.yml') ||
+           fileName.endsWith('.yapi.yaml');
+}
+
 const EXAMPLES = {
     http: {
         label: 'HTTP POST',
@@ -233,7 +239,7 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
 }
 
 function validateYapiDocument(document: vscode.TextDocument) {
-    if (!document.fileName.endsWith('.yapi.yml') && !document.fileName.endsWith('.yapi.yaml')) {
+    if (!isYapiFile(document.fileName)) {
         return;
     }
 
@@ -352,7 +358,7 @@ async function runYapi(context: vscode.ExtensionContext) {
     }
 
     const filePath = editor.document.uri.fsPath;
-    if (!filePath.endsWith('.yapi.yml') && !filePath.endsWith('.yapi.yaml')) {
+    if (!isYapiFile(filePath)) {
         vscode.window.showErrorMessage('Not a yapi file');
         return;
     }
@@ -450,7 +456,7 @@ export function activate(context: vscode.ExtensionContext) {
     const updateStatusBar = () => {
         const editor = vscode.window.activeTextEditor;
         console.log('[yapi] updateStatusBar called, editor:', editor?.document.fileName);
-        if (editor && (editor.document.fileName.endsWith('.yapi.yml') || editor.document.fileName.endsWith('.yapi.yaml'))) {
+        if (editor && isYapiFile(editor.document.fileName)) {
             console.log('[yapi] Showing status bar for:', editor.document.fileName);
             statusBar.show();
         } else {

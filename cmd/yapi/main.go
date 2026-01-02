@@ -740,7 +740,7 @@ func validateAllFiles(args []string, jsonOutput bool) error {
 			// Output empty JSON array
 			fmt.Println("[]")
 		} else {
-			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.yapi.yml files found"))
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.yapi, *.yapi.yml, or *.yapi.yaml files found"))
 		}
 		return nil
 	}
@@ -1158,9 +1158,9 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 
 	if len(testFiles) == 0 {
 		if all {
-			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.yapi.yml files found"))
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.yapi, *.yapi.yml, or *.yapi.yaml files found"))
 		} else {
-			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.test.yapi.yml files found"))
+			fmt.Fprintf(os.Stderr, "%s\n", color.Yellow("No *.test.yapi, *.test.yapi.yml, or *.test.yapi.yaml files found"))
 		}
 		return nil
 	}
@@ -1272,8 +1272,8 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 }
 
 // findTestFiles recursively finds test files in the given directory.
-// If all is true, finds all *.yapi.yml files.
-// If all is false, finds only *.test.yapi.yml files.
+// If all is true, finds all *.yapi, *.yapi.yml, *.yapi.yaml files.
+// If all is false, finds only *.test.yapi, *.test.yapi.yml, *.test.yapi.yaml files.
 func findTestFiles(dir string, all bool) ([]string, error) {
 	var testFiles []string
 
@@ -1284,20 +1284,24 @@ func findTestFiles(dir string, all bool) ([]string, error) {
 		if info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml" {
-			base := filepath.Base(path)
+		base := filepath.Base(path)
+		ext := filepath.Ext(path)
 
-			if all {
-				// Match *.yapi.yml or *.yapi.yaml (but not yapi.config.yml)
-				if (strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml")) &&
-					base != "yapi.config.yml" && base != "yapi.config.yaml" {
+		if all {
+			// Match *.yapi, *.yapi.yml or *.yapi.yaml (but not yapi.config.yml/yaml)
+			if base != "yapi.config.yml" && base != "yapi.config.yaml" {
+				if strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml") {
+					testFiles = append(testFiles, path)
+				} else if ext == ".yapi" {
 					testFiles = append(testFiles, path)
 				}
-			} else {
-				// Match *.test.yapi.yml or *.test.yapi.yaml
-				if strings.HasSuffix(base, ".test.yapi.yml") || strings.HasSuffix(base, ".test.yapi.yaml") {
-					testFiles = append(testFiles, path)
-				}
+			}
+		} else {
+			// Match *.test.yapi, *.test.yapi.yml or *.test.yapi.yaml
+			if strings.HasSuffix(base, ".test.yapi.yml") || strings.HasSuffix(base, ".test.yapi.yaml") {
+				testFiles = append(testFiles, path)
+			} else if strings.HasSuffix(base, ".test.yapi") && ext == ".yapi" {
+				testFiles = append(testFiles, path)
 			}
 		}
 		return nil
@@ -1368,7 +1372,7 @@ func listE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// findAllYapiFiles finds all *.yapi.yml files in the given directory (excluding yapi.config.yml)
+// findAllYapiFiles finds all *.yapi, *.yapi.yml, *.yapi.yaml files in the given directory (excluding yapi.config.yml/yaml)
 func findAllYapiFiles(dir string) ([]string, error) {
 	var yapiFiles []string
 
@@ -1379,11 +1383,14 @@ func findAllYapiFiles(dir string) ([]string, error) {
 		if info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml" {
-			base := filepath.Base(path)
-			// Match *.yapi.yml or *.yapi.yaml (but not yapi.config.yml)
-			if (strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml")) &&
-				base != "yapi.config.yml" && base != "yapi.config.yaml" {
+		base := filepath.Base(path)
+		ext := filepath.Ext(path)
+
+		// Match *.yapi, *.yapi.yml or *.yapi.yaml (but not yapi.config.yml/yaml)
+		if base != "yapi.config.yml" && base != "yapi.config.yaml" {
+			if strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml") {
+				yapiFiles = append(yapiFiles, path)
+			} else if ext == ".yapi" {
 				yapiFiles = append(yapiFiles, path)
 			}
 		}
