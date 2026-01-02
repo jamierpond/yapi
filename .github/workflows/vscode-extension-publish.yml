@@ -16,15 +16,11 @@ jobs:
       - uses: ./.github/actions/setup-vscode-extension
 
       - name: Publish to VS Code Marketplace
-        run: |
-          cd extensions/vscode-extension
-          npx @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
+        run: pnpm publish:extension
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Publish to Open VSX
-        run: |
-          cd extensions/vscode-extension
-          npx ovsx publish --no-dependencies -p ${{ secrets.OVSX_PAT }}
+        run: pnpm publish:extension:ovsx
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}

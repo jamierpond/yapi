@@ -18,9 +18,7 @@ jobs:
       - uses: ./.github/actions/setup-vscode-extension
 
       - name: Package extension
-        run: |
-          cd extensions/vscode-extension
-          npx @vscode/vsce package --no-dependencies
+        run: pnpm package:extension
 
       - uses: actions/upload-artifact@v4
         with:
