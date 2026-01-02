@@ -230,20 +230,71 @@ export default async function Landing() {
             desc="One yapi.config.yml to manage dev, staging, and prod. Switch with a flag. No duplicate files. Load secrets from shell env. Perfect for teams and CI/CD."
           />
           <FeatureCard
-            icon="🧠"
-            title="VS Code & Cursor"
-            desc="Official extension with Cmd+Enter execution, inline results panel, and full LSP support. Real-time validation, autocompletion, and hover info. Also works with Neovim and any LSP-compatible editor."
+            icon="⚡"
+            title="Go Native Speed"
+            desc="Written in Go. Starts instantly. Uses minimal RAM. No Electron bloat, no loading spinners, no updates that move your buttons. Just a fast, reliable CLI tool."
           />
+        </div>
+
+        {/* VS Code / Cursor Showcase */}
+        <div className="max-w-6xl w-full mx-auto mt-32">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              First-class{" "}
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                VS Code & Cursor
+              </span>{" "}
+              support
+            </h2>
+            <p className="text-yapi-fg-muted max-w-2xl mx-auto">
+              Run requests with Cmd+Enter. See responses inline. Full LSP with autocompletion, validation, and hover info. No context switching.
+            </p>
+          </div>
+
+          <div className="relative group">
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition duration-500"></div>
+
+            <div className="relative rounded-xl overflow-hidden border border-yapi-border shadow-2xl">
+              <img
+                src="/image.png"
+                alt="yapi VS Code extension showing inline request execution with response panel"
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
+            <a
+              href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-medium hover:bg-yapi-bg-elevated hover:border-blue-500/50 transition-all"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.15 2.587L18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.942-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z"/>
+              </svg>
+              VS Code Marketplace
+            </a>
+            <a
+              href="https://open-vsx.org/extension/yapi/yapi-extension"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-medium hover:bg-yapi-bg-elevated hover:border-purple-500/50 transition-all"
+            >
+              Open VSX (Cursor)
+            </a>
+          </div>
         </div>
 
         {/* Additional Features */}
         <div className="max-w-6xl w-full mx-auto mt-32 mb-16">
            <div className="grid md:grid-cols-2 gap-8">
               <div className="p-8 rounded-2xl border border-yapi-border bg-yapi-bg-elevated/20">
-                <div className="text-3xl mb-4">⚡</div>
-                <h3 className="text-xl font-bold mb-3">Go Native Speed</h3>
+                <div className="text-3xl mb-4">🧠</div>
+                <h3 className="text-xl font-bold mb-3">Built-in LSP</h3>
                 <p className="text-yapi-fg-muted leading-relaxed text-sm">
-                  Written in Go. Starts instantly. Uses minimal RAM. No Electron bloat, no loading spinners, no updates that move your buttons. Just a fast, reliable CLI tool.
+                  Full Language Server with autocompletion, real-time validation, and hover info. Works with Neovim, VS Code, Cursor, and any LSP-compatible editor.
                 </p>
               </div>
               <div className="p-8 rounded-2xl border border-yapi-border bg-yapi-bg-elevated/20">
