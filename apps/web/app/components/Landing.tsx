@@ -194,71 +194,41 @@ export default async function Landing() {
         </div>
 
         {/* Vanity Metrics */}
-        <div className="max-w-5xl w-full mx-auto mt-20">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {stats.githubStars > 0 && (
-              <a
-                href="https://github.com/jamierpond/yapi/stargazers"
-                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-yapi-accent transition-colors">
-                  {stats.githubStars.toLocaleString()}
-                </div>
-                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">GitHub Stars</div>
-              </a>
-            )}
-            {stats.githubForks > 0 && (
-              <a
-                href="https://github.com/jamierpond/yapi/forks"
-                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-yapi-accent transition-colors">
-                  {stats.githubForks.toLocaleString()}
-                </div>
-                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">Forks</div>
-              </a>
-            )}
-            {stats.totalDownloads > 0 && (
-              <a
-                href="https://github.com/jamierpond/yapi/releases"
-                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-yapi-accent transition-colors">
-                  {stats.totalDownloads.toLocaleString()}
-                </div>
-                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">CLI Downloads</div>
-              </a>
-            )}
-            {stats.vscodeInstalls > 0 && (
-              <a
-                href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
-                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-blue-500/50 transition-all text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-blue-400 transition-colors">
-                  {stats.vscodeInstalls.toLocaleString()}
-                </div>
-                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">VS Code Installs</div>
-              </a>
-            )}
-            {stats.openVSXDownloads > 0 && (
-              <a
-                href="https://open-vsx.org/extension/yapi/yapi-extension"
-                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-purple-500/50 transition-all text-center"
-              >
-                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-purple-400 transition-colors">
-                  {stats.openVSXDownloads.toLocaleString()}
-                </div>
-                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">Open VSX</div>
-              </a>
-            )}
-            {(stats.vscodeInstalls > 0 || stats.openVSXDownloads > 0 || stats.totalDownloads > 0) && (
-              <div className="p-6 rounded-xl border border-yapi-border bg-gradient-to-br from-yapi-accent/10 to-purple-500/10 text-center">
-                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-yapi-accent to-purple-400 bg-clip-text text-transparent">
-                  {(stats.totalDownloads + stats.vscodeInstalls + stats.openVSXDownloads).toLocaleString()}
-                </div>
-                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">Total Installs</div>
+        <div className="w-full px-6 mt-20">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 max-w-4xl mx-auto">
+            <MetricCard
+              href="https://github.com/jamierpond/yapi/stargazers"
+              value={stats.githubStars}
+              label="GitHub Stars"
+            />
+            <MetricCard
+              href="https://github.com/jamierpond/yapi/forks"
+              value={stats.githubForks}
+              label="Forks"
+            />
+            <MetricCard
+              href="https://github.com/jamierpond/yapi/releases"
+              value={stats.totalDownloads}
+              label="CLI Downloads"
+            />
+            <MetricCard
+              href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
+              value={stats.vscodeInstalls}
+              label="VS Code"
+              hoverColor="blue"
+            />
+            <MetricCard
+              href="https://open-vsx.org/extension/yapi/yapi-extension"
+              value={stats.openVSXDownloads}
+              label="Open VSX"
+              hoverColor="purple"
+            />
+            <div className="p-4 rounded-xl border border-yapi-border bg-gradient-to-br from-yapi-accent/10 to-purple-500/10 text-center">
+              <div className="text-2xl font-bold bg-gradient-to-r from-yapi-accent to-purple-400 bg-clip-text text-transparent">
+                {(stats.totalDownloads + stats.vscodeInstalls + stats.openVSXDownloads).toLocaleString()}
               </div>
-            )}
+              <div className="text-[10px] text-yapi-fg-muted mt-1 font-mono uppercase tracking-wide">Total</div>
+            </div>
           </div>
         </div>
 
@@ -381,5 +351,40 @@ function FeatureCard({ icon, title, desc }: { icon: string, title: string, desc:
         {desc}
       </p>
     </div>
+  );
+}
+
+function MetricCard({
+  href,
+  value,
+  label,
+  hoverColor = "accent"
+}: {
+  href: string;
+  value: number;
+  label: string;
+  hoverColor?: "accent" | "blue" | "purple";
+}) {
+  if (value <= 0) return null;
+
+  const baseClasses = "p-4 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 transition-all text-center";
+  const colorClasses = {
+    accent: "hover:border-yapi-accent/50",
+    blue: "hover:border-blue-500/50",
+    purple: "hover:border-purple-500/50",
+  };
+  const textColorClasses = {
+    accent: "group-hover:text-yapi-accent",
+    blue: "group-hover:text-blue-400",
+    purple: "group-hover:text-purple-400",
+  };
+
+  return (
+    <a href={href} className={`group ${baseClasses} ${colorClasses[hoverColor]}`}>
+      <div className={`text-2xl font-bold text-yapi-fg transition-colors ${textColorClasses[hoverColor]}`}>
+        {value.toLocaleString()}
+      </div>
+      <div className="text-[10px] text-yapi-fg-muted mt-1 font-mono uppercase tracking-wide">{label}</div>
+    </a>
   );
 }
