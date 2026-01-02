@@ -44,8 +44,8 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           margin: 0,
           padding: "16px",
           background: "#1e1e1e",
-          fontSize: "13px",
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          fontSize: "14px",
+          fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
@@ -53,7 +53,6 @@ export default function JsonViewer({ value }: JsonViewerProps) {
         lineNumberStyle={{
           minWidth: "3em",
           paddingRight: "1em",
-          color: "#4a4a4a",
           userSelect: "none",
         }}
         codeTagProps={{

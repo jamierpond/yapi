@@ -56,3 +56,8 @@
   /* Shadow */
   .shadow-yapi-accent\/10 { --tw-shadow-color: rgb(from var(--color-yapi-accent) r g b / 0.1); }
 }
+
+/* Override syntax highlighter line numbers */
+.linenumber {
+  color: #858585 !important;
+}
