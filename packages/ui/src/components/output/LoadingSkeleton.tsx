@@ -12,11 +12,7 @@ export default function LoadingSkeleton() {
       {/* Content */}
       <div className="relative flex-1 flex flex-col items-center justify-center gap-6">
         {/* Spinner */}
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full border-2 border-yapi-border/30" />
-          <div className="absolute inset-0 w-16 h-16 rounded-full border-2 border-transparent border-t-yapi-accent animate-spin" />
-          <div className="absolute inset-2 w-12 h-12 rounded-full border-2 border-transparent border-b-yapi-accent/50 animate-spin-reverse" />
-        </div>
+        <div className="text-5xl animate-spin">🐑</div>
 
         {/* Text */}
         <div className="flex flex-col items-center gap-2">
