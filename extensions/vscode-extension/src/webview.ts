@@ -45,6 +45,9 @@ export function getWebviewHtml(
     webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, cssRel))
   );
 
+  // Base URI for resolving relative paths in CSS (e.g., fonts)
+  const assetsBaseUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'assets'));
+
   // Build CSP
   const csp = [
     "default-src 'none';",
@@ -60,6 +63,7 @@ export function getWebviewHtml(
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="${csp}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="${assetsBaseUri}/">
     ${styleUris.map((u: vscode.Uri) => `<link rel="stylesheet" href="${u}">`).join('\n    ')}
   </head>
   <body>

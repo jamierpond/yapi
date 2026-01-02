@@ -1177,3 +1177,190 @@ func TestCheckExpectations_OnlyHeadersNoBody(t *testing.T) {
 		t.Errorf("AssertionsPassed = %d, want 2", res.AssertionsPassed)
 	}
 }
+
+// TestCheckExpectations_AllAssertionsEvaluated verifies that all assertions run even when some fail
+func TestCheckExpectations_AllAssertionsEvaluated(t *testing.T) {
+	tests := []struct {
+		name               string
+		expectation        config.Expectation
+		result             *Result
+		wantTotal          int
+		wantPassed         int
+		wantResultCount    int
+		wantErr            bool
+		checkResultDetails func(t *testing.T, results []AssertionResult)
+	}{
+		{
+			name: "all body assertions evaluated when first fails",
+			expectation: config.Expectation{
+				Assert: config.AssertionSet{
+					Body: []string{
+						`.name == "wrong"`, // fails
+						`.status == "ok"`,  // passes
+						`.count == 999`,    // fails
+					},
+				},
+			},
+			result:          &Result{Body: `{"name": "John", "status": "ok", "count": 42}`},
+			wantTotal:       3,
+			wantPassed:      1,
+			wantResultCount: 3,
+			wantErr:         true,
+			checkResultDetails: func(t *testing.T, results []AssertionResult) {
+				if len(results) != 3 {
+					t.Fatalf("expected 3 assertion results, got %d", len(results))
+				}
+				// First assertion should fail
+				if results[0].Passed {
+					t.Error("first assertion should have failed")
+				}
+				// Second assertion should pass
+				if !results[1].Passed {
+					t.Error("second assertion should have passed")
+				}
+				// Third assertion should fail
+				if results[2].Passed {
+					t.Error("third assertion should have failed")
+				}
+			},
+		},
+		{
+			name: "all header assertions evaluated when some fail",
+			expectation: config.Expectation{
+				Assert: config.AssertionSet{
+					Headers: []string{
+						`.["Content-Type"] == "text/html"`, // fails
+						`.["X-Custom"] != null`,            // passes
+						`.["Content-Length"] == "wrong"`,   // fails
+					},
+				},
+			},
+			result: &Result{
+				Body: `{}`,
+				Headers: map[string]string{
+					"Content-Type":   "application/json",
+					"X-Custom":       "value",
+					"Content-Length": "100",
+				},
+			},
+			wantTotal:       3,
+			wantPassed:      1,
+			wantResultCount: 3,
+			wantErr:         true,
+			checkResultDetails: func(t *testing.T, results []AssertionResult) {
+				if len(results) != 3 {
+					t.Fatalf("expected 3 assertion results, got %d", len(results))
+				}
+				if results[0].Passed {
+					t.Error("first header assertion should have failed")
+				}
+				if !results[1].Passed {
+					t.Error("second header assertion should have passed")
+				}
+				if results[2].Passed {
+					t.Error("third header assertion should have failed")
+				}
+			},
+		},
+		{
+			name: "mixed body and header assertions all evaluated",
+			expectation: config.Expectation{
+				Assert: config.AssertionSet{
+					Body: []string{
+						`.id == 999`,      // fails
+						`.active == true`, // passes
+					},
+					Headers: []string{
+						`.["Accept"] == "wrong"`, // fails
+						`.["Host"] != null`,      // passes
+					},
+				},
+			},
+			result: &Result{
+				Body: `{"id": 1, "active": true}`,
+				Headers: map[string]string{
+					"Accept": "application/json",
+					"Host":   "example.com",
+				},
+			},
+			wantTotal:       4,
+			wantPassed:      2,
+			wantResultCount: 4,
+			wantErr:         true,
+			checkResultDetails: func(t *testing.T, results []AssertionResult) {
+				if len(results) != 4 {
+					t.Fatalf("expected 4 assertion results, got %d", len(results))
+				}
+				// Body assertions
+				if results[0].Passed {
+					t.Error("first body assertion should have failed")
+				}
+				if !results[1].Passed {
+					t.Error("second body assertion should have passed")
+				}
+				// Header assertions
+				if results[2].Passed {
+					t.Error("first header assertion should have failed")
+				}
+				if !results[3].Passed {
+					t.Error("second header assertion should have passed")
+				}
+			},
+		},
+		{
+			name: "status check failure still evaluates all assertions",
+			expectation: config.Expectation{
+				Status: 200,
+				Assert: config.AssertionSet{
+					Body: []string{
+						`.name == "test"`, // passes
+						`.id == 1`,        // passes
+					},
+				},
+			},
+			result:          &Result{StatusCode: 500, Body: `{"name": "test", "id": 1}`},
+			wantTotal:       2,
+			wantPassed:      2,
+			wantResultCount: 2,
+			wantErr:         true, // status check fails
+			checkResultDetails: func(t *testing.T, results []AssertionResult) {
+				// Both body assertions should still be evaluated and pass
+				if len(results) != 2 {
+					t.Fatalf("expected 2 assertion results, got %d", len(results))
+				}
+				if !results[0].Passed {
+					t.Error("first assertion should have passed")
+				}
+				if !results[1].Passed {
+					t.Error("second assertion should have passed")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := CheckExpectations(tt.expectation, tt.result)
+
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", res.Error, tt.wantErr)
+			}
+
+			if res.AssertionsTotal != tt.wantTotal {
+				t.Errorf("AssertionsTotal = %d, want %d", res.AssertionsTotal, tt.wantTotal)
+			}
+
+			if res.AssertionsPassed != tt.wantPassed {
+				t.Errorf("AssertionsPassed = %d, want %d", res.AssertionsPassed, tt.wantPassed)
+			}
+
+			if len(res.AssertionResults) != tt.wantResultCount {
+				t.Errorf("len(AssertionResults) = %d, want %d", len(res.AssertionResults), tt.wantResultCount)
+			}
+
+			if tt.checkResultDetails != nil {
+				tt.checkResultDetails(t, res.AssertionResults)
+			}
+		})
+	}
+}

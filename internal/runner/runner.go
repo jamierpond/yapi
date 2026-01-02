@@ -420,6 +420,9 @@ func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars
 		AssertionResults: make([]AssertionResult, 0, totalAssertions),
 	}
 
+	var firstError error
+	var firstErrorDetail *filter.AssertionDetail
+
 	// Status Check
 	if expect.Status != nil {
 		res.StatusChecked = true
@@ -448,9 +451,8 @@ func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars
 			}
 		}
 		res.StatusPassed = matched
-		if !matched {
-			res.Error = fmt.Errorf("expected status %v, got %d", expect.Status, result.StatusCode)
-			return res
+		if !matched && firstError == nil {
+			firstError = fmt.Errorf("expected status %v, got %d", expect.Status, result.StatusCode)
 		}
 	}
 
@@ -496,16 +498,16 @@ func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars
 		res.AssertionResults = append(res.AssertionResults, ar)
 
 		if err != nil {
-			res.Error = fmt.Errorf("assertion failed: %w", err)
-			return res
+			if firstError == nil {
+				firstError = fmt.Errorf("assertion failed: %w", err)
+			}
+		} else if !passed {
+			if firstError == nil {
+				firstErrorDetail = detail
+			}
+		} else {
+			res.AssertionsPassed++
 		}
-		if !passed {
-			// Generate detailed error message based on what we know about the assertion
-			errorMsg := formatAssertionError(detail)
-			res.Error = fmt.Errorf("%s", errorMsg)
-			return res
-		}
-		res.AssertionsPassed++
 	}
 
 	// Header Assertions - run against headers as JSON
@@ -546,17 +548,24 @@ func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars
 			res.AssertionResults = append(res.AssertionResults, ar)
 
 			if err != nil {
-				res.Error = fmt.Errorf("header assertion failed: %w", err)
-				return res
+				if firstError == nil {
+					firstError = fmt.Errorf("header assertion failed: %w", err)
+				}
+			} else if !passed {
+				if firstError == nil {
+					firstErrorDetail = detail
+				}
+			} else {
+				res.AssertionsPassed++
 			}
-			if !passed {
-				// Generate detailed error message based on what we know about the assertion
-				errorMsg := formatAssertionError(detail)
-				res.Error = fmt.Errorf("header %s", errorMsg)
-				return res
-			}
-			res.AssertionsPassed++
 		}
+	}
+
+	// Set the first error encountered (with detailed message if available)
+	if firstError != nil {
+		res.Error = firstError
+	} else if firstErrorDetail != nil {
+		res.Error = fmt.Errorf("%s", formatAssertionError(firstErrorDetail))
 	}
 
 	return res
