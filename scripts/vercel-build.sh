@@ -56,6 +56,6 @@ echo "Building madea-blog-core..."
 pnpm --filter madea-blog-core build
 
 echo "Running pnpm build for web..."
-pnpm --filter web build
+pnpm --filter @yapi/web... build
 
 echo "=== Build Complete ==="
