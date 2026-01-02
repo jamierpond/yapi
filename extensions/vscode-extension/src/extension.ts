@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as cp from 'child_process';
+import { spawn, execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
@@ -102,7 +102,7 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
             enableScripts: true,
             retainContextWhenHidden: true,
             localResourceRoots: [
-                vscode.Uri.joinPath(context.extensionUri, '../../apps/vscode-webview/dist')
+                vscode.Uri.joinPath(context.extensionUri, 'media')
             ]
         }
     );
@@ -157,11 +157,23 @@ async function runYapi(context: vscode.ExtensionContext) {
     webview.webview.postMessage({ type: 'setLoading', loading: true });
 
     // Use yapi run command with --json flag for structured output
-    cp.exec(`"${yapiPath}" run --json "${filePath}"`, {
-        shell: '/bin/bash',
+    const child = spawn(yapiPath, ['run', '--json', filePath], {
         env: { ...process.env }
-    }, (error, stdout, stderr) => {
-        console.log('[yapi] Command output:', { error, stdout, stderr });
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (data) => {
+        stdout += data.toString();
+    });
+
+    child.stderr.on('data', (data) => {
+        stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+        console.log('[yapi] Command output:', { code, stdout, stderr });
 
         let result: YapiJsonOutput | null = null;
 
@@ -173,7 +185,7 @@ async function runYapi(context: vscode.ExtensionContext) {
             result = {
                 success: false,
                 body: stdout || 'No output',
-                error: error ? error.message : 'Failed to parse JSON output',
+                error: code !== 0 ? `Process exited with code ${code}` : 'Failed to parse JSON output',
             };
         }
 
@@ -250,7 +262,7 @@ function findYapiExecutable(): string | null {
 
     // Try which/where command
     try {
-        const result = cp.execSync(process.platform === 'win32' ? 'where yapi' : 'which yapi', {
+        const result = execSync(process.platform === 'win32' ? 'where yapi' : 'which yapi', {
             encoding: 'utf8',
             env: { ...process.env }
         });

@@ -22,6 +22,10 @@
     "onCommand:yapi.insertExample"
   ],
   "main": "./dist/extension.js",
+  "files": [
+    "dist/**",
+    "media/**"
+  ],
   "contributes": {
     "commands": [
       {
@@ -84,7 +88,8 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
-    "prebuild": "pnpm --filter @yapi/vscode-webview build",
+    "prebuild": "pnpm --filter @yapi/vscode-webview build && pnpm run copy:webview",
+    "copy:webview": "rm -rf media && mkdir -p media && cp -R ../../apps/vscode-webview/dist/* media/",
     "compile": "pnpm run prebuild && webpack",
     "watch": "webpack --watch",
     "package": "pnpm run prebuild && webpack --mode production --devtool hidden-source-map",

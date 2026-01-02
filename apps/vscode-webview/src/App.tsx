@@ -34,7 +34,7 @@ function App() {
     vscode.postMessage({ type: 'ready' });
 
     return () => {
-      window.addEventListener('message', handleMessage);
+      window.removeEventListener('message', handleMessage);
     };
   }, []);
 
