@@ -56,3 +56,14 @@ echo "Action built successfully"
 
 git tag "$NEW_VERSION"
 echo "Tagged $NEW_VERSION"
+
+# Sync version from git tag to all package.json files
+VERSION_NUMBER="${NEW_VERSION#v}"
+echo "Syncing package.json files to version $VERSION_NUMBER..."
+
+for pkg in $(git ls-files '*/package.json' 'package.json'); do
+    if [ -f "$pkg" ]; then
+        sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NUMBER\"/" "$pkg"
+        echo "  Updated $pkg"
+    fi
+done
