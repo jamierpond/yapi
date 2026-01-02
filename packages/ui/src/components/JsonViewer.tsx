@@ -83,8 +83,7 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           fontSize: "14px",
           fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
-          wordBreak: "break-all",
-          overflowWrap: "anywhere",
+          overflowWrap: "break-word",
         }}
         lineNumberStyle={{
           minWidth: "3em",
