@@ -17,6 +17,6 @@ runs:
       shell: bash
       run: pnpm install --frozen-lockfile
 
-    - name: Build extension
+    - name: Build packages and extension
       shell: bash
       run: pnpm build:extension

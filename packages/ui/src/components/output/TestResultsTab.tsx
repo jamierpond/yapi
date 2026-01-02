@@ -1,6 +1,6 @@
 "use client";
 
-import type { Assertions } from "../../types/api-contract";
+import type { Assertions, AssertionResult } from "../../types/api-contract";
 import TestResultItem from "./TestResultItem";
 
 interface TestResultsTabProps {
@@ -15,7 +15,7 @@ export default function TestResultsTab({ assertions }: TestResultsTabProps) {
       {/* Results List */}
       <div className="flex-1 overflow-auto">
         {results.length > 0 ? (
-          results.map((assertion, index) => (
+          results.map((assertion: AssertionResult, index: number) => (
             <TestResultItem
               key={`${assertion.expression}-${index}`}
               assertion={assertion}
