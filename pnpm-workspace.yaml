@@ -1,10 +1,14 @@
 packages:
-  - "apps/*"
-  - "apps/web/madea-blog-core/packages/*"
-  - "packages/*"
-  - "extensions/*"
+  - apps/*
+  - apps/web/madea-blog-core/packages/*
+  - packages/*
+  - extensions/*
+
+ignoredBuiltDependencies:
+  - keytar
 
 onlyBuiltDependencies:
+  - '@vscode/vsce-sign'
   - esbuild
   - sharp
   - unrs-resolver

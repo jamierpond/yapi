@@ -1,9 +1,13 @@
 {
-  "name": "@yapi/vscode-extension",
-  "displayName": "yapi",
+  "name": "yapi-extension",
+  "displayName": "yapi Official VSCode Extension",
   "description": "YAML API Testing Tool - HTTP, gRPC, and TCP support",
   "version": "0.0.1",
   "publisher": "yapi",
+  "repository": {
+     "type": "git",
+     "url": "https://github.com/jamiepond/yapi.git"
+  },
   "engines": {
     "vscode": "^1.107.0"
   },
@@ -22,11 +26,6 @@
     "onCommand:yapi.insertExample"
   ],
   "main": "./dist/extension.js",
-  "files": [
-    "dist/**",
-    "media/**",
-    "install/**"
-  ],
   "contributes": {
     "commands": [
       {
@@ -94,7 +93,6 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
-    "postinstall": "which yapi >/dev/null 2>&1 || ([ \"$(uname)\" = \"Darwin\" ] && bash install/mac.sh || [ \"$(uname)\" = \"Linux\" ] && bash install/linux.sh) || true",
     "prebuild": "pnpm --filter @yapi/vscode-webview build && pnpm run copy:webview",
     "copy:webview": "rm -rf media && mkdir -p media && cp -R ../../apps/vscode-webview/dist/. media/",
     "compile": "pnpm run prebuild && webpack",
@@ -105,9 +103,12 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "vsce:package": "pnpm vsce package --no-dependencies",
+    "vsce:publish": "pnpm vsce publish --no-dependencies"
   },
   "devDependencies": {
+    "@vscode/vsce": "^3.2.2",
     "@types/vscode": "^1.107.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
