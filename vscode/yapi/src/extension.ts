@@ -373,9 +373,15 @@ async function runYapi(context: vscode.ExtensionContext) {
 
     const startTime = Date.now();
 
-    cp.exec(`yapi -c "${filePath}"`, (error, stdout, stderr) => {
+    // Use yapi run command with proper environment
+    cp.exec(`yapi run "${filePath}"`, {
+        shell: '/bin/bash',
+        env: { ...process.env }
+    }, (error, stdout, stderr) => {
         const executionTime = Date.now() - startTime;
         let body = stdout || '';
+
+        console.log('[yapi] Command output:', { error, stdout, stderr });
 
         if (error && !stdout && !stderr) {
             body = `Error: ${error.message}`;
@@ -443,9 +449,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     const updateStatusBar = () => {
         const editor = vscode.window.activeTextEditor;
+        console.log('[yapi] updateStatusBar called, editor:', editor?.document.fileName);
         if (editor && (editor.document.fileName.endsWith('.yapi.yml') || editor.document.fileName.endsWith('.yapi.yaml'))) {
+            console.log('[yapi] Showing status bar for:', editor.document.fileName);
             statusBar.show();
         } else {
+            console.log('[yapi] Hiding status bar, fileName:', editor?.document.fileName);
             statusBar.hide();
         }
     };
@@ -463,15 +472,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.workspace.onDidOpenTextDocument(doc => {
         validateYapiDocument(doc);
-    }, null, context.subscriptions);
-
-    vscode.workspace.onDidSaveTextDocument((doc) => {
-        if (doc.fileName.endsWith('.yapi.yml') || doc.fileName.endsWith('.yapi.yaml')) {
-            const config = vscode.workspace.getConfiguration('yapi');
-            if (panel && config.get('autoRunOnSave', true)) {
-                runYapi(context);
-            }
-        }
     }, null, context.subscriptions);
 
     if (vscode.window.activeTextEditor) {

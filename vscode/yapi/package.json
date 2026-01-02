@@ -13,7 +13,9 @@
   ],
   "activationEvents": [
     "workspaceContains:**/*.yapi.yml",
-    "workspaceContains:**/*.yapi.yaml"
+    "workspaceContains:**/*.yapi.yaml",
+    "onCommand:yapi.runCurrent",
+    "onCommand:yapi.insertExample"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -41,14 +43,6 @@
         "win": "ctrl+enter",
         "linux": "ctrl+enter",
         "when": "editorTextFocus && resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
-      },
-      {
-        "command": "yapi.runCurrent",
-        "key": "cmd+s",
-        "mac": "cmd+s",
-        "win": "ctrl+s",
-        "linux": "ctrl+s",
-        "when": "editorTextFocus && resourceFilename =~ /\\.yapi\\.(yml|yaml)$/ && config.yapi.runOnSave"
       }
     ],
     "menus": {
@@ -56,13 +50,13 @@
         {
           "command": "yapi.runCurrent",
           "group": "navigation",
-          "when": "resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
+          "when": "resourceLangId == yaml && (resourceFilename =~ /\\.yapi\\.yml$/ || resourceFilename =~ /\\.yapi\\.yaml$/)"
         }
       ],
       "commandPalette": [
         {
           "command": "yapi.runCurrent",
-          "when": "resourceFilename =~ /\\.yapi\\.(yml|yaml)$/"
+          "when": "resourceLangId == yaml && (resourceFilename =~ /\\.yapi\\.yml$/ || resourceFilename =~ /\\.yapi\\.yaml$/)"
         },
         {
           "command": "yapi.insertExample",
@@ -70,30 +64,9 @@
         }
       ]
     },
-    "languages": [
-      {
-        "id": "yaml",
-        "extensions": [
-          ".yapi.yml",
-          ".yapi.yaml"
-        ],
-        "configuration": "./language-configuration.json"
-      }
-    ],
     "configuration": {
       "title": "yapi",
-      "properties": {
-        "yapi.autoRunOnSave": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically run yapi when a .yapi.yml file is saved"
-        },
-        "yapi.runOnSave": {
-          "type": "boolean",
-          "default": false,
-          "description": "Run yapi on Cmd+S / Ctrl+S instead of just saving"
-        }
-      }
+      "properties": {}
     },
     "yamlValidation": [
       {

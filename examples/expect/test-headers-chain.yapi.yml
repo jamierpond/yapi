@@ -17,7 +17,7 @@ chain:
 
   - name: check_previous_header
     path: /anything
-    json: '{"previous_header": "$get_headers.headers.X-Custom-Value"}'
+    json: '{"previous_header": "${get_headers.headers.X-Custom-Value}"}'
     expect:
       status: 200
       assert:
