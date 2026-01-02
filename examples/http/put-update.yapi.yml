@@ -9,3 +9,8 @@ body:
   title: "Updated title"
   body: "Updated content"
   userId: 1
+
+expect: 
+   assert: 
+    body:
+        - .body == "Updated content"
