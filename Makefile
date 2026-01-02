@@ -1,4 +1,4 @@
-.PHONY: build run run-print-analytics test fuzz fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all lint lint-install install-lint lint-quick lint-full gen-docs gh-action fuzz-cover
+.PHONY: build run run-print-analytics test fuzz fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all lint lint-install install-lint lint-quick lint-full gen-docs gh-action fuzz-cover local-release
 
 NAME := yapi
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -120,3 +120,6 @@ gh-action:
 	@echo "Running tests for GitHub Actions..."
 	act -W .github/workflows/web-tests.yml \
 		--container-architecture linux/amd64
+
+local-release:
+	goreleaser release --snapshot --clean --skip=publish
