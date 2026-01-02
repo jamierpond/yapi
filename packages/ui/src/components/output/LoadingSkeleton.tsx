@@ -2,44 +2,60 @@
 
 export default function LoadingSkeleton() {
   return (
-    <div className="h-full flex flex-col bg-yapi-bg relative">
-      {/* Header skeleton */}
-      <div className="relative flex items-center justify-between px-6 h-16 border-b border-yapi-border/50 bg-yapi-bg-elevated/50 backdrop-blur-sm">
-        <div className="absolute inset-0 bg-gradient-to-r from-yapi-accent/5 via-transparent to-transparent opacity-50" />
-        <div className="relative flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-yapi-border animate-pulse" />
-          <div className="h-3 w-16 rounded-full yapi-skeleton" />
-        </div>
-        <div className="relative flex items-center gap-4">
-          <div className="h-7 w-14 rounded-lg yapi-skeleton" />
-          <div className="h-7 w-20 rounded-lg yapi-skeleton" />
-        </div>
+    <div className="h-full flex flex-col bg-yapi-bg relative overflow-hidden">
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-yapi-accent/20 via-transparent to-transparent animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yapi-accent/10 rounded-full blur-3xl animate-ping-slow" />
       </div>
 
-      {/* Body skeleton */}
-      <div className="flex-1 overflow-hidden bg-yapi-bg relative">
-        <div className="absolute left-0 top-0 bottom-0 w-14 border-r border-yapi-border/30 flex flex-col items-center gap-[18px] pt-4 pb-4 bg-yapi-bg-editor">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="w-4 h-3 rounded yapi-skeleton opacity-40" />
-          ))}
+      {/* Content */}
+      <div className="relative flex-1 flex flex-col items-center justify-center gap-6">
+        {/* Spinner */}
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-2 border-yapi-border/30" />
+          <div className="absolute inset-0 w-16 h-16 rounded-full border-2 border-transparent border-t-yapi-accent animate-spin" />
+          <div className="absolute inset-2 w-12 h-12 rounded-full border-2 border-transparent border-b-yapi-accent/50 animate-spin-reverse" />
         </div>
-        <div className="absolute left-14 top-0 right-0 bottom-0 p-4 space-y-[18px] bg-yapi-bg-editor">
-          {[10, 9, 8, 7, 6, 9, 5, 4].map((w, i) => (
-            <div key={i} className={`h-3 w-${w}/12 rounded yapi-skeleton`} />
-          ))}
+
+        {/* Text */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yapi-accent animate-pulse shadow-[0_0_12px_rgba(255,102,0,0.6)]" />
+            <span className="text-sm font-semibold text-yapi-fg tracking-wider">YAPI</span>
+          </div>
+          <span className="text-xs text-yapi-fg-muted animate-pulse">Executing request...</span>
+        </div>
+
+        {/* Progress dots */}
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent animate-bounce-dot" style={{ animationDelay: "0ms" }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent animate-bounce-dot" style={{ animationDelay: "150ms" }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent animate-bounce-dot" style={{ animationDelay: "300ms" }} />
         </div>
       </div>
 
       <style>{`
-        @keyframes yapi-skeleton-shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+        @keyframes spin-reverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
         }
-        .yapi-skeleton {
-          background-image: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.02) 40%);
-          background-color: var(--color-yapi-bg-editor);
-          background-size: 200% 100%;
-          animation: yapi-skeleton-shimmer 1.2s ease-in-out infinite;
+        @keyframes ping-slow {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.1; }
+          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.2; }
+        }
+        @keyframes bounce-dot {
+          0%, 100% { transform: translateY(0); opacity: 0.4; }
+          50% { transform: translateY(-4px); opacity: 1; }
+        }
+        .animate-spin-reverse {
+          animation: spin-reverse 1.5s linear infinite;
+        }
+        .animate-ping-slow {
+          animation: ping-slow 2s ease-in-out infinite;
+        }
+        .animate-bounce-dot {
+          animation: bounce-dot 1s ease-in-out infinite;
         }
       `}</style>
     </div>
