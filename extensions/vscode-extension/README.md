@@ -8,7 +8,6 @@ The API client that lives in your editor. **yapi** is a CLI-first, offline-first
 - **Real-time Validation**: Inline diagnostics with error highlighting
 - **Live Response Panel**: Split-pane view with syntax-highlighted JSON responses
 - **Quick Examples**: Insert example configurations with one command
-- **Hot Reload**: Auto-run on save (configurable)
 - **Keyboard Shortcuts**: `Cmd+Enter` / `Ctrl+Enter` to run requests
 - **Execution Timing**: See request completion times
 
@@ -55,11 +54,11 @@ body:
 
 - **yapi: Run yapi** - Execute the current yapi file (`Cmd+Enter` / `Ctrl+Enter`)
 - **yapi: Insert Example** - Quick insert example configurations
+- **yapi: Restart Language Server** - Restart the yapi LSP server
 
 ## Extension Settings
 
-- `yapi.autoRunOnSave`: Automatically run yapi when a .yapi.yml file is saved (default: `true`)
-- `yapi.runOnSave`: Run yapi on `Cmd+S` / `Ctrl+S` instead of just saving (default: `false`)
+- `yapi.executablePath`: Path to the yapi executable (default: `yapi` - searches in PATH)
 
 ## Validation
 
@@ -73,7 +72,6 @@ The extension provides real-time validation for yapi files:
 ## Keyboard Shortcuts
 
 - `Cmd+Enter` / `Ctrl+Enter` - Run the current yapi file
-- `Cmd+S` / `Ctrl+S` - Save (or run if `yapi.runOnSave` is enabled)
 
 ## Supported Protocols
 

@@ -1,13 +1,13 @@
 {
   "name": "yapi-extension",
   "displayName": "yapi Official VSCode Extension",
-  "description": "YAML API Testing Tool - HTTP, gRPC, and TCP support",
+  "description": "YAML API Testing Tool - HTTP, gRPC, GraphQL, and TCP support",
   "version": "0.0.2",
   "publisher": "yapi",
   "icon": "./images/fluffy.png",
   "repository": {
      "type": "git",
-     "url": "https://github.com/jamiepond/yapi.git"
+     "url": "https://github.com/jamierpond/yapi.git"
   },
   "engines": {
     "vscode": "^1.107.0"
