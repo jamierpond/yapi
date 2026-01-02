@@ -1,6 +1,6 @@
 {
   "name": "yapi-action",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "GitHub Action to run Yapi integration tests with background services and health checks",
   "main": "dist/index.js",
   "scripts": {
