@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "@yapi/styles/tokens.css";
-@import "@yapi/styles/utilities.css";
 @plugin "@tailwindcss/typography";
 
 @theme inline {
