@@ -39,8 +39,10 @@ interface HighlighterProps {
   language: string;
   style: Record<string, CSSProperties>;
   showLineNumbers?: boolean;
+  wrapLongLines?: boolean;
   customStyle?: CSSProperties;
   lineNumberStyle?: CSSProperties;
+  codeTagProps?: { style?: CSSProperties };
   children: ReactNode;
 }
 
@@ -68,11 +70,12 @@ export default function JsonViewer({ value }: JsonViewerProps) {
   const language = detectLanguage(value);
 
   return (
-    <div className="h-full w-full overflow-auto">
+    <div className="h-full w-full overflow-auto" style={{ maxWidth: "100%" }}>
       <Highlighter
         language={language}
         style={customTheme}
         showLineNumbers
+        wrapLongLines
         customStyle={{
           margin: 0,
           padding: "16px",
@@ -80,6 +83,8 @@ export default function JsonViewer({ value }: JsonViewerProps) {
           fontSize: "14px",
           fontFamily: "var(--font-jetbrains-mono), JetBrains Mono, ui-monospace, monospace",
           minHeight: "100%",
+          wordBreak: "break-all",
+          overflowWrap: "anywhere",
         }}
         lineNumberStyle={{
           minWidth: "3em",
