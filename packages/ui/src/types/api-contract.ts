@@ -1,15 +1,33 @@
-import { z } from "zod";
-
 /**
  * FE/BE API Contract
  *
- * This file defines the contract between the frontend and backend
- * for the yapi playground. All API interactions should conform to these schemas.
+ * This file re-exports types from @yapi/client and adds request schemas.
+ * The response types are defined in @yapi/client to keep a single source of truth.
+ *
+ * Type hierarchy:
+ * - Go CLI (cmd/yapi/main.go) -> defines jsonOutput struct
+ * - @yapi/client -> defines YapiResultSchema (mirrors Go), YapiUIResult (for UI)
+ * - @yapi/ui -> re-exports and adds request validation
  */
 
-// ============================================================================
+import { z } from "zod";
+
+// Re-export types from @yapi/client for UI consumption
+export {
+  type YapiResult,
+  type YapiUIResult,
+  type YapiUISuccess,
+  type YapiUIError,
+  type ErrorType,
+  YapiResultSchema,
+  ErrorType as ErrorTypeEnum,
+  categorizeError,
+  transformResultForUI,
+} from "@yapi/client";
+
+// =============================================================================
 // Request Schema: POST /api/execute
-// ============================================================================
+// =============================================================================
 
 /**
  * The request payload sent from the editor to execute a yapi request
@@ -21,99 +39,20 @@ export const ExecuteRequestSchema = z.object({
 
 export type ExecuteRequest = z.infer<typeof ExecuteRequestSchema>;
 
-// ============================================================================
-// Response Schema: POST /api/execute
-// ============================================================================
+// =============================================================================
+// Response Types (re-exported from @yapi/client)
+// =============================================================================
 
-/**
- * Successful execution response
- */
-export const ExecuteSuccessResponseSchema = z.object({
-  /** Whether the execution was successful */
-  success: z.literal(true),
+// For backwards compatibility, alias the types
+import type { YapiUISuccess, YapiUIError, YapiUIResult } from "@yapi/client";
 
-  /** The response body (parsed JSON or raw string) */
-  responseBody: z.unknown(),
+export type ExecuteSuccessResponse = YapiUISuccess;
+export type ExecuteErrorResponse = YapiUIError;
+export type ExecuteResponse = YapiUIResult;
 
-  /** Transport type used (http, grpc, tcp, graphql) */
-  transport: z.enum(["http", "grpc", "tcp", "graphql"]).optional(),
-
-  /** Status code (HTTP only, 0 or omitted for gRPC/TCP) */
-  statusCode: z.number().optional(),
-
-  /** Request timing in milliseconds */
-  timing: z.number(),
-
-  /** Response metadata (headers for HTTP/GraphQL, can be empty for gRPC/TCP) */
-  headers: z.record(z.string(), z.string()).optional(),
-
-  /** The full request URL/endpoint that was executed */
-  requestUrl: z.string().optional(),
-
-  /** Method/RPC name (GET/POST for HTTP, RPC method for gRPC, "tcp" for TCP) */
-  method: z.string().optional(),
-
-  /** Service name (gRPC only) */
-  service: z.string().optional(),
-
-  /** Content-Type of the response */
-  contentType: z.string().optional(),
-
-  /** Response size in bytes */
-  sizeBytes: z.number().optional(),
-
-  /** Number of lines in response body */
-  sizeLines: z.number().optional(),
-
-  /** Number of characters in response body */
-  sizeChars: z.number().optional(),
-
-  /** Warnings generated during execution */
-  warnings: z.array(z.string()).optional(),
-
-  /** Optional: The parsed YAML config (for debugging) */
-  parsedConfig: z.unknown().optional(),
-});
-
-/**
- * Error response when execution fails
- */
-export const ExecuteErrorResponseSchema = z.object({
-  /** Whether the execution was successful */
-  success: z.literal(false),
-
-  /** Error message */
-  error: z.string(),
-
-  /** Error type for categorization */
-  errorType: z.enum([
-    "YAML_PARSE_ERROR",
-    "VALIDATION_ERROR",
-    "NETWORK_ERROR",
-    "SSRF_BLOCKED",
-    "TIMEOUT",
-    "UNKNOWN"
-  ]),
-
-  /** Optional: Additional error details for debugging */
-  details: z.unknown().optional(),
-});
-
-/**
- * Union of success and error responses
- */
-export const ExecuteResponseSchema = z.union([
-  ExecuteSuccessResponseSchema,
-  ExecuteErrorResponseSchema,
-]);
-
-export type ExecuteSuccessResponse = z.infer<typeof ExecuteSuccessResponseSchema>;
-export type ExecuteErrorResponse = z.infer<typeof ExecuteErrorResponseSchema>;
-export type ExecuteResponse = z.infer<typeof ExecuteResponseSchema>;
-
-// ============================================================================
+// =============================================================================
 // Helper Functions
-// ============================================================================
+// =============================================================================
 
 /**
  * Type guard to check if response is successful
@@ -133,9 +72,9 @@ export function isErrorResponse(
   return response.success === false;
 }
 
-// ============================================================================
+// =============================================================================
 // Validation API: POST /api/validate
-// ============================================================================
+// =============================================================================
 
 /**
  * Request payload for validation

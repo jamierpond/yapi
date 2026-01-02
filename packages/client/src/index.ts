@@ -1,12 +1,13 @@
 /**
- * @yapi/client - Shared CLI execution logic
+ * @yapi/client - Shared CLI execution logic and types
  *
- * This package provides a single source of truth for spawning the yapi CLI,
- * handling temp files, and parsing output. Used by both the web API route
- * and the VS Code extension.
+ * This package provides:
+ * - Single source of truth for CLI execution (runYapi)
+ * - Shared type definitions (YapiResult, YapiUIResult)
+ * - Error categorization logic
  *
- * IMPORTANT: Keep in sync with Go CLI output format (cmd/yapi/main.go).
- * If you change the JSON output structure in Go, update YapiResultSchema here.
+ * IMPORTANT: Keep YapiResultSchema in sync with Go CLI output (cmd/yapi/main.go).
+ * If you change the JSON output structure in Go, update this file.
  */
 
 import { spawn } from 'node:child_process';
@@ -16,11 +17,29 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 
+// =============================================================================
+// Shared Type Definitions
+// =============================================================================
+
+/**
+ * Error types for categorizing failures.
+ * Used by both web and extension UIs.
+ */
+export const ErrorType = z.enum([
+  'YAML_PARSE_ERROR',
+  'VALIDATION_ERROR',
+  'NETWORK_ERROR',
+  'SSRF_BLOCKED',
+  'TIMEOUT',
+  'UNKNOWN',
+]);
+export type ErrorType = z.infer<typeof ErrorType>;
+
 /**
  * Schema for CLI JSON output.
  * Mirrors the jsonOutput struct in cmd/yapi/main.go.
  */
-const YapiResultSchema = z.object({
+export const YapiResultSchema = z.object({
   success: z.boolean(),
   body: z.string(),
   transport: z.string().optional(),
@@ -39,6 +58,111 @@ const YapiResultSchema = z.object({
 });
 
 export type YapiResult = z.infer<typeof YapiResultSchema>;
+
+/**
+ * Success response formatted for UI consumption.
+ */
+export interface YapiUISuccess {
+  success: true;
+  responseBody: unknown;
+  transport?: string;
+  statusCode?: number;
+  timing: number;
+  headers?: Record<string, string>;
+  requestUrl?: string;
+  method?: string;
+  service?: string;
+  contentType?: string;
+  sizeBytes?: number;
+  sizeLines?: number;
+  sizeChars?: number;
+  warnings?: string[];
+}
+
+/**
+ * Error response formatted for UI consumption.
+ */
+export interface YapiUIError {
+  success: false;
+  error: string;
+  errorType: ErrorType;
+  details?: unknown;
+}
+
+/**
+ * Union type for UI consumption.
+ */
+export type YapiUIResult = YapiUISuccess | YapiUIError;
+
+// =============================================================================
+// Error Categorization
+// =============================================================================
+
+/**
+ * Categorize an error message to determine its type.
+ * Used by both web and extension to provide consistent error feedback.
+ */
+export function categorizeError(errorMessage: string): ErrorType {
+  const lowerMsg = errorMessage.toLowerCase();
+  if (lowerMsg.includes('timeout')) return 'TIMEOUT';
+  if (lowerMsg.includes('yaml') || lowerMsg.includes('parse')) return 'YAML_PARSE_ERROR';
+  if (lowerMsg.includes('validation') || lowerMsg.includes('invalid')) return 'VALIDATION_ERROR';
+  if (lowerMsg.includes('network') || lowerMsg.includes('connection') || lowerMsg.includes('econnrefused')) return 'NETWORK_ERROR';
+  if (lowerMsg.includes('ssrf') || lowerMsg.includes('blocked')) return 'SSRF_BLOCKED';
+  return 'UNKNOWN';
+}
+
+// =============================================================================
+// Result Transformation
+// =============================================================================
+
+/**
+ * Transform raw CLI result to UI-friendly format.
+ * Handles JSON parsing of body and error categorization.
+ */
+export function transformResultForUI(result: YapiResult): YapiUIResult {
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error || 'Unknown error',
+      errorType: categorizeError(result.error || ''),
+      details: result.body || undefined,
+    };
+  }
+
+  // Try to parse body as JSON for nicer display
+  let responseBody: unknown;
+  if (typeof result.body === 'string' && result.body.trim().length > 0) {
+    try {
+      responseBody = JSON.parse(result.body);
+    } catch {
+      responseBody = result.body;
+    }
+  } else {
+    responseBody = result.body;
+  }
+
+  return {
+    success: true,
+    responseBody,
+    transport: result.transport,
+    statusCode: result.statusCode,
+    timing: result.timing,
+    headers: result.headers,
+    requestUrl: result.requestUrl,
+    method: result.method,
+    service: result.service,
+    contentType: result.contentType,
+    sizeBytes: result.sizeBytes,
+    sizeLines: result.sizeLines,
+    sizeChars: result.sizeChars,
+    warnings: result.warnings,
+  };
+}
+
+// =============================================================================
+// CLI Execution
+// =============================================================================
 
 export interface YapiOptions {
   /** Path to the yapi executable */
@@ -99,15 +223,24 @@ export async function runYapi(options: YapiOptions): Promise<YapiResult> {
   } finally {
     // 5. Cleanup
     if (isTempFile) {
-      // Don't await cleanup, just fire and forget to keep response fast
       unlink(targetFilePath).catch(() => {});
     }
   }
 }
 
 /**
- * Internal helper to spawn process with promise wrapper and timeout
+ * Execute yapi and return UI-ready result.
+ * Convenience function that combines runYapi + transformResultForUI.
  */
+export async function runYapiForUI(options: YapiOptions): Promise<YapiUIResult> {
+  const result = await runYapi(options);
+  return transformResultForUI(result);
+}
+
+// =============================================================================
+// Internal Helpers
+// =============================================================================
+
 function spawnYapiProcess(
   cmd: string,
   args: string[],
@@ -122,7 +255,6 @@ function spawnYapiProcess(
     let stderr = '';
     let completed = false;
 
-    // Timeout safety
     const timer = setTimeout(() => {
       if (!completed) {
         completed = true;
@@ -157,24 +289,15 @@ function spawnYapiProcess(
   });
 }
 
-/**
- * Parses raw CLI output into structured result
- */
 function parseYapiOutput({ stdout, stderr }: { stdout: string; stderr: string }): YapiResult {
   try {
-    // 1. Try strict JSON parse
     const raw = JSON.parse(stdout);
-
-    // 2. Validate against schema
-    // Use safeParse to avoid throwing if the CLI changes slightly,
-    // preferring to return a partial result than crashing.
     const parsed = YapiResultSchema.safeParse(raw);
 
     if (parsed.success) {
       return parsed.data;
     } else {
       console.error('Yapi schema validation failed:', parsed.error);
-      // Fallback for valid JSON but invalid schema
       return {
         success: false,
         body: stdout,
@@ -184,10 +307,9 @@ function parseYapiOutput({ stdout, stderr }: { stdout: string; stderr: string })
       };
     }
   } catch {
-    // 3. Fallback: CLI crashed or returned non-JSON text
     return {
       success: false,
-      body: stdout || stderr, // If stdout is empty, show stderr
+      body: stdout || stderr,
       timing: 0,
       error: stderr || 'Failed to parse JSON output',
     };

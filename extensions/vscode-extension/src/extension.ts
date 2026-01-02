@@ -8,7 +8,7 @@ import {
     Executable
 } from 'vscode-languageclient/node';
 import { getWebviewHtml } from './webview';
-import { runYapi, type YapiResult } from '@yapi/client';
+import { runYapiForUI } from '@yapi/client';
 
 let client: LanguageClient;
 let panel: vscode.WebviewPanel | undefined;
@@ -69,37 +69,6 @@ close_after_send: true
 `
     }
 };
-
-/**
- * Transform YapiResult to the format expected by the webview UI
- */
-function transformResultForWebview(result: YapiResult) {
-    if (!result.success) {
-        return {
-            success: false,
-            error: result.error || 'Unknown error',
-            errorType: 'UNKNOWN' as const,
-            details: result.body || undefined,
-        };
-    }
-
-    return {
-        success: true,
-        responseBody: result.body,
-        transport: result.transport,
-        statusCode: result.statusCode,
-        timing: result.timing,
-        headers: result.headers,
-        requestUrl: result.requestUrl,
-        method: result.method,
-        service: result.service,
-        contentType: result.contentType,
-        sizeBytes: result.sizeBytes,
-        sizeLines: result.sizeLines,
-        sizeChars: result.sizeChars,
-        warnings: result.warnings,
-    };
-}
 
 function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel {
     if (panel) {
@@ -169,17 +138,16 @@ async function runYapiCommand(context: vscode.ExtensionContext) {
     // Send loading message
     webview.webview.postMessage({ type: 'setLoading', loading: true });
 
-    // Execute using shared client
-    const result = await runYapi({
+    // Execute and get UI-ready result
+    const result = await runYapiForUI({
         executablePath: yapiPath,
         input: { type: 'file', path: filePath },
         timeout: 30000,
     });
 
-    // Transform and send result to webview
-    const transformedResult = transformResultForWebview(result);
+    // Send result to webview
     if (panel) {
-        panel.webview.postMessage({ type: 'setResult', result: transformedResult });
+        panel.webview.postMessage({ type: 'setResult', result });
     }
 }
 

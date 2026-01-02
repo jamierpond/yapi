@@ -29,6 +29,7 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@yapi/client": "workspace:*",
     "@yapi/styles": "workspace:*",
     "react-syntax-highlighter": "^16.1.0",
     "zod": "^3.22.0"

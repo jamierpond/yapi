@@ -276,6 +276,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@yapi/client':
+        specifier: workspace:*
+        version: link:../client
       '@yapi/styles':
         specifier: workspace:*
         version: link:../styles
