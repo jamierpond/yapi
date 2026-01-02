@@ -15,6 +15,6 @@
     "test": "pnpm --filter @yapi/web test"
   },
   "devDependencies": {
-    "next": "^16.0.8"
+    "next": "^16.1.1"
   }
 }
