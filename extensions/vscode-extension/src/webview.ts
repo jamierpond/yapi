@@ -45,17 +45,40 @@ export function getWebviewHtml(
     webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, cssRel))
   );
 
-  // Base URI for resolving relative paths in CSS (e.g., fonts)
-  const assetsBaseUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaRoot, 'assets'));
+  // Font URIs for webview
+  const fontRegular = webview.asWebviewUri(
+    vscode.Uri.joinPath(mediaRoot, 'fonts', 'JetBrains_Mono', 'JetBrainsMono-VariableFont_wght.ttf')
+  );
+  const fontItalic = webview.asWebviewUri(
+    vscode.Uri.joinPath(mediaRoot, 'fonts', 'JetBrains_Mono', 'JetBrainsMono-Italic-VariableFont_wght.ttf')
+  );
 
   // Build CSP
   const csp = [
     "default-src 'none';",
     `img-src ${webview.cspSource} https: data:;`,
-    `style-src ${webview.cspSource};`,
+    `style-src ${webview.cspSource} 'unsafe-inline';`,
     `script-src ${webview.cspSource};`,
     `font-src ${webview.cspSource};`,
   ].join(' ');
+
+  // Inline font-face rules with proper webview URIs
+  const fontStyles = `
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("${fontRegular}") format("truetype");
+      font-weight: 100 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("${fontItalic}") format("truetype");
+      font-weight: 100 800;
+      font-style: italic;
+      font-display: swap;
+    }
+  `;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -63,7 +86,7 @@ export function getWebviewHtml(
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="${csp}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="${assetsBaseUri}/">
+    <style>${fontStyles}</style>
     ${styleUris.map((u: vscode.Uri) => `<link rel="stylesheet" href="${u}">`).join('\n    ')}
   </head>
   <body>

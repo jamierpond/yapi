@@ -52,7 +52,7 @@ export default function ResponseHeader({ statusCode, timing, onCopy, assertions 
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
           <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent shadow-[0_0_8px_rgba(255,102,0,0.5)] animate-pulse" />
-          <h3 className="text-xs font-semibold text-yapi-fg tracking-wider">yapi</h3>
+          <h3 className="text-xs font-semibold text-yapi-fg tracking-wider">fishyapi</h3>
         </a>
         <a
           href="https://github.com/jamierpond/yapi/issues/new"

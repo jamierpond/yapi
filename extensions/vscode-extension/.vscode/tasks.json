@@ -1,13 +1,27 @@
-// See https://go.microsoft.com/fwlink/?LinkId=733558
-// for the documentation about the tasks.json format
 {
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$ts-webpack-watch",
+			"label": "watch",
+			"type": "shell",
+			"command": "pnpm run watch",
 			"isBackground": true,
+			"problemMatcher": {
+				"owner": "webpack",
+				"severity": "error",
+				"fileLocation": "absolute",
+				"pattern": {
+					"regexp": "^\\[tsl\\] ERROR in (.+)\\((\\d+),(\\d+)\\)",
+					"file": 1,
+					"line": 2,
+					"column": 3
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^\\[webpack-cli\\] Compiler starting",
+					"endsPattern": "^\\[webpack-cli\\] Compiler finished"
+				}
+			},
 			"presentation": {
 				"reveal": "never",
 				"group": "watchers"
@@ -18,23 +32,11 @@
 			}
 		},
 		{
-			"type": "npm",
-			"script": "watch-tests",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
+			"label": "build",
+			"type": "shell",
+			"command": "pnpm run compile",
+			"problemMatcher": "$ts-webpack",
 			"group": "build"
-		},
-		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
-			"problemMatcher": []
 		}
 	]
 }
