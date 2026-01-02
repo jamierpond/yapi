@@ -10,9 +10,11 @@ import {
 import { getWebviewHtml } from './webview';
 import { runYapiForUI } from '@yapi/client';
 
-let client: LanguageClient;
+let client: LanguageClient | undefined;
 let panel: vscode.WebviewPanel | undefined;
 let outputChannel: vscode.OutputChannel;
+let webviewReady = false;
+let pendingMessage: { type: string; loading?: boolean; result?: unknown } | null = null;
 
 function isYapiFile(fileName: string): boolean {
     return fileName.endsWith('.yapi') ||
@@ -20,6 +22,26 @@ function isYapiFile(fileName: string): boolean {
            fileName.endsWith('.yapi.yaml') ||
            fileName.endsWith('yapi.config.yml') ||
            fileName.endsWith('yapi.config.yaml');
+}
+
+function isExecutable(filePath: string): boolean {
+    try {
+        fs.accessSync(filePath, fs.constants.X_OK);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function sendToWebview(message: { type: string; loading?: boolean; result?: unknown }) {
+    if (!panel) return;
+
+    if (webviewReady) {
+        panel.webview.postMessage(message);
+    } else {
+        // Queue message to send when webview is ready
+        pendingMessage = message;
+    }
 }
 
 const EXAMPLES = {
@@ -97,7 +119,12 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
         message => {
             switch (message.type) {
                 case 'ready':
-                    // Webview is ready - could send initial state here if needed
+                    webviewReady = true;
+                    // Send any pending message that was queued before ready
+                    if (pendingMessage) {
+                        panel?.webview.postMessage(pendingMessage);
+                        pendingMessage = null;
+                    }
                     break;
             }
         },
@@ -107,6 +134,8 @@ function getOrCreatePanel(context: vscode.ExtensionContext): vscode.WebviewPanel
 
     panel.onDidDispose(() => {
         panel = undefined;
+        webviewReady = false;
+        pendingMessage = null;
     }, null, context.subscriptions);
 
     return panel;
@@ -133,10 +162,10 @@ async function runYapiCommand(context: vscode.ExtensionContext) {
 
     await editor.document.save();
 
-    const webview = getOrCreatePanel(context);
+    getOrCreatePanel(context);
 
-    // Send loading message
-    webview.webview.postMessage({ type: 'setLoading', loading: true });
+    // Send loading message (queued if webview not ready)
+    sendToWebview({ type: 'setLoading', loading: true });
 
     // Execute and get UI-ready result
     const result = await runYapiForUI({
@@ -146,9 +175,7 @@ async function runYapiCommand(context: vscode.ExtensionContext) {
     });
 
     // Send result to webview
-    if (panel) {
-        panel.webview.postMessage({ type: 'setResult', result });
-    }
+    sendToWebview({ type: 'setResult', result });
 }
 
 async function insertExample(exampleKey: keyof typeof EXAMPLES) {
@@ -193,8 +220,12 @@ function findYapiExecutable(): string | null {
     if (configuredPath !== 'yapi') {
         // User specified a custom path
         if (fs.existsSync(configuredPath)) {
-            outputChannel.appendLine(`Using configured yapi path: ${configuredPath}`);
-            return configuredPath;
+            if (process.platform !== 'win32' && !isExecutable(configuredPath)) {
+                outputChannel.appendLine(`Configured path exists but is not executable: ${configuredPath}`);
+            } else {
+                outputChannel.appendLine(`Using configured yapi path: ${configuredPath}`);
+                return configuredPath;
+            }
         } else {
             outputChannel.appendLine(`Configured path not found: ${configuredPath}`);
         }
@@ -210,6 +241,10 @@ function findYapiExecutable(): string | null {
 
     for (const p of commonPaths) {
         if (fs.existsSync(p)) {
+            if (process.platform !== 'win32' && !isExecutable(p)) {
+                outputChannel.appendLine(`Found yapi at ${p} but it's not executable`);
+                continue;
+            }
             outputChannel.appendLine(`Found yapi at: ${p}`);
             return p;
         }
@@ -233,14 +268,7 @@ function findYapiExecutable(): string | null {
     return null;
 }
 
-export function activate(context: vscode.ExtensionContext) {
-    console.log('yapi extension is now active');
-
-    // Create output channel for debugging
-    outputChannel = vscode.window.createOutputChannel('yapi');
-    context.subscriptions.push(outputChannel);
-
-    // Find yapi executable
+async function startLanguageServer(): Promise<void> {
     const yapiPath = findYapiExecutable();
     if (!yapiPath) {
         const message = 'yapi executable not found. Please install yapi or configure the path in settings.';
@@ -252,45 +280,76 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.env.openExternal(vscode.Uri.parse('https://pond.audio/yapi/install'));
             }
         });
-    } else {
-        outputChannel.appendLine(`Starting yapi language server with: ${yapiPath}`);
-
-        // Set up LSP client
-        const serverOptions: Executable = {
-            command: yapiPath,
-            args: ['lsp'],
-            options: {
-                env: { ...process.env }
-            }
-        };
-
-        const clientOptions: LanguageClientOptions = {
-            documentSelector: [
-                { scheme: 'file', pattern: '**/*.yapi' },
-                { scheme: 'file', pattern: '**/*.yapi.yml' },
-                { scheme: 'file', pattern: '**/*.yapi.yaml' },
-                { scheme: 'file', pattern: '**/yapi.config.yml' },
-                { scheme: 'file', pattern: '**/yapi.config.yaml' }
-            ],
-            synchronize: {
-                fileEvents: vscode.workspace.createFileSystemWatcher('**/*.yapi*')
-            },
-            outputChannel: outputChannel
-        };
-
-        client = new LanguageClient(
-            'yapiLanguageServer',
-            'yapi Language Server',
-            serverOptions,
-            clientOptions
-        );
-
-        // Start the LSP client
-        client.start().catch(err => {
-            outputChannel.appendLine(`Failed to start language server: ${err}`);
-            vscode.window.showErrorMessage(`Failed to start yapi language server: ${err.message}`);
-        });
+        return;
     }
+
+    outputChannel.appendLine(`Starting yapi language server with: ${yapiPath}`);
+
+    const serverOptions: Executable = {
+        command: yapiPath,
+        args: ['lsp'],
+        options: {
+            env: { ...process.env }
+        }
+    };
+
+    const clientOptions: LanguageClientOptions = {
+        documentSelector: [
+            { scheme: 'file', pattern: '**/*.yapi' },
+            { scheme: 'file', pattern: '**/*.yapi.yml' },
+            { scheme: 'file', pattern: '**/*.yapi.yaml' },
+            { scheme: 'file', pattern: '**/yapi.config.yml' },
+            { scheme: 'file', pattern: '**/yapi.config.yaml' }
+        ],
+        synchronize: {
+            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.yapi*')
+        },
+        outputChannel: outputChannel
+    };
+
+    client = new LanguageClient(
+        'yapiLanguageServer',
+        'yapi Language Server',
+        serverOptions,
+        clientOptions
+    );
+
+    try {
+        await client.start();
+    } catch (err) {
+        outputChannel.appendLine(`Failed to start language server: ${err}`);
+        vscode.window.showErrorMessage(`Failed to start yapi language server: ${err instanceof Error ? err.message : String(err)}`);
+    }
+}
+
+async function restartLanguageServer(): Promise<void> {
+    if (client) {
+        outputChannel.appendLine('Stopping language server for restart...');
+        await client.stop();
+        client = undefined;
+    }
+    await startLanguageServer();
+}
+
+export function activate(context: vscode.ExtensionContext) {
+    console.log('yapi extension is now active');
+
+    // Create output channel for debugging
+    outputChannel = vscode.window.createOutputChannel('yapi');
+    context.subscriptions.push(outputChannel);
+
+    // Start the language server
+    startLanguageServer();
+
+    // Watch for configuration changes
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('yapi.executablePath')) {
+                outputChannel.appendLine('yapi.executablePath changed, restarting language server...');
+                restartLanguageServer();
+            }
+        })
+    );
 
     // Register commands
     const runCommand = vscode.commands.registerCommand('yapi.runCurrent', () => runYapiCommand(context));
@@ -298,6 +357,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     const examplesCommand = vscode.commands.registerCommand('yapi.insertExample', showExamplePicker);
     context.subscriptions.push(examplesCommand);
+
+    const restartLspCommand = vscode.commands.registerCommand('yapi.restartLanguageServer', () => {
+        restartLanguageServer();
+    });
+    context.subscriptions.push(restartLspCommand);
 
     // Status bar
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -308,12 +372,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     const updateStatusBar = () => {
         const editor = vscode.window.activeTextEditor;
-        console.log('[yapi] updateStatusBar called, editor:', editor?.document.fileName);
         if (editor && isYapiFile(editor.document.fileName)) {
-            console.log('[yapi] Showing status bar for:', editor.document.fileName);
             statusBar.show();
         } else {
-            console.log('[yapi] Hiding status bar, fileName:', editor?.document.fileName);
             statusBar.hide();
         }
     };

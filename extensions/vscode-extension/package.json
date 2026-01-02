@@ -42,6 +42,11 @@
         "command": "yapi.insertExample",
         "title": "Insert Example",
         "category": "yapi"
+      },
+      {
+        "command": "yapi.restartLanguageServer",
+        "title": "Restart Language Server",
+        "category": "yapi"
       }
     ],
     "keybindings": [
