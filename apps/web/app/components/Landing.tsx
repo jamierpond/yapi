@@ -1,16 +1,18 @@
 import Link from "next/link";
 import CopyInstallButton from "./CopyInstallButton";
 import Navbar from "./Navbar";
-import { getTotalDownloads } from "@/app/lib/github";
+import { getTotalDownloads, getVSCodeInstalls, getOpenVSXDownloads } from "@/app/lib/github";
 
 async function getStats() {
   try {
     const FIVE_MINUTES_MS = 300;
-    const [totalDownloads, releasesRes] = await Promise.all([
+    const [totalDownloads, releasesRes, vscodeInstalls, openVSXDownloads] = await Promise.all([
       getTotalDownloads(),
       fetch("https://api.github.com/repos/jamierpond/yapi/releases/latest", {
         next: { revalidate: FIVE_MINUTES_MS },
       }),
+      getVSCodeInstalls(),
+      getOpenVSXDownloads(),
     ]);
 
     const release = releasesRes.ok ? await releasesRes.json() : { tag_name: null };
@@ -18,9 +20,11 @@ async function getStats() {
     return {
       totalDownloads: totalDownloads || 0,
       latestVersion: release.tag_name || null,
+      vscodeInstalls: vscodeInstalls || 0,
+      openVSXDownloads: openVSXDownloads || 0,
     };
   } catch {
-    return { totalDownloads: 0, latestVersion: null };
+    return { totalDownloads: 0, latestVersion: null, vscodeInstalls: 0, openVSXDownloads: 0 };
   }
 }
 
@@ -59,9 +63,29 @@ export default async function Landing() {
           {stats.totalDownloads > 0 && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
               <span className="text-xs font-mono text-yapi-fg-muted">
-                {stats.totalDownloads.toLocaleString()} downloads
+                {stats.totalDownloads.toLocaleString()} CLI downloads
               </span>
             </div>
+          )}
+          {stats.vscodeInstalls > 0 && (
+            <a
+              href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm hover:border-yapi-accent/50 transition-colors"
+            >
+              <span className="text-xs font-mono text-yapi-fg-muted">
+                {stats.vscodeInstalls.toLocaleString()} VS Code installs
+              </span>
+            </a>
+          )}
+          {stats.openVSXDownloads > 0 && (
+            <a
+              href="https://open-vsx.org/extension/yapi/yapi-extension"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm hover:border-yapi-accent/50 transition-colors"
+            >
+              <span className="text-xs font-mono text-yapi-fg-muted">
+                {stats.openVSXDownloads.toLocaleString()} Open VSX downloads
+              </span>
+            </a>
           )}
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
             <div className="flex h-2 w-2 relative">
@@ -207,8 +231,8 @@ export default async function Landing() {
           />
           <FeatureCard
             icon="🧠"
-            title="Built-in LSP"
-            desc="Full Language Server with autocompletion, real-time validation, and hover info. Works with Neovim, VS Code, and any LSP-compatible editor. No extensions needed."
+            title="VS Code & Cursor"
+            desc="Official extension with Cmd+Enter execution, inline results panel, and full LSP support. Real-time validation, autocompletion, and hover info. Also works with Neovim and any LSP-compatible editor."
           />
         </div>
 

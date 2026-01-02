@@ -124,3 +124,66 @@ export async function getTotalDownloads(): Promise<number | null> {
     return null;
   }
 }
+
+// VS Code Marketplace stats
+type VSCodeStatistic = {
+  statisticName: string;
+  value: number;
+};
+
+type VSCodeExtension = {
+  statistics?: VSCodeStatistic[];
+};
+
+type VSCodeQueryResponse = {
+  results?: Array<{
+    extensions?: VSCodeExtension[];
+  }>;
+};
+
+export async function getVSCodeInstalls(): Promise<number | null> {
+  try {
+    const res = await fetch(
+      "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery?api-version=7.2-preview.1",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filters: [
+            {
+              criteria: [{ filterType: 7, value: "yapi.yapi-extension" }],
+              pageSize: 1,
+            },
+          ],
+          flags: 914,
+        }),
+        next: { revalidate: 3600 },
+      }
+    );
+
+    if (!res.ok) return null;
+
+    const data: VSCodeQueryResponse = await res.json();
+    const stats = data.results?.[0]?.extensions?.[0]?.statistics;
+    const installStat = stats?.find((s) => s.statisticName === "install");
+    return installStat?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getOpenVSXDownloads(): Promise<number | null> {
+  try {
+    const res = await fetch(
+      "https://open-vsx.org/api/yapi/yapi-extension",
+      { next: { revalidate: 3600 } }
+    );
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data.downloadCount ?? null;
+  } catch {
+    return null;
+  }
+}
