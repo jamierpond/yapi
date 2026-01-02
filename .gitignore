@@ -46,3 +46,5 @@ foo.md
 packages/client/dist
 make-smaller.md
 unipmorted.txt
+aur_ed25519
+aur_ed25519.pub
