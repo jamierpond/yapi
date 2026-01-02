@@ -34,30 +34,6 @@ export default function LoadingSkeleton() {
           <div className="w-1.5 h-1.5 rounded-full bg-yapi-accent animate-bounce-dot" style={{ animationDelay: "300ms" }} />
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin-reverse {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-        @keyframes ping-slow {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.1; }
-          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.2; }
-        }
-        @keyframes bounce-dot {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          50% { transform: translateY(-4px); opacity: 1; }
-        }
-        .animate-spin-reverse {
-          animation: spin-reverse 1.5s linear infinite;
-        }
-        .animate-ping-slow {
-          animation: ping-slow 2s ease-in-out infinite;
-        }
-        .animate-bounce-dot {
-          animation: bounce-dot 1s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
