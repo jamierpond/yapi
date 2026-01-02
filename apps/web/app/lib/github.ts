@@ -90,17 +90,26 @@ async function fetchAllReleases(token: string) {
   return { nodes: allNodes, totalCount };
 }
 
-export async function getGitHubStars(): Promise<number | null> {
+export async function getGitHubStats(): Promise<{ stars: number | null; forks: number | null }> {
   try {
     const res = await fetch("https://api.github.com/repos/jamierpond/yapi", {
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { stars: null, forks: null };
     const data = await res.json();
-    return data.stargazers_count;
+    return {
+      stars: data.stargazers_count,
+      forks: data.forks_count,
+    };
   } catch {
-    return null;
+    return { stars: null, forks: null };
   }
+}
+
+// Keep for backwards compatibility
+export async function getGitHubStars(): Promise<number | null> {
+  const { stars } = await getGitHubStats();
+  return stars;
 }
 
 export async function getTotalDownloads(): Promise<number | null> {

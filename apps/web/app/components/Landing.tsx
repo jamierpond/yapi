@@ -1,18 +1,19 @@
 import Link from "next/link";
 import CopyInstallButton from "./CopyInstallButton";
 import Navbar from "./Navbar";
-import { getTotalDownloads, getVSCodeInstalls, getOpenVSXDownloads } from "@/app/lib/github";
+import { getTotalDownloads, getVSCodeInstalls, getOpenVSXDownloads, getGitHubStats } from "@/app/lib/github";
 
 async function getStats() {
   try {
     const FIVE_MINUTES_MS = 300;
-    const [totalDownloads, releasesRes, vscodeInstalls, openVSXDownloads] = await Promise.all([
+    const [totalDownloads, releasesRes, vscodeInstalls, openVSXDownloads, githubStats] = await Promise.all([
       getTotalDownloads(),
       fetch("https://api.github.com/repos/jamierpond/yapi/releases/latest", {
         next: { revalidate: FIVE_MINUTES_MS },
       }),
       getVSCodeInstalls(),
       getOpenVSXDownloads(),
+      getGitHubStats(),
     ]);
 
     const release = releasesRes.ok ? await releasesRes.json() : { tag_name: null };
@@ -22,9 +23,11 @@ async function getStats() {
       latestVersion: release.tag_name || null,
       vscodeInstalls: vscodeInstalls || 0,
       openVSXDownloads: openVSXDownloads || 0,
+      githubStars: githubStats.stars || 0,
+      githubForks: githubStats.forks || 0,
     };
   } catch {
-    return { totalDownloads: 0, latestVersion: null, vscodeInstalls: 0, openVSXDownloads: 0 };
+    return { totalDownloads: 0, latestVersion: null, vscodeInstalls: 0, openVSXDownloads: 0, githubStars: 0, githubForks: 0 };
   }
 }
 
@@ -58,33 +61,6 @@ export default async function Landing() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm hover:border-yapi-accent/50 transition-colors"
             >
               <span className="text-xs font-mono text-yapi-accent">{stats.latestVersion}</span>
-            </a>
-          )}
-          {stats.totalDownloads > 0 && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
-              <span className="text-xs font-mono text-yapi-fg-muted">
-                {stats.totalDownloads.toLocaleString()} CLI downloads
-              </span>
-            </div>
-          )}
-          {stats.vscodeInstalls > 0 && (
-            <a
-              href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm hover:border-yapi-accent/50 transition-colors"
-            >
-              <span className="text-xs font-mono text-yapi-fg-muted">
-                {stats.vscodeInstalls.toLocaleString()} VS Code installs
-              </span>
-            </a>
-          )}
-          {stats.openVSXDownloads > 0 && (
-            <a
-              href="https://open-vsx.org/extension/yapi/yapi-extension"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm hover:border-yapi-accent/50 transition-colors"
-            >
-              <span className="text-xs font-mono text-yapi-fg-muted">
-                {stats.openVSXDownloads.toLocaleString()} Open VSX downloads
-              </span>
             </a>
           )}
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
@@ -284,6 +260,75 @@ export default async function Landing() {
             >
               Open VSX (Cursor)
             </a>
+          </div>
+        </div>
+
+        {/* Vanity Metrics */}
+        <div className="max-w-5xl w-full mx-auto mt-32">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {stats.githubStars > 0 && (
+              <a
+                href="https://github.com/jamierpond/yapi/stargazers"
+                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all text-center"
+              >
+                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-yapi-accent transition-colors">
+                  {stats.githubStars.toLocaleString()}
+                </div>
+                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">GitHub Stars</div>
+              </a>
+            )}
+            {stats.githubForks > 0 && (
+              <a
+                href="https://github.com/jamierpond/yapi/forks"
+                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all text-center"
+              >
+                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-yapi-accent transition-colors">
+                  {stats.githubForks.toLocaleString()}
+                </div>
+                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">Forks</div>
+              </a>
+            )}
+            {stats.totalDownloads > 0 && (
+              <a
+                href="https://github.com/jamierpond/yapi/releases"
+                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all text-center"
+              >
+                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-yapi-accent transition-colors">
+                  {stats.totalDownloads.toLocaleString()}
+                </div>
+                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">CLI Downloads</div>
+              </a>
+            )}
+            {stats.vscodeInstalls > 0 && (
+              <a
+                href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
+                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-blue-500/50 transition-all text-center"
+              >
+                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-blue-400 transition-colors">
+                  {stats.vscodeInstalls.toLocaleString()}
+                </div>
+                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">VS Code Installs</div>
+              </a>
+            )}
+            {stats.openVSXDownloads > 0 && (
+              <a
+                href="https://open-vsx.org/extension/yapi/yapi-extension"
+                className="group p-6 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-purple-500/50 transition-all text-center"
+              >
+                <div className="text-3xl md:text-4xl font-bold text-yapi-fg group-hover:text-purple-400 transition-colors">
+                  {stats.openVSXDownloads.toLocaleString()}
+                </div>
+                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">Open VSX</div>
+              </a>
+            )}
+            {(stats.vscodeInstalls > 0 || stats.openVSXDownloads > 0 || stats.totalDownloads > 0) && (
+              <div className="p-6 rounded-xl border border-yapi-border bg-gradient-to-br from-yapi-accent/10 to-purple-500/10 text-center">
+                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-yapi-accent to-purple-400 bg-clip-text text-transparent">
+                  {(stats.totalDownloads + stats.vscodeInstalls + stats.openVSXDownloads).toLocaleString()}
+                </div>
+                <div className="text-xs text-yapi-fg-muted mt-1 font-mono">Total Installs</div>
+              </div>
+            )}
           </div>
         </div>
 
