@@ -1,6 +1,7 @@
 packages:
   - web
   - web/madea-blog-core/packages/madea-blog-core
+  - vscode/yapi
 
 onlyBuiltDependencies:
   - esbuild
