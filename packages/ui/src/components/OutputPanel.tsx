@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { ExecuteResponse } from "../types/api-contract";
 import { isSuccessResponse } from "../types/api-contract";
 import JsonViewer from "./JsonViewer";
@@ -24,6 +24,13 @@ type Tab = "body" | "headers" | "cookies" | "info" | "warnings";
 export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("body");
 
+  const getBodyForCopy = useCallback(() => {
+    if (!result || !isSuccessResponse(result)) return undefined;
+    return typeof result.responseBody === "string"
+      ? result.responseBody
+      : JSON.stringify(result.responseBody, null, 2);
+  }, [result]);
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -40,6 +47,7 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         <ResponseHeader
           statusCode={isSuccess ? result.statusCode : undefined}
           timing={isSuccess ? result.timing : 0}
+          onCopy={isSuccess ? getBodyForCopy : undefined}
         />
 
         {isSuccess ? (
