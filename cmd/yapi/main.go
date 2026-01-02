@@ -374,6 +374,70 @@ func (app *rootCommand) printResultAsJSON(result *runner.Result, expectRes *runn
 	return execErr
 }
 
+// printChainResultAsJSON outputs chain results as structured JSON
+func (app *rootCommand) printChainResultAsJSON(chainResult *runner.ChainResult, chainErr error) error {
+	output := jsonOutput{
+		Success:   chainErr == nil,
+		Transport: "chain",
+	}
+
+	if chainResult != nil && len(chainResult.Results) > 0 {
+		// Calculate total timing
+		var totalTiming int64
+		for _, r := range chainResult.Results {
+			totalTiming += r.Duration.Milliseconds()
+		}
+		output.Timing = totalTiming
+
+		// Build combined body as JSON array of step results
+		var stepBodies []any
+		for i, r := range chainResult.Results {
+			stepBody := map[string]any{
+				"step": chainResult.StepNames[i],
+			}
+			// Try to parse body as JSON, otherwise use string
+			var bodyJSON any
+			if err := json.Unmarshal([]byte(r.Body), &bodyJSON); err == nil {
+				stepBody["body"] = bodyJSON
+			} else {
+				stepBody["body"] = r.Body
+			}
+			stepBody["statusCode"] = r.StatusCode
+			stepBody["timing"] = r.Duration.Milliseconds()
+			stepBodies = append(stepBodies, stepBody)
+		}
+
+		// Marshal step bodies as the combined body
+		bodyBytes, _ := json.MarshalIndent(stepBodies, "", "  ")
+		output.Body = string(bodyBytes)
+
+		// Use last step's result for metadata
+		lastResult := chainResult.Results[len(chainResult.Results)-1]
+		output.StatusCode = lastResult.StatusCode
+		output.Headers = lastResult.Headers
+		output.RequestURL = lastResult.RequestURL
+		output.ContentType = lastResult.ContentType
+		output.SizeBytes = lastResult.BodyBytes
+		output.SizeLines = lastResult.BodyLines
+		output.SizeChars = lastResult.BodyChars
+		output.Warnings = lastResult.Warnings
+	}
+
+	// Add error if chain failed
+	if chainErr != nil {
+		output.Error = chainErr.Error()
+	}
+
+	// Marshal and print JSON
+	jsonBytes, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	fmt.Println(string(jsonBytes))
+	return chainErr
+}
+
 // printResult outputs a single result with optional expectation.
 func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult) {
 	if result != nil {
