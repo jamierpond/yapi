@@ -1,6 +1,5 @@
-@import "tailwindcss";
-@import "@yapi/styles/tokens.css";
-@import "@yapi/styles/utilities.css";
+/* Import pre-built UI styles that include all Tailwind utilities */
+@import "@yapi/ui/styles.css";
 
 * {
   margin: 0;

@@ -8,21 +8,26 @@
   "exports": {
     ".": "./src/index.ts",
     "./components/*": "./src/components/*.tsx",
-    "./types": "./src/types/index.ts"
+    "./types": "./src/types/index.ts",
+    "./styles.css": "./dist/styles.css"
   },
   "scripts": {
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit && vite build"
   },
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "typescript": "^5.0.0"
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
   },
   "dependencies": {
+    "@yapi/styles": "workspace:*",
     "zod": "^3.22.0"
   }
 }
