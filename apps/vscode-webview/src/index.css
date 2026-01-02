@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  color: var(--vscode-editor-foreground, #cccccc);
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  line-height: 1.6;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Map yapi design tokens to VS Code theme variables */
+:root {
+  --yapi-bg: var(--vscode-editor-background);
+  --yapi-bg-elevated: var(--vscode-input-background);
+  --yapi-text: var(--vscode-editor-foreground);
+  --yapi-text-muted: var(--vscode-descriptionForeground);
+  --yapi-border: var(--vscode-panel-border);
+  --yapi-border-strong: var(--vscode-focusBorder);
+  --yapi-accent: var(--vscode-focusBorder);
+}
