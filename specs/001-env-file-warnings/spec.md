@@ -115,6 +115,8 @@ A developer sees a `${GITHUB_PAT}` variable reference in their YAPI file and wan
 
 ### LSP Features
 
+The LSP should be maximally helpful - surface every issue that could cause a request to fail before the user runs it.
+
 - **FR-007**: The LSP MUST support "go to definition" on env file paths in the `env_files` array, navigating to line 1 of the target file
 - **FR-008**: The LSP MUST support "go to definition" on `${VAR}` references, navigating to the line where the variable is defined in the env file
 - **FR-009**: When a variable is defined in multiple env files, the LSP MUST navigate to the first definition in `env_files` order
@@ -157,6 +159,7 @@ env_files:
 - Default behavior (without --strict-env) is to warn and continue, matching common tool behavior
 - Env file lookup is relative to the YAPI configuration file location, not the current working directory
 - Permission errors are always treated as errors (not warnings) since they indicate a system configuration issue
+- LSP diagnostics should be comprehensive and proactive - catch every potential issue before runtime
 
 ## Success Criteria
 
