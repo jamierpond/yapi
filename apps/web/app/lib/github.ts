@@ -97,13 +97,17 @@ export async function getGitHubStats(): Promise<{ stars: number | null; forks: n
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return { stars: null, forks: null };
+    if (!res.ok) {
+      console.error(`[getGitHubStats] GitHub API error: ${res.status} ${res.statusText}`);
+      return { stars: null, forks: null };
+    }
     const data = await res.json();
     return {
-      stars: data.stargazers_count,
-      forks: data.forks_count,
+      stars: data.stargazers_count ?? null,
+      forks: data.forks_count ?? null,
     };
-  } catch {
+  } catch (err) {
+    console.error("[getGitHubStats] Error:", err);
     return { stars: null, forks: null };
   }
 }
