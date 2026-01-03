@@ -1,28 +1,43 @@
-# [PROJECT NAME] Development Guidelines
+# yapi Development Guidelines
 
-Auto-generated from all feature plans. Last updated: [DATE]
+## Project Overview
 
-## Active Technologies
+yapi is a CLI-first, git-friendly API client for HTTP, gRPC, GraphQL, and TCP.
 
-[EXTRACTED FROM ALL PLAN.MD FILES]
+## Core Principles
+
+1. **CLI-First**: All features via terminal, scriptable and pipeable
+2. **Git-Friendly**: YAML configs, no binary formats
+3. **Protocol Agnostic**: HTTP, gRPC, GraphQL, TCP as equals
+4. **Simplicity**: YAGNI, minimal defaults
 
 ## Project Structure
 
 ```text
-[ACTUAL STRUCTURE FROM PLANS]
+cmd/yapi/           # CLI entry point
+internal/
+├── executor/       # Protocol executors (http, grpc, graphql, tcp)
+├── config/         # YAML parsing, environments
+├── tui/            # Interactive mode
+└── lsp/            # Language server
+examples/           # Sample .yapi.yml files
+tests/              # Integration tests
 ```
 
 ## Commands
 
-[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES]
+```bash
+make build          # Build binary
+make test           # Run tests
+make lint           # Run linter
+make install        # Install locally
+yapi run file.yapi.yml      # Execute request
+yapi validate file.yapi.yml # Validate schema
+```
 
 ## Code Style
 
-[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE]
-
-## Recent Changes
-
-[LAST 3 FEATURES AND WHAT THEY ADDED]
-
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+- Table-driven tests
+- Error messages must be actionable
+- Keep packages small and focused
+- Prefer explicit over implicit
