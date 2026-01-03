@@ -26,11 +26,6 @@ type ParseResult struct {
 	Expect   Expectation // Expectations for single request validation
 }
 
-// LoadFromString parses a yapi config from raw YAML data.
-func LoadFromString(data string) (*ParseResult, error) {
-	return loadFromStringInternal(data, "", nil, nil)
-}
-
 // LoadFromStringWithPath parses a yapi config with path context for resolving relative env_files.
 func LoadFromStringWithPath(data string, configPath string, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
 	return loadFromStringInternal(data, configPath, resolver, defaults)

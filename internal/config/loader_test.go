@@ -24,10 +24,10 @@ func load(path string) (*ParseResult, error) {
 			return nil, err
 		}
 	}
-	return LoadFromString(string(data))
+	return loadFromStringInternal(string(data), "", nil, nil)
 }
 
-func TestLoadFromString(t *testing.T) {
+func TestLoadFromStringInternal(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -60,9 +60,9 @@ method: GET`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := LoadFromString(tt.input)
+			_, err := loadFromStringInternal(tt.input, "", nil, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadFromString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("loadFromStringInternal() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -295,7 +295,7 @@ env_files:
 	}
 }
 
-func FuzzLoadFromString(f *testing.F) {
+func FuzzLoadFromStringInternal(f *testing.F) {
 	// Seed with valid YAML configs
 	f.Add(`yapi: v1
 url: https://example.com
@@ -348,7 +348,7 @@ chain:
 	f.Add(`url: not-a-url`)
 
 	f.Fuzz(func(t *testing.T, input string) {
-		// LoadFromString should not panic on any input
-		_, _ = LoadFromString(input)
+		// loadFromStringInternal should not panic on any input
+		_, _ = loadFromStringInternal(input, "", nil, nil)
 	})
 }

@@ -76,7 +76,7 @@ query:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := config.LoadFromString(tt.yaml)
+			res, err := config.LoadFromStringWithPath(tt.yaml, "", nil, nil)
 			if err != nil {
 				t.Fatalf("LoadFromString failed: %v", err)
 			}
@@ -150,7 +150,7 @@ json: '{"status":"active","code":42}'`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := config.LoadFromString(tt.yaml)
+			res, err := config.LoadFromStringWithPath(tt.yaml, "", nil, nil)
 			if err != nil {
 				t.Fatalf("LoadFromString failed: %v", err)
 			}
@@ -213,11 +213,11 @@ func TestHTTPTransport_InsecureTLS(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	insecureRes, err := config.LoadFromString(`
+	insecureRes, err := config.LoadFromStringWithPath(`
 yapi: v1
 url: https://example.com
 method: GET
-insecure: true`)
+insecure: true`, "", nil, nil)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
@@ -232,10 +232,10 @@ insecure: true`)
 	}
 	_ = resp.Body.Close()
 
-	secureRes, err := config.LoadFromString(`
+	secureRes, err := config.LoadFromStringWithPath(`
 yapi: v1
 url: https://example.com
-method: GET`)
+method: GET`, "", nil, nil)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}

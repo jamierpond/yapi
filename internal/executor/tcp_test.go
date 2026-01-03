@@ -58,7 +58,7 @@ data: |
   %s
 read_timeout: 1
 close_after_send: true`, l.Addr().String(), expected)
-	res, err := config.LoadFromString(yaml)
+	res, err := config.LoadFromStringWithPath(yaml, "", nil, nil)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
@@ -121,7 +121,7 @@ data: "%s"
 encoding: hex
 read_timeout: 1
 close_after_send: true`, l.Addr().String(), hexData)
-	res, err := config.LoadFromString(yaml)
+	res, err := config.LoadFromStringWithPath(yaml, "", nil, nil)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
@@ -184,7 +184,7 @@ data: "%s"
 encoding: base64
 read_timeout: 1
 close_after_send: true`, l.Addr().String(), base64Data)
-	res, err := config.LoadFromString(yaml)
+	res, err := config.LoadFromStringWithPath(yaml, "", nil, nil)
 	if err != nil {
 		t.Fatalf("LoadFromString failed: %v", err)
 	}
