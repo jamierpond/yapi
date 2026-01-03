@@ -11,9 +11,9 @@
   Removed sections: N/A
 
   Templates requiring updates:
-  - .specify/templates/plan-template.md: Add Dogfooding to Constitution Check table
+  - .specify/templates/plan-template.md: Add Dogfooding to Constitution Check table [DONE]
 
-  Follow-up TODOs: Update plan template Constitution Check table
+  Follow-up TODOs: None
 -->
 
 # yapi Constitution
