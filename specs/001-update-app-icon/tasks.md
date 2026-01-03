@@ -4,7 +4,7 @@
 
 ## Phase 1: Core Implementation
 
-- [ ] **T1**: Create shared icon generator module
+- [x] **T1**: Create shared icon generator module
   - File: `apps/web/app/lib/icon.ts`
   - Export `generateIcon(size: number)` function
   - Load JetBrains Mono Bold font
