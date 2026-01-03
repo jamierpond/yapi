@@ -18,17 +18,12 @@ async function loadFont(): Promise<Buffer> {
   );
 }
 
-async function loadSheepImage(): Promise<string> {
-  const sheepBuffer = await readFile(join(process.cwd(), "public/sheep.png"));
-  return `data:image/png;base64,${sheepBuffer.toString("base64")}`;
-}
-
 export async function generateIcon(size: IconSize): Promise<ImageResponse> {
   const fontData = await loadFont();
-  const sheepDataUrl = await loadSheepImage();
 
-  const borderRadius = Math.round(size * 0.22);
-  const sheepSize = Math.round(size * 0.75);
+  const fontSize = Math.round(size * 0.55);
+  const borderRadius = Math.round(size * 0.2);
+  const gridSize = Math.max(4, Math.round(size * 0.1));
 
   return new ImageResponse(
     (
@@ -39,34 +34,41 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: COLORS.bg,
+          background: `linear-gradient(135deg, ${COLORS.accent} 0%, #331a00 40%, ${COLORS.bg} 100%)`,
           borderRadius: `${borderRadius}px`,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Single smooth gradient background */}
+        {/* Grid pattern */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: `
-              radial-gradient(circle at 20% 80%, ${COLORS.accent}44 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, #6366f133 0%, transparent 50%)
-            `,
+            backgroundImage: `linear-gradient(to right, ${COLORS.accent}15 1px, transparent 1px), linear-gradient(to bottom, ${COLORS.accent}15 1px, transparent 1px)`,
+            backgroundSize: `${gridSize}px ${gridSize}px`,
           }}
         />
-        {/* Sheep */}
-        <img
-          src={sheepDataUrl}
-          width={sheepSize}
-          height={sheepSize}
+        {/* Center glow */}
+        <div
           style={{
-            objectFit: "contain",
-            position: "relative",
-            filter: `drop-shadow(0 0 ${Math.round(size * 0.08)}px ${COLORS.accent}88)`,
+            position: "absolute",
+            inset: 0,
+            background: `radial-gradient(circle at center, ${COLORS.accent}22 0%, transparent 70%)`,
           }}
         />
+        <span
+          style={{
+            fontSize: `${fontSize}px`,
+            fontFamily: "JetBrains Mono",
+            fontWeight: 700,
+            color: "#fff",
+            marginTop: `${Math.round(size * -0.1)}px`,
+            position: "relative",
+          }}
+        >
+          y
+        </span>
       </div>
     ),
     {
