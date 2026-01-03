@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Spec is ready for `/speckit.clarify` or `/speckit.plan`
-- All validation items passed on first iteration
+- Clarification session completed 2026-01-03: 2 questions answered
+- LSP features (go-to-definition, diagnostics) added to scope
+- Spec is ready for `/speckit.plan`
