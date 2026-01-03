@@ -9,7 +9,7 @@ import (
 )
 
 func TestValidateRequest_MissingURL(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1`, "", nil, nil)
+	res, err := config.LoadFromString(`yapi: v1`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestValidateRequest_ValidHTTPMethods(t *testing.T) {
 		yaml := fmt.Sprintf(`yapi: v1
 url: http://example.com
 method: %s`, method)
-		res, err := config.LoadFromStringWithPath(yaml, "", nil, nil)
+		res, err := config.LoadFromString(yaml)
 		if err != nil {
 			t.Fatalf("unexpected error loading config for method %s: %v", method, err)
 		}
@@ -55,9 +55,9 @@ method: %s`, method)
 }
 
 func TestValidateRequest_UnknownHTTPMethod(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: http://example.com
-method: FOOBAR`, "", nil, nil)
+method: FOOBAR`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -78,10 +78,10 @@ method: FOOBAR`, "", nil, nil)
 }
 
 func TestValidateRequest_GRPCMissingService(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: grpc://localhost:50051
 method: grpc
-rpc: GetData`, "", nil, nil)
+rpc: GetData`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -102,10 +102,10 @@ rpc: GetData`, "", nil, nil)
 }
 
 func TestValidateRequest_GRPCMissingRPC(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: grpc://localhost:50051
 method: grpc
-service: example.Service`, "", nil, nil)
+service: example.Service`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -134,7 +134,7 @@ url: tcp://localhost:9000
 method: tcp
 data: hello
 encoding: %s`, enc)
-		res, err := config.LoadFromStringWithPath(yaml, "", nil, nil)
+		res, err := config.LoadFromString(yaml)
 		if err != nil {
 			t.Fatalf("unexpected error loading config for encoding %s: %v", enc, err)
 		}
@@ -149,11 +149,11 @@ encoding: %s`, enc)
 }
 
 func TestValidateRequest_TCPInvalidEncoding(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: tcp://localhost:9000
 method: tcp
 data: hello
-encoding: invalid`, "", nil, nil)
+encoding: invalid`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -174,12 +174,12 @@ encoding: invalid`, "", nil, nil)
 }
 
 func TestValidateRequest_ValidConfig(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: http://example.com/api
 method: POST
 content_type: application/json
 body:
-  key: value`, "", nil, nil)
+  key: value`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -191,10 +191,10 @@ body:
 }
 
 func TestValidateRequest_GRPCByURLSchemeValid(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: grpc://localhost:50051
 service: example.Service
-rpc: GetData`, "", nil, nil)
+rpc: GetData`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -208,9 +208,9 @@ rpc: GetData`, "", nil, nil)
 }
 
 func TestValidateRequest_NoIssuesForMinimalValidHTTP(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: http://example.com
-method: GET`, "", nil, nil)
+method: GET`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -222,10 +222,10 @@ method: GET`, "", nil, nil)
 }
 
 func TestValidateRequest_NoIssuesForMinimalValidGRPC(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: grpc://localhost:50051
 service: example.Service
-rpc: GetData`, "", nil, nil)
+rpc: GetData`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -237,9 +237,9 @@ rpc: GetData`, "", nil, nil)
 }
 
 func TestValidateRequest_GraphQLOnly(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: http://example.com/graphql
-graphql: 'query { foo }'`, "", nil, nil)
+graphql: 'query { foo }'`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
@@ -251,9 +251,9 @@ graphql: 'query { foo }'`, "", nil, nil)
 }
 
 func TestValidateRequest_NoIssuesForMinimalValidTCP(t *testing.T) {
-	res, err := config.LoadFromStringWithPath(`yapi: v1
+	res, err := config.LoadFromString(`yapi: v1
 url: tcp://localhost:9000
-data: hello`, "", nil, nil)
+data: hello`)
 	if err != nil {
 		t.Fatalf("unexpected error loading config: %v", err)
 	}
