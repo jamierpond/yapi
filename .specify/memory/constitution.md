@@ -1,17 +1,19 @@
 <!--
   Sync Impact Report
   ===================
-  Version change: 1.0.0 -> 1.1.0
+  Version change: 1.1.0 -> 1.2.0
 
   Modified principles: N/A
 
   Added sections:
-  - Core Principles V. Dogfooding
+  - Core Principles V. Dogfooding (1.1.0)
+  - Core Principles VI. Minimal Code (1.2.0)
 
   Removed sections: N/A
 
   Templates requiring updates:
   - .specify/templates/plan-template.md: Add Dogfooding to Constitution Check table [DONE]
+  - .specify/templates/plan-template.md: Add Minimal Code to Constitution Check table
 
   Follow-up TODOs: None
 -->
