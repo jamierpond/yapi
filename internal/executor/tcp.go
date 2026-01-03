@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -97,7 +98,8 @@ func TCPTransport(ctx context.Context, req *domain.Request) (*domain.Response, e
 	_, err = io.Copy(&respBuf, conn)
 	if err != nil {
 		// Ignore timeout errors as they are expected when the server doesn't close the connection
-		if netErr, ok := err.(net.Error); !ok || !netErr.Timeout() {
+		var netErr net.Error
+		if !errors.As(err, &netErr) || !netErr.Timeout() {
 			return nil, fmt.Errorf("failed to read from TCP connection: %w", err)
 		}
 	}

@@ -1796,7 +1796,7 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 	// Show confirmation prompt
 	if !skipConfirm {
 		if err := app.promptStressTestConfirmation(filePath, envName, parallel, numRequests, duration, useDuration); err != nil {
-			return nil
+			return nil //nolint:nilerr // User cancelled, exit without error
 		}
 	}
 
