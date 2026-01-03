@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: yapi Icon API
+  version: 1.0.0
+  description: Dynamic icon generation API for yapi webapp
+
+servers:
+  - url: https://yapi.run
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /api/icon/{size}:
+    get:
+      summary: Generate icon at specified size
+      description: Returns a PNG icon at the requested pixel size with yapi branding
+      operationId: getIcon
+      parameters:
+        - name: size
+          in: path
+          required: true
+          description: Icon size in pixels
+          schema:
+            type: integer
+            enum: [16, 32, 64, 128, 256]
+      responses:
+        '200':
+          description: PNG icon image
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "public, max-age=31536000, immutable"
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid size parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid size. Supported sizes: 16, 32, 64, 128, 256"
