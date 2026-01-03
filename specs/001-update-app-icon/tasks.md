@@ -11,7 +11,7 @@
   - Render "y" with gradient background using COLORS constants
   - Scale font and border-radius proportionally
 
-- [ ] **T2**: Update favicon to use shared generator
+- [x] **T2**: Update favicon to use shared generator
   - File: `apps/web/app/icon.tsx`
   - Import `generateIcon` from `./lib/icon`
   - Update size export to 256x256
