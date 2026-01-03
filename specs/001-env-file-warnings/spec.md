@@ -4,7 +4,9 @@
 
 ## Overview
 
-When a YAPI configuration references env files via the `env_files` field, users should be warned or receive an error when those files are missing or unreadable. This prevents silent failures where environment variables are expected but unavailable. Additionally, the LSP integration should support "go to definition" for env file references and variable usages.
+When a YAPI configuration references env files via the `env_files` field, users should be warned or receive an error when those files are missing or unreadable. This prevents silent failures where environment variables are expected but unavailable.
+
+**Guiding principle**: The LSP should provide as much diagnostic help as possible, surfacing issues in real-time so developers catch problems before running requests. This includes go-to-definition navigation, warnings for missing files, and alerts for undefined variables.
 
 ## Clarifications
 
