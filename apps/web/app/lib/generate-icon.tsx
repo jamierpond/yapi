@@ -82,6 +82,7 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
             color: COLORS.accent,
             position: "relative",
             textShadow: `0 0 ${Math.round(size * 0.15)}px ${COLORS.accent}66`,
+            marginTop: `${Math.round(size * -0.08)}px`,
           }}
         >
           y
