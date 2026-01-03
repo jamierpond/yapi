@@ -17,7 +17,7 @@
   - Update size export to 256x256
   - Call `generateIcon(256)`
 
-- [ ] **T3**: Create dynamic API route
+- [x] **T3**: Create dynamic API route
   - File: `apps/web/app/api/icon/[size]/route.ts`
   - Parse size from params
   - Validate against allowed sizes (16, 32, 64, 128, 256)

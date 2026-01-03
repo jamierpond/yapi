@@ -1,0 +1,52 @@
+yapi: v1
+chain:
+  - name: icon_256
+    url: ${url}/api/icon/256
+    method: GET
+    output_file: ./icons/icon-256.png
+    expect:
+      status: 200
+      headers:
+        content-type: image/png
+
+  - name: icon_128
+    url: ${url}/api/icon/128
+    method: GET
+    output_file: ./icons/icon-128.png
+    expect:
+      status: 200
+      headers:
+        content-type: image/png
+
+  - name: icon_64
+    url: ${url}/api/icon/64
+    method: GET
+    output_file: ./icons/icon-64.png
+    expect:
+      status: 200
+      headers:
+        content-type: image/png
+
+  - name: icon_32
+    url: ${url}/api/icon/32
+    method: GET
+    output_file: ./icons/icon-32.png
+    expect:
+      status: 200
+      headers:
+        content-type: image/png
+
+  - name: icon_16
+    url: ${url}/api/icon/16
+    method: GET
+    output_file: ./icons/icon-16.png
+    expect:
+      status: 200
+      headers:
+        content-type: image/png
+
+  - name: icon_invalid
+    url: ${url}/api/icon/999
+    method: GET
+    expect:
+      status: 400
