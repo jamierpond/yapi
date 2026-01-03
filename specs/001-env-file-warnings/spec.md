@@ -146,6 +146,8 @@ env_files:
 - What happens when env file exists but is empty? - YAPI proceeds normally (empty file is valid)
 - What happens when the same env file is listed twice? - Only validate/warn once per unique file
 - What happens on Windows vs Unix file paths? - Use OS-appropriate path handling
+- What happens when go-to-definition is invoked on a missing env file? - No navigation occurs
+- What happens when `${VAR}` references a variable not in any env file? - Diagnostic warning shown, no navigation on go-to-definition
 
 ## Assumptions
 
