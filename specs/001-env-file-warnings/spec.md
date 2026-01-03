@@ -72,6 +72,33 @@ yapi run my-request.yapi.yml
 - Given a YAPI file references `.env.local` in `env_files`, when `.env.local` exists but is not readable, then YAPI displays an error: "Error: cannot read env file '.env.local': permission denied"
 - Given a file permission error occurs, when `--strict-env` is used, then YAPI exits with non-zero status
 
+---
+
+### US5 - Go to Definition for Env Files (P1)
+
+A developer is editing a YAPI file in their IDE and wants to quickly navigate to an env file referenced in `env_files`. They use "go to definition" on the file path and are taken to the top of that file.
+
+**IDE Usage**:
+- Cursor on `.env.local` in `env_files` array → Go to Definition → Opens `.env.local` at line 1
+
+**Acceptance**:
+- Given a YAPI file has `env_files: [".env.local"]`, when user invokes "go to definition" on `.env.local`, then the IDE opens `.env.local` at line 1
+- Given the env file does not exist, when user invokes "go to definition", then no navigation occurs (or appropriate feedback shown)
+
+---
+
+### US6 - Go to Definition for Variable References (P1)
+
+A developer sees a `${GITHUB_PAT}` variable reference in their YAPI file and wants to see where it's defined. They use "go to definition" and are taken to the line in the env file where that variable is declared.
+
+**IDE Usage**:
+- Cursor on `${GITHUB_PAT}` in headers → Go to Definition → Opens `.env.local` at line where `GITHUB_PAT=...` is defined
+
+**Acceptance**:
+- Given `GITHUB_PAT` is defined on line 5 of `.env.local`, when user invokes "go to definition" on `${GITHUB_PAT}`, then the IDE opens `.env.local` at line 5
+- Given `GITHUB_PAT` is defined in multiple env files, when user invokes "go to definition", then the IDE navigates to the first matching definition (per env_files order)
+- Given `GITHUB_PAT` is not defined in any env file, when user invokes "go to definition", then no navigation occurs
+
 ## Requirements
 
 ### Functional
