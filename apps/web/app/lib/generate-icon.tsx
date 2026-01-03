@@ -21,10 +21,10 @@ async function loadFont(): Promise<Buffer> {
 export async function generateIcon(size: IconSize): Promise<ImageResponse> {
   const fontData = await loadFont();
 
-  // Scale font size proportionally (roughly 68% of icon size works well)
-  const fontSize = Math.round(size * 0.68);
-  // Scale border radius proportionally (roughly 18% of icon size)
-  const borderRadius = Math.round(size * 0.18);
+  // Scale font size proportionally
+  const fontSize = Math.round(size * 0.6);
+  // Scale border radius proportionally
+  const borderRadius = Math.round(size * 0.22);
 
   return new ImageResponse(
     (
@@ -35,21 +35,43 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: COLORS.bg,
+          background: `linear-gradient(145deg, #151515 0%, ${COLORS.bg} 50%, #050505 100%)`,
           borderRadius: `${borderRadius}px`,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Gradient glow effect inspired by landing page */}
+        {/* Primary glow - bottom left orange */}
         <div
           style={{
             position: "absolute",
-            top: "-50%",
-            left: "-50%",
-            width: "200%",
-            height: "200%",
-            background: `radial-gradient(circle at 50% 50%, ${COLORS.accent}33 0%, transparent 50%)`,
+            bottom: "-30%",
+            left: "-30%",
+            width: "100%",
+            height: "100%",
+            background: `radial-gradient(circle at center, ${COLORS.accent}55 0%, ${COLORS.accent}22 30%, transparent 60%)`,
+          }}
+        />
+        {/* Secondary glow - top right subtle purple */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-40%",
+            right: "-40%",
+            width: "90%",
+            height: "90%",
+            background: "radial-gradient(circle at center, #6366f133 0%, transparent 50%)",
+          }}
+        />
+        {/* Center highlight */}
+        <div
+          style={{
+            position: "absolute",
+            top: "10%",
+            left: "10%",
+            width: "80%",
+            height: "80%",
+            background: `radial-gradient(circle at 30% 30%, ${COLORS.accent}18 0%, transparent 50%)`,
           }}
         />
         <span
@@ -59,6 +81,7 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
             fontWeight: 700,
             color: COLORS.accent,
             position: "relative",
+            textShadow: `0 0 ${Math.round(size * 0.15)}px ${COLORS.accent}66`,
           }}
         >
           y
