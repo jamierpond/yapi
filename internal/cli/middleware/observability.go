@@ -26,6 +26,7 @@ func WrapWithObservability(cmd *cobra.Command) {
 	originalRunE := cmd.RunE
 	if originalRunE == nil && cmd.Run != nil {
 		originalRun := cmd.Run
+		//nolint:unparam // Wrapping cmd.Run which has no error return
 		originalRunE = func(c *cobra.Command, args []string) error {
 			originalRun(c, args)
 			return nil

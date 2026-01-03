@@ -175,6 +175,7 @@ func main() {
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, color.Red(err.Error()))
+		observability.Close() // Ensure cleanup before exit
 		os.Exit(1)
 	}
 }

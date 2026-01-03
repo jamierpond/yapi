@@ -191,7 +191,7 @@ func convertItems(items []PostmanItem, basePath string, result *ImportResult) {
 }
 
 // convertRequest converts a single Postman request to a yapi ConfigV1
-func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
+func convertRequest(_ string, req *PostmanRequest) config.ConfigV1 {
 	cfg := config.ConfigV1{
 		Yapi:   "v1",
 		Method: strings.ToUpper(req.Method),
