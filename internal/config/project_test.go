@@ -29,15 +29,15 @@ environments:
       API_URL: https://api.example.com
 `
 	configPath := filepath.Join(tmpDir, "yapi.config.yml")
-	if err := os.WriteFile(configPath, []byte(projectConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(projectConfig), 0600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create dummy .env files so ResolveEnvFiles doesn't fail
-	if err := os.WriteFile(filepath.Join(tmpDir, ".env.dev"), []byte("DEV_VAR=dev"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, ".env.dev"), []byte("DEV_VAR=dev"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, ".env.prod"), []byte("PROD_VAR=prod"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, ".env.prod"), []byte("PROD_VAR=prod"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -97,12 +97,12 @@ environments:
       API_URL: http://localhost:3000
 `
 	configPath := filepath.Join(tmpDir, "yapi.config.yml")
-	if err := os.WriteFile(configPath, []byte(projectConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(projectConfig), 0600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create dummy .env file
-	if err := os.WriteFile(filepath.Join(tmpDir, ".env.shared"), []byte("FROM_FILE=loaded"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, ".env.shared"), []byte("FROM_FILE=loaded"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
