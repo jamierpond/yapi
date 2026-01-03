@@ -28,7 +28,7 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
   const sheepDataUrl = await loadSheepImage();
 
   const borderRadius = Math.round(size * 0.22);
-  const sheepSize = Math.round(size * 0.85);
+  const sheepSize = Math.round(size * 0.75);
 
   return new ImageResponse(
     (
@@ -41,13 +41,31 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
           justifyContent: "center",
           background: COLORS.bg,
           borderRadius: `${borderRadius}px`,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Single smooth gradient background */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `
+              radial-gradient(circle at 20% 80%, ${COLORS.accent}44 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, #6366f133 0%, transparent 50%)
+            `,
+          }}
+        />
+        {/* Sheep */}
         <img
           src={sheepDataUrl}
           width={sheepSize}
           height={sheepSize}
-          style={{ objectFit: "contain" }}
+          style={{
+            objectFit: "contain",
+            position: "relative",
+            filter: `drop-shadow(0 0 ${Math.round(size * 0.08)}px ${COLORS.accent}88)`,
+          }}
         />
       </div>
     ),
