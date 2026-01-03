@@ -85,6 +85,12 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 		if !filepath.IsAbs(outputFile) && opts.ConfigFilePath != "" {
 			outputFile = filepath.Join(filepath.Dir(opts.ConfigFilePath), outputFile)
 		}
+		// Create parent directories if they don't exist
+		if dir := filepath.Dir(outputFile); dir != "" && dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return nil, fmt.Errorf("failed to create output directory '%s': %w", dir, err)
+			}
+		}
 		if err := os.WriteFile(outputFile, []byte(body), 0600); err != nil {
 			return nil, fmt.Errorf("failed to write output file '%s': %w", outputFile, err)
 		}

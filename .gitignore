@@ -50,3 +50,4 @@ aur_ed25519
 aur_ed25519.pub
 dist
 .env*.local
+apps/web/icons
