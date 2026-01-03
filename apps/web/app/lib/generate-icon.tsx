@@ -34,7 +34,7 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: `linear-gradient(135deg, ${COLORS.accent} 0%, #331a00 40%, ${COLORS.bg} 100%)`,
+          background: `linear-gradient(135deg, #2d1a0a 0%, #1a0f05 30%, ${COLORS.bg} 70%, #08080c 100%)`,
           borderRadius: `${borderRadius}px`,
           position: "relative",
           overflow: "hidden",
@@ -62,7 +62,7 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
             fontSize: `${fontSize}px`,
             fontFamily: "JetBrains Mono",
             fontWeight: 700,
-            color: "#fff",
+            color: COLORS.accent,
             marginTop: `${Math.round(size * -0.1)}px`,
             position: "relative",
           }}
