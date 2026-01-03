@@ -133,7 +133,7 @@ func loadEnvFiles(envFiles []string, configPath string) (map[string]string, erro
 
 		vars, err := godotenv.Read(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load env file '%s': %w", envFile, err)
+			return nil, fmt.Errorf("failed to load env file %q (resolved to %q): %w", envFile, filePath, err)
 		}
 
 		// Merge into result (later files override earlier ones)

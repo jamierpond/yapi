@@ -5,11 +5,11 @@ import { getTotalDownloads, getVSCodeInstalls, getOpenVSXDownloads, getGitHubSta
 
 async function getStats() {
   try {
-    const FIVE_MINUTES_MS = 300;
+    const FIVE_MINUTES_SECONDS = 300;
     const [totalDownloads, releasesRes, vscodeInstalls, openVSXDownloads, githubStats] = await Promise.all([
       getTotalDownloads(),
       fetch("https://api.github.com/repos/jamierpond/yapi/releases/latest", {
-        next: { revalidate: FIVE_MINUTES_MS },
+        next: { revalidate: FIVE_MINUTES_SECONDS },
       }),
       getVSCodeInstalls(),
       getOpenVSXDownloads(),

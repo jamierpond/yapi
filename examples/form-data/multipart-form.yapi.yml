@@ -10,6 +10,6 @@ expect:
   status: 200
   assert:
     body:
-      -  .form.name == "John Doe"
+      - .form.name == "John Doe"
       - .form.email == "john@example.com"
 

@@ -1,8 +1,9 @@
 yapi: v1
 # List contents of a GitHub directory
+# Create .env.local in this directory with: GITHUB_TOKEN=your_token_here
 
 env_files:
-  - ../apps/web/.env.local
+  - .env.local
 
 url: https://api.github.com/repos/jamierpond/madea.blog/contents/yapi
 method: GET

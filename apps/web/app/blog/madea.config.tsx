@@ -246,7 +246,7 @@ function LandingView() {
 const token = process.env.GITHUB_TOKEN || process.env.GITHUB_PAT;
 
 if (!token && process.env.NODE_ENV === "development") {
-  throw new Error("GITHUB_TOKEN or GITHUB_PAT is required for blog. Set it in .env.local");
+  throw new Error("GITHUB_TOKEN or GITHUB_PAT is required for blog. Set it in apps/web/.env.local");
 }
 
 export const blogDataProvider = new GitHubDataProvider({
