@@ -1,26 +1,19 @@
 <!--
   Sync Impact Report
   ===================
-  Version change: N/A -> 1.0.0 (initial constitution)
+  Version change: 1.0.0 -> 1.1.0
 
-  Modified principles: N/A (initial)
+  Modified principles: N/A
 
   Added sections:
-  - Core Principles (4 principles)
-  - Quality Standards
-  - Development Workflow
-  - Governance
+  - Core Principles V. Dogfooding
 
   Removed sections: N/A
 
   Templates requiring updates:
-  - .specify/templates/plan-template.md: N/A (no constitution-specific references)
-  - .specify/templates/spec-template.md: N/A (no constitution-specific references)
-  - .specify/templates/tasks-template.md: N/A (no constitution-specific references)
-  - .specify/templates/agent-file-template.md: N/A (generic template)
-  - .specify/templates/checklist-template.md: N/A (generic template)
+  - .specify/templates/plan-template.md: Add Dogfooding to Constitution Check table
 
-  Follow-up TODOs: None
+  Follow-up TODOs: Update plan template Constitution Check table
 -->
 
 # yapi Constitution
@@ -82,6 +75,19 @@ Start with the simplest implementation. Complexity MUST be justified.
 
 **Rationale**: Complexity accumulates. Every abstraction adds cognitive load.
 The default path should be the simple path.
+
+### V. Dogfooding
+
+The yapi webapp MUST use yapi itself for all API interactions where feasible.
+
+- New webapp features SHOULD be built using yapi request files
+- Internal API testing MUST use yapi, not external tools
+- The webapp serves as a live demonstration of yapi capabilities
+- Friction discovered while dogfooding MUST inform CLI/core improvements
+- If a workflow is painful in the webapp, it's painful for users too
+
+**Rationale**: Eating our own dog food exposes usability issues before users hit them.
+The webapp is both a product and a continuous integration test for yapi itself.
 
 ## Quality Standards
 
@@ -153,4 +159,4 @@ All contributions MUST comply with these principles.
 - Complexity MUST be justified in PR descriptions
 - Principle violations require explicit exemption with documented rationale
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
+**Version**: 1.1.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
