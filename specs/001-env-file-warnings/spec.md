@@ -11,6 +11,7 @@ When a YAPI configuration references env files via the `env_files` field, users 
 ### Session 2026-01-03
 
 - Q: Should "go to definition" work only on `env_files` entries, or also on `${VAR}` variable references? → A: Both. `env_files` entries navigate to top of file; `${VAR}` references navigate to the variable definition line in the env file.
+- Q: Should missing env files and undefined variables show as LSP diagnostics? → A: Yes, both.
 
 ## User Stories
 
@@ -109,6 +110,15 @@ A developer sees a `${GITHUB_PAT}` variable reference in their YAPI file and wan
 - **FR-004**: `yapi` MUST support a `--strict-env` CLI flag that treats missing env files as errors
 - **FR-005**: `yapi` MUST display an error and halt execution when an env file exists but cannot be read
 - **FR-006**: `yapi` MUST output warnings/errors to stderr to distinguish from normal output
+
+### LSP Features
+
+- **FR-007**: The LSP MUST support "go to definition" on env file paths in the `env_files` array, navigating to line 1 of the target file
+- **FR-008**: The LSP MUST support "go to definition" on `${VAR}` references, navigating to the line where the variable is defined in the env file
+- **FR-009**: When a variable is defined in multiple env files, the LSP MUST navigate to the first definition in `env_files` order
+- **FR-010**: When the target file or variable definition does not exist, the LSP MUST return no definition (no navigation)
+- **FR-011**: The LSP MUST show a warning diagnostic on env file paths that do not exist
+- **FR-012**: The LSP MUST show a warning diagnostic on `${VAR}` references where the variable is not defined in any env file
 
 ### YAML Schema (if applicable)
 
