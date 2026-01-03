@@ -517,6 +517,7 @@ func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars
 		outcome := evalAssertion(result.Body, assertion, jqVars)
 		res.AssertionResults = append(res.AssertionResults, outcome.result)
 
+		//nolint:gocritic // ifElseChain: switch not suitable for boolean conditions
 		if outcome.err != nil {
 			if firstError == nil {
 				firstError = fmt.Errorf("assertion failed: %w", outcome.err)
@@ -542,6 +543,7 @@ func CheckExpectationsWithEnv(expect config.Expectation, result *Result, envVars
 			outcome := evalAssertion(string(headersJSON), assertion, jqVars)
 			res.AssertionResults = append(res.AssertionResults, outcome.result)
 
+			//nolint:gocritic // ifElseChain: switch not suitable for boolean conditions
 			if outcome.err != nil {
 				if firstError == nil {
 					firstError = fmt.Errorf("header assertion failed: %w", outcome.err)
