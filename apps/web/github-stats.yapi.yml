@@ -1,0 +1,9 @@
+yapi: v1
+url: https://api.github.com/repos/jamierpond/yapi
+method: GET
+headers:
+  Accept: application/vnd.github.v3+json
+  User-Agent: yapi-test
+expect:
+  status: 200
+jq_filter: "{stars: .stargazers_count, forks: .forks_count, name: .full_name}"
