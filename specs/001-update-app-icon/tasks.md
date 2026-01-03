@@ -27,7 +27,7 @@
 
 ## Phase 2: Testing & Validation
 
-- [ ] **T4**: Create yapi test file
+- [x] **T4**: Create yapi test file
   - File: `apps/web/icon-api.yapi.yml`
   - Test all valid sizes with output_file
   - Test invalid size returns 400
