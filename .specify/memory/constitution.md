@@ -91,6 +91,20 @@ The yapi webapp MUST use yapi itself for all API interactions where feasible.
 **Rationale**: Eating our own dog food exposes usability issues before users hit them.
 The webapp is both a product and a continuous integration test for yapi itself.
 
+### VI. Minimal Code
+
+You can't have bugs in code you don't have. Every line of code is a liability.
+
+- Actively seek opportunities to delete code rather than add it
+- New features SHOULD reduce total LOC when possible through consolidation
+- Prefer removing unused code over commenting it out
+- Duplication is acceptable if the alternative is a complex abstraction
+- Before adding a dependency, consider if the functionality can be achieved with less code
+- Refactoring that increases LOC requires explicit justification
+
+**Rationale**: Less code means fewer bugs, faster builds, easier onboarding, and reduced
+maintenance burden. The best code is no code at all.
+
 ## Quality Standards
 
 ### Testing Requirements
@@ -161,4 +175,4 @@ All contributions MUST comply with these principles.
 - Complexity MUST be justified in PR descriptions
 - Principle violations require explicit exemption with documented rationale
 
-**Version**: 1.1.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
+**Version**: 1.2.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
