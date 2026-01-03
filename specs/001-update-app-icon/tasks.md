@@ -38,7 +38,7 @@
   - Verify favicon appears correctly
   - Run yapi test file
 
-- [ ] **T6**: Build verification
+- [x] **T6**: Build verification
   - Run `pnpm build` in apps/web
   - Ensure no build errors
 
