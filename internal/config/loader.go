@@ -28,17 +28,12 @@ type ParseResult struct {
 
 // LoadFromString parses a yapi config from raw YAML data.
 func LoadFromString(data string) (*ParseResult, error) {
-	return LoadFromStringWithOptions(data, nil, nil)
+	return loadFromStringInternal(data, "", nil, nil)
 }
 
 // LoadFromStringWithPath parses a yapi config with path context for resolving relative env_files.
 func LoadFromStringWithPath(data string, configPath string, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
 	return loadFromStringInternal(data, configPath, resolver, defaults)
-}
-
-// LoadFromStringWithOptions parses a yapi config with optional resolver and environment defaults.
-func LoadFromStringWithOptions(data string, resolver vars.Resolver, defaults *ConfigV1) (*ParseResult, error) {
-	return loadFromStringInternal(data, "", resolver, defaults)
 }
 
 // loadFromStringInternal is the shared implementation for loading configs.
