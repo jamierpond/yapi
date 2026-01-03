@@ -1,6 +1,6 @@
 # Implementation Plan: [FEATURE]
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Branch**: `[dev-id/feature-name]` | **Date**: [DATE] | **Spec**: [link]
 
 ## Summary
 
@@ -23,6 +23,7 @@
 | Git-Friendly | [ ] | Config in YAML? No binary formats? |
 | Protocol Agnostic | [ ] | Works across HTTP/gRPC/GraphQL/TCP? |
 | Simplicity | [ ] | Minimal implementation? No over-engineering? |
+| Dogfooding | [ ] | Can webapp use this via yapi? |
 
 ## Affected Areas
 
