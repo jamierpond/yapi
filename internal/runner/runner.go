@@ -87,7 +87,7 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 		}
 		// Create parent directories if they don't exist
 		if dir := filepath.Dir(outputFile); dir != "" && dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(dir, 0750); err != nil {
 				return nil, fmt.Errorf("failed to create output directory '%s': %w", dir, err)
 			}
 		}
