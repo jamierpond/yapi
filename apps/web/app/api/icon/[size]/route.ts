@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateIcon, isValidIconSize, VALID_ICON_SIZES } from "@/app/lib/icon";
+import { generateIcon, isValidIconSize, VALID_ICON_SIZES } from "@/app/lib/generate-icon";
 
 export const runtime = "nodejs";
 

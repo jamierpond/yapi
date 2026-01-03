@@ -1,4 +1,4 @@
-import { generateIcon } from "@/app/lib/icon";
+import { generateIcon } from "@/app/lib/generate-icon";
 
 export const runtime = "nodejs";
 export const size = { width: 256, height: 256 };
