@@ -167,3 +167,5 @@ env_files:
 - [ ] 100% of users encountering missing env files see a clear warning message
 - [ ] Users can distinguish between missing file warnings and permission errors
 - [ ] Strict mode exits with non-zero status code when env files are missing
+- [ ] LSP go-to-definition works for env file paths and variable references
+- [ ] LSP diagnostics appear for missing env files and undefined variables
