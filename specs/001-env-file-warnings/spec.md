@@ -4,7 +4,13 @@
 
 ## Overview
 
-When a YAPI configuration references env files via the `env_files` field, users should be warned or receive an error when those files are missing or unreadable. This prevents silent failures where environment variables are expected but unavailable.
+When a YAPI configuration references env files via the `env_files` field, users should be warned or receive an error when those files are missing or unreadable. This prevents silent failures where environment variables are expected but unavailable. Additionally, the LSP integration should support "go to definition" for env file references and variable usages.
+
+## Clarifications
+
+### Session 2026-01-03
+
+- Q: Should "go to definition" work only on `env_files` entries, or also on `${VAR}` variable references? → A: Both. `env_files` entries navigate to top of file; `${VAR}` references navigate to the variable definition line in the env file.
 
 ## User Stories
 
