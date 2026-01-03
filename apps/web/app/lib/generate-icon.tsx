@@ -18,11 +18,17 @@ async function loadFont(): Promise<Buffer> {
   );
 }
 
+async function loadSheepImage(): Promise<string> {
+  const sheepBuffer = await readFile(join(process.cwd(), "public/sheep.png"));
+  return `data:image/png;base64,${sheepBuffer.toString("base64")}`;
+}
+
 export async function generateIcon(size: IconSize): Promise<ImageResponse> {
   const fontData = await loadFont();
+  const sheepDataUrl = await loadSheepImage();
 
   const borderRadius = Math.round(size * 0.22);
-  const sheepSize = Math.round(size * 0.65);
+  const sheepSize = Math.round(size * 0.85);
 
   return new ImageResponse(
     (
@@ -37,9 +43,12 @@ export async function generateIcon(size: IconSize): Promise<ImageResponse> {
           borderRadius: `${borderRadius}px`,
         }}
       >
-        <span style={{ fontSize: `${sheepSize}px` }}>
-          🐑
-        </span>
+        <img
+          src={sheepDataUrl}
+          width={sheepSize}
+          height={sheepSize}
+          style={{ objectFit: "contain" }}
+        />
       </div>
     ),
     {
