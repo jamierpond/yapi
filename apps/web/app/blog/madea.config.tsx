@@ -243,11 +243,17 @@ function LandingView() {
   );
 }
 
+const token = process.env.GITHUB_TOKEN || process.env.GITHUB_PAT;
+
+if (!token && process.env.NODE_ENV === "development") {
+  throw new Error("GITHUB_TOKEN or GITHUB_PAT is required for blog. Set it in apps/web/.env.local");
+}
+
 export const blogDataProvider = new GitHubDataProvider({
   username: "jamierpond",
   repo: "madea.blog",
-  subDir: "yapi", // only the yapi folder in the repo
-  token: process.env.GITHUB_TOKEN || process.env.GITHUB_PAT,
+  subDir: "yapi",
+  token,
 });
 
 const SEO_CONFIG = {

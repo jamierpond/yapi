@@ -48,6 +48,7 @@ var knownV1Keys = map[string]bool{
 	"delay":            true,
 	"output_file":      true,
 	"timeout":          true,
+	"env_files":        true,
 }
 
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
@@ -96,6 +97,9 @@ type ConfigV1 struct {
 
 	// Output
 	OutputFile string `yaml:"output_file,omitempty"` // Save response to file (e.g. "./output.json", "./image.png")
+
+	// Environment
+	EnvFiles []string `yaml:"env_files,omitempty"` // Paths to .env files to load variables from
 
 	// Expect defines assertions to run after the request
 	Expect Expectation `yaml:"expect,omitempty"`

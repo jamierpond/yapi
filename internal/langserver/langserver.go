@@ -446,6 +446,7 @@ var topLevelKeys = []struct {
 	{"read_timeout", "TCP read timeout in seconds"},
 	{"close_after_send", "Close TCP connection after sending (boolean)"},
 	{"delay", "Wait before executing this step (e.g. 5s, 500ms)"},
+	{"env_files", "Paths to .env files to load variables from (array of strings)"},
 }
 
 var methodValues = []valDesc{
@@ -619,7 +620,7 @@ func textDocumentDefinition(ctx *glsp.Context, params *protocol.DefinitionParams
 			// Find where this variable is defined
 			location, err := findVariableDefinition(ref.Name, doc.Project, doc.ProjectRoot)
 			if err != nil {
-				return nil, nil
+				return nil, nil //nolint:nilerr // Definition not found is not an error
 			}
 
 			return location, nil
@@ -742,7 +743,7 @@ func findVarPositionInYAML(projectRoot string, varName string, section []string)
 	}
 
 	return &protocol.Location{
-		URI: protocol.DocumentUri("file://" + configPath),
+		URI: "file://" + configPath,
 		Range: protocol.Range{
 			Start: startPos,
 			End:   endPos,
@@ -791,7 +792,7 @@ func findVarPositionInEnvFile(projectRoot string, envFile string, varName string
 			}
 
 			return &protocol.Location{
-				URI: protocol.DocumentUri("file://" + envPath),
+				URI: "file://" + envPath,
 				Range: protocol.Range{
 					Start: startPos,
 					End:   endPos,
@@ -858,7 +859,7 @@ func getEffectiveEnvironment(project *config.ProjectConfigV1) string {
 
 // uriToPath converts a file:// URI to a filesystem path.
 func uriToPath(uri protocol.DocumentUri) string {
-	u, err := url.Parse(string(uri))
+	u, err := url.Parse(uri)
 	if err != nil {
 		return ""
 	}

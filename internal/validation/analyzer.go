@@ -110,6 +110,12 @@ func AnalyzeConfigString(text string) (*Analysis, error) {
 // If project is provided, performs cross-environment variable validation, uses project
 // variables from the default environment for resolution, and applies environment defaults.
 func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
+	return AnalyzeConfigStringWithProjectAndPath(text, "", project, projectRoot)
+}
+
+// AnalyzeConfigStringWithProjectAndPath analyzes a YAML config with optional project context
+// and config file path for resolving relative env_files.
+func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
 	var parseRes *config.ParseResult
 	var err error
 
@@ -137,14 +143,14 @@ func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1
 		if resolveErr == nil {
 			// Build project-aware resolver
 			resolver := BuildProjectResolver(envVars)
-			parseRes, err = config.LoadFromStringWithOptions(text, resolver, envDefaults)
+			parseRes, err = config.LoadFromStringWithPath(text, configPath, resolver, envDefaults)
 		} else {
 			// Fall back to parsing with just defaults if we can't resolve env vars
-			parseRes, err = config.LoadFromStringWithOptions(text, nil, envDefaults)
+			parseRes, err = config.LoadFromStringWithPath(text, configPath, nil, envDefaults)
 		}
 	} else {
-		// No project config - use default env resolver
-		parseRes, err = config.LoadFromString(text)
+		// No project config - use path for env_files resolution
+		parseRes, err = config.LoadFromStringWithPath(text, configPath, nil, nil)
 	}
 
 	if err != nil {
@@ -176,7 +182,13 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	parseRes, err := config.LoadFromString(string(data))
+	// Use path for resolving relative env_files (unless reading from stdin)
+	configPath := ""
+	if path != "-" {
+		configPath = path
+	}
+
+	parseRes, err := config.LoadFromStringWithPath(string(data), configPath, nil, nil)
 	if err != nil {
 		diag := Diagnostic{
 			Severity: SeverityError,
@@ -195,6 +207,12 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 func analyzeParsed(text string, parseRes *config.ParseResult, project *config.ProjectConfigV1, projectRoot string) *Analysis {
 	var diags []Diagnostic
 
+	// Extract env file variable names from the config for validation
+	var envFileVarNames map[string]bool
+	if parseRes.Base != nil && len(parseRes.Base.EnvFiles) > 0 {
+		envFileVarNames = extractEnvFileVarNames(text)
+	}
+
 	// Chain config
 	if len(parseRes.Chain) > 0 {
 		diags = append(diags, validateChain(text, parseRes.Base, parseRes.Chain)...)
@@ -203,7 +221,7 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 		if project != nil {
 			diags = append(diags, ValidateProjectVars(text, project, projectRoot)...)
 		} else {
-			diags = append(diags, validateEnvVars(text)...)
+			diags = append(diags, validateEnvVarsWithEnvFiles(text, envFileVarNames)...)
 		}
 
 		return &Analysis{
@@ -235,7 +253,7 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 	if project != nil {
 		diags = append(diags, ValidateProjectVars(text, project, projectRoot)...)
 	} else {
-		diags = append(diags, validateEnvVars(text)...)
+		diags = append(diags, validateEnvVarsWithEnvFiles(text, envFileVarNames)...)
 	}
 
 	if len(parseRes.Expect.Assert.Body) > 0 {
@@ -595,20 +613,46 @@ func RedactValue(value string) string {
 
 // validateEnvVars checks for undefined environment variables and returns warnings
 func validateEnvVars(text string) []Diagnostic {
+	return validateEnvVarsWithEnvFiles(text, nil)
+}
+
+// validateEnvVarsWithEnvFiles checks for undefined environment variables,
+// considering variables that will be loaded from env_files.
+func validateEnvVarsWithEnvFiles(text string, envFileVarNames map[string]bool) []Diagnostic {
 	var diags []Diagnostic
 
 	refs := FindEnvVarRefs(text)
 	for _, ref := range refs {
-		if !ref.IsDefined {
-			diags = append(diags, Diagnostic{
-				Severity: SeverityWarning,
-				Field:    ref.Name,
-				Message:  fmt.Sprintf("environment variable '%s' is not defined", ref.Name),
-				Line:     ref.Line,
-				Col:      ref.Col,
-			})
+		// Skip if variable is defined in OS env
+		if ref.IsDefined {
+			continue
 		}
+
+		// Skip if variable will be loaded from env_files
+		if envFileVarNames != nil && envFileVarNames[ref.Name] {
+			continue
+		}
+
+		diags = append(diags, Diagnostic{
+			Severity: SeverityWarning,
+			Field:    ref.Name,
+			Message:  fmt.Sprintf("environment variable '%s' is not defined", ref.Name),
+			Line:     ref.Line,
+			Col:      ref.Col,
+		})
 	}
 
 	return diags
+}
+
+// extractEnvFileVarNames extracts variable names referenced in the config that could be
+// satisfied by env_files. This is a heuristic - we mark all referenced variables as
+// potentially coming from env_files when env_files is present.
+func extractEnvFileVarNames(text string) map[string]bool {
+	result := make(map[string]bool)
+	refs := FindEnvVarRefs(text)
+	for _, ref := range refs {
+		result[ref.Name] = true
+	}
+	return result
 }

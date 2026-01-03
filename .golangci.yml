@@ -15,16 +15,29 @@ linters:
 
     # Style
     - revive
+    - misspell
+    - goconst
 
     # Complexity
     - gocyclo
 
     # Security
     - gosec
+    - bodyclose
+
+    # Bug prevention
+    - gocritic
+    - nilerr
+    - errorlint
+    - unconvert
+    - unparam
 
   settings:
     gocyclo:
       min-complexity: 30
+
+    goconst:
+      min-occurrences: 4
 
     staticcheck:
       checks:
@@ -63,11 +76,13 @@ linters:
 
   exclusions:
     rules:
-      # Test files can have longer functions and unchecked errors
+      # Test files can have longer functions, unchecked errors, and repeated strings
       - path: _test\.go
         linters:
           - gocyclo
           - errcheck
+          - goconst
+          - unparam
 
       # Allow dot imports in tests
       - path: _test\.go

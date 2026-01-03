@@ -191,7 +191,7 @@ func jsonPathLookup(data any, path []string) (string, error) {
 		// For complex types, marshal to JSON
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
-			return fmt.Sprintf("%v", v), nil
+			return fmt.Sprintf("%v", v), nil //nolint:nilerr // Fallback to fmt.Sprintf on marshal failure
 		}
 		return string(jsonBytes), nil
 	}

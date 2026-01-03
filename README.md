@@ -369,20 +369,20 @@ See the [action documentation](https://github.com/jamierpond/yapi/tree/main/acti
 
 ## 🧠 Editor Integration (LSP)
 
-Unlike other API clients, **yapi** ships with a **full LSP implementation** out of the box. No extensions to install, no separate tools to configure. Your editor becomes an intelligent API development environment.
+Unlike other API clients, **yapi** ships with a **full LSP implementation** out of the box. Your editor becomes an intelligent API development environment with real-time validation, autocompletion, and inline execution.
 
-```bash
-yapi lsp
-```
+### VS Code & Cursor
 
-### What You Get
+Install the official extension from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension) or [Open VSX](https://open-vsx.org/extension/yapi/yapi-extension):
 
-| Feature | Description |
-|---------|-------------|
-| **Real-time Validation** | Errors and warnings as you type, with precise line/column positions. Catches issues before you hit run. |
-| **Intelligent Autocompletion** | Context-aware suggestions for keys, HTTP methods, content types, and more. |
-| **Hover Info** | Hover over `${VAR}` to see environment variable status and (redacted) values. |
-| **Go to Definition** | Jump to referenced chain steps and variables. |
+**Features:**
+- **Run with `Cmd+Enter`** (Mac) or `Ctrl+Enter` (Windows/Linux) - execute requests without leaving your editor
+- **Inline results panel** - see responses, headers, and timing right in VS Code
+- **Real-time validation** - errors and warnings as you type
+- **Intelligent autocompletion** - context-aware suggestions for keys, methods, and variables
+- **Hover info** - hover over `${VAR}` to see environment variable status
+
+The extension automatically detects `.yapi.yml` files and activates the language server. No configuration needed.
 
 ### Neovim (Native Plugin)
 
@@ -405,9 +405,20 @@ Commands:
 - `:YapiRun` - Execute the current buffer
 - `:YapiWatch` - Open a split with live reload
 
-### VS Code / Any LSP-Compatible Editor
+### Other Editors
 
-The LSP communicates over stdio and works with any editor that supports the Language Server Protocol. Point your editor's LSP client to `yapi lsp` and you're set.
+The LSP communicates over stdio and works with any editor that supports the Language Server Protocol:
+
+```bash
+yapi lsp
+```
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time Validation** | Errors and warnings as you type, with precise line/column positions |
+| **Intelligent Autocompletion** | Context-aware suggestions for keys, HTTP methods, content types |
+| **Hover Info** | Hover over `${VAR}` to see environment variable status |
+| **Go to Definition** | Jump to referenced chain steps and variables |
 
 -----
 

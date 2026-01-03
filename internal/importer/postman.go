@@ -76,10 +76,8 @@ func ImportPostmanEnvironment(filePath string) (*EnvironmentImportResult, error)
 		}
 
 		// Determine the effective value
-		// If only "value" (current) is set, it's likely a secret
 		// If "initial" is set, it's intended to be shared
 		hasInitial := v.Initial != ""
-		hasCurrent := v.Value != ""
 
 		effectiveValue := v.Initial
 		if effectiveValue == "" {
@@ -97,13 +95,8 @@ func ImportPostmanEnvironment(filePath string) (*EnvironmentImportResult, error)
 					fmt.Sprintf("Variable '%s' looks like a secret but is in 'initial' value (will be shared)", v.Key))
 			}
 			result.SecretVars[v.Key] = effectiveValue
-		} else if !hasInitial && hasCurrent {
-			// Current-only variable that doesn't look like a secret
-			// This is likely a config var that wasn't properly exported
-			// Add to config vars but note it came from current
-			result.ConfigVars[v.Key] = effectiveValue
 		} else {
-			// Regular config variable with initial value
+			// Regular config variable (either from initial or current-only)
 			result.ConfigVars[v.Key] = effectiveValue
 		}
 	}
@@ -191,7 +184,7 @@ func convertItems(items []PostmanItem, basePath string, result *ImportResult) {
 }
 
 // convertRequest converts a single Postman request to a yapi ConfigV1
-func convertRequest(name string, req *PostmanRequest) config.ConfigV1 {
+func convertRequest(_ string, req *PostmanRequest) config.ConfigV1 {
 	cfg := config.ConfigV1{
 		Yapi:   "v1",
 		Method: strings.ToUpper(req.Method),

@@ -25,7 +25,6 @@ fuzz-cover:
 lint-install:
 	@echo "Installing linting tools..."
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
-	go install golang.org/x/tools/cmd/deadcode@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 # Quick lint (go vet + fmt check)
@@ -39,8 +38,6 @@ lint-quick:
 lint:
 	@echo "Running golangci-lint..."
 	@golangci-lint run ./...
-	@echo "Running deadcode..."
-	@deadcode ./...
 
 # Full lint (includes vulnerability check)
 lint-full: lint

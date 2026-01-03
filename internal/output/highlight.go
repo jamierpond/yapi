@@ -15,6 +15,12 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Language constants for syntax highlighting
+const (
+	langJSON = "json"
+	langHTML = "html"
+)
+
 // Highlight applies syntax highlighting and pretty-printing to the given raw string based on content type.
 // If noColor is true or stdout is not a TTY, it returns pretty-printed output without colors.
 func Highlight(raw string, contentType string, noColor bool) string {
@@ -47,23 +53,23 @@ func isTerminal() bool {
 func detectLanguage(raw string, contentType string) string {
 	// Check content type header
 	if strings.Contains(contentType, "application/json") {
-		return "json"
+		return langJSON
 	}
 	if strings.Contains(contentType, "text/html") {
-		return "html"
+		return langHTML
 	}
 
 	// Fallback to content sniffing
 	trimmed := strings.TrimSpace(raw)
 	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
-		return "json"
+		return langJSON
 	}
 	if strings.HasPrefix(strings.ToLower(trimmed), "<!doctype html") || strings.HasPrefix(strings.ToLower(trimmed), "<html") {
-		return "html"
+		return langHTML
 	}
 
 	// Default to JSON
-	return "json"
+	return langJSON
 }
 
 // highlightWithChroma applies Chroma syntax highlighting to the raw string.
@@ -101,9 +107,9 @@ func highlightWithChroma(raw string, lang string) string {
 // prettyPrint formats JSON and HTML content for better readability.
 func prettyPrint(raw string, lang string) string {
 	switch lang {
-	case "json":
+	case langJSON:
 		return prettyPrintJSON(raw)
-	case "html":
+	case langHTML:
 		return prettyPrintHTML(raw)
 	default:
 		return raw

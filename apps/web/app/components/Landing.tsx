@@ -1,26 +1,36 @@
 import Link from "next/link";
 import CopyInstallButton from "./CopyInstallButton";
 import Navbar from "./Navbar";
-import { getTotalDownloads } from "@/app/lib/github";
+import { getTotalDownloads, getVSCodeInstalls, getOpenVSXDownloads, getGitHubStats } from "@/app/lib/github";
 
 async function getStats() {
   try {
-    const FIVE_MINUTES_MS = 300;
-    const [totalDownloads, releasesRes] = await Promise.all([
+    const FIVE_MINUTES_SECONDS = 300;
+    const [totalDownloads, releasesRes, vscodeInstalls, openVSXDownloads, githubStats] = await Promise.all([
       getTotalDownloads(),
       fetch("https://api.github.com/repos/jamierpond/yapi/releases/latest", {
-        next: { revalidate: FIVE_MINUTES_MS },
+        next: { revalidate: FIVE_MINUTES_SECONDS },
       }),
+      getVSCodeInstalls(),
+      getOpenVSXDownloads(),
+      getGitHubStats(),
     ]);
 
     const release = releasesRes.ok ? await releasesRes.json() : { tag_name: null };
 
+    const cliDownloads = totalDownloads || 0;
+    const extensionInstalls = (vscodeInstalls || 0) + (openVSXDownloads || 0);
+
     return {
-      totalDownloads: totalDownloads || 0,
       latestVersion: release.tag_name || null,
+      githubStars: githubStats.stars || 0,
+      githubForks: githubStats.forks || 0,
+      cliDownloads,
+      extensionInstalls,
+      totalInstalls: cliDownloads + extensionInstalls,
     };
   } catch {
-    return { totalDownloads: 0, latestVersion: null };
+    return { latestVersion: null, githubStars: 0, githubForks: 0, cliDownloads: 0, extensionInstalls: 0, totalInstalls: 0 };
   }
 }
 
@@ -55,13 +65,6 @@ export default async function Landing() {
             >
               <span className="text-xs font-mono text-yapi-accent">{stats.latestVersion}</span>
             </a>
-          )}
-          {stats.totalDownloads > 0 && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
-              <span className="text-xs font-mono text-yapi-fg-muted">
-                {stats.totalDownloads.toLocaleString()} downloads
-              </span>
-            </div>
           )}
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-yapi-border bg-yapi-bg-elevated/50 backdrop-blur-sm shadow-sm">
             <div className="flex h-2 w-2 relative">
@@ -193,6 +196,39 @@ export default async function Landing() {
            </div>
         </div>
 
+        {/* Vanity Metrics */}
+        <div className="w-full px-6 mt-20">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-3xl mx-auto">
+            <MetricCard
+              href="https://github.com/jamierpond/yapi/stargazers"
+              value={stats.githubStars}
+              label="Stars"
+            />
+            <MetricCard
+              href="https://github.com/jamierpond/yapi/forks"
+              value={stats.githubForks}
+              label="Forks"
+            />
+            <MetricCard
+              href="https://github.com/jamierpond/yapi/releases"
+              value={stats.cliDownloads}
+              label="CLI"
+            />
+            <MetricCard
+              href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
+              value={stats.extensionInstalls}
+              label="Extension"
+              hoverColor="blue"
+            />
+            <div className="p-4 rounded-xl border border-yapi-border bg-gradient-to-br from-yapi-accent/10 to-purple-500/10 text-center col-span-2 sm:col-span-1">
+              <div className="text-2xl font-bold bg-gradient-to-r from-yapi-accent to-purple-400 bg-clip-text text-transparent">
+                {stats.totalInstalls.toLocaleString()}
+              </div>
+              <div className="text-[10px] text-yapi-fg-muted mt-1 font-mono uppercase tracking-wide">Total</div>
+            </div>
+          </div>
+        </div>
+
         {/* Feature Grid */}
         <div className="max-w-6xl w-full mx-auto grid md:grid-cols-3 gap-8 mt-32">
           <FeatureCard
@@ -206,20 +242,71 @@ export default async function Landing() {
             desc="One yapi.config.yml to manage dev, staging, and prod. Switch with a flag. No duplicate files. Load secrets from shell env. Perfect for teams and CI/CD."
           />
           <FeatureCard
-            icon="🧠"
-            title="Built-in LSP"
-            desc="Full Language Server with autocompletion, real-time validation, and hover info. Works with Neovim, VS Code, and any LSP-compatible editor. No extensions needed."
+            icon="⚡"
+            title="Go Native Speed"
+            desc="Written in Go. Starts instantly. Uses minimal RAM. No Electron bloat, no loading spinners, no updates that move your buttons. Just a fast, reliable CLI tool."
           />
+        </div>
+
+        {/* VS Code / Cursor Showcase */}
+        <div className="max-w-6xl w-full mx-auto mt-32">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              First-class{" "}
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                VS Code & Cursor
+              </span>{" "}
+              support
+            </h2>
+            <p className="text-yapi-fg-muted max-w-2xl mx-auto">
+              Run requests with Cmd+Enter. See responses inline. Full LSP with autocompletion, validation, and hover info. No context switching.
+            </p>
+          </div>
+
+          <div className="relative group">
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition duration-500"></div>
+
+            <div className="relative rounded-xl overflow-hidden border border-yapi-border shadow-2xl">
+              <img
+                src="/image.png"
+                alt="yapi VS Code extension showing inline request execution with response panel"
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
+            <a
+              href="https://marketplace.visualstudio.com/items?itemName=yapi.yapi-extension"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-medium hover:bg-yapi-bg-elevated hover:border-blue-500/50 transition-all"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.15 2.587L18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.942-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z"/>
+              </svg>
+              VS Code Marketplace
+            </a>
+            <a
+              href="https://open-vsx.org/extension/yapi/yapi-extension"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-yapi-border bg-yapi-bg-elevated/40 text-yapi-fg font-medium hover:bg-yapi-bg-elevated hover:border-purple-500/50 transition-all"
+            >
+              Open VSX (Cursor)
+            </a>
+          </div>
         </div>
 
         {/* Additional Features */}
         <div className="max-w-6xl w-full mx-auto mt-32 mb-16">
            <div className="grid md:grid-cols-2 gap-8">
               <div className="p-8 rounded-2xl border border-yapi-border bg-yapi-bg-elevated/20">
-                <div className="text-3xl mb-4">⚡</div>
-                <h3 className="text-xl font-bold mb-3">Go Native Speed</h3>
+                <div className="text-3xl mb-4">🧠</div>
+                <h3 className="text-xl font-bold mb-3">Built-in LSP</h3>
                 <p className="text-yapi-fg-muted leading-relaxed text-sm">
-                  Written in Go. Starts instantly. Uses minimal RAM. No Electron bloat, no loading spinners, no updates that move your buttons. Just a fast, reliable CLI tool.
+                  Full Language Server with autocompletion, real-time validation, and hover info. Works with Neovim, VS Code, Cursor, and any LSP-compatible editor.
                 </p>
               </div>
               <div className="p-8 rounded-2xl border border-yapi-border bg-yapi-bg-elevated/20">
@@ -261,5 +348,40 @@ function FeatureCard({ icon, title, desc }: { icon: string, title: string, desc:
         {desc}
       </p>
     </div>
+  );
+}
+
+function MetricCard({
+  href,
+  value,
+  label,
+  hoverColor = "accent"
+}: {
+  href: string;
+  value: number;
+  label: string;
+  hoverColor?: "accent" | "blue" | "purple";
+}) {
+  if (value <= 0) return null;
+
+  const baseClasses = "p-4 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 transition-all text-center";
+  const colorClasses = {
+    accent: "hover:border-yapi-accent/50",
+    blue: "hover:border-blue-500/50",
+    purple: "hover:border-purple-500/50",
+  };
+  const textColorClasses = {
+    accent: "group-hover:text-yapi-accent",
+    blue: "group-hover:text-blue-400",
+    purple: "group-hover:text-purple-400",
+  };
+
+  return (
+    <a href={href} className={`group ${baseClasses} ${colorClasses[hoverColor]}`}>
+      <div className={`text-2xl font-bold text-yapi-fg transition-colors ${textColorClasses[hoverColor]}`}>
+        {value.toLocaleString()}
+      </div>
+      <div className="text-[10px] text-yapi-fg-muted mt-1 font-mono uppercase tracking-wide">{label}</div>
+    </a>
   );
 }

@@ -303,15 +303,9 @@ func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, p
 		// This means we need to select an environment
 		anyEnvSpecificVar = true
 
-		// Variable is defined in some but not all environments
-		if len(diagnosis.MissingInEnvs) > 0 {
-			sort.Strings(diagnosis.DefinedInEnvs)
-			partialVars[varName] = strings.Join(diagnosis.DefinedInEnvs, ", ")
-		} else {
-			// Variable is in all environments - still need to pick one
-			sort.Strings(diagnosis.DefinedInEnvs)
-			partialVars[varName] = strings.Join(diagnosis.DefinedInEnvs, ", ")
-		}
+		// Variable is defined in environments (may be all or just some)
+		sort.Strings(diagnosis.DefinedInEnvs)
+		partialVars[varName] = strings.Join(diagnosis.DefinedInEnvs, ", ")
 	}
 
 	// If all variables are satisfied by OS env or defaults, no environment needed

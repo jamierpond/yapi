@@ -44,7 +44,7 @@ func HTTPTransport(client HTTPClient) TransportFunc {
 			}
 		}
 
-		res, err := clientToUse.Do(httpReq)
+		res, err := clientToUse.Do(httpReq) //nolint:bodyclose // Body is returned to caller who closes it
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute request: %w", err)
 		}

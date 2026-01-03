@@ -91,10 +91,10 @@ func (e *Engine) RunConfig(
 		if opts.ProjectEnv != "" {
 			originalDefault := project.DefaultEnvironment
 			project.DefaultEnvironment = opts.ProjectEnv
-			analysis, err = validation.AnalyzeConfigStringWithProject(string(data), project, opts.ProjectRoot)
+			analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(string(data), path, project, opts.ProjectRoot)
 			project.DefaultEnvironment = originalDefault
 		} else {
-			analysis, err = validation.AnalyzeConfigStringWithProject(string(data), project, opts.ProjectRoot)
+			analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(string(data), path, project, opts.ProjectRoot)
 		}
 	} else {
 		analysis, err = validation.AnalyzeConfigFile(path)

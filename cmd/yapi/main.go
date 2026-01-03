@@ -175,7 +175,8 @@ func main() {
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, color.Red(err.Error()))
-		os.Exit(1)
+		observability.Close() // Ensure cleanup before exit
+		os.Exit(1)            //nolint:gocritic // exitAfterDefer: Close() called explicitly above
 	}
 }
 
@@ -397,6 +398,7 @@ func (app *rootCommand) printResultAsJSON(params jsonOutputParams) error {
 		// Determine transport type from config
 		if params.analysis != nil && params.analysis.Base != nil {
 			cfg := params.analysis.Base
+			//nolint:gocritic // ifElseChain: switch not suitable for these independent boolean conditions
 			if cfg.Graphql != "" {
 				output.Transport = "graphql"
 			} else if cfg.Service != "" || cfg.RPC != "" {
@@ -1104,6 +1106,7 @@ func shareE(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(os.Stderr, color.AccentBg(" yapi share "))
 	fmt.Fprintln(os.Stderr)
 
+	//nolint:gocritic // ifElseChain: switch not suitable for boolean conditions
 	if hasErrors {
 		fmt.Fprintln(os.Stderr, "  "+color.Yellow("Heads up: this yap has validation errors!"))
 		fmt.Fprintln(os.Stderr)
@@ -1787,16 +1790,14 @@ func (app *rootCommand) stressE(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("invalid duration: %w", err)
 		}
 		useDuration = true
-	} else {
-		if numRequests < 1 {
-			return fmt.Errorf("num-requests must be at least 1")
-		}
+	} else if numRequests < 1 {
+		return fmt.Errorf("num-requests must be at least 1")
 	}
 
 	// Show confirmation prompt
 	if !skipConfirm {
 		if err := app.promptStressTestConfirmation(filePath, envName, parallel, numRequests, duration, useDuration); err != nil {
-			return nil
+			return nil //nolint:nilerr // User cancelled, exit without error
 		}
 	}
 
