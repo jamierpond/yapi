@@ -4,7 +4,7 @@
   "description": "YAML API Testing Tool - HTTP, gRPC, GraphQL, and TCP support",
   "version": "0.6.7",
   "publisher": "yapi",
-  "icon": "./images/fluffy.png",
+  "icon": "./images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/jamierpond/yapi.git"
