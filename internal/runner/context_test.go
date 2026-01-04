@@ -33,9 +33,9 @@ func TestChainContext_ExpandVariables_EnvVars(t *testing.T) {
 			expected: "https://example.com/test_value/path",
 		},
 		{
-			name:     "unknown env var stays as is",
+			name:     "unknown env var returns empty",
 			input:    "${UNKNOWN_VAR}",
-			expected: "${UNKNOWN_VAR}",
+			expected: "",
 		},
 		{
 			name:     "no variables",

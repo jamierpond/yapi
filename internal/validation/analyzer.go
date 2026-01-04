@@ -121,7 +121,7 @@ func Analyze(text string, opts AnalyzeOptions) (*Analysis, error) {
 		}
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
-	return analyzeParsedWithOpts(text, parseRes, opts), nil
+	return analyzeParsed(text, parseRes, opts.Project, opts.ProjectRoot, opts.FilePath), nil
 }
 
 // HasErrors returns true if there are any error-level diagnostics.
@@ -247,11 +247,6 @@ func AnalyzeConfigFileWithOptions(path string, opts AnalyzeOptions) (*Analysis, 
 	}
 
 	return analyzeParsed(string(data), parseRes, nil, "", configPath), nil
-}
-
-// analyzeParsedWithOpts is the common analysis path using AnalyzeOptions.
-func analyzeParsedWithOpts(text string, parseRes *config.ParseResult, opts AnalyzeOptions) *Analysis {
-	return analyzeParsed(text, parseRes, opts.Project, opts.ProjectRoot, opts.FilePath)
 }
 
 // analyzeParsed is the common analysis path for both string and file inputs.

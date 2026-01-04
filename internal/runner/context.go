@@ -74,8 +74,8 @@ func (c *ChainContext) Resolve(key string) (string, error) {
 		return c.resolveChainVar(key)
 	}
 
-	// Not found: return original ${key} syntax
-	return "${" + key + "}", nil
+	// Not found: return empty string (per API contract)
+	return "", nil
 }
 
 // ExpandVariables replaces ${var} with values from Env or Chain Context.

@@ -29,7 +29,8 @@ func FindVarPositionInYAML(projectRoot string, varName string, section []string)
 	} else if _, err := os.Stat(yamlPath); err == nil {
 		configPath = yamlPath
 	} else {
-		return nil, fmt.Errorf("config file not found")
+		return nil, fmt.Errorf("config file not found: tried %s and %s in %s",
+			filepath.Base(ymlPath), filepath.Base(yamlPath), projectRoot)
 	}
 
 	contentBytes, err := os.ReadFile(configPath) // #nosec G304 -- configPath is constructed from validated projectRoot
