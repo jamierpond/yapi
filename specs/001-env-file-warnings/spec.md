@@ -14,6 +14,8 @@ When a YAPI configuration references env files via the `env_files` field, users 
 
 - Q: Should "go to definition" work only on `env_files` entries, or also on `${VAR}` variable references? → A: Both. `env_files` entries navigate to top of file; `${VAR}` references navigate to the variable definition line in the env file.
 - Q: Should missing env files and undefined variables show as LSP diagnostics? → A: Yes, both.
+- Q: What is the variable resolution priority? → A: env_files take priority over OS env. If a variable falls back to OS env (when env_files exist), warn about it.
+- Q: What does --strict-env do? → A: Only resolve from env_files, no OS env fallback. Error if any env file missing or variable undefined.
 
 ## User Stories
 
