@@ -274,7 +274,7 @@ env_files:
 					return
 				}
 				// Check that the URI contains the expected file
-				if !strings.Contains(string(location.URI), tt.expectFile) {
+				if !strings.Contains(location.URI, tt.expectFile) {
 					t.Errorf("expected URI to contain %q, got %q", tt.expectFile, location.URI)
 				}
 			} else if location != nil {
