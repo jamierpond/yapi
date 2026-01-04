@@ -12,3 +12,10 @@ headers:
   Accept: application/vnd.github+json
 
 jq_filter: "[.items[] | {name, stars: .stargazers_count, url: .html_url}]"
+
+expect:
+  status: 200
+  assert:
+    - . | length == 3
+    - .[0].name != null
+    - .[0].stars > 1000
