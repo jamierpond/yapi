@@ -68,6 +68,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
+      simple-git:
+        specifier: ^3.22.0
+        version: 3.30.0
       vscode-languageserver:
         specifier: ^9.0.1
         version: 9.0.1
