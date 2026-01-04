@@ -6,6 +6,8 @@ query:
   userId: 1
   _limit: 3
 
+jq_filter: "[.[] | {id, title}]"
+
 expect:
   status: 200
   assert:
@@ -13,4 +15,3 @@ expect:
     - .[0].id != null
     - .[0].title != null
 
-jq_filter: "[.[] | {id, title}]"
