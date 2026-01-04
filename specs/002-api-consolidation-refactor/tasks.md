@@ -29,15 +29,15 @@
 
 **Goal**: Single `Analyze()` entry point replaces 4 functions
 
-- [ ] T007 [US1] Add `AnalyzeOptions` struct in `internal/validation/analyzer.go`
-- [ ] T008 [US1] Create `Analyze(text string, opts AnalyzeOptions) (*Analysis, error)` in `internal/validation/analyzer.go`
-- [ ] T009 [US1] Refactor `analyzeParsed` to accept `AnalyzeOptions` in `internal/validation/analyzer.go`
-- [ ] T010 [US1] Convert `AnalyzeConfigString` to wrapper calling `Analyze()` in `internal/validation/analyzer.go`
-- [ ] T011 [US1] Convert `AnalyzeConfigStringWithProject` to wrapper in `internal/validation/analyzer.go`
-- [ ] T012 [US1] Convert `AnalyzeConfigStringWithProjectAndPath` to wrapper in `internal/validation/analyzer.go`
-- [ ] T013 [US1] Convert `AnalyzeConfigStringWithProjectAndPathAndOptions` to wrapper in `internal/validation/analyzer.go`
-- [ ] T014 [US1] Add deprecation comments to old functions in `internal/validation/analyzer.go`
-- [ ] T015 [US1] Run `make test && make lint`
+- [x] T007 [US1] Add `AnalyzeOptions` struct in `internal/validation/analyzer.go`
+- [x] T008 [US1] Create `Analyze(text string, opts AnalyzeOptions) (*Analysis, error)` in `internal/validation/analyzer.go`
+- [x] T009 [US1] Refactor `analyzeParsed` to accept `AnalyzeOptions` in `internal/validation/analyzer.go`
+- [x] T010 [US1] Convert `AnalyzeConfigString` to wrapper calling `Analyze()` in `internal/validation/analyzer.go`
+- [x] T011 [US1] Convert `AnalyzeConfigStringWithProject` to wrapper in `internal/validation/analyzer.go`
+- [x] T012 [US1] Convert `AnalyzeConfigStringWithProjectAndPath` to wrapper in `internal/validation/analyzer.go`
+- [x] T013 [US1] Convert `AnalyzeConfigStringWithProjectAndPathAndOptions` to wrapper in `internal/validation/analyzer.go`
+- [x] T014 [US1] Add deprecation comments to old functions in `internal/validation/analyzer.go`
+- [x] T015 [US1] Run `make test && make lint`
 
 **Checkpoint**: `yapi validate` works, all tests pass
 
