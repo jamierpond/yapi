@@ -592,8 +592,8 @@ func TestBuildEnvFileResolverWithOptions(t *testing.T) {
 			expectedValue: "",
 		},
 		{
-			name:          "env file var overrides existing resolver",
-			envFileVars:   map[string]string{"VAR": "from-env-file"},
+			name:        "env file var overrides existing resolver",
+			envFileVars: map[string]string{"VAR": "from-env-file"},
 			existingResolver: func(key string) (string, error) {
 				if key == "VAR" {
 					return "from-existing", nil
