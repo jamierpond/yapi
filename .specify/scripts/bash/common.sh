@@ -72,10 +72,9 @@ check_feature_branch() {
         return 0
     fi
 
-    # Accept branches like: jp/feature-name, dev-id/feature-name
-    if [[ ! "$branch" =~ ^[a-zA-Z0-9_-]+/.+ ]]; then
+    if [[ ! "$branch" =~ ^[0-9]{3}- ]]; then
         echo "ERROR: Not on a feature branch. Current branch: $branch" >&2
-        echo "Feature branches should be named like: {developer-id}/feature-name (e.g., jp/my-feature)" >&2
+        echo "Feature branches should be named like: 001-feature-name" >&2
         return 1
     fi
 
@@ -154,3 +153,4 @@ EOF
 
 check_file() { [[ -f "$1" ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
 check_dir() { [[ -d "$1" && -n $(ls -A "$1" 2>/dev/null) ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
+
