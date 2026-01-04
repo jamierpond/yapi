@@ -53,52 +53,34 @@ func (c *ChainContext) AddResult(name string, result *Result) {
 	c.Results[name] = sr
 }
 
-// ExpandVariables replaces $var and ${var} with values from Env or Chain Context.
-func (c *ChainContext) ExpandVariables(input string) (string, error) {
-	var capturedErr error
-
-	result := vars.Expansion.ReplaceAllStringFunc(input, func(match string) string {
-		var key string
-		if strings.HasPrefix(match, "${") {
-			// Strict: ${key}
-			key = match[2 : len(match)-1]
-		} else {
-			// Lazy: $key
-			key = match[1:]
-		}
-
-		// 1. Check OS Environment (highest priority)
-		if val, ok := os.LookupEnv(key); ok {
-			return val
-		}
-
-		// 2. Check Environment Overrides from project config
-		if c.EnvOverrides != nil {
-			if val, ok := c.EnvOverrides[key]; ok {
-				return val
-			}
-		}
-
-		// 3. Check Chain Context (must contain dot)
-		if strings.Contains(key, ".") {
-			val, err := c.resolveChainVar(key)
-			if err != nil {
-				if capturedErr == nil {
-					capturedErr = err
-				}
-				return match // Return original on error
-			}
-			return val
-		}
-
-		// Not found: return as is (or could error if strict mode)
-		return match
-	})
-
-	if capturedErr != nil {
-		return "", capturedErr
+// Resolve resolves a variable key to its value.
+// Resolution order: OS environment > EnvOverrides > Chain context.
+// Implements vars.Resolver.
+func (c *ChainContext) Resolve(key string) (string, error) {
+	// 1. Check OS Environment (highest priority)
+	if val, ok := os.LookupEnv(key); ok {
+		return val, nil
 	}
-	return result, nil
+
+	// 2. Check Environment Overrides from project config
+	if c.EnvOverrides != nil {
+		if val, ok := c.EnvOverrides[key]; ok {
+			return val, nil
+		}
+	}
+
+	// 3. Check Chain Context (must contain dot)
+	if strings.Contains(key, ".") {
+		return c.resolveChainVar(key)
+	}
+
+	// Not found: return original ${key} syntax
+	return "${" + key + "}", nil
+}
+
+// ExpandVariables replaces ${var} with values from Env or Chain Context.
+func (c *ChainContext) ExpandVariables(input string) (string, error) {
+	return vars.ExpandString(input, c.Resolve)
 }
 
 func (c *ChainContext) resolveChainVar(key string) (string, error) {
