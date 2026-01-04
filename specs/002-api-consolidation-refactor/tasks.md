@@ -14,12 +14,12 @@
 
 **Goal**: Extract shared AST helpers to enable accurate line numbers (blocks US2)
 
-- [ ] T001 Create `Location` type in `internal/validation/ast.go`
-- [ ] T002 Move `findVarPositionInYAML` from `internal/langserver/langserver.go:787` to `internal/validation/ast.go` as `FindVarPositionInYAML`
-- [ ] T003 Move `findNodeInMapping` from `internal/langserver/langserver.go:906` to `internal/validation/ast.go` as `FindNodeInMapping`
-- [ ] T004 Move `findKeyNodeInMapping` from `internal/langserver/langserver.go:922` to `internal/validation/ast.go` as `FindKeyNodeInMapping`
-- [ ] T005 Update `internal/langserver/langserver.go` to import and call `validation.FindVarPositionInYAML()`
-- [ ] T006 Run `make test && make lint` to verify no regressions
+- [x] T001 Create `Location` type in `internal/validation/ast.go`
+- [x] T002 Move `findVarPositionInYAML` from `internal/langserver/langserver.go:787` to `internal/validation/ast.go` as `FindVarPositionInYAML`
+- [x] T003 Move `findNodeInMapping` from `internal/langserver/langserver.go:906` to `internal/validation/ast.go` as `FindNodeInMapping`
+- [x] T004 Move `findKeyNodeInMapping` from `internal/langserver/langserver.go:922` to `internal/validation/ast.go` as `FindKeyNodeInMapping`
+- [x] T005 Update `internal/langserver/langserver.go` to import and call `validation.FindVarPositionInYAML()`
+- [x] T006 Run `make test && make lint` to verify no regressions
 
 **Checkpoint**: AST helpers extracted, langserver still works
 
