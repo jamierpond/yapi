@@ -6,16 +6,14 @@ on:
     paths:
       - 'apps/web/**'
       - 'packages/**'
-      - 'cmd/**'
-      - 'internal/**'
+      - 'cli/**'
       - '.github/workflows/web-tests.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'apps/web/**'
       - 'packages/**'
-      - 'cmd/**'
-      - 'internal/**'
+      - 'cli/**'
       - '.github/workflows/web-tests.yml'
   workflow_dispatch:
 
@@ -52,14 +50,14 @@ jobs:
       - name: Build & Install Yapi CLI
         run: |
           make build
-          sudo cp ./bin/yapi /usr/local/bin/yapi
+          sudo cp ./cli/bin/yapi /usr/local/bin/yapi
           yapi version
 
       - name: Run yapi integration tests
-        uses: ./action  # jamierpond/yapi/action@main
+        uses: ./integrations/github-action
         with:
           skip-install: true
-          start: pnpm --filter web start --port 3000
+          start: pnpm --filter @yapi/web start --port 3000
           wait-on: http://localhost:3000/healthz
           command: yapi test ./apps/web/yapi -a -p 16
 
