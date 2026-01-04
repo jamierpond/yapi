@@ -2,14 +2,14 @@ name: Web Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, next ]
     paths:
       - 'apps/web/**'
       - 'packages/**'
       - 'cli/**'
       - '.github/workflows/web-tests.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ main, next ]
     paths:
       - 'apps/web/**'
       - 'packages/**'

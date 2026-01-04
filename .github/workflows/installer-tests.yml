@@ -2,12 +2,12 @@ name: Installer Scripts
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
     paths:
       - 'apps/web/public/install/**'
       - '.github/workflows/installer-tests.yml'
   pull_request:
-    branches: [main]
+    branches: [main, next]
     paths:
       - 'apps/web/public/install/**'
       - '.github/workflows/installer-tests.yml'
