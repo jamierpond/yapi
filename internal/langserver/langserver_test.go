@@ -3,6 +3,7 @@ package langserver
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
