@@ -111,9 +111,18 @@ A developer sees a `${GITHUB_PAT}` variable reference in their YAPI file and wan
 - **FR-001**: `yapi` MUST check for the existence of all files listed in `env_files` before executing a request
 - **FR-002**: `yapi` MUST display a warning message for each env file that does not exist, including the file path
 - **FR-003**: `yapi` MUST continue execution after displaying warnings for missing env files (unless strict mode enabled)
-- **FR-004**: `yapi` MUST support a `--strict-env` CLI flag that treats missing env files as errors
+- **FR-004**: `yapi` MUST support a `--strict-env` CLI flag that:
+  - Resolves variables ONLY from env_files (no OS env fallback)
+  - Treats missing env files as errors (not warnings)
+  - Treats undefined variables as errors
 - **FR-005**: `yapi` MUST display an error and halt execution when an env file exists but cannot be read
 - **FR-006**: `yapi` MUST output warnings/errors to stderr to distinguish from normal output
+
+### Variable Resolution
+
+- **FR-013**: When `env_files` are specified, variables in env_files MUST take priority over OS environment variables
+- **FR-014**: When a variable is resolved from OS env (and env_files exist), `yapi` MUST display a warning: "variable 'X' resolved from OS environment, not env_files"
+- **FR-015**: `yapi` MUST error if a variable is undefined after checking all sources (env_files + OS env)
 
 ### LSP Features
 
@@ -124,7 +133,7 @@ The LSP should be maximally helpful - surface every issue that could cause a req
 - **FR-009**: When a variable is defined in multiple env files, the LSP MUST navigate to the first definition in `env_files` order
 - **FR-010**: When the target file or variable definition does not exist, the LSP MUST return no definition (no navigation)
 - **FR-011**: The LSP MUST show a warning diagnostic on env file paths that do not exist
-- **FR-012**: The LSP MUST show a warning diagnostic on `${VAR}` references where the variable is not defined in any env file
+- **FR-012**: The LSP MUST show a warning diagnostic on `${VAR}` references where the variable is not defined in the current configuration (env_files + project vars)
 
 ### YAML Schema (if applicable)
 

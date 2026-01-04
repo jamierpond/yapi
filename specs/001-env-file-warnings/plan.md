@@ -47,24 +47,31 @@ internal/
 
 ## Implementation Approach
 
-1. **CLI Warning Behavior**: Modify `loadEnvFiles()` to return warnings for missing files instead of errors, continue loading remaining files. Add `--strict-env` flag to `run` command that converts warnings to errors.
+1. **Variable Resolution Priority**: Modify resolver to prioritize env_files over OS env. When a variable falls back to OS env (and env_files exist), emit a warning.
 
-2. **LSP Go-to-Definition for env_files**: Extend `textDocumentDefinition()` to detect cursor on env file paths in `env_files` array. Return location pointing to line 1 of the file.
+2. **CLI Warning Behavior**: Modify `loadEnvFiles()` to return warnings for missing files instead of errors, continue loading remaining files. Add `--strict-env` flag that: only resolves from env_files (no OS fallback), treats missing files as errors.
 
-3. **LSP Diagnostics for Missing Files**: Add validation in `AnalyzeConfigString()` to check if each `env_files` entry exists. Generate warning diagnostics with file path and line/column position.
+3. **LSP Go-to-Definition for env_files**: Extend `textDocumentDefinition()` to detect cursor on env file paths in `env_files` array. Return location pointing to line 1 of the file.
 
-4. **LSP Diagnostics for Undefined Variables**: Already partially implemented via `FindEnvVarRefs()` and `ValidateProjectVars()`. Ensure diagnostics appear for variables not defined in any env file.
+4. **LSP Diagnostics for Missing Files**: Add validation in `AnalyzeConfigString()` to check if each `env_files` entry exists. Generate warning diagnostics with file path and line/column position.
+
+5. **LSP Diagnostics for Undefined Variables**: Show warning on `${VAR}` references not defined in current configuration (env_files + project vars).
 
 ## Phase Implementation
 
-### Phase 1: CLI Warnings (FR-001 through FR-006)
+### Phase 1: CLI Warnings & Variable Resolution (FR-001 through FR-006, FR-013 through FR-015)
 
 **Files to modify:**
 - `internal/config/loader.go`: Change `loadEnvFiles()` to:
   - Return `(map[string]string, []string, error)` - vars, warnings, error
   - On missing file: add warning, continue to next file
   - On permission error: return error (halt)
-- `cmd/yapi/main.go`: Add `--strict-env` flag to `run` command
+- `internal/config/loader.go`: Change `buildEnvFileResolver()` to:
+  - Prioritize env_files over OS env (flip current order)
+  - Track when OS env fallback is used, emit warning
+- `cmd/yapi/main.go`: Add `--strict-env` flag to `run` command:
+  - Pass flag through to resolver
+  - When set: skip OS env fallback entirely, error on missing files
 - Update callers of `loadEnvFiles()` to handle warnings
 
 ### Phase 2: LSP Go-to-Definition (FR-007 through FR-010)
