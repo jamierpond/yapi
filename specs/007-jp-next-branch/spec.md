@@ -51,7 +51,7 @@ After promoting `next` to main, the `next` branch should be reset to match main,
 
 ### US4 - Nightly Release on Push (P1)
 
-Every push to the `next` branch automatically triggers a nightly release, producing CLI binaries and deploying the web app to the nightly subdomain.
+Every push to the `next` branch automatically triggers a pre-release, producing CLI binaries and deploying the web app to `next.yapi.run`.
 
 **Acceptance**:
 - Given a push to `next`, when the workflow completes, then a GitHub pre-release is created with version `v<latest-tag>-next.<short-hash>`
