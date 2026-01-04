@@ -195,68 +195,14 @@ func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, proje
 }
 
 // AnalyzeConfigStringWithProjectAndPathAndOptions analyzes a YAML config with project context and options.
+// Deprecated: Use Analyze() with a complete AnalyzeOptions struct instead.
 func AnalyzeConfigStringWithProjectAndPathAndOptions(text string, configPath string, project *config.ProjectConfigV1, projectRoot string, opts AnalyzeOptions) (*Analysis, error) {
-	var parseRes *config.ParseResult
-	var err error
-
-	// If project config is available, use project variables and defaults
-	if project != nil {
-		// Get the default environment (or first available environment)
-		envName := project.DefaultEnvironment
-		if envName == "" && len(project.Environments) > 0 {
-			// If no default, use the first environment alphabetically for consistency
-			envNames := project.ListEnvironments()
-			if len(envNames) > 0 {
-				envName = envNames[0]
-			}
-		}
-
-		// Get the environment to extract defaults
-		var envDefaults *config.ConfigV1
-		if env, ok := project.Environments[envName]; ok {
-			// Extract the embedded ConfigV1 from the environment
-			envDefaults = &env.ConfigV1
-		}
-
-		// Resolve environment variables from project config
-		envVars, resolveErr := project.ResolveEnvFiles(projectRoot, envName)
-		if resolveErr == nil {
-			// Build project-aware resolver
-			resolver := BuildProjectResolver(envVars)
-			parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
-				ConfigPath: configPath,
-				Resolver:   resolver,
-				Defaults:   envDefaults,
-				StrictEnv:  opts.StrictEnv,
-			})
-		} else {
-			// Fall back to parsing with just defaults if we can't resolve env vars
-			parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
-				ConfigPath: configPath,
-				Defaults:   envDefaults,
-				StrictEnv:  opts.StrictEnv,
-			})
-		}
-	} else {
-		// No project config - use path for env_files resolution
-		parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
-			ConfigPath: configPath,
-			StrictEnv:  opts.StrictEnv,
-		})
-	}
-
-	if err != nil {
-		line := extractLineFromError(err.Error())
-		diag := Diagnostic{
-			Severity: SeverityError,
-			Field:    "",
-			Message:  fmt.Sprintf("invalid YAML: %v", err),
-			Line:     line,
-			Col:      0,
-		}
-		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
-	}
-	return analyzeParsed(text, parseRes, project, projectRoot, configPath), nil
+	// Merge the separate parameters with opts
+	mergedOpts := opts
+	mergedOpts.FilePath = configPath
+	mergedOpts.Project = project
+	mergedOpts.ProjectRoot = projectRoot
+	return Analyze(text, mergedOpts)
 }
 
 // AnalyzeConfigFile loads a file and analyzes it.
