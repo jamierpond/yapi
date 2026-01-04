@@ -969,3 +969,198 @@ env_files:
 		})
 	}
 }
+
+func TestAnalyzeConfigStringWithProjectAndPathAndOptions(t *testing.T) {
+	// Create temp directory with env file
+	tmpDir := t.TempDir()
+	envPath := filepath.Join(tmpDir, ".env.test")
+	if err := os.WriteFile(envPath, []byte("TEST_VAR=test-value"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name        string
+		yaml        string
+		configPath  string
+		project     *config.ProjectConfigV1
+		projectRoot string
+		opts        AnalyzeOptions
+		wantErrors  bool
+	}{
+		{
+			name: "basic config without project",
+			yaml: `yapi: v1
+url: http://example.com
+method: GET`,
+			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
+			project:    nil,
+			wantErrors: false,
+		},
+		{
+			name: "project with no default environment picks first",
+			yaml: `yapi: v1
+url: http://example.com
+method: GET`,
+			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
+			project: &config.ProjectConfigV1{
+				Environments: map[string]config.Environment{
+					"dev": {
+						ConfigV1: config.ConfigV1{
+							EnvFiles: []string{".env.test"},
+						},
+					},
+				},
+				DefaultEnvironment: "", // No default set
+			},
+			projectRoot: tmpDir,
+			wantErrors:  false,
+		},
+		{
+			name: "project with default environment",
+			yaml: `yapi: v1
+url: http://example.com
+method: GET`,
+			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
+			project: &config.ProjectConfigV1{
+				Environments: map[string]config.Environment{
+					"prod": {
+						ConfigV1: config.ConfigV1{
+							EnvFiles: []string{".env.test"},
+						},
+					},
+				},
+				DefaultEnvironment: "prod",
+			},
+			projectRoot: tmpDir,
+			wantErrors:  false,
+		},
+		{
+			name: "invalid YAML returns error diagnostic",
+			yaml: `yapi: v1
+url: [invalid yaml`,
+			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
+			project:    nil,
+			wantErrors: true,
+		},
+		{
+			name: "strict env mode with missing env file",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.nonexistent`,
+			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
+			project:    nil,
+			opts:       AnalyzeOptions{StrictEnv: true},
+			wantErrors: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analysis, err := AnalyzeConfigStringWithProjectAndPathAndOptions(
+				tt.yaml, tt.configPath, tt.project, tt.projectRoot, tt.opts,
+			)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if analysis == nil {
+				t.Fatal("expected analysis, got nil")
+			}
+			if analysis.HasErrors() != tt.wantErrors {
+				t.Errorf("HasErrors() = %v, want %v. Diagnostics: %+v",
+					analysis.HasErrors(), tt.wantErrors, analysis.Diagnostics)
+			}
+		})
+	}
+}
+
+func TestAnalyzeConfigFileWithOptions(t *testing.T) {
+	// Create temp directory with valid config
+	tmpDir := t.TempDir()
+	validConfig := `yapi: v1
+url: http://example.com
+method: GET`
+	validPath := filepath.Join(tmpDir, "valid.yapi.yml")
+	if err := os.WriteFile(validPath, []byte(validConfig), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name       string
+		path       string
+		opts       AnalyzeOptions
+		wantErrors bool
+	}{
+		{
+			name:       "valid config file",
+			path:       validPath,
+			opts:       AnalyzeOptions{},
+			wantErrors: false,
+		},
+		{
+			name:       "nonexistent file",
+			path:       filepath.Join(tmpDir, "nonexistent.yapi.yml"),
+			opts:       AnalyzeOptions{},
+			wantErrors: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analysis, err := AnalyzeConfigFileWithOptions(tt.path, tt.opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if analysis == nil {
+				t.Fatal("expected analysis, got nil")
+			}
+			if analysis.HasErrors() != tt.wantErrors {
+				t.Errorf("HasErrors() = %v, want %v", analysis.HasErrors(), tt.wantErrors)
+			}
+		})
+	}
+}
+
+func TestAnalyzeConfigFile(t *testing.T) {
+	// Create temp directory with valid config
+	tmpDir := t.TempDir()
+	validConfig := `yapi: v1
+url: http://example.com
+method: GET`
+	validPath := filepath.Join(tmpDir, "valid.yapi.yml")
+	if err := os.WriteFile(validPath, []byte(validConfig), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	analysis, err := AnalyzeConfigFile(validPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if analysis == nil {
+		t.Fatal("expected analysis, got nil")
+	}
+	if analysis.HasErrors() {
+		t.Errorf("expected no errors, got: %+v", analysis.Diagnostics)
+	}
+}
+
+func TestExtractLineFromError(t *testing.T) {
+	tests := []struct {
+		errMsg   string
+		expected int
+	}{
+		{"line 22: cannot unmarshal", 21}, // 0-indexed
+		{"line 1: error", 0},
+		{"no line number here", -1},
+		{"", -1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.errMsg, func(t *testing.T) {
+			got := extractLineFromError(tt.errMsg)
+			if got != tt.expected {
+				t.Errorf("extractLineFromError(%q) = %d, want %d", tt.errMsg, got, tt.expected)
+			}
+		})
+	}
+}
