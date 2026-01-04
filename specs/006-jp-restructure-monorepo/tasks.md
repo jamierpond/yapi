@@ -54,9 +54,9 @@ Goal: Go CLI can be built in isolation without triggering TypeScript tooling.
 
 **Test Criteria**: `make build`, `make test`, `make lint` all pass.
 
-- [ ] T012 [US2] Run `make build` and verify Go binary is created at `cli/bin/yapi`
-- [ ] T013 [US2] Run `make test` and verify all Go tests pass
-- [ ] T014 [US2] Run `make lint` and verify no linting errors
+- [x] T012 [US2] Run `make build` and verify Go binary is created at `cli/bin/yapi`
+- [x] T013 [US2] Run `make test` and verify all Go tests pass
+- [x] T014 [US2] Run `make lint` and verify no linting errors
 
 **Checkpoint**: All three make commands succeed
 
