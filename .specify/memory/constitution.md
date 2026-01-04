@@ -113,21 +113,52 @@ You can't have bugs in code you don't have. Every line of code is a liability.
 **Rationale**: This project is maintained by one person. Every line of code is a maintenance burden.
 Less code means fewer bugs, faster builds, easier onboarding. The best code is no code at all.
 
-### VII. Single Code Path
+### VII. One Pipeline, Different Stopping Points
 
-The LSP and CLI MUST use identical code paths for config parsing, validation, and
-compilation. The `compiler` package is the single source of truth.
+ALL yapi commands are the SAME pipeline. They differ only in where they stop and how
+many times they iterate. This is not a guideline - it is the architecture.
 
-- LSP MUST NOT duplicate logic that exists in core packages (config, validation, compiler)
-- Changes to execution logic MUST NOT require parallel changes in the LSP
-- The langserver is a thin adapter layer: it converts LSP protocol to yapi core calls
-- If you're writing validation/parsing logic in langserver, you're doing it wrong
-- All analyzer functions MUST be usable by both CLI and LSP with the same parameters
-- New features affecting config interpretation MUST be implemented in core, not langserver
+```
+parse → validate → execute
+  ↑         ↑          ↑
+  │         │          └── run stops here (once)
+  │         │              test stops here (N files)
+  │         │              stress stops here (N×M times)
+  │         │              watch stops here (on every file change)
+  │         │
+  │         └── validate stops here (once)
+  │             lsp stops here (on every keystroke)
+  │
+  └── All commands start here
+```
 
-**Rationale**: Divergent code paths cause bugs. The LSP showing different behavior than
-CLI execution is a critical defect. We just fixed a bug where env_files worked in CLI
-but not LSP because they used different analyzer calls. Never again.
+**The Rules:**
+
+- `validate` = parse + validate. That's it. One file, one pass, return diagnostics.
+- `run` = validate + execute. One file, one pass, return result.
+- `test` = run, but for N files. Same pipeline, iterated.
+- `stress` = run, but N times concurrently. Same pipeline, parallelized.
+- `watch` = run, but re-triggered on file changes. Same pipeline, looped.
+- `lsp` = validate, but persistent and re-triggered on edits. Same pipeline, streaming.
+
+**Implementation Requirements:**
+
+- ALL commands MUST call `validation.Analyze()` for parsing and validation
+- ALL commands that execute MUST go through `core.Engine.RunConfig()`
+- The langserver is a thin adapter: LSP protocol → `validation.Analyze()` → LSP response
+- There is NO command-specific parsing logic. NONE. EVER.
+- If you're writing validation code anywhere except `internal/validation`, you're wrong
+- If `validate` and `run` can produce different diagnostics for the same file, that's a bug
+- If the LSP shows different errors than `yapi validate`, that's a critical defect
+
+**What This Means In Practice:**
+
+- Adding a new validation rule? Add it to `validation.Analyze()`. Done. All commands get it.
+- Fixing a parse bug? Fix it in `config/`. Done. All commands get it.
+- Adding environment variable support? Add it to the core resolver. Done. All commands get it.
+- NEVER add command-specific preprocessing, postprocessing, or "special cases"
+
+**Rationale**: We don't want command-specific bugs. We don't want to maintain multiple code paths. Keep it simple. Keep it DRY. No one wants wet code.
 
 ## Quality Standards
 
