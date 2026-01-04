@@ -14,7 +14,7 @@ Establish a staging branch named `next` that serves as an unstable/nightly integ
 - Q: What version format for next releases? → A: `v0.X.Y-next.<short-hash>` (semver compliant, 7-char hash)
 - Q: What subdomain for nightly web app? → A: Single `next.yapi.run` (always latest push)
 - Q: What artifacts for nightly releases? → A: GitHub pre-release only (no Homebrew for nightlies)
-- Q: How is nightly base version determined? → A: Latest stable tag (e.g., v0.5.2-nightly.abc1234)
+- Q: How is next base version determined? → A: Latest stable tag (e.g., v0.5.2-next.abc1234)
 - Q: VS Code extension nightly releases? → A: Skipped - extension only releases with stable
 
 ## User Stories
@@ -54,7 +54,7 @@ After promoting `next` to main, the `next` branch should be reset to match main,
 Every push to the `next` branch automatically triggers a nightly release, producing CLI binaries and deploying the web app to the nightly subdomain.
 
 **Acceptance**:
-- Given a push to `next`, when the workflow completes, then a GitHub pre-release is created with version `v<latest-tag>-nightly.<short-hash>`
+- Given a push to `next`, when the workflow completes, then a GitHub pre-release is created with version `v<latest-tag>-next.<short-hash>`
 - Given a push to `next`, when Vercel deploys, then `next.yapi.run` reflects the latest changes
 
 ## Requirements
