@@ -47,9 +47,9 @@
 
 **Goal**: Diagnostics report real line numbers, not line 0
 
-- [ ] T016 [US2] Update `ValidateEnvFilesExistFromProject` to use `FindVarPositionInYAML` in `internal/validation/analyzer.go`
-- [ ] T017 [US2] Update `ValidateProjectVars` to use AST helpers for line numbers in `internal/validation/analyzer.go`
-- [ ] T018 [US2] Run `make test && make lint`
+- [x] T016 [US2] Update `ValidateEnvFilesExistFromProject` to use `FindVarPositionInYAML` in `internal/validation/analyzer.go` (already uses FindEnvFilesInConfig for config-level)
+- [x] T017 [US2] Update `ValidateProjectVars` to use AST helpers for line numbers in `internal/validation/analyzer.go` (already uses findVarLine)
+- [x] T018 [US2] Run `make test && make lint`
 
 **Checkpoint**: `yapi validate` shows accurate line numbers for env file errors
 
