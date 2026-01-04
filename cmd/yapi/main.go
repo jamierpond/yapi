@@ -802,7 +802,7 @@ func validateE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	analysis, err := validation.AnalyzeConfigString(string(data))
+	analysis, err := validation.AnalyzeConfigStringWithProjectAndPath(string(data), path, nil, "")
 	if err != nil {
 		if jsonOutput {
 			outputValidateError(err)

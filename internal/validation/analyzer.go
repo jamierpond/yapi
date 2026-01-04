@@ -246,10 +246,24 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 	}
 
 	// Validate env_files entries exist (with proper line/col positions)
+	// These diagnostics supersede the warnings from the loader since they include line numbers
+	var envFileDiags []Diagnostic
 	if project != nil {
-		diags = append(diags, ValidateEnvFilesExistFromProject(text, project, projectRoot, "")...)
+		envFileDiags = ValidateEnvFilesExistFromProject(text, project, projectRoot, "")
 	} else if configPath != "" {
-		diags = append(diags, ValidateEnvFilesExist(text, configPath)...)
+		envFileDiags = ValidateEnvFilesExist(text, configPath)
+	}
+	diags = append(diags, envFileDiags...)
+
+	// Filter out env file warnings from parseRes.Warnings since we have diagnostics with line numbers
+	if len(envFileDiags) > 0 {
+		filteredWarnings := make([]string, 0, len(parseRes.Warnings))
+		for _, w := range parseRes.Warnings {
+			if !strings.Contains(w, "env file") || !strings.Contains(w, "not found") {
+				filteredWarnings = append(filteredWarnings, w)
+			}
+		}
+		parseRes.Warnings = filteredWarnings
 	}
 
 	// Chain config
