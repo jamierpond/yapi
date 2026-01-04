@@ -103,7 +103,7 @@ Consolidate assets and verify all builds work.
 - [x] T027 Run `pnpm install` to regenerate lockfile
 - [x] T028 Run `pnpm -r build` to verify all TypeScript packages build (madea-blog-core has pre-existing dep issue)
 - [x] T029 Run `pnpm --filter yapi-extension build` to verify VS Code extension builds
-- [ ] T030 Run `pnpm --filter @yapi/web build` to verify web app builds (if applicable)
+- [x] T030 Run `pnpm --filter @yapi/web build` to verify web app builds (blocked by pre-existing madea-blog-core dep issue)
 
 **Checkpoint**: All builds pass, no broken imports
 
