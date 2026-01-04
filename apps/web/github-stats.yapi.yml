@@ -4,7 +4,7 @@ method: GET
 env_files:
   - .env.local
 headers:
-  Authorization: Bearer ${GITHUB_PAT}
+  Authorization: Bearer ${GITHUB_TOKEN}
   Accept: application/vnd.github.v3+json
   User-Agent: yapi-test
 expect:
