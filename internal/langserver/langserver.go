@@ -685,7 +685,7 @@ func findEnvFilePathAtPosition(text string, line int, char int) string {
 	}
 
 	// Find env_files key
-	envFilesNode := findNodeInMapping(docNode, "env_files")
+	envFilesNode := validation.FindNodeInMapping(docNode, "env_files")
 	if envFilesNode == nil || envFilesNode.Kind != yaml.SequenceNode {
 		return ""
 	}
@@ -784,64 +784,24 @@ func findVariableDefinition(varName string, project *config.ProjectConfigV1, pro
 }
 
 // findVarPositionInYAML finds the position of a variable in yapi.config.yml
+// This is a wrapper around validation.FindVarPositionInYAML that returns protocol.Location
 func findVarPositionInYAML(projectRoot string, varName string, section []string) (*protocol.Location, error) {
-	// Try both .yml and .yaml extensions
-	var configPath string
-	ymlPath := filepath.Join(projectRoot, "yapi.config.yml")
-	yamlPath := filepath.Join(projectRoot, "yapi.config.yaml")
-
-	if _, err := os.Stat(ymlPath); err == nil {
-		configPath = ymlPath
-	} else if _, err := os.Stat(yamlPath); err == nil {
-		configPath = yamlPath
-	} else {
-		return nil, fmt.Errorf("config file not found")
-	}
-
-	// Read and parse the YAML file
-	contentBytes, err := os.ReadFile(configPath) // #nosec G304 -- configPath is constructed from validated projectRoot
+	loc, err := validation.FindVarPositionInYAML(projectRoot, varName, section)
 	if err != nil {
 		return nil, err
 	}
-	content := string(contentBytes)
 
-	var root yaml.Node
-	if err := yaml.Unmarshal([]byte(content), &root); err != nil {
-		return nil, err
-	}
-
-	// Navigate to the section (e.g., ["environments", "dev", "vars"])
-	currentNode := &root
-	if len(root.Content) > 0 {
-		currentNode = root.Content[0] // Get the document content
-	}
-
-	for _, key := range section {
-		valueNode := findNodeInMapping(currentNode, key)
-		if valueNode == nil {
-			return nil, fmt.Errorf("section not found: %s", key)
-		}
-		currentNode = valueNode
-	}
-
-	// Now find the key node for the variable
-	keyNode := findKeyNodeInMapping(currentNode, varName)
-	if keyNode == nil {
-		return nil, fmt.Errorf("variable not found in section")
-	}
-
-	// Convert YAML position (1-indexed) to LSP position (0-indexed)
 	startPos := protocol.Position{
-		Line:      protocol.UInteger(keyNode.Line - 1),
-		Character: protocol.UInteger(keyNode.Column - 1),
+		Line:      protocol.UInteger(loc.Line),
+		Character: protocol.UInteger(loc.Col),
 	}
 	endPos := protocol.Position{
-		Line:      protocol.UInteger(keyNode.Line - 1),
-		Character: protocol.UInteger(keyNode.Column - 1 + len(varName)),
+		Line:      protocol.UInteger(loc.Line),
+		Character: protocol.UInteger(loc.Col + len(varName)),
 	}
 
 	return &protocol.Location{
-		URI: "file://" + configPath,
+		URI: "file://" + loc.File,
 		Range: protocol.Range{
 			Start: startPos,
 			End:   endPos,
@@ -902,37 +862,6 @@ func findVarPositionInEnvFile(projectRoot string, envFile string, varName string
 	return nil, fmt.Errorf("variable not found in env file")
 }
 
-// findNodeInMapping finds the value node for a given key in a YAML mapping
-func findNodeInMapping(node *yaml.Node, key string) *yaml.Node {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return nil
-	}
-
-	// MappingNode content is [key, value, key, value, ...]
-	for i := 0; i < len(node.Content); i += 2 {
-		if i+1 < len(node.Content) && node.Content[i].Value == key {
-			return node.Content[i+1]
-		}
-	}
-
-	return nil
-}
-
-// findKeyNodeInMapping finds the key node itself (not the value) in a YAML mapping
-func findKeyNodeInMapping(node *yaml.Node, key string) *yaml.Node {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return nil
-	}
-
-	// MappingNode content is [key, value, key, value, ...]
-	for i := 0; i < len(node.Content); i += 2 {
-		if node.Content[i].Value == key {
-			return node.Content[i]
-		}
-	}
-
-	return nil
-}
 
 // getEffectiveEnvironment returns the environment name to use for lookups
 func getEffectiveEnvironment(project *config.ProjectConfigV1) string {
