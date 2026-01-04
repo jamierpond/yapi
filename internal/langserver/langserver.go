@@ -604,18 +604,22 @@ func textDocumentDefinition(ctx *glsp.Context, params *protocol.DefinitionParams
 	line := int(params.Position.Line)
 	char := int(params.Position.Character)
 
-	// First, check if cursor is on an env_files entry path
-	envFilePath := findEnvFilePathAtPosition(doc.Text, line, char)
-	if envFilePath != "" {
-		// Determine the base directory for resolving relative paths
-		baseDir := filepath.Dir(uriToPath(uri))
-		if doc.ProjectRoot != "" {
-			baseDir = doc.ProjectRoot
-		}
+	// Check if cursor is on an env_files entry path (uses canonical validation.FindEnvFilesInConfig)
+	envFiles := validation.FindEnvFilesInConfig(doc.Text)
+	for _, ef := range envFiles {
+		// Check if cursor is within this entry (Col is start, Path length determines end)
+		if ef.Line == line && char >= ef.Col && char <= ef.Col+len(ef.Path) {
+			baseDir := filepath.Dir(uriToPath(uri))
+			if doc.ProjectRoot != "" {
+				baseDir = doc.ProjectRoot
+			}
 
-		location := resolveEnvFileLocation(envFilePath, baseDir)
-		if location != nil {
-			return location, nil
+			location := resolveEnvFileLocation(ef.Path, baseDir)
+			if location != nil {
+				return location, nil
+			}
+			// Found entry but couldn't resolve (e.g. file missing), stop searching
+			return nil, nil
 		}
 	}
 
@@ -666,43 +670,6 @@ func findVariableInConfigEnvFiles(text string, varName string, baseDir string) *
 	}
 
 	return nil
-}
-
-// findEnvFilePathAtPosition checks if the cursor is on an env_files entry and returns the path
-func findEnvFilePathAtPosition(text string, line int, char int) string {
-	var root yaml.Node
-	if err := yaml.Unmarshal([]byte(text), &root); err != nil {
-		return ""
-	}
-
-	if len(root.Content) == 0 {
-		return ""
-	}
-
-	docNode := root.Content[0]
-	if docNode.Kind != yaml.MappingNode {
-		return ""
-	}
-
-	// Find env_files key
-	envFilesNode := validation.FindNodeInMapping(docNode, "env_files")
-	if envFilesNode == nil || envFilesNode.Kind != yaml.SequenceNode {
-		return ""
-	}
-
-	// Check each item in the env_files array
-	for _, item := range envFilesNode.Content {
-		// YAML line/column are 1-indexed, LSP is 0-indexed
-		itemLine := item.Line - 1
-		itemCol := item.Column - 1
-		itemEndCol := itemCol + len(item.Value)
-
-		if itemLine == line && char >= itemCol && char <= itemEndCol {
-			return item.Value
-		}
-	}
-
-	return ""
 }
 
 // resolveEnvFileLocation resolves an env file path and returns a location pointing to line 1
