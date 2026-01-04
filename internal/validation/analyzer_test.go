@@ -856,3 +856,106 @@ env_files:
 		})
 	}
 }
+
+func TestValidateEnvFilesExistFromProject(t *testing.T) {
+	// Create a temp directory with test env files
+	tmpDir := t.TempDir()
+	envPath := filepath.Join(tmpDir, ".env.exists")
+	if err := os.WriteFile(envPath, []byte("VAR=value"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name          string
+		yaml          string
+		project       *config.ProjectConfigV1
+		expectedCount int
+	}{
+		{
+			name: "nil project returns no diagnostics",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.missing`,
+			project:       nil,
+			expectedCount: 0,
+		},
+		{
+			name: "project with existing env file",
+			yaml: `yapi: v1
+url: http://example.com`,
+			project: &config.ProjectConfigV1{
+				Environments: map[string]config.EnvConfig{
+					"default": {
+						EnvFiles: []string{".env.exists"},
+					},
+				},
+				DefaultEnvironment: "default",
+			},
+			expectedCount: 0,
+		},
+		{
+			name: "project with missing env file",
+			yaml: `yapi: v1
+url: http://example.com`,
+			project: &config.ProjectConfigV1{
+				Environments: map[string]config.EnvConfig{
+					"default": {
+						EnvFiles: []string{".env.missing"},
+					},
+				},
+				DefaultEnvironment: "default",
+			},
+			expectedCount: 1,
+		},
+		{
+			name: "config-level env_files missing",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.config-missing`,
+			project: &config.ProjectConfigV1{
+				Environments: map[string]config.EnvConfig{
+					"default": {
+						EnvFiles: []string{".env.exists"},
+					},
+				},
+				DefaultEnvironment: "default",
+			},
+			expectedCount: 1,
+		},
+		{
+			name: "both project and config-level missing",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.config-missing`,
+			project: &config.ProjectConfigV1{
+				Environments: map[string]config.EnvConfig{
+					"default": {
+						EnvFiles: []string{".env.project-missing"},
+					},
+				},
+				DefaultEnvironment: "default",
+			},
+			expectedCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diags := ValidateEnvFilesExistFromProject(tt.yaml, tt.project, tmpDir, "")
+
+			if len(diags) != tt.expectedCount {
+				t.Errorf("expected %d diagnostics, got %d: %+v", tt.expectedCount, len(diags), diags)
+			}
+
+			// Check that all diagnostics are warnings
+			for _, d := range diags {
+				if d.Severity != SeverityWarning {
+					t.Errorf("expected warning severity, got %v", d.Severity)
+				}
+			}
+		})
+	}
+}
