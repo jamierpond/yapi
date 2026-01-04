@@ -50,9 +50,78 @@ type Analysis struct {
 	Expect      config.Expectation // Expectations for single request validation
 }
 
-// AnalyzeOptions contains options for analyzing a config.
+// AnalyzeOptions consolidates all analysis parameters.
 type AnalyzeOptions struct {
-	StrictEnv bool // If true, error on missing env files and disable OS env fallback
+	FilePath    string                  // Path to the config file (for relative resolution)
+	Project     *config.ProjectConfigV1 // Project context (optional)
+	ProjectRoot string                  // Root directory of the project (optional)
+	StrictEnv   bool                    // If true, error on missing env files and disable OS env fallback
+}
+
+// Analyze is the single entry point for analyzing YAML config.
+// This function consolidates all the AnalyzeConfigString* variants.
+func Analyze(text string, opts AnalyzeOptions) (*Analysis, error) {
+	var parseRes *config.ParseResult
+	var err error
+
+	// If project config is available, use project variables and defaults
+	if opts.Project != nil {
+		// Get the default environment (or first available environment)
+		envName := opts.Project.DefaultEnvironment
+		if envName == "" && len(opts.Project.Environments) > 0 {
+			// If no default, use the first environment alphabetically for consistency
+			envNames := opts.Project.ListEnvironments()
+			if len(envNames) > 0 {
+				envName = envNames[0]
+			}
+		}
+
+		// Get the environment to extract defaults
+		var envDefaults *config.ConfigV1
+		if env, ok := opts.Project.Environments[envName]; ok {
+			// Extract the embedded ConfigV1 from the environment
+			envDefaults = &env.ConfigV1
+		}
+
+		// Resolve environment variables from project config
+		envVars, resolveErr := opts.Project.ResolveEnvFiles(opts.ProjectRoot, envName)
+		if resolveErr == nil {
+			// Build project-aware resolver
+			resolver := BuildProjectResolver(envVars)
+			parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
+				ConfigPath: opts.FilePath,
+				Resolver:   resolver,
+				Defaults:   envDefaults,
+				StrictEnv:  opts.StrictEnv,
+			})
+		} else {
+			// Fall back to parsing with just defaults if we can't resolve env vars
+			parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
+				ConfigPath: opts.FilePath,
+				Defaults:   envDefaults,
+				StrictEnv:  opts.StrictEnv,
+			})
+		}
+	} else {
+		// No project config - use path for env_files resolution
+		parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
+			ConfigPath: opts.FilePath,
+			StrictEnv:  opts.StrictEnv,
+		})
+	}
+
+	if err != nil {
+		line := extractLineFromError(err.Error())
+		diag := Diagnostic{
+			Severity: SeverityError,
+			Field:    "",
+			Message:  fmt.Sprintf("invalid YAML: %v", err),
+			Line:     line,
+			Col:      0,
+		}
+		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
+	}
+	return analyzeParsedWithOpts(text, parseRes, opts), nil
 }
 
 // HasErrors returns true if there are any error-level diagnostics.
@@ -106,23 +175,23 @@ func (a *Analysis) ToJSON() JSONOutput {
 	}
 }
 
-// AnalyzeConfigString is the single entrypoint for analyzing YAML config.
-// Both CLI and LSP should call this function.
+// AnalyzeConfigString is a convenience wrapper for Analyze.
+// Deprecated: Use Analyze() with AnalyzeOptions instead.
 func AnalyzeConfigString(text string) (*Analysis, error) {
-	return AnalyzeConfigStringWithProject(text, nil, "")
+	return Analyze(text, AnalyzeOptions{})
 }
 
 // AnalyzeConfigStringWithProject analyzes a YAML config with optional project context.
-// If project is provided, performs cross-environment variable validation, uses project
-// variables from the default environment for resolution, and applies environment defaults.
+// Deprecated: Use Analyze() with AnalyzeOptions{Project: p, ProjectRoot: r} instead.
 func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
-	return AnalyzeConfigStringWithProjectAndPath(text, "", project, projectRoot)
+	return Analyze(text, AnalyzeOptions{Project: project, ProjectRoot: projectRoot})
 }
 
 // AnalyzeConfigStringWithProjectAndPath analyzes a YAML config with optional project context
 // and config file path for resolving relative env_files.
+// Deprecated: Use Analyze() with AnalyzeOptions{FilePath: p, Project: pr, ProjectRoot: r} instead.
 func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
-	return AnalyzeConfigStringWithProjectAndPathAndOptions(text, configPath, project, projectRoot, AnalyzeOptions{})
+	return Analyze(text, AnalyzeOptions{FilePath: configPath, Project: project, ProjectRoot: projectRoot})
 }
 
 // AnalyzeConfigStringWithProjectAndPathAndOptions analyzes a YAML config with project context and options.
@@ -232,6 +301,11 @@ func AnalyzeConfigFileWithOptions(path string, opts AnalyzeOptions) (*Analysis, 
 	}
 
 	return analyzeParsed(string(data), parseRes, nil, "", configPath), nil
+}
+
+// analyzeParsedWithOpts is the common analysis path using AnalyzeOptions.
+func analyzeParsedWithOpts(text string, parseRes *config.ParseResult, opts AnalyzeOptions) *Analysis {
+	return analyzeParsed(text, parseRes, opts.Project, opts.ProjectRoot, opts.FilePath)
 }
 
 // analyzeParsed is the common analysis path for both string and file inputs.
