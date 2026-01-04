@@ -1,16 +1,15 @@
 <!--
   Sync Impact Report
   ===================
-  Version change: 1.3.0 -> 1.3.1
+  Version change: 1.3.1 -> 1.4.0
 
-  Modified principles:
-  - VI. Minimal Code: Added explicit NO DEPRECATED FUNCTIONS, NO BACKWARDS-COMPAT SHIMS,
-    DELETE TESTS FOR DELETED CODE rules. Updated rationale to emphasize single maintainer.
+  Modified principles: N/A
 
   Added sections:
   - Core Principles V. Dogfooding (1.1.0)
   - Core Principles VI. Minimal Code (1.2.0)
   - Core Principles VII. Single Code Path (1.3.0)
+  - Core Principles VIII. Fail Fast (1.4.0)
 
   Removed sections: N/A
 
@@ -18,6 +17,7 @@
   - .specify/templates/plan-template.md: Add Dogfooding to Constitution Check table [DONE]
   - .specify/templates/plan-template.md: Add Minimal Code to Constitution Check table
   - .specify/templates/plan-template.md: Add Single Code Path to Constitution Check table
+  - .specify/templates/plan-template.md: Add Fail Fast to Constitution Check table
 
   Follow-up TODOs: None
 -->
@@ -159,6 +159,21 @@ parse → validate → execute
 - NEVER add command-specific preprocessing, postprocessing, or "special cases"
 
 **Rationale**: We don't want command-specific bugs. We don't want to maintain multiple code paths. Keep it simple. Keep it DRY. No one wants wet code.
+
+### VIII. Fail Fast
+
+Code MUST fail immediately and loudly when something is wrong. Silent failures and deferred errors are bugs.
+
+- Use assertions liberally. If a condition should never happen, assert it.
+- Validate inputs at the boundary. Reject garbage immediately, don't propagate it.
+- Panic on impossible states rather than returning meaningless defaults.
+- Error messages MUST be specific: what failed, why, and where.
+- NO defensive coding that papers over bugs. If caller passes nil, panic. Don't check and silently return.
+- NO "graceful degradation" that hides broken behavior. If it's broken, STOP.
+- Prefer hard crashes over corrupted state. A crash is debuggable. Corrupted data is a nightmare.
+- Tests MUST assert behavior, not just "run without error". A test that doesn't assert is not a test.
+
+**Rationale**: The earlier you find a bug, the cheaper it is to fix. Assertions and hard failures surface bugs at development time, not in production. Whimsy code that "handles" errors by ignoring them creates debugging nightmares. Fail hard, fail fast, fix it now.
 
 ## Quality Standards
 
