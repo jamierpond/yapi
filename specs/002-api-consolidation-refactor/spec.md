@@ -72,7 +72,7 @@ yapi run grpc-request.yapi.yml
 
 | Package                            | Changes                                    |
 |------------------------------------|--------------------------------------------|
-| `internal/config/loader.go`        | Remove dead structs                        |
+| `internal/config/loader.go`        | No changes (structs are used)              |
 | `internal/validation/analyzer.go`  | Consolidate to single `Analyze()` function |
 | `internal/validation/ast.go`       | New file with shared AST helpers           |
 | `internal/executor/executor.go`    | Replace Factory with `GetTransport()`      |
