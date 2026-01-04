@@ -68,8 +68,7 @@ Every push to the `next` branch automatically triggers a nightly release, produc
 - **FR-005**: Every push to `next` MUST trigger a nightly release workflow
 - **FR-006**: Nightly releases MUST use version format `v<latest-stable-tag>-nightly.<7-char-commit-hash>`
 - **FR-007**: Nightly releases MUST be marked as pre-release on GitHub (not "latest")
-- **FR-008**: Nightly CLI binaries MUST be installable via `brew install yapi/tap/yapi-nightly`
-- **FR-009**: The web app MUST deploy to `nightly.yapi.run` on every push to `next`
+- **FR-008**: The web app MUST deploy to `next.yapi.run` on every push to `next`
 
 ### Branch Workflow
 
@@ -85,8 +84,7 @@ feature/* ─────┘     │
 On push to next:
   ├── CI runs (lint, test, build)
   ├── GoReleaser creates pre-release (v0.X.Y-nightly.<hash>)
-  ├── Homebrew yapi-nightly formula updated
-  └── Vercel deploys to nightly.yapi.run
+  └── Vercel deploys to next.yapi.run
 ```
 
 ## Edge Cases
@@ -110,14 +108,13 @@ On push to next:
 - [ ] After release, `next` can be reset to match `main`
 - [ ] Push to `next` triggers nightly release workflow
 - [ ] Nightly releases appear as pre-releases on GitHub with correct version format
-- [ ] `brew install yapi/tap/yapi-nightly` installs the latest nightly CLI
-- [ ] `nightly.yapi.run` serves the latest `next` branch web app
+- [ ] `next.yapi.run` serves the latest `next` branch web app
 - [ ] Team members understand the workflow (documented in contributing guide)
 
 ## Assumptions
 
 - The team uses a standard merge-based workflow (not rebase-only)
 - Branch protection rules will be configured at the repository level
-- Vercel domain configuration for `nightly.yapi.run` requires manual setup
-- Homebrew tap repository exists and accepts automated formula updates
+- Vercel domain configuration for `next.yapi.run` requires manual setup
 - VS Code extension is excluded from nightly releases (stable only)
+- Homebrew is excluded from nightly releases (GitHub pre-releases only)
