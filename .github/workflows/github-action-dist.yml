@@ -1,4 +1,4 @@
-name: GitHub Action Dist Check
+name: Build Github Action
 
 on:
   push:
