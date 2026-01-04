@@ -1,0 +1,51 @@
+name: GitHub Action Dist Check
+
+on:
+  push:
+    paths:
+      - 'integrations/github-action/**'
+  pull_request:
+    paths:
+      - 'integrations/github-action/**'
+
+jobs:
+  check-dist:
+    name: Check dist is up to date
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: integrations/github-action
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: integrations/github-action
+        run: pnpm run build
+
+      - name: Check for uncommitted changes
+        working-directory: integrations/github-action
+        run: |
+          if [ -n "$(git status --porcelain dist/)" ]; then
+            echo "::error::dist/ is out of date. Run 'pnpm run build' in integrations/github-action/ and commit the changes."
+            echo ""
+            echo "Changed files:"
+            git status --porcelain dist/
+            echo ""
+            echo "Diff:"
+            git diff dist/
+            exit 1
+          fi
+          echo "dist/ is up to date"
