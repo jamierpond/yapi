@@ -11,7 +11,7 @@ Establish a staging branch named `next` that serves as an unstable/nightly integ
 ### Session 2026-01-04
 
 - Q: When should nightly releases trigger? → A: Every push to `next`
-- Q: What version format for nightlies? → A: `v0.X.Y-nightly.<short-hash>` (semver compliant, 7-char hash)
+- Q: What version format for next releases? → A: `v0.X.Y-next.<short-hash>` (semver compliant, 7-char hash)
 - Q: What subdomain for nightly web app? → A: Single `next.yapi.run` (always latest push)
 - Q: What artifacts for nightly releases? → A: GitHub pre-release only (no Homebrew for nightlies)
 - Q: How is nightly base version determined? → A: Latest stable tag (e.g., v0.5.2-nightly.abc1234)
