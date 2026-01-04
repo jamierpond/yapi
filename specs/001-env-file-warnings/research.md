@@ -5,7 +5,20 @@
 
 ## Technical Decisions
 
-### 1. Warning vs Error Behavior for Missing Env Files
+### 1. Variable Resolution Priority
+
+**Decision**: Config takes priority over OS env. Order: `env.[name].vars` > `env.[name].env_files` > `defaults.vars` > `defaults.env_files` > per-request `env_files` > OS env (fallback with info diagnostic).
+
+**Rationale**:
+- Config should be explicit and reproducible
+- OS env as fallback catches "works on my machine" issues via info diagnostic
+- `--strict-env` disables OS fallback entirely for CI reproducibility
+
+**Alternatives Considered**:
+- OS env takes priority: Current behavior, but hides config issues
+- No OS fallback ever: Too strict for local development
+
+### 2. Warning vs Error Behavior for Missing Env Files
 
 **Decision**: Default to warning (non-blocking), with `--strict-env` flag for error behavior.
 
@@ -18,7 +31,7 @@
 - Always error: Too disruptive for local development
 - Config-level flag in YAML: Over-engineering for simple use case
 
-### 2. Permission Error Handling
+### 3. Permission Error Handling
 
 **Decision**: Permission errors are always errors (not warnings), regardless of strict mode.
 
@@ -30,7 +43,7 @@
 **Alternatives Considered**:
 - Treat as warning: Could hide real problems silently
 
-### 3. LSP Go-to-Definition Target Position
+### 4. LSP Go-to-Definition Target Position
 
 **Decision**: Navigate to line 1, column 0 of the target env file.
 
@@ -42,7 +55,7 @@
 **Alternatives Considered**:
 - Navigate to first non-comment line: Adds complexity, minimal benefit
 
-### 4. Multiple Env File Definitions
+### 5. Multiple Env File Definitions
 
 **Decision**: When a variable is defined in multiple env files, go-to-definition navigates to the first definition per `env_files` array order.
 
@@ -54,7 +67,7 @@
 **Alternatives Considered**:
 - Show picker with all definitions: Adds complexity, LSP support varies by editor
 
-### 5. Env File Path Detection in LSP
+### 6. Env File Path Detection in LSP
 
 **Decision**: Use YAML node positions to detect cursor on env_files array entries.
 
@@ -134,6 +147,19 @@ No new dependencies required.
 - Cache invalidation happens on document change
 - Env files are typically small (< 1KB)
 
+### 7. OS Env Fallback Diagnostic Severity
+
+**Decision**: Use info diagnostic (not warning) when variable resolves from OS env.
+
+**Rationale**:
+- It's not wrong, just something to be aware of
+- Warns about potential reproducibility issues without being noisy
+- Warning severity reserved for actual problems (missing files, undefined vars)
+
+**Alternatives Considered**:
+- Warning: Too noisy for valid use cases
+- No diagnostic: Hides potential "works on my machine" issues
+
 ## Edge Cases Covered
 
 | Edge Case | Handling |
@@ -144,3 +170,5 @@ No new dependencies required.
 | Empty env file | Valid, no warning |
 | Windows paths | OS-appropriate path handling via filepath package |
 | Env file with syntax errors | godotenv.Read returns error, show as diagnostic |
+| Multi-environment project | Each env can have own env_files, defaults apply to all |
+| Variable in OS but not config | Info diagnostic, use OS value (unless --strict-env) |
