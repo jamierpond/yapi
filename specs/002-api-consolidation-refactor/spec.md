@@ -101,7 +101,7 @@ yapi run grpc-request.yapi.yml
 
 ## Assumptions
 
-- The dead code structs (`EnvFileStatus`, `EnvFileLoadResult`, `ResolverOptions`) have been verified as unused through codebase analysis
+- ~~The dead code structs were assumed unused~~ **Research found these are actively used - FR-002 dropped**
 - The existing `AnalyzeConfigString*` function variants all share the same core logic that can be unified
 - The LSP and validation packages can share AST helper code without circular dependencies
 - Extracting code to new packages maintains the same public API behavior for CLI commands
@@ -110,7 +110,7 @@ yapi run grpc-request.yapi.yml
 ## Success Criteria
 
 - [ ] Single entry point `Analyze()` function handles all validation scenarios
-- [ ] Dead code removed from loader package
+- [x] ~~Dead code removed~~ FR-002 dropped (structs are used)
 - [ ] Executor Factory replaced with standalone function
 - [ ] AST helpers consolidated in validation/ast.go
 - [ ] Diagnostic line numbers accurate for env file errors (not line 0)
