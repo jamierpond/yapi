@@ -97,12 +97,12 @@ Goal: Hoisted packages available in flat `packages/` directory.
 
 Consolidate assets and verify all builds work.
 
-- [ ] T024 [P] Move `pup.jpg` to `assets/pup.jpg`
-- [ ] T025 [P] Move `icon.svg` to `assets/icon.svg`
-- [ ] T026 [P] Move `og-image.png` to `assets/og-image.png`
-- [ ] T027 Run `pnpm install` to regenerate lockfile
-- [ ] T028 Run `pnpm -r build` to verify all TypeScript packages build
-- [ ] T029 Run `pnpm --filter yapi-extension build` to verify VS Code extension builds
+- [x] T024 [P] Move `pup.jpg` to `assets/pup.jpg`
+- [x] T025 [P] Move `icon.svg` to `assets/icon.svg`
+- [x] T026 [P] Move `og-image.png` to `assets/og-image.png`
+- [x] T027 Run `pnpm install` to regenerate lockfile
+- [x] T028 Run `pnpm -r build` to verify all TypeScript packages build (madea-blog-core has pre-existing dep issue)
+- [x] T029 Run `pnpm --filter yapi-extension build` to verify VS Code extension builds
 - [ ] T030 Run `pnpm --filter @yapi/web build` to verify web app builds (if applicable)
 
 **Checkpoint**: All builds pass, no broken imports

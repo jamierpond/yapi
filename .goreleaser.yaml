@@ -3,6 +3,7 @@ project_name: yapi
 
 builds:
   - id: yapi
+    dir: cli
     main: ./cmd/yapi
     binary: yapi
     ldflags:
