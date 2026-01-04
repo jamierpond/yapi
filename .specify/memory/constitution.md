@@ -245,4 +245,4 @@ All contributions MUST comply with these principles.
 - Complexity MUST be justified in PR descriptions
 - Principle violations require explicit exemption with documented rationale
 
-**Version**: 1.3.1 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
+**Version**: 1.4.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-04
