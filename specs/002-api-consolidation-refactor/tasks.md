@@ -59,11 +59,11 @@
 
 **Goal**: Replace Factory with standalone `GetTransport()`
 
-- [ ] T019 [P] [US3] Add `GetTransport(transport string, client HTTPClient) (TransportFunc, error)` in `internal/executor/executor.go`
-- [ ] T020 [US3] Move switch logic from `Factory.Create()` to `GetTransport()` in `internal/executor/executor.go`
-- [ ] T021 [US3] Add deprecation comments to `Factory` and `NewFactory` in `internal/executor/executor.go`
-- [ ] T022 [US3] Update callers in `cmd/yapi/main.go` to use `GetTransport()` directly
-- [ ] T023 [US3] Run `make test && make lint`
+- [x] T019 [P] [US3] Add `GetTransport(transport string, client HTTPClient) (TransportFunc, error)` in `internal/executor/executor.go`
+- [x] T020 [US3] Move switch logic from `Factory.Create()` to `GetTransport()` in `internal/executor/executor.go`
+- [x] T021 [US3] Add deprecation comments to `Factory` and `NewFactory` in `internal/executor/executor.go`
+- [x] T022 [US3] Update callers in `cmd/yapi/main.go` to use `GetTransport()` directly (N/A - main.go uses core.Engine, Factory now delegates to GetTransport)
+- [x] T023 [US3] Run `make test && make lint`
 
 **Checkpoint**: `yapi run` works with all transport types
 
