@@ -213,3 +213,72 @@ func TestResolveEnvFileLocation(t *testing.T) {
 		})
 	}
 }
+
+func TestFindVariableInConfigEnvFiles(t *testing.T) {
+	// Create a temp directory with env files
+	tmpDir := t.TempDir()
+
+	// Create .env.base with BASE_URL
+	baseEnvPath := filepath.Join(tmpDir, ".env.base")
+	if err := os.WriteFile(baseEnvPath, []byte("BASE_URL=http://localhost:3000\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create .env.override with API_KEY
+	overrideEnvPath := filepath.Join(tmpDir, ".env.override")
+	if err := os.WriteFile(overrideEnvPath, []byte("API_KEY=secret123\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	configText := `yapi: v1
+url: ${BASE_URL}/api
+headers:
+  Authorization: Bearer ${API_KEY}
+env_files:
+  - .env.base
+  - .env.override`
+
+	tests := []struct {
+		name        string
+		varName     string
+		expectFound bool
+		expectFile  string
+	}{
+		{
+			name:        "find BASE_URL in .env.base",
+			varName:     "BASE_URL",
+			expectFound: true,
+			expectFile:  ".env.base",
+		},
+		{
+			name:        "find API_KEY in .env.override",
+			varName:     "API_KEY",
+			expectFound: true,
+			expectFile:  ".env.override",
+		},
+		{
+			name:        "variable not found",
+			varName:     "NONEXISTENT",
+			expectFound: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			location := findVariableInConfigEnvFiles(configText, tt.varName, tmpDir)
+
+			if tt.expectFound {
+				if location == nil {
+					t.Error("expected location, got nil")
+					return
+				}
+				// Check that the URI contains the expected file
+				if !strings.Contains(string(location.URI), tt.expectFile) {
+					t.Errorf("expected URI to contain %q, got %q", tt.expectFile, location.URI)
+				}
+			} else if location != nil {
+				t.Errorf("expected nil for nonexistent variable, got %v", location)
+			}
+		})
+	}
+}
