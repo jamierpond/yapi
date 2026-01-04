@@ -193,15 +193,18 @@ func validateAndNotify(ctx *glsp.Context, uri protocol.DocumentUri, text string)
 	var analysis *validation.Analysis
 	var err error
 
+	// Get file path for resolving relative env_files
+	configPath := uriToPath(uri)
+
 	// Use project-aware validation if available
 	if ok && doc.Project != nil {
-		analysis, err = validation.AnalyzeConfigStringWithProject(text, doc.Project, doc.ProjectRoot)
+		analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(text, configPath, doc.Project, doc.ProjectRoot)
 	} else {
-		analysis, err = validation.AnalyzeConfigString(text)
+		analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(text, configPath, nil, "")
 	}
 
 	if err != nil || analysis == nil {
-		analysis, err = validation.AnalyzeConfigString(text)
+		analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(text, configPath, nil, "")
 	}
 	if err != nil {
 		// Catastrophic error - send one diagnostic and bail
