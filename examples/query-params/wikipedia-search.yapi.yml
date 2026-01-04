@@ -14,6 +14,8 @@ headers:
   Accept: application/json
   User-Agent: yapi-example/1.0
 
+jq_filter: "[.query.search[] | {title, snippet}]"
+
 expect:
   status: 200
   assert:
@@ -21,4 +23,3 @@ expect:
     - .[0].title != null
     - .[0].snippet != null
 
-jq_filter: "[.query.search[] | {title, snippet}]"

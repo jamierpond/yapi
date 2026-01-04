@@ -6,6 +6,8 @@ query:
   tags: front_page
   hitsPerPage: 5
 
+jq_filter: "[.hits[] | {title, points, url}]"
+
 expect:
   status: 200
   assert:
@@ -13,4 +15,3 @@ expect:
     - .[0].title != null
     - .[0].points != null
 
-jq_filter: "[.hits[] | {title, points, url}]"
