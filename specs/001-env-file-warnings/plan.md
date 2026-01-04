@@ -113,7 +113,8 @@ No complexity concerns. Implementation leverages existing patterns:
 | LSP go-to-definition on env file path  | Unit        | `internal/langserver/langserver_test.go` |
 | LSP diagnostic for missing env file    | Unit        | `internal/validation/analyzer_test.go` |
 | LSP diagnostic for undefined variable  | Unit        | `internal/validation/analyzer_test.go` |
-| LSP info diagnostic for OS-resolved var| Unit        | `internal/validation/analyzer_test.go` |
+| LSP warning for OS-resolved var        | Unit        | `internal/validation/analyzer_test.go` |
+| LSP info shows resolution source       | Unit        | `internal/validation/analyzer_test.go` |
 
 ## Success Metrics
 
