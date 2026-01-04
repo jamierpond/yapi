@@ -39,6 +39,7 @@ LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE
 
 
 echo "Building yapi CLI..."
+cd cli
 go build -ldflags "${LDFLAGS}" -o ./bin/yapi ./cmd/yapi
 
 echo "Installing yapi to /usr/local/bin..."
@@ -51,6 +52,7 @@ yapi version 2>/dev/null || true
 
 echo "Generating CLI documentation..."
 go run scripts/gendocs.go
+cd ..
 
 echo "Building madea-blog-core..."
 pnpm --filter madea-blog-core build
