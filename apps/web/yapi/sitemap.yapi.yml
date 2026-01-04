@@ -1,5 +1,10 @@
+# Sitemap validation
 yapi: v1
 path: /sitemap.xml
 method: GET
+
+headers:
+  User-Agent: yapi-cli
+
 expect:
   status: 200

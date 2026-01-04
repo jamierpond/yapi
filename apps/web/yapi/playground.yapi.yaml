@@ -1,5 +1,0 @@
-yapi: v1
-path: /playground
-method: GET
-expect:
-  status: 200

@@ -1,5 +1,10 @@
+# Blog post: What is yapi?
 yapi: v1
 path: /blog/what-is-yapi
 method: GET
+
+headers:
+  User-Agent: yapi-cli
+
 expect:
   status: 200

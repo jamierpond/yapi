@@ -1,0 +1,13 @@
+# Fetch and save the yapi icon
+yapi: v1
+path: /icon
+method: GET
+
+headers:
+  User-Agent: yapi-cli
+  Accept: image/svg+xml
+
+expect:
+  status: 200
+
+output_file: ./icon.svg

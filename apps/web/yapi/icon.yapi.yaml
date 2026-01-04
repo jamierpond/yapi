@@ -1,6 +1,0 @@
-yapi: v1
-path: /icon
-method: GET
-expect:
-  status: 200
-output_file: ./icon.svg

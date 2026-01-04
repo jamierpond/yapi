@@ -1,0 +1,10 @@
+# Homepage smoke test
+yapi: v1
+path: /
+method: GET
+
+headers:
+  User-Agent: yapi-cli
+
+expect:
+  status: 200

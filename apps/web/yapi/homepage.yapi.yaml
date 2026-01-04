@@ -1,5 +1,0 @@
-yapi: v1
-path: /
-method: GET
-expect:
-  status: 200

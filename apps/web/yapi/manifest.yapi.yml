@@ -1,0 +1,15 @@
+# Web app manifest
+yapi: v1
+path: /manifest.webmanifest
+method: GET
+
+headers:
+  User-Agent: yapi-cli
+  Accept: application/manifest+json
+
+expect:
+  status: 200
+  assert:
+    body:
+      - .name == "yapi"
+      - .short_name != null

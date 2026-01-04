@@ -1,0 +1,13 @@
+# Fetch and save the Open Graph image
+yapi: v1
+path: /og
+method: GET
+
+headers:
+  User-Agent: yapi-cli
+  Accept: image/png
+
+expect:
+  status: 200
+
+output_file: ./og-image.png
