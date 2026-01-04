@@ -19,7 +19,7 @@ environments:
 `
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "yapi.config.yml")
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -93,7 +93,7 @@ environments:
 `
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "yapi.config.yaml")
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,11 +123,11 @@ func TestFindVarPositionInYAML_NoConfigFile(t *testing.T) {
 
 func TestFindNodeInMapping(t *testing.T) {
 	tests := []struct {
-		name     string
-		yaml     string
-		key      string
-		wantNil  bool
-		wantVal  string
+		name    string
+		yaml    string
+		key     string
+		wantNil bool
+		wantVal string
 	}{
 		{
 			name:    "find existing key",
@@ -257,7 +257,7 @@ environments:
 `
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "yapi.config.yml")
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
