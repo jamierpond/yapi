@@ -862,7 +862,6 @@ func findVarPositionInEnvFile(projectRoot string, envFile string, varName string
 	return nil, fmt.Errorf("variable not found in env file")
 }
 
-
 // getEffectiveEnvironment returns the environment name to use for lookups
 func getEffectiveEnvironment(project *config.ProjectConfigV1) string {
 	// Use default_environment if set
