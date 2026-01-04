@@ -68,11 +68,11 @@ Goal: All integrations consolidated in `integrations/` directory.
 
 **Test Criteria**: VS Code extension, GitHub Action, and Neovim plugin are in `integrations/`.
 
-- [ ] T015 [US3] Move `action/` to `integrations/github-action/`
-- [ ] T016 [US3] [P] Move `extensions/vscode-extension/` to `integrations/vscode/`
-- [ ] T017 [US3] [P] Move `lua/` to `integrations/nvim/`
-- [ ] T018 [US3] Remove empty `extensions/` directory
-- [ ] T019 [US3] Update `integrations/vscode/package.json` copy:webview script path from `../../apps/vscode-webview/dist/` to `../../packages/vscode-ui/dist/`
+- [x] T015 [US3] Move `action/` to `integrations/github-action/`
+- [x] T016 [US3] [P] Move `extensions/vscode-extension/` to `integrations/vscode/`
+- [x] T017 [US3] [P] Move `lua/` to `integrations/nvim/`
+- [x] T018 [US3] Remove empty `extensions/` directory
+- [x] T019 [US3] Update `integrations/vscode/package.json` copy:webview script path from `../../apps/vscode-webview/dist/` to `../../packages/vscode-ui/dist/`
 
 **Checkpoint**: `ls integrations/` shows `github-action/`, `vscode/`, `nvim/`
 
