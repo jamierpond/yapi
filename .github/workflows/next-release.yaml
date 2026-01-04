@@ -21,15 +21,6 @@ jobs:
         with:
           go-version: stable
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
       - name: Calculate version
         id: version
         run: |
@@ -46,10 +37,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.version }}
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-vscode-extension
 
-      - name: Build VS Code extension
+      - name: Package VS Code extension
         run: pnpm package:extension
 
       - name: Upload VS Code extension to release

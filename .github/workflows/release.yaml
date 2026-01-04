@@ -36,3 +36,19 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_HOST: https://us.i.posthog.com
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+
+      - uses: ./.github/actions/setup-vscode-extension
+
+      - name: Package VS Code extension
+        run: pnpm package:extension
+
+      - name: Upload VS Code extension to release
+        run: |
+          VSIX_FILE=$(ls integrations/vscode/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX_FILE" ]; then
+            echo "Error: No .vsix file found. Did the build step succeed?"
+            exit 1
+          fi
+          gh release upload "${{ github.ref_name }}" "$VSIX_FILE" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
