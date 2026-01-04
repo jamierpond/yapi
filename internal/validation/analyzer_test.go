@@ -23,9 +23,9 @@ func TestAnalyzeConfig_ValidHTTP(t *testing.T) {
 url: http://example.com
 method: GET`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if len(a.Diagnostics) != 0 {
@@ -41,9 +41,9 @@ func TestAnalyzeConfig_MissingURL(t *testing.T) {
 	yaml := `yapi: v1
 method: GET`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -59,9 +59,9 @@ func TestAnalyzeConfig_BadYAML(t *testing.T) {
 	yaml := `yapi: v1
 url: [invalid yaml`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -79,9 +79,9 @@ url: http://example.com/graphql
 graphql: |
   query { foo( }`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !hasDiagnostic(a.Diagnostics, "GraphQL syntax error") {
@@ -102,9 +102,9 @@ url: http://example.com/graphql
 graphql: |
   query { foo }`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Should have no GraphQL syntax errors
@@ -120,9 +120,9 @@ func TestAnalyzeConfig_BadJQ(t *testing.T) {
 url: http://example.com
 jq_filter: .foo[`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !hasDiagnostic(a.Diagnostics, "JQ syntax error") {
@@ -142,9 +142,9 @@ func TestAnalyzeConfig_ValidJQ(t *testing.T) {
 url: http://example.com
 jq_filter: .data.items[]`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Should have no JQ syntax errors
@@ -159,9 +159,9 @@ func TestAnalyzeConfig_MissingVersion(t *testing.T) {
 	yaml := `url: http://example.com
 method: GET`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if len(a.Warnings) == 0 {
@@ -185,9 +185,9 @@ func TestAnalyzeConfig_GRPCMissingRequirements(t *testing.T) {
 	yaml := `yapi: v1
 url: grpc://localhost:50051`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -209,9 +209,9 @@ url: tcp://localhost:9000
 data: hello
 encoding: invalid`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -228,9 +228,9 @@ func TestAnalyzeConfig_UnknownHTTPMethod(t *testing.T) {
 url: http://example.com
 method: FOOBAR`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Should have a warning, not an error
@@ -258,9 +258,9 @@ graphql: query { foo }
 body:
   key: value`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -370,9 +370,9 @@ method: GET
 unknown_field: value
 another_bad_key: 123`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Should not have errors - unknown keys are warnings
@@ -416,9 +416,9 @@ method: GET
 headers:
   Authorization: Bearer token`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Should have no warnings about unknown keys
@@ -970,7 +970,7 @@ env_files:
 	}
 }
 
-func TestAnalyzeConfigStringWithProjectAndPathAndOptions(t *testing.T) {
+func TestAnalyzeWithOptions(t *testing.T) {
 	// Create temp directory with env file
 	tmpDir := t.TempDir()
 	envPath := filepath.Join(tmpDir, ".env.test")
@@ -979,21 +979,17 @@ func TestAnalyzeConfigStringWithProjectAndPathAndOptions(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		yaml        string
-		configPath  string
-		project     *config.ProjectConfigV1
-		projectRoot string
-		opts        AnalyzeOptions
-		wantErrors  bool
+		name       string
+		yaml       string
+		opts       AnalyzeOptions
+		wantErrors bool
 	}{
 		{
 			name: "basic config without project",
 			yaml: `yapi: v1
 url: http://example.com
 method: GET`,
-			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
-			project:    nil,
+			opts:       AnalyzeOptions{FilePath: filepath.Join(tmpDir, "test.yapi.yml")},
 			wantErrors: false,
 		},
 		{
@@ -1001,45 +997,48 @@ method: GET`,
 			yaml: `yapi: v1
 url: http://example.com
 method: GET`,
-			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
-			project: &config.ProjectConfigV1{
-				Environments: map[string]config.Environment{
-					"dev": {
-						ConfigV1: config.ConfigV1{
-							EnvFiles: []string{".env.test"},
+			opts: AnalyzeOptions{
+				FilePath: filepath.Join(tmpDir, "test.yapi.yml"),
+				Project: &config.ProjectConfigV1{
+					Environments: map[string]config.Environment{
+						"dev": {
+							ConfigV1: config.ConfigV1{
+								EnvFiles: []string{".env.test"},
+							},
 						},
 					},
+					DefaultEnvironment: "", // No default set
 				},
-				DefaultEnvironment: "", // No default set
+				ProjectRoot: tmpDir,
 			},
-			projectRoot: tmpDir,
-			wantErrors:  false,
+			wantErrors: false,
 		},
 		{
 			name: "project with default environment",
 			yaml: `yapi: v1
 url: http://example.com
 method: GET`,
-			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
-			project: &config.ProjectConfigV1{
-				Environments: map[string]config.Environment{
-					"prod": {
-						ConfigV1: config.ConfigV1{
-							EnvFiles: []string{".env.test"},
+			opts: AnalyzeOptions{
+				FilePath: filepath.Join(tmpDir, "test.yapi.yml"),
+				Project: &config.ProjectConfigV1{
+					Environments: map[string]config.Environment{
+						"prod": {
+							ConfigV1: config.ConfigV1{
+								EnvFiles: []string{".env.test"},
+							},
 						},
 					},
+					DefaultEnvironment: "prod",
 				},
-				DefaultEnvironment: "prod",
+				ProjectRoot: tmpDir,
 			},
-			projectRoot: tmpDir,
-			wantErrors:  false,
+			wantErrors: false,
 		},
 		{
 			name: "invalid YAML returns error diagnostic",
 			yaml: `yapi: v1
 url: [invalid yaml`,
-			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
-			project:    nil,
+			opts:       AnalyzeOptions{FilePath: filepath.Join(tmpDir, "test.yapi.yml")},
 			wantErrors: true,
 		},
 		{
@@ -1048,18 +1047,14 @@ url: [invalid yaml`,
 url: http://example.com
 env_files:
   - .env.nonexistent`,
-			configPath: filepath.Join(tmpDir, "test.yapi.yml"),
-			project:    nil,
-			opts:       AnalyzeOptions{StrictEnv: true},
+			opts:       AnalyzeOptions{FilePath: filepath.Join(tmpDir, "test.yapi.yml"), StrictEnv: true},
 			wantErrors: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analysis, err := AnalyzeConfigStringWithProjectAndPathAndOptions(
-				tt.yaml, tt.configPath, tt.project, tt.projectRoot, tt.opts,
-			)
+			analysis, err := Analyze(tt.yaml, tt.opts)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

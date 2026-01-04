@@ -264,7 +264,7 @@ data: hello`)
 	}
 }
 
-func FuzzAnalyzeConfigString(f *testing.F) {
+func FuzzAnalyze(f *testing.F) {
 	// Seed with various YAML configs
 	f.Add(`yapi: v1
 url: https://example.com
@@ -339,8 +339,8 @@ url: https://example.com
 jq: .data.items | map(.id)`)
 
 	f.Fuzz(func(t *testing.T, input string) {
-		// AnalyzeConfigString should not panic on any input
-		_, _ = AnalyzeConfigString(input)
+		// Analyze should not panic on any input
+		_, _ = Analyze(input, AnalyzeOptions{})
 	})
 }
 

@@ -1,9 +1,11 @@
 <!--
   Sync Impact Report
   ===================
-  Version change: 1.2.0 -> 1.3.0
+  Version change: 1.3.0 -> 1.3.1
 
-  Modified principles: N/A
+  Modified principles:
+  - VI. Minimal Code: Added explicit NO DEPRECATED FUNCTIONS, NO BACKWARDS-COMPAT SHIMS,
+    DELETE TESTS FOR DELETED CODE rules. Updated rationale to emphasize single maintainer.
 
   Added sections:
   - Core Principles V. Dogfooding (1.1.0)
@@ -103,9 +105,12 @@ You can't have bugs in code you don't have. Every line of code is a liability.
 - Duplication is acceptable if the alternative is a complex abstraction
 - Before adding a dependency, consider if the functionality can be achieved with less code
 - Refactoring that increases LOC requires explicit justification
+- **NO DEPRECATED FUNCTIONS**: When you change an API, update all callers and DELETE the old function in the same PR. Never mark internal functions as "Deprecated" - just delete them.
+- **NO BACKWARDS-COMPAT SHIMS**: No `_unused` renames, no re-exports, no wrapper functions "for compatibility". If it's unused, it's deleted.
+- **DELETE TESTS FOR DELETED CODE**: When you delete a function, delete its tests. Dead tests are dead weight.
 
-**Rationale**: Less code means fewer bugs, faster builds, easier onboarding, and reduced
-maintenance burden. The best code is no code at all.
+**Rationale**: This project is maintained by one person. Every line of code is a maintenance burden.
+Less code means fewer bugs, faster builds, easier onboarding. The best code is no code at all.
 
 ### VII. Single Code Path
 
@@ -193,4 +198,4 @@ All contributions MUST comply with these principles.
 - Complexity MUST be justified in PR descriptions
 - Principle violations require explicit exemption with documented rationale
 
-**Version**: 1.3.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
+**Version**: 1.3.1 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03

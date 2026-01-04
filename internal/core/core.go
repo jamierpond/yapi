@@ -20,8 +20,17 @@ type RequestHook func(stats map[string]any)
 
 // Engine owns shared execution bits used by CLI, TUI, etc.
 type Engine struct {
-	factory   *executor.Factory
-	onRequest RequestHook
+	httpClient *http.Client
+	onRequest  RequestHook
+}
+
+// execFactory implements runner.ExecutorFactory using GetTransport
+type execFactory struct {
+	client executor.HTTPClient
+}
+
+func (f *execFactory) Create(transport string) (executor.TransportFunc, error) {
+	return executor.GetTransport(transport, f.client)
 }
 
 // EngineOption configures an Engine
@@ -34,9 +43,9 @@ func WithRequestHook(hook RequestHook) EngineOption {
 	}
 }
 
-// NewEngine wires a single HTTP client and executor factory.
+// NewEngine wires a single HTTP client.
 func NewEngine(httpClient *http.Client, opts ...EngineOption) *Engine {
-	e := &Engine{factory: executor.NewFactory(httpClient)}
+	e := &Engine{httpClient: httpClient}
 	for _, opt := range opts {
 		opt(e)
 	}
@@ -92,10 +101,16 @@ func (e *Engine) RunConfig(
 		if opts.ProjectEnv != "" {
 			originalDefault := project.DefaultEnvironment
 			project.DefaultEnvironment = opts.ProjectEnv
-			analysis, err = validation.AnalyzeConfigStringWithProjectAndPathAndOptions(string(data), path, project, opts.ProjectRoot, analyzeOpts)
+			analyzeOpts.FilePath = path
+			analyzeOpts.Project = project
+			analyzeOpts.ProjectRoot = opts.ProjectRoot
+			analysis, err = validation.Analyze(string(data), analyzeOpts)
 			project.DefaultEnvironment = originalDefault
 		} else {
-			analysis, err = validation.AnalyzeConfigStringWithProjectAndPathAndOptions(string(data), path, project, opts.ProjectRoot, analyzeOpts)
+			analyzeOpts.FilePath = path
+			analyzeOpts.Project = project
+			analyzeOpts.ProjectRoot = opts.ProjectRoot
+			analysis, err = validation.Analyze(string(data), analyzeOpts)
 		}
 	} else {
 		analysis, err = validation.AnalyzeConfigFileWithOptions(path, analyzeOpts)
@@ -150,7 +165,7 @@ func (e *Engine) RunConfig(
 	stats := ExtractConfigStats(analysis)
 	start := time.Now()
 
-	exec, err := e.factory.Create(analysis.Request.Metadata["transport"])
+	exec, err := executor.GetTransport(analysis.Request.Metadata["transport"], e.httpClient)
 	if err != nil {
 		return &RunConfigResult{Analysis: analysis, Error: err}
 	}
@@ -197,7 +212,7 @@ func (e *Engine) RunChain(
 	stats := ExtractConfigStats(analysis)
 	start := time.Now()
 
-	result, err := runner.RunChain(ctx, e.factory, base, chain, opts)
+	result, err := runner.RunChain(ctx, &execFactory{e.httpClient}, base, chain, opts)
 
 	if e.onRequest != nil {
 		stats["duration_ms"] = time.Since(start).Milliseconds()

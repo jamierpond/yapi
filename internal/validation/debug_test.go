@@ -14,9 +14,9 @@ graphql: query { foo }
 body:
   key: value`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Find the graphql+body conflict diagnostic

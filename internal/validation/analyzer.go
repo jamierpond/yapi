@@ -175,36 +175,6 @@ func (a *Analysis) ToJSON() JSONOutput {
 	}
 }
 
-// AnalyzeConfigString is a convenience wrapper for Analyze.
-// Deprecated: Use Analyze() with AnalyzeOptions instead.
-func AnalyzeConfigString(text string) (*Analysis, error) {
-	return Analyze(text, AnalyzeOptions{})
-}
-
-// AnalyzeConfigStringWithProject analyzes a YAML config with optional project context.
-// Deprecated: Use Analyze() with AnalyzeOptions{Project: p, ProjectRoot: r} instead.
-func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
-	return Analyze(text, AnalyzeOptions{Project: project, ProjectRoot: projectRoot})
-}
-
-// AnalyzeConfigStringWithProjectAndPath analyzes a YAML config with optional project context
-// and config file path for resolving relative env_files.
-// Deprecated: Use Analyze() with AnalyzeOptions{FilePath: p, Project: pr, ProjectRoot: r} instead.
-func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
-	return Analyze(text, AnalyzeOptions{FilePath: configPath, Project: project, ProjectRoot: projectRoot})
-}
-
-// AnalyzeConfigStringWithProjectAndPathAndOptions analyzes a YAML config with project context and options.
-// Deprecated: Use Analyze() with a complete AnalyzeOptions struct instead.
-func AnalyzeConfigStringWithProjectAndPathAndOptions(text string, configPath string, project *config.ProjectConfigV1, projectRoot string, opts AnalyzeOptions) (*Analysis, error) {
-	// Merge the separate parameters with opts
-	mergedOpts := opts
-	mergedOpts.FilePath = configPath
-	mergedOpts.Project = project
-	mergedOpts.ProjectRoot = projectRoot
-	return Analyze(text, mergedOpts)
-}
-
 // AnalyzeConfigFile loads a file and analyzes it.
 // If path is "-", reads from stdin.
 func AnalyzeConfigFile(path string) (*Analysis, error) {

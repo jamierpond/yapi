@@ -628,7 +628,7 @@ func validateE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	analysis, err := validation.AnalyzeConfigStringWithProjectAndPath(string(data), path, nil, "")
+	analysis, err := validation.Analyze(string(data), validation.AnalyzeOptions{FilePath: path})
 	if err != nil {
 		if jsonOutput {
 			outputValidateError(err)
@@ -817,7 +817,7 @@ func validateAllFiles(args []string, jsonOutput bool) error {
 		}
 
 		// Validate
-		analysis, err := validation.AnalyzeConfigString(string(data))
+		analysis, err := validation.Analyze(string(data), validation.AnalyzeOptions{FilePath: filePath})
 		if err != nil {
 			results = append(results, validationResult{
 				file:  relPath,
@@ -917,7 +917,7 @@ func shareE(cmd *cobra.Command, args []string) error {
 	content := string(data)
 
 	// Validate the config
-	analysis, analysisErr := validation.AnalyzeConfigString(content)
+	analysis, analysisErr := validation.Analyze(content, validation.AnalyzeOptions{FilePath: filename})
 	if analysisErr != nil {
 		return fmt.Errorf("failed to analyze config: %w", analysisErr)
 	}
@@ -1466,15 +1466,18 @@ func (app *rootCommand) promptStressTestConfirmation(filePath, envName string, p
 	// Build resolver with environment variables
 	var analysis *validation.Analysis
 	if projEnv != nil && projEnv.project != nil && projEnv.envVars != nil {
-		// Use AnalyzeConfigStringWithProject but temporarily override the default environment
-		// Save original default
+		// Temporarily override the default environment
 		originalDefault := projEnv.project.DefaultEnvironment
 		projEnv.project.DefaultEnvironment = projEnv.envName
-		analysis, err = validation.AnalyzeConfigStringWithProject(string(configData), projEnv.project, projEnv.projectRoot)
+		analysis, err = validation.Analyze(string(configData), validation.AnalyzeOptions{
+			FilePath:    filePath,
+			Project:     projEnv.project,
+			ProjectRoot: projEnv.projectRoot,
+		})
 		// Restore original default
 		projEnv.project.DefaultEnvironment = originalDefault
 	} else {
-		analysis, err = validation.AnalyzeConfigString(string(configData))
+		analysis, err = validation.Analyze(string(configData), validation.AnalyzeOptions{FilePath: filePath})
 	}
 	if err != nil {
 		return fmt.Errorf("failed to analyze config: %w", err)

@@ -41,24 +41,6 @@ func GetTransport(transport string, client HTTPClient) (TransportFunc, error) {
 	return WithTiming(fn), nil
 }
 
-// Factory creates transport functions for different protocols.
-// Deprecated: Use GetTransport() instead.
-type Factory struct {
-	Client HTTPClient
-}
-
-// NewFactory creates a new executor factory with the given HTTP client.
-// Deprecated: Use GetTransport() instead.
-func NewFactory(client HTTPClient) *Factory {
-	return &Factory{Client: client}
-}
-
-// Create returns the appropriate transport function for the given transport type.
-// Deprecated: Use GetTransport() instead.
-func (f *Factory) Create(transport string) (TransportFunc, error) {
-	return GetTransport(transport, f.Client)
-}
-
 // WithTiming wraps a transport function to measure execution duration.
 func WithTiming(next TransportFunc) TransportFunc {
 	return func(ctx context.Context, req *domain.Request) (*domain.Response, error) {

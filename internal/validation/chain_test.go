@@ -20,9 +20,9 @@ chain:
     expect:
       status: 200`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if a.HasErrors() {
@@ -44,9 +44,9 @@ chain:
   - url: https://example.com
     method: GET`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -72,9 +72,9 @@ chain:
   - name: step1
     method: GET`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -102,9 +102,9 @@ chain:
   - name: step1
     url: https://example.com/2`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -132,9 +132,9 @@ chain:
   - name: step2
     url: https://example.com/auth`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -160,9 +160,9 @@ chain:
   - name: step1
     url: https://example.com/${step1.token}`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -193,9 +193,9 @@ chain:
     headers:
       Authorization: Bearer ${auth.access_token}`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Should not have errors for valid back reference
@@ -212,9 +212,9 @@ chain:
   - name: step2
     url: https://example.com/${ENV_VAR}`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	// Env vars (no dot) should not be flagged as undefined chain refs
@@ -233,9 +233,9 @@ chain:
   - name: step2
     url: https://example.com/auth`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if !a.HasErrors() {
@@ -252,9 +252,9 @@ chain:
       status: 200
       body_contains: "success"`
 
-	a, err := AnalyzeConfigString(yaml)
+	a, err := Analyze(yaml, AnalyzeOptions{})
 	if err != nil {
-		t.Fatalf("AnalyzeConfigString error: %v", err)
+		t.Fatalf("Analyze error: %v", err)
 	}
 
 	if a.HasErrors() {
