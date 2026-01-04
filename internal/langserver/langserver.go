@@ -619,11 +619,6 @@ func textDocumentDefinition(ctx *glsp.Context, params *protocol.DefinitionParams
 		}
 	}
 
-	// No project context - can't find variable definitions
-	if doc.Project == nil {
-		return nil, nil
-	}
-
 	// Find all env var references in the document
 	refs := validation.FindEnvVarRefs(doc.Text)
 
@@ -635,17 +630,42 @@ func textDocumentDefinition(ctx *glsp.Context, params *protocol.DefinitionParams
 				return nil, nil
 			}
 
-			// Find where this variable is defined
-			location, err := findVariableDefinition(ref.Name, doc.Project, doc.ProjectRoot)
-			if err != nil {
-				return nil, nil //nolint:nilerr // Definition not found is not an error
+			// Try project-based lookup first
+			if doc.Project != nil {
+				location, err := findVariableDefinition(ref.Name, doc.Project, doc.ProjectRoot)
+				if err == nil && location != nil {
+					return location, nil
+				}
 			}
 
-			return location, nil
+			// Fall back to config-level env_files lookup
+			baseDir := filepath.Dir(uriToPath(uri))
+			location := findVariableInConfigEnvFiles(doc.Text, ref.Name, baseDir)
+			if location != nil {
+				return location, nil
+			}
+
+			return nil, nil
 		}
 	}
 
 	return nil, nil
+}
+
+// findVariableInConfigEnvFiles looks for a variable in env_files defined in the config
+func findVariableInConfigEnvFiles(text string, varName string, baseDir string) *protocol.Location {
+	// Get env_files from the config
+	envFiles := validation.FindEnvFilesInConfig(text)
+
+	// Search each env file for the variable
+	for _, ef := range envFiles {
+		location, err := findVarPositionInEnvFile(baseDir, ef.Path, varName)
+		if err == nil && location != nil {
+			return location
+		}
+	}
+
+	return nil
 }
 
 // findEnvFilePathAtPosition checks if the cursor is on an env_files entry and returns the path
