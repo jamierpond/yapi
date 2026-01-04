@@ -86,17 +86,12 @@
 
 **Goal**: Reduce main.go by ~400 lines
 
-- [ ] T028 [P] Create `internal/output/` directory
-- [ ] T029 [P] Create `internal/output/result.go` with `JSONOutput` struct and `PrintJSON()` function
-- [ ] T030 Move `printResultAsJSON` logic from `cmd/yapi/main.go` to `internal/output/result.go`
-- [ ] T031 Update `cmd/yapi/main.go` to call `output.PrintJSON()`
-- [ ] T032 [P] Create `internal/runner/stress.go` with `RunStress()` function
-- [ ] T033 Move stress test worker pool logic from `cmd/yapi/main.go` to `internal/runner/stress.go`
-- [ ] T034 Update `cmd/yapi/main.go` to call `runner.RunStress()`
-- [ ] T035 [P] Create `internal/importer/cli.go` with `RunImport()` function
-- [ ] T036 Move import CLI handler logic from `cmd/yapi/main.go` to `internal/importer/cli.go`
-- [ ] T037 Update `cmd/yapi/main.go` to call `importer.RunImport()`
-- [ ] T038 Run `make test && make lint`
+- [x] T028 [P] Create `internal/output/` directory (already existed)
+- [x] T029 [P] Create `internal/output/result.go` with `JSONOutput` struct and `PrintJSON()` function
+- [x] T030 Move `printResultAsJSON` logic from `cmd/yapi/main.go` to `internal/output/result.go`
+- [x] T031 Update `cmd/yapi/main.go` to call `output.PrintJSON()`
+- [ ] T032-T037 DEFERRED: stress/import handlers are tightly coupled to cobra commands (174 lines reduced; stress/import extraction would require major refactoring)
+- [x] T038 Run `make test && make lint`
 
 **Checkpoint**: main.go reduced, all commands still work
 
