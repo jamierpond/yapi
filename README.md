@@ -514,12 +514,6 @@ git reset --hard main
 git push origin next --force-with-lease
 ```
 
-**Manual Setup (one-time):**
-- Add `next.yapi.run` custom domain in Vercel dashboard (Settings > Domains)
-- Configure branch alias: `next` branch deploys to `next.yapi.run` (Vercel Settings > Git)
-- Add DNS CNAME record: `next` → `cname.vercel-dns.com`
-- Add branch protection rules for `next` in GitHub repository settings (optional)
-
 -----
 
 *Made with ☕ and Go.*
