@@ -7,6 +7,12 @@ headers:
   Authorization: Bearer ${GITHUB_TOKEN}
   Accept: application/vnd.github.v3+json
   User-Agent: yapi-test
+
+jq_filter: "{stars: .stargazers_count, forks: .forks_count, name: .full_name}"
+
 expect:
   status: 200
-jq_filter: "{stars: .stargazers_count, forks: .forks_count, name: .full_name}"
+  assert:
+    body: # jq assertions
+      - .stars > 0
+
