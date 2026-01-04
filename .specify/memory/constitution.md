@@ -1,19 +1,21 @@
 <!--
   Sync Impact Report
   ===================
-  Version change: 1.1.0 -> 1.2.0
+  Version change: 1.2.0 -> 1.3.0
 
   Modified principles: N/A
 
   Added sections:
   - Core Principles V. Dogfooding (1.1.0)
   - Core Principles VI. Minimal Code (1.2.0)
+  - Core Principles VII. Single Code Path (1.3.0)
 
   Removed sections: N/A
 
   Templates requiring updates:
   - .specify/templates/plan-template.md: Add Dogfooding to Constitution Check table [DONE]
   - .specify/templates/plan-template.md: Add Minimal Code to Constitution Check table
+  - .specify/templates/plan-template.md: Add Single Code Path to Constitution Check table
 
   Follow-up TODOs: None
 -->
@@ -105,6 +107,22 @@ You can't have bugs in code you don't have. Every line of code is a liability.
 **Rationale**: Less code means fewer bugs, faster builds, easier onboarding, and reduced
 maintenance burden. The best code is no code at all.
 
+### VII. Single Code Path
+
+The LSP and CLI MUST use identical code paths for config parsing, validation, and
+compilation. The `compiler` package is the single source of truth.
+
+- LSP MUST NOT duplicate logic that exists in core packages (config, validation, compiler)
+- Changes to execution logic MUST NOT require parallel changes in the LSP
+- The langserver is a thin adapter layer: it converts LSP protocol to yapi core calls
+- If you're writing validation/parsing logic in langserver, you're doing it wrong
+- All analyzer functions MUST be usable by both CLI and LSP with the same parameters
+- New features affecting config interpretation MUST be implemented in core, not langserver
+
+**Rationale**: Divergent code paths cause bugs. The LSP showing different behavior than
+CLI execution is a critical defect. We just fixed a bug where env_files worked in CLI
+but not LSP because they used different analyzer calls. Never again.
+
 ## Quality Standards
 
 ### Testing Requirements
@@ -175,4 +193,4 @@ All contributions MUST comply with these principles.
 - Complexity MUST be justified in PR descriptions
 - Principle violations require explicit exemption with documented rationale
 
-**Version**: 1.2.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
+**Version**: 1.3.0 | **Ratified**: 2025-10-14 | **Last Amended**: 2026-01-03
