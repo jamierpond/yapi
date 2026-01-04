@@ -72,47 +72,52 @@ type Diagnostic struct {
 }
 ```
 
-## State Transitions
+## Variable Resolution
 
-### Env File Loading State Machine
+### Resolution Priority
 
 ```
-┌─────────────┐
-│   START     │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐     file missing     ┌─────────────┐
-│ Check File  │─────────────────────►│  WARNING    │
-│   Exists    │                      │ (continue)  │
-└──────┬──────┘                      └─────────────┘
-       │ exists
-       ▼
-┌─────────────┐   permission denied  ┌─────────────┐
-│ Check File  │─────────────────────►│   ERROR     │
-│  Readable   │                      │   (halt)    │
-└──────┬──────┘                      └─────────────┘
-       │ readable
-       ▼
-┌─────────────┐
-│  Parse Env  │
-│    File     │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│   LOADED    │
-└─────────────┘
+Default mode:       env_files > OS env (with warning on fallback)
+--strict-env mode:  env_files only (no OS fallback)
 ```
 
-### Strict Mode Behavior
+### Resolution Flow
 
-| Condition          | Default Mode        | Strict Mode         |
-|--------------------|---------------------|---------------------|
-| File missing       | Warning, continue   | Error, halt         |
-| Permission denied  | Error, halt         | Error, halt         |
-| Parse error        | Error, halt         | Error, halt         |
-| File valid         | Load variables      | Load variables      |
+```
+┌─────────────────┐
+│  Resolve ${VAR} │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐     found      ┌─────────────────┐
+│ Check env_files │───────────────►│ Use env_files   │
+└────────┬────────┘                │ value           │
+         │ not found               └─────────────────┘
+         ▼
+┌─────────────────┐
+│ --strict-env?   │
+└────────┬────────┘
+    yes  │    no
+    ▼    │    ▼
+┌────────┴────┐  ┌─────────────────┐     found     ┌─────────────────┐
+│   ERROR:    │  │ Check OS env    │──────────────►│ Use OS value    │
+│  undefined  │  └────────┬────────┘               │ + emit WARNING  │
+└─────────────┘           │ not found              └─────────────────┘
+                          ▼
+                 ┌─────────────────┐
+                 │ ERROR: undefined│
+                 └─────────────────┘
+```
+
+### Env File Loading
+
+| Condition          | Default Mode          | --strict-env Mode   |
+|--------------------|-----------------------|---------------------|
+| File missing       | Warning, skip file    | Error, stop         |
+| Permission denied  | Error, stop           | Error, stop         |
+| Parse error        | Error, stop           | Error, stop         |
+| File valid         | Load variables        | Load variables      |
+| Var from OS env    | Warning, use value    | Error (no fallback) |
 
 ## Relationships
 

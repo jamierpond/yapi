@@ -8,10 +8,10 @@
 ### CLI Usage
 
 ```bash
-# Default: warn on missing env files, continue execution
+# Default: env_files take priority, fall back to OS env with warning
 yapi run my-request.yapi.yml
 
-# Strict mode: error on missing env files
+# Strict mode: env_files only, no OS env fallback, error on missing files
 yapi run my-request.yapi.yml --strict-env
 ```
 
@@ -30,16 +30,22 @@ headers:
 
 ### Expected Output
 
-**Missing file (default mode):**
+**Missing file + OS env fallback (default mode):**
 ```
 Warning: env file '.env.local' not found
-Warning: env file '.env.secrets' not found
+Warning: variable 'GITHUB_PAT' resolved from OS environment, not env_files
 {"stars": 42, "forks": 10, "name": "user/repo"}
 ```
 
 **Missing file (strict mode):**
 ```
 Error: env file '.env.local' not found
+exit status 1
+```
+
+**Undefined variable (strict mode):**
+```
+Error: variable 'GITHUB_PAT' not defined in env_files
 exit status 1
 ```
 

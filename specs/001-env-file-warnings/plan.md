@@ -105,7 +105,10 @@ No complexity concerns. Implementation leverages existing patterns:
 |----------------------------------------|-------------|------------------------------------|
 | Missing env file shows warning         | Unit        | `internal/config/loader_test.go`   |
 | --strict-env exits on missing file     | Integration | `cmd/yapi/main_test.go`            |
+| --strict-env ignores OS env            | Unit        | `internal/config/loader_test.go`   |
 | Permission error always halts          | Unit        | `internal/config/loader_test.go`   |
+| env_files takes priority over OS env   | Unit        | `internal/config/loader_test.go`   |
+| OS env fallback emits warning          | Unit        | `internal/config/loader_test.go`   |
 | LSP go-to-definition on env file path  | Unit        | `internal/langserver/langserver_test.go` |
 | LSP diagnostic for missing env file    | Unit        | `internal/validation/analyzer_test.go` |
 | LSP diagnostic for undefined variable  | Unit        | `internal/validation/analyzer_test.go` |
