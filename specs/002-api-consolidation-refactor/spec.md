@@ -58,7 +58,7 @@ yapi run grpc-request.yapi.yml
 ### Functional
 
 - **FR-001**: `yapi` MUST provide a single `validation.Analyze(text string, opts AnalyzeOptions)` function as the entry point for all config analysis
-- **FR-002**: `yapi` MUST remove unused structs `EnvFileStatus`, `EnvFileLoadResult`, and `ResolverOptions` from the loader package
+- **FR-002**: ~~DROPPED~~ (Research found these structs are actively used)
 - **FR-003**: `yapi` MUST replace the `Factory` struct in executor with a standalone `GetTransport(transport string, client HTTPClient)` function
 - **FR-004**: `yapi` MUST extract YAML AST position-finding logic into `internal/validation/ast.go` with exported `FindVarPositionInYAML()` function
 - **FR-005**: `yapi` MUST report accurate line numbers for env file validation errors instead of line 0
