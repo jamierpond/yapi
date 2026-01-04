@@ -6,4 +6,11 @@ query:
   userId: 1
   _limit: 3
 
+expect:
+  status: 200
+  assert:
+    - . | length == 3
+    - .[0].id != null
+    - .[0].title != null
+
 jq_filter: "[.[] | {id, title}]"

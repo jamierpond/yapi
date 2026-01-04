@@ -6,4 +6,11 @@ query:
   tags: front_page
   hitsPerPage: 5
 
+expect:
+  status: 200
+  assert:
+    - . | length == 5
+    - .[0].title != null
+    - .[0].points != null
+
 jq_filter: "[.hits[] | {title, points, url}]"

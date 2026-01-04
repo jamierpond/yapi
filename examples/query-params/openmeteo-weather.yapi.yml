@@ -9,4 +9,11 @@ query:
   hourly: temperature_2m
   forecast_days: 1
 
+expect:
+  status: 200
+  assert:
+    - .current.temperature_2m != null
+    - .current.wind_speed_10m != null
+    - .hourly_temps | length > 0
+
 jq_filter: "{location: \"London\", current: .current, hourly_temps: .hourly.temperature_2m[:6]}"
