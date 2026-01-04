@@ -119,3 +119,4 @@ yapi run grpc-request.yapi.yml
 - [ ] Tests pass: `make test`
 - [ ] Lint passes: `make lint`
 - [ ] No changes to CLI command signatures or user-facing behavior
+- [ ] There is more code deleted from the codebase than added
