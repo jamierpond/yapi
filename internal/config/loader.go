@@ -261,7 +261,7 @@ func buildEnvFileResolver(envFileVars map[string]string, existingResolver vars.R
 }
 
 // buildEnvFileResolverWithOptions creates a resolver with configurable options.
-// Priority order: env file vars > existing resolver > OS env (unless strict mode)
+// Priority order: env file vars > existing resolver > OS env (fallback disabled in strict mode)
 func buildEnvFileResolverWithOptions(envFileVars map[string]string, existingResolver vars.Resolver, opts ResolverOptions) vars.Resolver {
 	return func(key string) (string, error) {
 		// 1. Check env file vars first (highest priority from config)
