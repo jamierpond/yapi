@@ -54,7 +54,11 @@ jobs:
 
       - name: Upload VS Code extension to release
         run: |
-          VSIX_FILE=$(ls integrations/vscode/*.vsix | head -1)
+          VSIX_FILE=$(ls integrations/vscode/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX_FILE" ]; then
+            echo "Error: No .vsix file found. Did the build step succeed?"
+            exit 1
+          fi
           gh release upload "${{ steps.version.outputs.version }}" "$VSIX_FILE" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
