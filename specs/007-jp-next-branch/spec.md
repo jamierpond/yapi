@@ -15,6 +15,7 @@ Establish a staging branch named `next` that serves as an unstable/nightly integ
 - Q: What subdomain for nightly web app? → A: Single `nightly.yapi.run` (always latest push)
 - Q: What artifacts for nightly releases? → A: Full GoReleaser with `yapi-nightly` Homebrew formula, marked as pre-release
 - Q: How is nightly base version determined? → A: Latest stable tag (e.g., v0.5.2-nightly.abc1234)
+- Q: VS Code extension nightly releases? → A: Skipped - extension only releases with stable
 
 ## User Stories
 
@@ -120,3 +121,4 @@ On push to next:
 - Branch protection rules will be configured at the repository level
 - Vercel domain configuration for `nightly.yapi.run` requires manual setup
 - Homebrew tap repository exists and accepts automated formula updates
+- VS Code extension is excluded from nightly releases (stable only)
