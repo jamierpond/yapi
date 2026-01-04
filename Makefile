@@ -102,8 +102,8 @@ bump-major:
 
 release:
 	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
-	if [ "$$BRANCH" != "main" ] && [ "$$BRANCH" != "develop" ]; then \
-		echo "Error: Releases can only be made from 'main' or 'develop' branches"; \
+	if [ "$$BRANCH" != "main" ] && [ "$$BRANCH" != "develop" ] && [ "$$BRANCH" != "next" ]; then \
+		echo "Error: Releases can only be made from 'main', 'develop', or 'next' branches"; \
 		echo "Current branch: $$BRANCH"; \
 		exit 1; \
 	fi

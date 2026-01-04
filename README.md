@@ -496,4 +496,30 @@ Found a bug? Want to add WebSocket support? PRs are welcome\!
 
 -----
 
+## Development Branches
+
+**main** - Stable releases. All stable version tags (e.g., `v0.5.0`) are cut from this branch.
+
+**next** - Unstable/integration branch. Every push to `next` triggers an automatic pre-release with version format `vX.Y.Z-next.<short-hash>`. These releases:
+- Are marked as pre-releases on GitHub
+- Include CLI binaries for all platforms
+- Include the VS Code extension `.vsix` file
+- Are deployed to `next.yapi.run`
+- Do NOT update Homebrew or AUR
+
+**Resetting next after a release:**
+```bash
+git checkout next
+git reset --hard main
+git push origin next --force-with-lease
+```
+
+**Manual Setup (one-time):**
+- Add `next.yapi.run` custom domain in Vercel dashboard (Settings > Domains)
+- Configure branch alias: `next` branch deploys to `next.yapi.run` (Vercel Settings > Git)
+- Add DNS CNAME record: `next` → `cname.vercel-dns.com`
+- Add branch protection rules for `next` in GitHub repository settings (optional)
+
+-----
+
 *Made with ☕ and Go.*

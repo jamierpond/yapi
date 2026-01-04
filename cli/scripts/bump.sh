@@ -3,10 +3,10 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
-# Only allow releases from main or develop branches
+# Only allow releases from main, develop, or next branches
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
-    echo "Error: Releases can only be made from 'main' or 'develop' branches"
+if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" && "$CURRENT_BRANCH" != "next" ]]; then
+    echo "Error: Releases can only be made from 'main', 'develop', or 'next' branches"
     echo "Current branch: $CURRENT_BRANCH"
     exit 1
 fi

@@ -1,0 +1,36 @@
+version: 2
+project_name: yapi
+
+builds:
+  - id: yapi
+    dir: cli
+    main: ./cmd/yapi
+    binary: yapi
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: yapi_archive
+    ids: [yapi]
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  prerelease: true
+  name_template: "Next {{ .Version }}"
+
+changelog:
+  disable: true
