@@ -52,3 +52,4 @@ dist
 .env*.local
 apps/web/icons
 coverage.out
+cli/bin/yapi
