@@ -64,64 +64,39 @@ has_git() {
 
 check_feature_branch() {
     local branch="$1"
-    local has_git_repo="$2"
-
-    # For non-git repos, we can't enforce branch naming but still provide output
-    if [[ "$has_git_repo" != "true" ]]; then
-        echo "[specify] Warning: Git repository not detected; skipped branch validation" >&2
-        return 0
-    fi
-
-    if [[ ! "$branch" =~ ^[0-9]{3}- ]]; then
-        echo "ERROR: Not on a feature branch. Current branch: $branch" >&2
-        echo "Feature branches should be named like: 001-feature-name" >&2
+    # Block protected branches
+    if [[ "$branch" =~ ^(main|master|develop|dev|staging)$ ]]; then
+        echo "ERROR: You are on a protected branch '$branch'." >&2
+        echo "Please switch to a feature branch (e.g. 'jp/my-feature') before running speckit." >&2
         return 1
     fi
-
     return 0
 }
 
 get_feature_dir() { echo "$1/specs/$2"; }
 
-# Find feature directory by numeric prefix instead of exact branch match
-# This allows multiple branches to work on the same spec (e.g., 004-fix-bug, 004-add-feature)
+# Find feature directory by matching sanitized branch name suffix
+# This allows branches like jp/my-feature to map to specs/005-jp-my-feature
 find_feature_dir_by_prefix() {
     local repo_root="$1"
     local branch_name="$2"
     local specs_dir="$repo_root/specs"
 
-    # Extract numeric prefix from branch (e.g., "004" from "004-whatever")
-    if [[ ! "$branch_name" =~ ^([0-9]{3})- ]]; then
-        # If branch doesn't have numeric prefix, fall back to exact match
-        echo "$specs_dir/$branch_name"
+    # 1. Sanitize the branch name to match folder conventions (jp/feature -> jp-feature)
+    local clean_branch=$(echo "$branch_name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
+
+    # 2. Try to find a folder that ends with this name (e.g. "005-jp-feature")
+    # We look for any directory in specs/ that ends with "-clean_branch"
+    local match=$(find "$specs_dir" -maxdepth 1 -type d -name "*-$clean_branch" -print -quit 2>/dev/null)
+
+    if [[ -n "$match" ]]; then
+        echo "$match"
         return
     fi
 
-    local prefix="${BASH_REMATCH[1]}"
-
-    # Search for directories in specs/ that start with this prefix
-    local matches=()
-    if [[ -d "$specs_dir" ]]; then
-        for dir in "$specs_dir"/"$prefix"-*; do
-            if [[ -d "$dir" ]]; then
-                matches+=("$(basename "$dir")")
-            fi
-        done
-    fi
-
-    # Handle results
-    if [[ ${#matches[@]} -eq 0 ]]; then
-        # No match found - return the branch name path (will fail later with clear error)
-        echo "$specs_dir/$branch_name"
-    elif [[ ${#matches[@]} -eq 1 ]]; then
-        # Exactly one match - perfect!
-        echo "$specs_dir/${matches[0]}"
-    else
-        # Multiple matches - this shouldn't happen with proper naming convention
-        echo "ERROR: Multiple spec directories found with prefix '$prefix': ${matches[*]}" >&2
-        echo "Please ensure only one spec directory exists per numeric prefix." >&2
-        echo "$specs_dir/$branch_name"  # Return something to avoid breaking the script
-    fi
+    # 3. Fallback: If strict match fails, just return what the path SHOULD be
+    # (The scripts might create it later)
+    echo "$specs_dir/$branch_name"
 }
 
 get_feature_paths() {
