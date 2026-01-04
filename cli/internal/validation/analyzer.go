@@ -225,10 +225,7 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 	var diags []Diagnostic
 
 	// Extract env file variable names from the config for validation
-	var envFileVarNames map[string]bool
-	if parseRes.Base != nil && len(parseRes.Base.EnvFiles) > 0 {
-		envFileVarNames = extractEnvFileVarNames(text)
-	}
+	envFileVarNames := ExtractRequestEnvFileVars(text)
 
 	// Validate env_files entries exist (with proper line/col positions)
 	// These diagnostics supersede the warnings from the loader since they include line numbers
@@ -683,10 +680,14 @@ func validateEnvVarsWithEnvFiles(text string, envFileVarNames map[string]bool) [
 	return diags
 }
 
-// extractEnvFileVarNames extracts variable names referenced in the config that could be
-// satisfied by env_files. This is a heuristic - we mark all referenced variables as
-// potentially coming from env_files when env_files is present.
-func extractEnvFileVarNames(text string) map[string]bool {
+// ExtractRequestEnvFileVars returns variable names that could be satisfied by the request's
+// own env_files. If the config has env_files, all referenced variables are returned since
+// they might come from those files.
+func ExtractRequestEnvFileVars(text string) map[string]bool {
+	envFiles := FindEnvFilesInConfig(text)
+	if len(envFiles) == 0 {
+		return nil
+	}
 	result := make(map[string]bool)
 	refs := FindEnvVarRefs(text)
 	for _, ref := range refs {

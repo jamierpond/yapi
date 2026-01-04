@@ -19,38 +19,27 @@ type VarDiagnosis struct {
 	IsOS          bool
 }
 
-// ValidateProjectVars performs matrix validation of variables across all environments.
-// This is the "smart validation" that enables diagnostics like "API_URL is missing in 'staging'".
-// requestEnvFileVars is an optional set of variable names that will be loaded from the request's
-// own env_files - these are skipped from validation since they'll be resolved at runtime.
-func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRoot string, requestEnvFileVars map[string]bool) []Diagnostic {
-	if project == nil {
-		// Fallback to legacy OS env check
-		return validateEnvVars(text)
-	}
-
-	// 1. Extract all ${VAR} tokens from the config file (excluding chain refs)
+// buildVarMatrix builds a matrix of variable availability across all environments.
+// This is the single source of truth for variable resolution logic.
+// requestEnvFileVars is an optional set of variable names from the request's own env_files.
+func buildVarMatrix(text string, project *config.ProjectConfigV1, projectRoot string, requestEnvFileVars map[string]bool) map[string]*VarDiagnosis {
 	varNames := extractEnvVarNames(text)
 	if len(varNames) == 0 {
 		return nil
 	}
 
-	// 2. Build matrix: check each variable against each environment
 	varMatrix := make(map[string]*VarDiagnosis)
 	for varName := range varNames {
 		varMatrix[varName] = &VarDiagnosis{
 			Name:          varName,
 			DefinedInEnvs: []string{},
 			MissingInEnvs: []string{},
-			IsInDefaults:  false,
-			IsOS:          false,
 		}
 	}
 
-	// 3. Check if variables are in defaults
-	// Load all default variables once
+	// Load project defaults
 	defaultVars := make(map[string]string)
-	if len(project.Defaults.EnvFiles) > 0 || len(project.Defaults.Vars) > 0 {
+	if project != nil && (len(project.Defaults.EnvFiles) > 0 || len(project.Defaults.Vars) > 0) {
 		vars, err := project.ResolveEnvFiles(projectRoot, "")
 		if err == nil {
 			defaultVars = vars
@@ -58,100 +47,106 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 	}
 
 	for varName := range varNames {
-		// Skip variables that will be loaded from the request's own env_files
+		// Variables from request's own env_files are treated as defined
 		if requestEnvFileVars != nil && requestEnvFileVars[varName] {
-			varMatrix[varName].IsInDefaults = true // Treat as "will be defined"
+			varMatrix[varName].IsInDefaults = true
 			continue
 		}
 
-		// Check defaults (from both vars and env_files)
+		// Check project defaults
 		if _, ok := defaultVars[varName]; ok {
 			varMatrix[varName].IsInDefaults = true
 			continue
 		}
-		if _, ok := project.Defaults.Vars[varName]; ok {
-			varMatrix[varName].IsInDefaults = true
-			continue
+		if project != nil {
+			if _, ok := project.Defaults.Vars[varName]; ok {
+				varMatrix[varName].IsInDefaults = true
+				continue
+			}
 		}
 
-		// Check if it's an OS environment variable
+		// Check OS environment
 		if _, ok := os.LookupEnv(varName); ok {
 			varMatrix[varName].IsOS = true
 		}
 	}
 
-	// 4. Check each environment
-	for envName := range project.Environments {
-		envVars, err := project.ResolveEnvFiles(projectRoot, envName)
-		if err != nil {
-			// If we can't load the env, skip it
-			continue
-		}
+	// Check each project environment
+	if project != nil {
+		for envName := range project.Environments {
+			envVars, err := project.ResolveEnvFiles(projectRoot, envName)
+			if err != nil {
+				continue
+			}
 
-		for varName := range varNames {
-			// Check if variable is defined in this environment
-			_, inEnvVars := envVars[varName]
-			_, inEnvConfig := project.Environments[envName].Vars[varName]
+			for varName := range varNames {
+				_, inEnvVars := envVars[varName]
+				_, inEnvConfig := project.Environments[envName].Vars[varName]
 
-			if inEnvVars || inEnvConfig || varMatrix[varName].IsInDefaults {
-				varMatrix[varName].DefinedInEnvs = append(varMatrix[varName].DefinedInEnvs, envName)
-			} else {
-				varMatrix[varName].MissingInEnvs = append(varMatrix[varName].MissingInEnvs, envName)
+				if inEnvVars || inEnvConfig || varMatrix[varName].IsInDefaults {
+					varMatrix[varName].DefinedInEnvs = append(varMatrix[varName].DefinedInEnvs, envName)
+				} else {
+					varMatrix[varName].MissingInEnvs = append(varMatrix[varName].MissingInEnvs, envName)
+				}
 			}
 		}
 	}
 
-	// 5. Generate diagnostics based on the matrix
-	var diags []Diagnostic
+	return varMatrix
+}
 
+// ValidateProjectVars performs matrix validation of variables across all environments.
+// requestEnvFileVars is an optional set of variable names from the request's own env_files.
+func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRoot string, requestEnvFileVars map[string]bool) []Diagnostic {
+	if project == nil {
+		return validateEnvVars(text)
+	}
+
+	varMatrix := buildVarMatrix(text, project, projectRoot, requestEnvFileVars)
+	if varMatrix == nil {
+		return nil
+	}
+
+	var diags []Diagnostic
 	for varName, diagnosis := range varMatrix {
-		// Case A: Variable is in defaults -> No diagnostic needed
 		if diagnosis.IsInDefaults {
 			continue
 		}
 
-		// Case B: Variable is only in OS environment -> Warning (non-reproducible)
-		// This makes validation deterministic and encourages explicit config
+		// OS-only variable: warn about non-reproducibility
 		if diagnosis.IsOS && len(diagnosis.DefinedInEnvs) == 0 {
-			line := findVarLine(text, varName)
 			diags = append(diags, Diagnostic{
 				Severity: SeverityWarning,
 				Field:    varName,
 				Message:  fmt.Sprintf("variable '%s' only defined in OS environment (not in project config). Consider adding to yapi.config.yml for reproducibility", varName),
-				Line:     line,
-				Col:      0,
+				Line:     findVarLine(text, varName),
 			})
 			continue
 		}
 
-		// Case C: Variable is defined in ALL environments -> No error
+		// Defined in all environments: no error
 		if len(diagnosis.MissingInEnvs) == 0 {
 			continue
 		}
 
-		// Case D: Variable is missing in SOME environments -> Warning
+		// Missing in some environments: warn
 		if len(diagnosis.DefinedInEnvs) > 0 && len(diagnosis.MissingInEnvs) > 0 {
-			line := findVarLine(text, varName)
-			envList := strings.Join(diagnosis.MissingInEnvs, ", ")
 			diags = append(diags, Diagnostic{
 				Severity: SeverityWarning,
 				Field:    varName,
-				Message:  fmt.Sprintf("variable '%s' is missing in environment(s): %s", varName, envList),
-				Line:     line,
-				Col:      0,
+				Message:  fmt.Sprintf("variable '%s' is missing in environment(s): %s", varName, strings.Join(diagnosis.MissingInEnvs, ", ")),
+				Line:     findVarLine(text, varName),
 			})
 			continue
 		}
 
-		// Case E: Variable is not found in ANY environment and not in OS -> Error
+		// Not found anywhere: error
 		if len(diagnosis.DefinedInEnvs) == 0 && !diagnosis.IsOS {
-			line := findVarLine(text, varName)
 			diags = append(diags, Diagnostic{
 				Severity: SeverityError,
 				Field:    varName,
 				Message:  fmt.Sprintf("variable '%s' is not defined in any environment or defaults", varName),
-				Line:     line,
-				Col:      0,
+				Line:     findVarLine(text, varName),
 			})
 		}
 	}
@@ -159,169 +154,45 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 	return diags
 }
 
-// extractEnvVarNames extracts all unique environment variable names from the text.
-// Excludes chain references (${step.field}) and known JQ built-in variables.
-func extractEnvVarNames(text string) map[string]bool {
-	result := make(map[string]bool)
-	refs := FindEnvVarRefs(text)
-
-	for _, ref := range refs {
-		// Skip if it's a chain reference
-		if strings.Contains(ref.Name, ".") {
-			continue
-		}
-		// Skip known JQ built-in variables (_headers, _body, etc.)
-		// Note: FindEnvVarRefs already filters these out, but we check again for safety
-		if isJQBuiltin(ref.Name) {
-			continue
-		}
-		result[ref.Name] = true
-	}
-
-	return result
-}
-
-// findVarLine finds the line number where a variable is first referenced in the text.
-func findVarLine(text, varName string) int {
-	lines := strings.Split(text, "\n")
-
-	// Look for ${VAR} or $VAR patterns
-	patterns := []string{
-		fmt.Sprintf("${%s}", varName),
-		fmt.Sprintf("$%s", varName),
-	}
-
-	for lineNum, line := range lines {
-		for _, pattern := range patterns {
-			if strings.Contains(line, pattern) {
-				// Make sure it's not a chain reference
-				if !strings.Contains(line, pattern+".") {
-					return lineNum
-				}
-			}
-		}
-	}
-
-	return -1
-}
-
-// BuildProjectResolver creates a Resolver that uses project environment variables.
-// The resolver checks: 1) OS env, 2) Project env vars, 3) Empty string fallback.
-func BuildProjectResolver(projectVars map[string]string) vars.Resolver {
-	return func(key string) (string, error) {
-		// OS environment variables take precedence
-		if val, ok := os.LookupEnv(key); ok {
-			return val, nil
-		}
-
-		// Then check project vars
-		if val, ok := projectVars[key]; ok {
-			return val, nil
-		}
-
-		// Return empty string if not found (os.ExpandEnv behavior)
-		return "", nil
-	}
-}
-
 // EnvironmentRequirement describes whether a config requires an environment
 type EnvironmentRequirement struct {
-	Required         bool              // True if an environment is required
-	MissingVariables []string          // Variables that are not defined anywhere
-	PartialVariables map[string]string // Variables defined in some envs (var -> envs CSV)
-	Message          string            // Helpful error message
+	Required         bool
+	MissingVariables []string
+	PartialVariables map[string]string
+	Message          string
 }
 
 // CheckEnvironmentRequirement analyzes a config to determine if it needs an environment.
-// Returns requirement info including which variables are missing and where they're defined.
-func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, projectRoot string) *EnvironmentRequirement {
-	// Extract all variables used in the config
-	varNames := extractEnvVarNames(text)
-	if len(varNames) == 0 {
-		// No variables used - no environment needed
+// requestEnvFileVars is an optional set of variable names from the request's own env_files.
+func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, projectRoot string, requestEnvFileVars map[string]bool) *EnvironmentRequirement {
+	varMatrix := buildVarMatrix(text, project, projectRoot, requestEnvFileVars)
+	if varMatrix == nil {
 		return &EnvironmentRequirement{Required: false}
 	}
 
-	// Build matrix of where each variable is defined
-	varMatrix := make(map[string]*VarDiagnosis)
-	for varName := range varNames {
-		varMatrix[varName] = &VarDiagnosis{
-			Name:          varName,
-			DefinedInEnvs: []string{},
-			MissingInEnvs: []string{},
-			IsInDefaults:  false,
-			IsOS:          false,
-		}
-	}
-
-	// Check defaults
-	defaultVars := make(map[string]string)
-	if len(project.Defaults.EnvFiles) > 0 || len(project.Defaults.Vars) > 0 {
-		vars, err := project.ResolveEnvFiles(projectRoot, "")
-		if err == nil {
-			defaultVars = vars
-		}
-	}
-
-	for varName := range varNames {
-		// Check OS environment
-		if _, ok := os.LookupEnv(varName); ok {
-			varMatrix[varName].IsOS = true
-			continue
-		}
-
-		// Check defaults
-		if _, ok := defaultVars[varName]; ok {
-			varMatrix[varName].IsInDefaults = true
-			continue
-		}
-
-		// Check each environment
-		for envName := range project.Environments {
-			envVars, err := project.ResolveEnvFiles(projectRoot, envName)
-			if err != nil {
-				continue
-			}
-			if _, ok := envVars[varName]; ok {
-				varMatrix[varName].DefinedInEnvs = append(varMatrix[varName].DefinedInEnvs, envName)
-			} else {
-				varMatrix[varName].MissingInEnvs = append(varMatrix[varName].MissingInEnvs, envName)
-			}
-		}
-	}
-
-	// Analyze results
 	var missingVars []string
 	partialVars := make(map[string]string)
 	var anyEnvSpecificVar bool
 
 	for varName, diagnosis := range varMatrix {
-		// Skip if in OS env or defaults (always available)
 		if diagnosis.IsOS || diagnosis.IsInDefaults {
 			continue
 		}
 
-		// Variable is not defined anywhere - critical error
 		if len(diagnosis.DefinedInEnvs) == 0 {
 			missingVars = append(missingVars, varName)
 			continue
 		}
 
-		// Variable is only in environments (not in OS or defaults)
-		// This means we need to select an environment
 		anyEnvSpecificVar = true
-
-		// Variable is defined in environments (may be all or just some)
 		sort.Strings(diagnosis.DefinedInEnvs)
 		partialVars[varName] = strings.Join(diagnosis.DefinedInEnvs, ", ")
 	}
 
-	// If all variables are satisfied by OS env or defaults, no environment needed
 	if !anyEnvSpecificVar && len(missingVars) == 0 {
 		return &EnvironmentRequirement{Required: false}
 	}
 
-	// Build helpful error message
 	var msg strings.Builder
 	msg.WriteString("This config requires environment variables that are not currently defined.\n")
 
@@ -335,7 +206,6 @@ func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, p
 
 	if len(partialVars) > 0 {
 		msg.WriteString("\nDefined in some environments:\n")
-		// Sort for consistent output
 		varList := make([]string, 0, len(partialVars))
 		for varName := range partialVars {
 			varList = append(varList, varName)
@@ -346,15 +216,67 @@ func CheckEnvironmentRequirement(text string, project *config.ProjectConfigV1, p
 		}
 	}
 
-	availableEnvs := project.ListEnvironments()
-	sort.Strings(availableEnvs)
-	msg.WriteString("\nUse --env <name> to select an environment.\n")
-	msg.WriteString(fmt.Sprintf("Available environments: %s", strings.Join(availableEnvs, ", ")))
+	if project != nil {
+		availableEnvs := project.ListEnvironments()
+		sort.Strings(availableEnvs)
+		msg.WriteString("\nUse --env <name> to select an environment.\n")
+		msg.WriteString(fmt.Sprintf("Available environments: %s", strings.Join(availableEnvs, ", ")))
+	}
 
 	return &EnvironmentRequirement{
 		Required:         true,
 		MissingVariables: missingVars,
 		PartialVariables: partialVars,
 		Message:          msg.String(),
+	}
+}
+
+// extractEnvVarNames extracts all unique environment variable names from the text.
+func extractEnvVarNames(text string) map[string]bool {
+	result := make(map[string]bool)
+	refs := FindEnvVarRefs(text)
+
+	for _, ref := range refs {
+		if strings.Contains(ref.Name, ".") {
+			continue
+		}
+		if isJQBuiltin(ref.Name) {
+			continue
+		}
+		result[ref.Name] = true
+	}
+
+	return result
+}
+
+// findVarLine finds the line number where a variable is first referenced.
+func findVarLine(text, varName string) int {
+	lines := strings.Split(text, "\n")
+	patterns := []string{
+		fmt.Sprintf("${%s}", varName),
+		fmt.Sprintf("$%s", varName),
+	}
+
+	for lineNum, line := range lines {
+		for _, pattern := range patterns {
+			if strings.Contains(line, pattern) && !strings.Contains(line, pattern+".") {
+				return lineNum
+			}
+		}
+	}
+
+	return -1
+}
+
+// BuildProjectResolver creates a Resolver that uses project environment variables.
+func BuildProjectResolver(projectVars map[string]string) vars.Resolver {
+	return func(key string) (string, error) {
+		if val, ok := os.LookupEnv(key); ok {
+			return val, nil
+		}
+		if val, ok := projectVars[key]; ok {
+			return val, nil
+		}
+		return "", nil
 	}
 }

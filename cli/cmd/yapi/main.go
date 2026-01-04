@@ -516,7 +516,8 @@ func loadProjectAndEnv(configPath string, requestedEnv string, checkRequirement 
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read config: %w", readErr)
 		}
-		req := validation.CheckEnvironmentRequirement(string(configData), project, projectRoot)
+		requestEnvFileVars := validation.ExtractRequestEnvFileVars(string(configData))
+		req := validation.CheckEnvironmentRequirement(string(configData), project, projectRoot, requestEnvFileVars)
 		if req.Required {
 			return nil, fmt.Errorf("%s", req.Message)
 		}
