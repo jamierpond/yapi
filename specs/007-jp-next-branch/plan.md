@@ -1,12 +1,12 @@
-# Implementation Plan: Next Branch Workflow with Nightly Releases
+# Implementation Plan: Next Branch Workflow with Pre-releases
 
 **Branch**: `007-jp-next-branch` | **Date**: 2026-01-04 | **Spec**: [spec.md](./spec.md)
 
 ## Summary
 
-Establish a `next` branch as an unstable/nightly integration point with automatic releases on every push. This includes:
+Establish a `next` branch as an unstable integration point with automatic pre-releases on every push. This includes:
 1. CI workflows running on `next` branch
-2. New nightly release workflow creating GitHub pre-releases
+2. New pre-release workflow creating GitHub pre-releases (`v0.X.Y-next.<hash>`)
 3. `next.yapi.run` subdomain for web app
 
 ## Technical Context
@@ -33,14 +33,14 @@ Establish a `next` branch as an unstable/nightly integration point with automati
 
 ```text
 .github/workflows/
-├── nightly.yaml               # NEW - nightly release workflow
+├── next-release.yaml          # NEW - pre-release workflow (CLI + VS Code extension)
 ├── cli.yml                    # Add 'next' to branches
 ├── codecov.yml                # Add 'next' to branches
 ├── installer-tests.yml        # Add 'next' to branches
 ├── vscode-extension-build.yml # Add 'next' to branches
 └── web-tests.yml              # Add 'next' to branches
 
-.goreleaser.nightly.yaml       # NEW - GoReleaser config for nightlies
+.goreleaser.next.yaml          # NEW - GoReleaser config for next pre-releases
 
 cli/scripts/
 └── bump.sh                    # Add 'next' to allowed branches
@@ -50,13 +50,14 @@ Makefile                       # Add 'next' to release target
 
 ## Implementation Approach
 
-1. **Create nightly release workflow** (`.github/workflows/nightly.yaml`):
+1. **Create next release workflow** (`.github/workflows/next-release.yaml`):
    - Trigger on push to `next` branch
-   - Calculate version: `v<latest-tag>-nightly.<short-hash>`
-   - Run GoReleaser with nightly config
-   - Create GitHub pre-release (binaries only, no Homebrew)
+   - Calculate version: `v<latest-tag>-next.<short-hash>`
+   - Run GoReleaser with next config (CLI binaries)
+   - Build VS Code extension and upload to same release
+   - Create GitHub pre-release
 
-2. **Create nightly GoReleaser config** (`.goreleaser.nightly.yaml`):
+2. **Create next GoReleaser config** (`.goreleaser.next.yaml`):
    - Same build configuration as stable
    - Pre-release mode enabled
    - No Homebrew/AUR updates (users download directly from GitHub)
@@ -76,10 +77,10 @@ Makefile                       # Add 'next' to release target
 
 ## Detailed Changes
 
-### 1. New File: `.github/workflows/nightly.yaml`
+### 1. New File: `.github/workflows/next-release.yaml`
 
 ```yaml
-name: Nightly Release
+name: Next Release
 
 on:
   push:
@@ -89,36 +90,62 @@ permissions:
   contents: write
 
 jobs:
-  nightly:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
 
       - uses: actions/setup-go@v5
         with:
           go-version: stable
 
-      - name: Calculate nightly version
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Calculate version
         id: version
         run: |
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           SHORT_HASH=$(git rev-parse --short HEAD)
-          echo "version=${LATEST_TAG}-nightly.${SHORT_HASH}" >> $GITHUB_OUTPUT
+          echo "version=${LATEST_TAG}-next.${SHORT_HASH}" >> $GITHUB_OUTPUT
 
+      # Build CLI with GoReleaser
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean --config .goreleaser.nightly.yaml
+          args: release --clean --config .goreleaser.next.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.version }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_HOST: https://us.i.posthog.com
+
+      # Build VS Code extension
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build VS Code extension
+        run: pnpm package:extension
+
+      # Upload VS Code extension to the same release
+      - name: Upload VS Code extension to release
+        run: |
+          VSIX_FILE=$(ls integrations/vscode/*.vsix | head -1)
+          gh release upload "${{ steps.version.outputs.version }}" "$VSIX_FILE" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-### 2. New File: `.goreleaser.nightly.yaml`
+### 2. New File: `.goreleaser.next.yaml`
 
 ```yaml
 version: 2
@@ -153,7 +180,7 @@ checksum:
 
 release:
   prerelease: true
-  name_template: "Nightly {{ .Version }}"
+  name_template: "Next {{ .Version }}"
 
 changelog:
   disable: true
@@ -205,9 +232,10 @@ if [ "$$BRANCH" != "main" ] && [ "$$BRANCH" != "develop" ] && [ "$$BRANCH" != "n
 
 After implementation:
 - [ ] Push to `next` triggers all CI workflows
-- [ ] Push to `next` triggers nightly release workflow
-- [ ] Nightly releases appear as pre-releases on GitHub
-- [ ] Version format is correct: `v0.X.Y-nightly.<hash>`
+- [ ] Push to `next` triggers next-release workflow
+- [ ] Pre-releases appear on GitHub with correct version format (`v0.X.Y-next.<hash>`)
+- [ ] Pre-releases include CLI binaries for all platforms
+- [ ] Pre-releases include VS Code extension `.vsix` file
 - [ ] `next.yapi.run` serves the latest `next` branch web app
 - [ ] PR to `next` triggers all CI workflows
 - [ ] `make release` works from `next` branch
