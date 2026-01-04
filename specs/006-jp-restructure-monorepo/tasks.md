@@ -84,10 +84,10 @@ Goal: Hoisted packages available in flat `packages/` directory.
 
 **Test Criteria**: `pnpm install` resolves all workspace dependencies correctly.
 
-- [ ] T020 [US4] Move `apps/vscode-webview/` to `packages/vscode-ui/`
-- [ ] T021 [US4] Update `.gitmodules` to change madea-blog-core path from `apps/web/madea-blog-core` to `packages/madea-blog-core`
-- [ ] T022 [US4] Move `apps/web/madea-blog-core/` to `packages/madea-blog-core/`
-- [ ] T023 [US4] Update `pnpm-workspace.yaml` to include `integrations/*` in packages list
+- [x] T020 [US4] Move `apps/vscode-webview/` to `packages/vscode-ui/`
+- [x] T021 [US4] Update `.gitmodules` to change madea-blog-core path from `apps/web/madea-blog-core` to `packages/madea-blog-core`
+- [x] T022 [US4] Move `apps/web/madea-blog-core/` to `packages/madea-blog-core/`
+- [x] T023 [US4] Update `pnpm-workspace.yaml` to include `integrations/*` in packages list
 
 **Checkpoint**: `pnpm install` succeeds with no resolution errors
 
