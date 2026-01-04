@@ -77,7 +77,7 @@ type Diagnostic struct {
 ### Resolution Priority
 
 ```
-Default mode:       env_files > OS env (with warning on fallback)
+Default mode:       env_files > OS env (with info diagnostic on fallback)
 --strict-env mode:  env_files only (no OS fallback)
 ```
 
@@ -101,7 +101,7 @@ Default mode:       env_files > OS env (with warning on fallback)
     ▼    │    ▼
 ┌────────┴────┐  ┌─────────────────┐     found     ┌─────────────────┐
 │   ERROR:    │  │ Check OS env    │──────────────►│ Use OS value    │
-│  undefined  │  └────────┬────────┘               │ + emit WARNING  │
+│  undefined  │  └────────┬────────┘               │ + emit INFO     │
 └─────────────┘           │ not found              └─────────────────┘
                           ▼
                  ┌─────────────────┐
@@ -117,7 +117,7 @@ Default mode:       env_files > OS env (with warning on fallback)
 | Permission denied  | Error, stop           | Error, stop         |
 | Parse error        | Error, stop           | Error, stop         |
 | File valid         | Load variables        | Load variables      |
-| Var from OS env    | Warning, use value    | Error (no fallback) |
+| Var from OS env    | Info, use value       | Error (no fallback) |
 
 ## Relationships
 

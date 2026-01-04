@@ -127,7 +127,7 @@ A developer sees a `${GITHUB_PAT}` variable reference in their YAPI file and wan
   4. `defaults.env_files`
   5. Per-request `env_files` (in individual .yapi.yml)
   6. OS environment (fallback only)
-- **FR-014**: When a variable is resolved from OS env (and any config-level vars/env_files exist), `yapi` MUST display a warning: "variable 'X' resolved from OS environment, not configuration"
+- **FR-014**: When a variable is resolved from OS env (and any config-level vars/env_files exist), `yapi` MUST display an info message: "variable 'X' resolved from OS environment, not configuration"
 - **FR-015**: `yapi` MUST error if a variable is undefined after checking all sources
 - **FR-016**: Missing env files in `defaults.env_files` or `environments.[name].env_files` MUST generate warnings (or errors in strict mode)
 
@@ -141,6 +141,7 @@ The LSP should be maximally helpful - surface every issue that could cause a req
 - **FR-010**: When the target file or variable definition does not exist, the LSP MUST return no definition (no navigation)
 - **FR-011**: The LSP MUST show a warning diagnostic on env file paths that do not exist
 - **FR-012**: The LSP MUST show a warning diagnostic on `${VAR}` references where the variable is not defined in the current configuration (env_files + project vars)
+- **FR-017**: The LSP MUST show an info diagnostic on `${VAR}` references that would resolve from OS env (not configuration)
 
 ### YAML Schema (if applicable)
 
