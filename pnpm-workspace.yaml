@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - packages/madea-blog-core/packages/*
   - integrations/*
 
 ignoredBuiltDependencies:
