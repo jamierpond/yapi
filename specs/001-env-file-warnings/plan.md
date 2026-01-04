@@ -68,7 +68,8 @@ internal/
   - On permission error: return error (halt)
 - `internal/config/loader.go`: Change `buildEnvFileResolver()` to:
   - Prioritize env_files over OS env (flip current order)
-  - Track when OS env fallback is used, emit info diagnostic
+  - Track when OS env fallback is used, emit warning
+  - Track resolution source for info diagnostic
 - `cmd/yapi/main.go`: Add `--strict-env` flag to `run` command:
   - Pass flag through to resolver
   - When set: skip OS env fallback entirely, error on missing files
@@ -108,7 +109,7 @@ No complexity concerns. Implementation leverages existing patterns:
 | --strict-env ignores OS env            | Unit        | `internal/config/loader_test.go`   |
 | Permission error always halts          | Unit        | `internal/config/loader_test.go`   |
 | env_files takes priority over OS env   | Unit        | `internal/config/loader_test.go`   |
-| OS env fallback emits info             | Unit        | `internal/config/loader_test.go`   |
+| OS env fallback emits warning          | Unit        | `internal/config/loader_test.go`   |
 | LSP go-to-definition on env file path  | Unit        | `internal/langserver/langserver_test.go` |
 | LSP diagnostic for missing env file    | Unit        | `internal/validation/analyzer_test.go` |
 | LSP diagnostic for undefined variable  | Unit        | `internal/validation/analyzer_test.go` |

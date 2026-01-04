@@ -33,7 +33,7 @@ headers:
 **Missing file + OS env fallback (default mode):**
 ```
 Warning: env file '.env.local' not found
-Info: variable 'GITHUB_PAT' resolved from OS environment, not configuration
+Warning: variable 'GITHUB_PAT' resolved from OS environment, not configuration
 {"stars": 42, "forks": 10, "name": "user/repo"}
 ```
 

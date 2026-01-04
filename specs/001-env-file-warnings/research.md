@@ -147,18 +147,20 @@ No new dependencies required.
 - Cache invalidation happens on document change
 - Env files are typically small (< 1KB)
 
-### 7. OS Env Fallback Diagnostic Severity
+### 7. Diagnostic Severity for Variable Resolution
 
-**Decision**: Use info diagnostic (not warning) when variable resolves from OS env.
+**Decision**:
+- **Warning** when variable falls back to OS env (potential reproducibility issue)
+- **Info** to show where each variable was resolved from (source transparency)
 
 **Rationale**:
-- It's not wrong, just something to be aware of
-- Warns about potential reproducibility issues without being noisy
-- Warning severity reserved for actual problems (missing files, undefined vars)
+- OS fallback is a warning because it's a potential "works on my machine" issue
+- Info diagnostic provides transparency about resolution source for all variables
+- Users can see at a glance where their variables come from
 
 **Alternatives Considered**:
-- Warning: Too noisy for valid use cases
-- No diagnostic: Hides potential "works on my machine" issues
+- Info for OS fallback: Doesn't emphasize the reproducibility risk enough
+- No source info: Users can't easily understand variable resolution
 
 ## Edge Cases Covered
 
