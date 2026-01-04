@@ -5,10 +5,6 @@
 ## Overview
 
 [1-2 sentences describing what this feature does]
-<!--
-    Note 'users' can be end users of yapi, or the developers who maintain it.
-    Make sure this is clear.
->
 
 ## User Stories
 
