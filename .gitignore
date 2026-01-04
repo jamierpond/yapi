@@ -51,3 +51,4 @@ aur_ed25519.pub
 dist
 .env*.local
 apps/web/icons
+coverage.out
