@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
@@ -145,11 +144,28 @@ func (pc *ProjectConfigV1) ListEnvironments() []string {
 	return names
 }
 
+// EnvFilesResult contains the result of resolving environment files.
+type EnvFilesResult struct {
+	Variables map[string]string // Merged variables from all valid files
+	Warnings  []string          // Warnings for missing files
+}
+
 // ResolveEnvFiles resolves all .env file paths relative to the project root and loads them.
 // Returns a merged map of all variables (defaults first, then environment-specific).
 // OS environment variables take precedence over all loaded vars.
 // Results are cached to avoid repeated file I/O (important for LSP performance).
 func (pc *ProjectConfigV1) ResolveEnvFiles(projectRoot string, envName string) (map[string]string, error) {
+	result, err := pc.ResolveEnvFilesWithWarnings(projectRoot, envName)
+	if err != nil {
+		return nil, err
+	}
+	return result.Variables, nil
+}
+
+// ResolveEnvFilesWithWarnings resolves all .env file paths and returns both variables and warnings.
+// Missing env files generate warnings instead of errors.
+// Permission errors and parse errors still return errors.
+func (pc *ProjectConfigV1) ResolveEnvFilesWithWarnings(projectRoot string, envName string) (*EnvFilesResult, error) {
 	// Initialize cache if needed
 	if pc.envCache == nil {
 		pc.envCache = make(map[string]map[string]string)
@@ -162,19 +178,19 @@ func (pc *ProjectConfigV1) ResolveEnvFiles(projectRoot string, envName string) (
 		for k, v := range cached {
 			result[k] = v
 		}
-		return result, nil
+		return &EnvFilesResult{Variables: result, Warnings: nil}, nil
 	}
 
 	result := make(map[string]string)
+	var allWarnings []string
 
 	// 1. Load default .env files
-	for _, envFile := range pc.Defaults.EnvFiles {
-		filePath := filepath.Join(projectRoot, envFile)
-		vars, err := godotenv.Read(filePath)
+	if len(pc.Defaults.EnvFiles) > 0 {
+		vars, warnings, err := loadEnvFilesFromDir(pc.Defaults.EnvFiles, projectRoot, ResolverOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("failed to load default env file '%s': %w", envFile, err)
+			return nil, fmt.Errorf("failed to load default env files: %w", err)
 		}
-		// Merge into result
+		allWarnings = append(allWarnings, warnings...)
 		for k, v := range vars {
 			result[k] = v
 		}
@@ -187,13 +203,12 @@ func (pc *ProjectConfigV1) ResolveEnvFiles(projectRoot string, envName string) (
 
 	// 3. Load environment-specific .env files
 	if env, ok := pc.Environments[envName]; ok {
-		for _, envFile := range env.EnvFiles {
-			filePath := filepath.Join(projectRoot, envFile)
-			vars, err := godotenv.Read(filePath)
+		if len(env.EnvFiles) > 0 {
+			vars, warnings, err := loadEnvFilesFromDir(env.EnvFiles, projectRoot, ResolverOptions{})
 			if err != nil {
-				return nil, fmt.Errorf("failed to load env file '%s' for environment '%s': %w", envFile, envName, err)
+				return nil, fmt.Errorf("failed to load env files for environment '%s': %w", envName, err)
 			}
-			// Merge into result
+			allWarnings = append(allWarnings, warnings...)
 			for k, v := range vars {
 				result[k] = v
 			}
@@ -216,5 +231,5 @@ func (pc *ProjectConfigV1) ResolveEnvFiles(projectRoot string, envName string) (
 	for k, v := range result {
 		resultCopy[k] = v
 	}
-	return resultCopy, nil
+	return &EnvFilesResult{Variables: resultCopy, Warnings: allWarnings}, nil
 }

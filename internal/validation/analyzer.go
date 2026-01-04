@@ -4,6 +4,7 @@ package validation
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -47,6 +48,11 @@ type Analysis struct {
 	Chain       []config.ChainStep // Chain steps if this is a chain config
 	Base        *config.ConfigV1   // Base config for chain merging
 	Expect      config.Expectation // Expectations for single request validation
+}
+
+// AnalyzeOptions contains options for analyzing a config.
+type AnalyzeOptions struct {
+	StrictEnv bool // If true, error on missing env files and disable OS env fallback
 }
 
 // HasErrors returns true if there are any error-level diagnostics.
@@ -116,6 +122,11 @@ func AnalyzeConfigStringWithProject(text string, project *config.ProjectConfigV1
 // AnalyzeConfigStringWithProjectAndPath analyzes a YAML config with optional project context
 // and config file path for resolving relative env_files.
 func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, project *config.ProjectConfigV1, projectRoot string) (*Analysis, error) {
+	return AnalyzeConfigStringWithProjectAndPathAndOptions(text, configPath, project, projectRoot, AnalyzeOptions{})
+}
+
+// AnalyzeConfigStringWithProjectAndPathAndOptions analyzes a YAML config with project context and options.
+func AnalyzeConfigStringWithProjectAndPathAndOptions(text string, configPath string, project *config.ProjectConfigV1, projectRoot string, opts AnalyzeOptions) (*Analysis, error) {
 	var parseRes *config.ParseResult
 	var err error
 
@@ -143,14 +154,26 @@ func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, proje
 		if resolveErr == nil {
 			// Build project-aware resolver
 			resolver := BuildProjectResolver(envVars)
-			parseRes, err = config.LoadFromStringWithPath(text, configPath, resolver, envDefaults)
+			parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
+				ConfigPath: configPath,
+				Resolver:   resolver,
+				Defaults:   envDefaults,
+				StrictEnv:  opts.StrictEnv,
+			})
 		} else {
 			// Fall back to parsing with just defaults if we can't resolve env vars
-			parseRes, err = config.LoadFromStringWithPath(text, configPath, nil, envDefaults)
+			parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
+				ConfigPath: configPath,
+				Defaults:   envDefaults,
+				StrictEnv:  opts.StrictEnv,
+			})
 		}
 	} else {
 		// No project config - use path for env_files resolution
-		parseRes, err = config.LoadFromStringWithPath(text, configPath, nil, nil)
+		parseRes, err = config.LoadFromStringWithOptions(text, config.LoadOptions{
+			ConfigPath: configPath,
+			StrictEnv:  opts.StrictEnv,
+		})
 	}
 
 	if err != nil {
@@ -164,12 +187,17 @@ func AnalyzeConfigStringWithProjectAndPath(text string, configPath string, proje
 		}
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
-	return analyzeParsed(text, parseRes, project, projectRoot), nil
+	return analyzeParsed(text, parseRes, project, projectRoot, configPath), nil
 }
 
 // AnalyzeConfigFile loads a file and analyzes it.
 // If path is "-", reads from stdin.
 func AnalyzeConfigFile(path string) (*Analysis, error) {
+	return AnalyzeConfigFileWithOptions(path, AnalyzeOptions{})
+}
+
+// AnalyzeConfigFileWithOptions analyzes a config file with custom options.
+func AnalyzeConfigFileWithOptions(path string, opts AnalyzeOptions) (*Analysis, error) {
 	data, err := utils.ReadInput(path)
 	if err != nil {
 		diag := Diagnostic{
@@ -188,7 +216,10 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		configPath = path
 	}
 
-	parseRes, err := config.LoadFromStringWithPath(string(data), configPath, nil, nil)
+	parseRes, err := config.LoadFromStringWithOptions(string(data), config.LoadOptions{
+		ConfigPath: configPath,
+		StrictEnv:  opts.StrictEnv,
+	})
 	if err != nil {
 		diag := Diagnostic{
 			Severity: SeverityError,
@@ -200,17 +231,25 @@ func AnalyzeConfigFile(path string) (*Analysis, error) {
 		return &Analysis{Diagnostics: []Diagnostic{diag}}, nil
 	}
 
-	return analyzeParsed(string(data), parseRes, nil, ""), nil
+	return analyzeParsed(string(data), parseRes, nil, "", configPath), nil
 }
 
 // analyzeParsed is the common analysis path for both string and file inputs.
-func analyzeParsed(text string, parseRes *config.ParseResult, project *config.ProjectConfigV1, projectRoot string) *Analysis {
+// configPath is used for resolving relative env_files paths.
+func analyzeParsed(text string, parseRes *config.ParseResult, project *config.ProjectConfigV1, projectRoot string, configPath string) *Analysis {
 	var diags []Diagnostic
 
 	// Extract env file variable names from the config for validation
 	var envFileVarNames map[string]bool
 	if parseRes.Base != nil && len(parseRes.Base.EnvFiles) > 0 {
 		envFileVarNames = extractEnvFileVarNames(text)
+	}
+
+	// Validate env_files entries exist (with proper line/col positions)
+	if project != nil {
+		diags = append(diags, ValidateEnvFilesExistFromProject(text, project, projectRoot, "")...)
+	} else if configPath != "" {
+		diags = append(diags, ValidateEnvFilesExist(text, configPath)...)
 	}
 
 	// Chain config
@@ -655,4 +694,152 @@ func extractEnvFileVarNames(text string) map[string]bool {
 		result[ref.Name] = true
 	}
 	return result
+}
+
+// EnvFileInfo holds information about an env_files entry for diagnostics
+type EnvFileInfo struct {
+	Path   string // The path as written in the config
+	Line   int    // 0-indexed line number
+	Col    int    // 0-indexed column number
+	Exists bool   // Whether the resolved file exists
+}
+
+// FindEnvFilesInConfig parses the YAML to find env_files entries with their positions
+func FindEnvFilesInConfig(text string) []EnvFileInfo {
+	var result []EnvFileInfo
+
+	var root yaml.Node
+	if err := yaml.Unmarshal([]byte(text), &root); err != nil {
+		return result
+	}
+
+	// root is a DocumentNode, get the content
+	if len(root.Content) == 0 {
+		return result
+	}
+
+	doc := root.Content[0]
+	if doc.Kind != yaml.MappingNode {
+		return result
+	}
+
+	// Find env_files key
+	for i := 0; i < len(doc.Content)-1; i += 2 {
+		keyNode := doc.Content[i]
+		valueNode := doc.Content[i+1]
+
+		if keyNode.Value == "env_files" && valueNode.Kind == yaml.SequenceNode {
+			// Process each env file entry
+			for _, itemNode := range valueNode.Content {
+				if itemNode.Kind == yaml.ScalarNode {
+					result = append(result, EnvFileInfo{
+						Path: itemNode.Value,
+						Line: itemNode.Line - 1, // YAML uses 1-indexed lines
+						Col:  itemNode.Column - 1,
+					})
+				}
+			}
+			break
+		}
+	}
+
+	return result
+}
+
+// ValidateEnvFilesExist checks that env_files entries exist and returns diagnostics
+// configPath is the path to the config file for resolving relative paths
+func ValidateEnvFilesExist(text string, configPath string) []Diagnostic {
+	var diags []Diagnostic
+
+	envFiles := FindEnvFilesInConfig(text)
+	if len(envFiles) == 0 {
+		return diags
+	}
+
+	// Determine base directory for resolving relative paths
+	baseDir := "."
+	if configPath != "" {
+		baseDir = filepath.Dir(configPath)
+	}
+
+	for _, ef := range envFiles {
+		// Resolve the path
+		filePath := ef.Path
+		if !filepath.IsAbs(ef.Path) {
+			filePath = filepath.Join(baseDir, ef.Path)
+		}
+
+		// Check if file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			diags = append(diags, Diagnostic{
+				Severity: SeverityWarning,
+				Field:    "env_files",
+				Message:  fmt.Sprintf("env file '%s' not found", ef.Path),
+				Line:     ef.Line,
+				Col:      ef.Col,
+			})
+		}
+	}
+
+	return diags
+}
+
+// ValidateEnvFilesExistFromProject checks env_files existence for project-based configs
+func ValidateEnvFilesExistFromProject(text string, project *config.ProjectConfigV1, projectRoot string, envName string) []Diagnostic {
+	var diags []Diagnostic
+
+	if project == nil {
+		return diags
+	}
+
+	// Get environment-specific env_files
+	var envFiles []string
+	if envName == "" {
+		envName = project.DefaultEnvironment
+	}
+	if env, ok := project.Environments[envName]; ok {
+		envFiles = env.EnvFiles
+	}
+
+	// Parse YAML to find env_files entries with positions
+	envFileInfos := FindEnvFilesInConfig(text)
+
+	// Check project-level env_files
+	for _, envFile := range envFiles {
+		filePath := envFile
+		if !filepath.IsAbs(envFile) {
+			filePath = filepath.Join(projectRoot, envFile)
+		}
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			// Find the line in the project config - for now, use line 0
+			diags = append(diags, Diagnostic{
+				Severity: SeverityWarning,
+				Field:    "env_files",
+				Message:  fmt.Sprintf("env file '%s' not found (from project environment '%s')", envFile, envName),
+				Line:     0,
+				Col:      0,
+			})
+		}
+	}
+
+	// Also check config-level env_files
+	for _, ef := range envFileInfos {
+		filePath := ef.Path
+		if !filepath.IsAbs(ef.Path) {
+			filePath = filepath.Join(projectRoot, ef.Path)
+		}
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			diags = append(diags, Diagnostic{
+				Severity: SeverityWarning,
+				Field:    "env_files",
+				Message:  fmt.Sprintf("env file '%s' not found", ef.Path),
+				Line:     ef.Line,
+				Col:      ef.Col,
+			})
+		}
+	}
+
+	return diags
 }

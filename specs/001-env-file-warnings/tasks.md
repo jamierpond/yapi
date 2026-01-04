@@ -12,9 +12,9 @@
 
 ## Phase 1: Setup & Data Structures
 
-- [ ] T001 [P] Add `EnvFileStatus` struct in `internal/config/loader.go`
-- [ ] T002 [P] Add `EnvFileLoadResult` struct in `internal/config/loader.go`
-- [ ] T003 Add `--strict-env` flag definition to run command in `cmd/yapi/main.go`
+- [x] T001 [P] Add `EnvFileStatus` struct in `internal/config/loader.go`
+- [x] T002 [P] Add `EnvFileLoadResult` struct in `internal/config/loader.go`
+- [x] T003 Add `--strict-env` flag definition to run command in `internal/cli/commands/commands.go`
 
 **Checkpoint**: Structs compile, flag is recognized by CLI
 
@@ -24,11 +24,11 @@
 
 These tasks must complete before user story implementation.
 
-- [ ] T004 Modify `buildEnvFileResolver()` in `internal/config/loader.go` to prioritize env_files over OS env
-- [ ] T005 Add resolution source tracking to resolver in `internal/config/loader.go` (track where each var came from)
-- [ ] T006 Modify `loadEnvFiles()` signature in `internal/config/loader.go` to return `(map[string]string, []string, error)` for vars, warnings, error
-- [ ] T007 Update all callers of `loadEnvFiles()` in `internal/config/loader.go` to handle new return signature
-- [ ] T008 Update `ResolveEnvFiles()` in `internal/config/project.go` to use new `loadEnvFiles()` signature
+- [x] T004 Modify `buildEnvFileResolver()` in `internal/config/loader.go` to prioritize env_files over OS env
+- [x] T005 Add resolution source tracking to resolver in `internal/config/loader.go` (track where each var came from)
+- [x] T006 Modify `loadEnvFiles()` signature in `internal/config/loader.go` to return `(map[string]string, []string, error)` for vars, warnings, error
+- [x] T007 Update all callers of `loadEnvFiles()` in `internal/config/loader.go` to handle new return signature
+- [x] T008 Update `ResolveEnvFiles()` in `internal/config/project.go` to use new `loadEnvFiles()` signature
 
 **Checkpoint**: `make build` passes, existing tests still pass
 
@@ -38,10 +38,10 @@ These tasks must complete before user story implementation.
 
 **Goal**: When env file is missing, show warning and continue execution.
 
-- [ ] T009 [US1] Implement file existence check in `loadEnvFiles()` in `internal/config/loader.go`
-- [ ] T010 [US1] On missing file: add warning to result, continue to next file in `internal/config/loader.go`
-- [ ] T011 [US1] Output warnings to stderr in CLI execution path in `cmd/yapi/main.go`
-- [ ] T012 [US1] Add unit test for missing env file warning in `internal/config/loader_test.go`
+- [x] T009 [US1] Implement file existence check in `loadEnvFiles()` in `internal/config/loader.go`
+- [x] T010 [US1] On missing file: add warning to result, continue to next file in `internal/config/loader.go`
+- [x] T011 [US1] Output warnings to stderr in CLI execution path in `cmd/yapi/main.go`
+- [x] T012 [US1] Add unit test for missing env file warning in `internal/config/loader_test.go`
 
 **Checkpoint**: `yapi run test.yapi.yml` with missing .env shows warning, continues execution
 
@@ -51,11 +51,11 @@ These tasks must complete before user story implementation.
 
 **Goal**: `--strict-env` treats missing files as errors and disables OS fallback.
 
-- [ ] T013 [US2] Wire `--strict-env` flag through to resolver in `cmd/yapi/main.go`
-- [ ] T014 [US2] In strict mode: convert missing file warnings to errors in `internal/config/loader.go`
-- [ ] T015 [US2] In strict mode: skip OS env fallback in `buildEnvFileResolver()` in `internal/config/loader.go`
-- [ ] T016 [US2] In strict mode: error on undefined variables in `internal/config/loader.go`
-- [ ] T017 [US2] Add integration test for `--strict-env` flag in `cmd/yapi/main_test.go`
+- [x] T013 [US2] Wire `--strict-env` flag through to resolver in `cmd/yapi/main.go`
+- [x] T014 [US2] In strict mode: convert missing file warnings to errors in `internal/config/loader.go`
+- [x] T015 [US2] In strict mode: skip OS env fallback in `buildEnvFileResolver()` in `internal/config/loader.go`
+- [x] T016 [US2] In strict mode: error on undefined variables in `internal/config/loader.go`
+- [x] T017 [US2] Add integration test for `--strict-env` flag in `cmd/yapi/main_test.go`
 
 **Checkpoint**: `yapi run test.yapi.yml --strict-env` with missing .env exits with error
 
@@ -65,12 +65,12 @@ These tasks must complete before user story implementation.
 
 **Goal**: Handle multiple missing files with individual warnings; permission errors always halt.
 
-- [ ] T018 [US3] Ensure each missing file gets separate warning in `internal/config/loader.go`
-- [ ] T019 [US3] Deduplicate warnings for duplicate env_files entries in `internal/config/loader.go`
-- [ ] T020 [US4] Check file readability after existence check in `internal/config/loader.go`
-- [ ] T021 [US4] On permission error: return error immediately (not warning) in `internal/config/loader.go`
-- [ ] T022 [P] [US3] Add unit test for multiple missing files in `internal/config/loader_test.go`
-- [ ] T023 [P] [US4] Add unit test for permission error handling in `internal/config/loader_test.go`
+- [x] T018 [US3] Ensure each missing file gets separate warning in `internal/config/loader.go`
+- [x] T019 [US3] Deduplicate warnings for duplicate env_files entries in `internal/config/loader.go`
+- [x] T020 [US4] Check file readability after existence check in `internal/config/loader.go`
+- [x] T021 [US4] On permission error: return error immediately (not warning) in `internal/config/loader.go`
+- [x] T022 [P] [US3] Add unit test for multiple missing files in `internal/config/loader_test.go`
+- [x] T023 [P] [US4] Add unit test for permission error handling in `internal/config/loader_test.go`
 
 **Checkpoint**: Multiple missing files show multiple warnings; permission error halts execution
 

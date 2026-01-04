@@ -1,6 +1,8 @@
 package validation
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -711,5 +713,146 @@ variables:
 				t.Errorf("GraphQL variable $%s incorrectly detected as env var", gqlVar)
 			}
 		}
+	}
+}
+
+func TestFindEnvFilesInConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		expected []EnvFileInfo
+	}{
+		{
+			name: "single env file",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.local`,
+			expected: []EnvFileInfo{
+				{Path: ".env.local", Line: 3, Col: 4},
+			},
+		},
+		{
+			name: "multiple env files",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.local
+  - .env.prod
+  - secrets.env`,
+			expected: []EnvFileInfo{
+				{Path: ".env.local", Line: 3, Col: 4},
+				{Path: ".env.prod", Line: 4, Col: 4},
+				{Path: "secrets.env", Line: 5, Col: 4},
+			},
+		},
+		{
+			name: "no env files",
+			yaml: `yapi: v1
+url: http://example.com`,
+			expected: []EnvFileInfo{},
+		},
+		{
+			name: "empty env files",
+			yaml: `yapi: v1
+url: http://example.com
+env_files: []`,
+			expected: []EnvFileInfo{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FindEnvFilesInConfig(tt.yaml)
+
+			if len(result) != len(tt.expected) {
+				t.Fatalf("expected %d env files, got %d", len(tt.expected), len(result))
+			}
+
+			for i, exp := range tt.expected {
+				if result[i].Path != exp.Path {
+					t.Errorf("env file %d: expected path %q, got %q", i, exp.Path, result[i].Path)
+				}
+				if result[i].Line != exp.Line {
+					t.Errorf("env file %d: expected line %d, got %d", i, exp.Line, result[i].Line)
+				}
+				if result[i].Col != exp.Col {
+					t.Errorf("env file %d: expected col %d, got %d", i, exp.Col, result[i].Col)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateEnvFilesExist(t *testing.T) {
+	// Create a temp directory with a test env file
+	tmpDir := t.TempDir()
+	envPath := filepath.Join(tmpDir, ".env.exists")
+	if err := os.WriteFile(envPath, []byte("VAR=value"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a config file in the temp directory
+	configPath := filepath.Join(tmpDir, "test.yapi.yml")
+
+	tests := []struct {
+		name            string
+		yaml            string
+		expectedCount   int
+		expectedMessage string
+	}{
+		{
+			name: "existing file no diagnostics",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.exists`,
+			expectedCount: 0,
+		},
+		{
+			name: "missing file generates warning",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.missing`,
+			expectedCount:   1,
+			expectedMessage: ".env.missing",
+		},
+		{
+			name: "mixed existing and missing",
+			yaml: `yapi: v1
+url: http://example.com
+env_files:
+  - .env.exists
+  - .env.missing1
+  - .env.missing2`,
+			expectedCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diags := ValidateEnvFilesExist(tt.yaml, configPath)
+
+			if len(diags) != tt.expectedCount {
+				t.Errorf("expected %d diagnostics, got %d: %+v", tt.expectedCount, len(diags), diags)
+			}
+
+			if tt.expectedMessage != "" && len(diags) > 0 {
+				if !strings.Contains(diags[0].Message, tt.expectedMessage) {
+					t.Errorf("expected message containing %q, got %q", tt.expectedMessage, diags[0].Message)
+				}
+			}
+
+			// Check that diagnostics have proper line numbers
+			for _, d := range diags {
+				if d.Line < 0 {
+					t.Errorf("diagnostic has invalid line number: %d", d.Line)
+				}
+				if d.Severity != SeverityWarning {
+					t.Errorf("expected warning severity, got %v", d.Severity)
+				}
+			}
+		})
 	}
 }

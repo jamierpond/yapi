@@ -41,6 +41,7 @@ type Options struct {
 	ProjectRoot    string            // Path to project root (for validation)
 	ProjectEnv     string            // Selected environment name (for validation)
 	ConfigFilePath string            // Path to the yapi config file (for relative output_file resolution)
+	StrictEnv      bool              // Strict env mode: error on missing env files, no OS env fallback
 }
 
 // Run executes a yapi request and returns the result.

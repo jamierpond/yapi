@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -24,7 +25,7 @@ func load(path string) (*ParseResult, error) {
 			return nil, err
 		}
 	}
-	return loadFromStringInternal(string(data), "", nil, nil)
+	return loadFromStringInternal(string(data), "", nil, nil, ResolverOptions{})
 }
 
 func TestLoadFromStringInternal(t *testing.T) {
@@ -60,7 +61,7 @@ method: GET`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadFromStringInternal(tt.input, "", nil, nil)
+			_, err := loadFromStringInternal(tt.input, "", nil, nil, ResolverOptions{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("loadFromStringInternal() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -249,14 +250,31 @@ env_files:
 
 	yapiPath := tmpDir + "/test.yapi.yml"
 
-	// Load with path context - should fail
-	_, err = LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
-	if err == nil {
-		t.Error("LoadFromStringWithPath() should have failed for missing env file")
+	// Load with path context - should succeed with warning (not error)
+	result, err := LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
+	if err != nil {
+		t.Fatalf("LoadFromStringWithPath() should not fail for missing env file, got: %v", err)
+	}
+
+	// Should have a warning about the missing file
+	if len(result.Warnings) == 0 {
+		t.Error("Expected warning for missing env file, got none")
+	}
+
+	// Check warning mentions the missing file
+	foundWarning := false
+	for _, w := range result.Warnings {
+		if strings.Contains(w, ".env.nonexistent") {
+			foundWarning = true
+			break
+		}
+	}
+	if !foundWarning {
+		t.Errorf("Expected warning to mention '.env.nonexistent', got: %v", result.Warnings)
 	}
 }
 
-func TestLoadFromStringWithPath_EnvFiles_OSEnvTakesPrecedence(t *testing.T) {
+func TestLoadFromStringWithPath_EnvFiles_EnvFileTakesPrecedence(t *testing.T) {
 	// Create a temporary directory for our test files
 	tmpDir, err := os.MkdirTemp("", "yapi-envfiles-precedence-test-*")
 	if err != nil {
@@ -270,7 +288,7 @@ func TestLoadFromStringWithPath_EnvFiles_OSEnvTakesPrecedence(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Set an OS environment variable that should take precedence
+	// Set an OS environment variable - env_files should take priority over this
 	t.Setenv("TEST_VAR", "from-os-env")
 
 	// Create the yapi config file
@@ -288,10 +306,235 @@ env_files:
 		t.Fatalf("LoadFromStringWithPath() failed: %v", err)
 	}
 
-	// Verify OS env takes precedence over .env file
-	expectedURL := "https://example.com/from-os-env"
+	// Verify env_files takes precedence over OS env
+	expectedURL := "https://example.com/from-env-file"
 	if result.Request.URL != expectedURL {
-		t.Errorf("URL = %q, want %q (OS env should take precedence)", result.Request.URL, expectedURL)
+		t.Errorf("URL = %q, want %q (env_files should take precedence over OS env)", result.Request.URL, expectedURL)
+	}
+}
+
+func TestLoadFromStringWithPath_EnvFiles_MultipleMissingFiles(t *testing.T) {
+	// Create a temporary directory for our test files
+	tmpDir, err := os.MkdirTemp("", "yapi-envfiles-multi-missing-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create a yapi config file that references multiple non-existent .env files
+	yapiContent := `yapi: v1
+url: https://example.com
+method: GET
+env_files:
+  - .env.first
+  - .env.second
+  - .env.third`
+
+	yapiPath := tmpDir + "/test.yapi.yml"
+
+	// Load with path context - should succeed with multiple warnings
+	result, err := LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
+	if err != nil {
+		t.Fatalf("LoadFromStringWithPath() should not fail for missing env files, got: %v", err)
+	}
+
+	// Should have 3 warnings (one for each missing file)
+	if len(result.Warnings) != 3 {
+		t.Errorf("Expected 3 warnings, got %d: %v", len(result.Warnings), result.Warnings)
+	}
+
+	// Check each warning mentions its respective file
+	expectedFiles := []string{".env.first", ".env.second", ".env.third"}
+	for i, expectedFile := range expectedFiles {
+		found := false
+		for _, w := range result.Warnings {
+			if strings.Contains(w, expectedFile) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected warning %d to mention '%s', got: %v", i, expectedFile, result.Warnings)
+		}
+	}
+}
+
+func TestLoadFromStringWithPath_EnvFiles_DuplicateEntries(t *testing.T) {
+	// Create a temporary directory for our test files
+	tmpDir, err := os.MkdirTemp("", "yapi-envfiles-duplicate-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create a yapi config file with duplicate env_files entries
+	yapiContent := `yapi: v1
+url: https://example.com
+method: GET
+env_files:
+  - .env.missing
+  - .env.missing
+  - .env.missing`
+
+	yapiPath := tmpDir + "/test.yapi.yml"
+
+	// Load with path context - duplicates should be deduplicated
+	result, err := LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
+	if err != nil {
+		t.Fatalf("LoadFromStringWithPath() should not fail, got: %v", err)
+	}
+
+	// Should have only 1 warning (duplicates are deduplicated)
+	if len(result.Warnings) != 1 {
+		t.Errorf("Expected 1 warning (duplicates deduplicated), got %d: %v", len(result.Warnings), result.Warnings)
+	}
+}
+
+func TestLoadFromStringWithPath_EnvFiles_PermissionError(t *testing.T) {
+	// Skip on Windows as permission handling is different
+	if os.Getenv("OS") == "Windows_NT" {
+		t.Skip("Skipping permission test on Windows")
+	}
+
+	// Create a temporary directory for our test files
+	tmpDir, err := os.MkdirTemp("", "yapi-envfiles-permission-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create a .env file with no read permissions
+	envPath := tmpDir + "/.env.noaccess"
+	if err := os.WriteFile(envPath, []byte("SECRET=value"), 0000); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create the yapi config file
+	yapiContent := `yapi: v1
+url: https://example.com
+method: GET
+env_files:
+  - .env.noaccess`
+
+	yapiPath := tmpDir + "/test.yapi.yml"
+
+	// Load with path context - should fail with permission error
+	_, err = LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
+	if err == nil {
+		t.Error("LoadFromStringWithPath() should have failed for permission error")
+	}
+
+	// Verify error message mentions the file
+	if !strings.Contains(err.Error(), ".env.noaccess") {
+		t.Errorf("Error message should mention the file, got: %v", err)
+	}
+}
+
+func TestLoadFromStringWithPath_EnvFiles_DirectoryNotFile(t *testing.T) {
+	// Create a temporary directory for our test files
+	tmpDir, err := os.MkdirTemp("", "yapi-envfiles-directory-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create a directory instead of a file
+	envPath := tmpDir + "/.env.isdir"
+	if err := os.Mkdir(envPath, 0750); err != nil { // #nosec G301 -- test directory
+		t.Fatal(err)
+	}
+
+	// Create the yapi config file
+	yapiContent := `yapi: v1
+url: https://example.com
+method: GET
+env_files:
+  - .env.isdir`
+
+	yapiPath := tmpDir + "/test.yapi.yml"
+
+	// Load with path context - should fail because it's a directory
+	_, err = LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
+	if err == nil {
+		t.Error("LoadFromStringWithPath() should have failed when env_files references a directory")
+	}
+
+	// Verify error message mentions it's a directory
+	if !strings.Contains(err.Error(), "directory") {
+		t.Errorf("Error message should mention 'directory', got: %v", err)
+	}
+}
+
+func TestLoadFromStringWithOptions_StrictEnv_MissingFile(t *testing.T) {
+	// Create a temporary directory for our test files
+	tmpDir, err := os.MkdirTemp("", "yapi-strictenv-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create the yapi config file that references a non-existent .env file
+	yapiContent := `yapi: v1
+url: https://example.com
+method: GET
+env_files:
+  - .env.nonexistent`
+
+	yapiPath := tmpDir + "/test.yapi.yml"
+
+	// Load with strict mode - should fail
+	_, err = LoadFromStringWithOptions(yapiContent, LoadOptions{
+		ConfigPath: yapiPath,
+		StrictEnv:  true,
+	})
+	if err == nil {
+		t.Error("LoadFromStringWithOptions with StrictEnv should have failed for missing env file")
+	}
+
+	// Verify error message mentions the file
+	if !strings.Contains(err.Error(), ".env.nonexistent") {
+		t.Errorf("Error message should mention missing file, got: %v", err)
+	}
+}
+
+func TestLoadFromStringWithOptions_StrictEnv_NoOSFallback(t *testing.T) {
+	// Create a temporary directory for our test files
+	tmpDir, err := os.MkdirTemp("", "yapi-strictenv-osfallback-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create an empty .env file (exists but doesn't define TEST_VAR)
+	if err := os.WriteFile(tmpDir+"/.env.test", []byte("OTHER_VAR=other"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set an OS environment variable
+	t.Setenv("TEST_VAR", "from-os-env")
+
+	// Create the yapi config file
+	yapiContent := `yapi: v1
+url: https://example.com/${TEST_VAR}
+method: GET
+env_files:
+  - .env.test`
+
+	yapiPath := tmpDir + "/test.yapi.yml"
+
+	// Load with strict mode - OS env should NOT be used
+	result, err := LoadFromStringWithOptions(yapiContent, LoadOptions{
+		ConfigPath: yapiPath,
+		StrictEnv:  true,
+	})
+	if err != nil {
+		t.Fatalf("LoadFromStringWithOptions() failed: %v", err)
+	}
+
+	// In strict mode, the variable should be empty (not resolved from OS)
+	expectedURL := "https://example.com/"
+	if result.Request.URL != expectedURL {
+		t.Errorf("URL = %q, want %q (strict mode should not use OS env fallback)", result.Request.URL, expectedURL)
 	}
 }
 
@@ -349,6 +592,6 @@ chain:
 
 	f.Fuzz(func(t *testing.T, input string) {
 		// loadFromStringInternal should not panic on any input
-		_, _ = loadFromStringInternal(input, "", nil, nil)
+		_, _ = loadFromStringInternal(input, "", nil, nil, ResolverOptions{})
 	})
 }

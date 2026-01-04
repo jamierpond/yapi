@@ -1,0 +1,8 @@
+yapi: v1
+url: ${BASE_URL}/api
+method: GET
+headers:
+  Authorization: Bearer ${API_KEY}
+env_files:
+  - .env.base
+  - .env.override

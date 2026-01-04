@@ -194,10 +194,11 @@ func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Get --env flag if specified
+	// Get flags
 	envName, _ := cmd.Flags().GetString("env")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
-	return app.runConfigPathWithEnvAndJSONE(path, envName, jsonOutput)
+	strictEnv, _ := cmd.Flags().GetBool("strict-env")
+	return app.runConfigPathWithOptionsE(path, envName, jsonOutput, strictEnv)
 }
 
 func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
@@ -285,6 +286,7 @@ type runContext struct {
 	returnErrors bool   // If true, return errors even when strict is false (for stress tests)
 	envName      string // Target environment from yapi.config.yml
 	jsonOutput   bool   // If true, output structured JSON instead of formatted output
+	strictEnv    bool   // If true, error on missing env files and disable OS env fallback
 }
 
 // jsonAssertionResult represents a single assertion result in JSON output
@@ -498,6 +500,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		BinaryOutput:   app.binaryOutput,
 		Insecure:       app.insecure,
 		ConfigFilePath: ctx.path,
+		StrictEnv:      ctx.strictEnv,
 	}
 
 	// Load project and environment configuration
@@ -624,8 +627,15 @@ func (app *rootCommand) runConfigPathE(path string) error {
 }
 
 // runConfigPathWithEnvAndJSONE runs a config file with a specific environment and optional JSON output in strict mode
+//
+//nolint:unused
 func (app *rootCommand) runConfigPathWithEnvAndJSONE(path string, envName string, jsonOutput bool) error {
 	return app.executeRunE(runContext{path: path, strict: true, envName: envName, jsonOutput: jsonOutput})
+}
+
+// runConfigPathWithOptionsE runs a config file with all options
+func (app *rootCommand) runConfigPathWithOptionsE(path string, envName string, jsonOutput bool, strictEnv bool) error {
+	return app.executeRunE(runContext{path: path, strict: true, envName: envName, jsonOutput: jsonOutput, strictEnv: strictEnv})
 }
 
 // projectEnvResult holds the result of loading a project and optional environment

@@ -80,6 +80,7 @@ func (e *Engine) RunConfig(
 	// Analyze with project context if available
 	var analysis *validation.Analysis
 	var err error
+	analyzeOpts := validation.AnalyzeOptions{StrictEnv: opts.StrictEnv}
 	if project != nil {
 		data, readErr := os.ReadFile(path) // #nosec G304 -- path is validated user-provided config file path
 		if readErr != nil {
@@ -91,13 +92,13 @@ func (e *Engine) RunConfig(
 		if opts.ProjectEnv != "" {
 			originalDefault := project.DefaultEnvironment
 			project.DefaultEnvironment = opts.ProjectEnv
-			analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(string(data), path, project, opts.ProjectRoot)
+			analysis, err = validation.AnalyzeConfigStringWithProjectAndPathAndOptions(string(data), path, project, opts.ProjectRoot, analyzeOpts)
 			project.DefaultEnvironment = originalDefault
 		} else {
-			analysis, err = validation.AnalyzeConfigStringWithProjectAndPath(string(data), path, project, opts.ProjectRoot)
+			analysis, err = validation.AnalyzeConfigStringWithProjectAndPathAndOptions(string(data), path, project, opts.ProjectRoot, analyzeOpts)
 		}
 	} else {
-		analysis, err = validation.AnalyzeConfigFile(path)
+		analysis, err = validation.AnalyzeConfigFileWithOptions(path, analyzeOpts)
 	}
 
 	if err != nil {
