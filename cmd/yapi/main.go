@@ -289,180 +289,6 @@ type runContext struct {
 	strictEnv    bool   // If true, error on missing env files and disable OS env fallback
 }
 
-// jsonAssertionResult represents a single assertion result in JSON output
-type jsonAssertionResult struct {
-	Expression    string `json:"expression"`
-	Passed        bool   `json:"passed"`
-	ActualValue   string `json:"actual,omitempty"`
-	ExpectedValue string `json:"expected,omitempty"`
-	LeftSide      string `json:"leftSide,omitempty"`
-	Operator      string `json:"operator,omitempty"`
-	Error         string `json:"error,omitempty"`
-}
-
-// jsonOutput represents the structured JSON output for --json flag
-type jsonOutput struct {
-	Success     bool              `json:"success"`
-	Body        string            `json:"body"`
-	Transport   string            `json:"transport,omitempty"`
-	StatusCode  int               `json:"statusCode,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	RequestURL  string            `json:"requestUrl,omitempty"`
-	Method      string            `json:"method,omitempty"`
-	Service     string            `json:"service,omitempty"`
-	ContentType string            `json:"contentType,omitempty"`
-	SizeBytes   int               `json:"sizeBytes,omitempty"`
-	SizeLines   int               `json:"sizeLines,omitempty"`
-	SizeChars   int               `json:"sizeChars,omitempty"`
-	Timing      int64             `json:"timing"` // milliseconds
-	Warnings    []string          `json:"warnings,omitempty"`
-	Error       string            `json:"error,omitempty"`
-	Assertions  *struct {
-		Total   int                   `json:"total"`
-		Passed  int                   `json:"passed"`
-		Results []jsonAssertionResult `json:"results,omitempty"`
-	} `json:"assertions,omitempty"`
-}
-
-// jsonOutputParams holds parameters for building JSON output
-type jsonOutputParams struct {
-	result      *runner.Result
-	chainResult *runner.ChainResult
-	expectRes   *runner.ExpectationResult
-	analysis    *validation.Analysis
-	execErr     error
-}
-
-// printResultAsJSON outputs the result as structured JSON (handles both single and chain results)
-func (app *rootCommand) printResultAsJSON(params jsonOutputParams) error {
-	// Success means we got a response - assertion failures are NOT errors
-	// Only true execution failures (network errors, etc.) should set success to false
-	hasResult := params.result != nil || (params.chainResult != nil && len(params.chainResult.Results) > 0)
-	isAssertionFailure := params.expectRes != nil && params.expectRes.Error != nil
-
-	output := jsonOutput{
-		Success: hasResult && (params.execErr == nil || isAssertionFailure),
-	}
-
-	// Handle chain results
-	if params.chainResult != nil && len(params.chainResult.Results) > 0 {
-		output.Transport = "chain"
-
-		// Calculate total timing
-		var totalTiming int64
-		for _, r := range params.chainResult.Results {
-			totalTiming += r.Duration.Milliseconds()
-		}
-		output.Timing = totalTiming
-
-		// Build combined body as JSON array of step results
-		var stepBodies []any
-		for i, r := range params.chainResult.Results {
-			stepBody := map[string]any{
-				"step": params.chainResult.StepNames[i],
-			}
-			var bodyJSON any
-			if err := json.Unmarshal([]byte(r.Body), &bodyJSON); err == nil {
-				stepBody["body"] = bodyJSON
-			} else {
-				stepBody["body"] = r.Body
-			}
-			stepBody["statusCode"] = r.StatusCode
-			stepBody["timing"] = r.Duration.Milliseconds()
-			stepBodies = append(stepBodies, stepBody)
-		}
-		bodyBytes, _ := json.MarshalIndent(stepBodies, "", "  ")
-		output.Body = string(bodyBytes)
-
-		// Use last step's result for metadata
-		lastResult := params.chainResult.Results[len(params.chainResult.Results)-1]
-		output.StatusCode = lastResult.StatusCode
-		output.Headers = lastResult.Headers
-		output.RequestURL = lastResult.RequestURL
-		output.ContentType = lastResult.ContentType
-		output.SizeBytes = lastResult.BodyBytes
-		output.SizeLines = lastResult.BodyLines
-		output.SizeChars = lastResult.BodyChars
-		output.Warnings = lastResult.Warnings
-	} else if params.result != nil {
-		// Handle single result
-		output.Timing = params.result.Duration.Milliseconds()
-		output.Body = params.result.Body
-		output.StatusCode = params.result.StatusCode
-		output.Headers = params.result.Headers
-		output.RequestURL = params.result.RequestURL
-		output.ContentType = params.result.ContentType
-		output.SizeBytes = params.result.BodyBytes
-		output.SizeLines = params.result.BodyLines
-		output.SizeChars = params.result.BodyChars
-		output.Warnings = params.result.Warnings
-
-		// Determine transport type from config
-		if params.analysis != nil && params.analysis.Base != nil {
-			cfg := params.analysis.Base
-			//nolint:gocritic // ifElseChain: switch not suitable for these independent boolean conditions
-			if cfg.Graphql != "" {
-				output.Transport = "graphql"
-			} else if cfg.Service != "" || cfg.RPC != "" {
-				output.Transport = "grpc"
-				output.Service = cfg.Service
-			} else if cfg.Data != "" {
-				output.Transport = "tcp"
-			} else {
-				output.Transport = "http"
-			}
-		}
-
-		if params.analysis != nil && params.analysis.Request != nil {
-			output.Method = params.analysis.Request.Method
-		}
-	}
-
-	// Add assertions if present
-	if params.expectRes != nil {
-		// Convert assertion results to JSON format
-		var results []jsonAssertionResult
-		for _, ar := range params.expectRes.AssertionResults {
-			result := jsonAssertionResult{
-				Expression:    ar.Expression,
-				Passed:        ar.Passed,
-				ActualValue:   ar.ActualValue,
-				ExpectedValue: ar.ExpectedValue,
-				LeftSide:      ar.LeftSide,
-				Operator:      ar.Operator,
-			}
-			if ar.Error != nil {
-				result.Error = ar.Error.Error()
-			}
-			results = append(results, result)
-		}
-
-		output.Assertions = &struct {
-			Total   int                   `json:"total"`
-			Passed  int                   `json:"passed"`
-			Results []jsonAssertionResult `json:"results,omitempty"`
-		}{
-			Total:   params.expectRes.AssertionsTotal,
-			Passed:  params.expectRes.AssertionsPassed,
-			Results: results,
-		}
-	}
-
-	// Add error if execution failed (but not for assertion failures - those are shown in assertions)
-	if params.execErr != nil && !isAssertionFailure {
-		output.Error = params.execErr.Error()
-	}
-
-	// Marshal and print JSON
-	jsonBytes, err := json.MarshalIndent(output, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
-	}
-
-	fmt.Println(string(jsonBytes))
-	return params.execErr
-}
-
 // printResult outputs a single result with optional expectation.
 func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult) {
 	if result != nil {
@@ -558,16 +384,16 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	if ctx.jsonOutput {
 		// If we have an error and no result, still output JSON with error info
 		if runRes.Result == nil && runRes.Error != nil {
-			return app.printResultAsJSON(jsonOutputParams{
-				analysis: runRes.Analysis,
-				execErr:  runRes.Error,
+			return output.PrintJSON(output.JSONParams{
+				Analysis: runRes.Analysis,
+				ExecErr:  runRes.Error,
 			})
 		}
-		return app.printResultAsJSON(jsonOutputParams{
-			result:    runRes.Result,
-			expectRes: runRes.ExpectRes,
-			analysis:  runRes.Analysis,
-			execErr:   runRes.Error,
+		return output.PrintJSON(output.JSONParams{
+			Result:    runRes.Result,
+			ExpectRes: runRes.ExpectRes,
+			Analysis:  runRes.Analysis,
+			ExecErr:   runRes.Error,
 		})
 	}
 
@@ -592,7 +418,7 @@ func (app *rootCommand) executeChain(ctx runContext, runRes *core.RunConfigResul
 
 	// Handle JSON output mode for chains
 	if ctx.jsonOutput {
-		return app.printResultAsJSON(jsonOutputParams{chainResult: chainResult, execErr: chainErr})
+		return output.PrintJSON(output.JSONParams{ChainResult: chainResult, ExecErr: chainErr})
 	}
 
 	// Print results from all completed steps (even if chain failed)
