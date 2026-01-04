@@ -73,10 +73,10 @@
 
 **Goal**: Deduplicate variable expansion logic
 
-- [ ] T024 Add `Resolve(key string) (string, error)` method to `ChainContext` in `internal/runner/context.go`
-- [ ] T025 Refactor `ExpandVariables` to delegate to `vars.ExpandString(input, c.Resolve)` in `internal/runner/context.go`
-- [ ] T026 Remove duplicate regex handling from `ExpandVariables` in `internal/runner/context.go`
-- [ ] T027 Run `make test && make lint`
+- [x] T024 Add `Resolve(key string) (string, error)` method to `ChainContext` in `internal/runner/context.go`
+- [x] T025 Refactor `ExpandVariables` to delegate to `vars.ExpandString(input, c.Resolve)` in `internal/runner/context.go`
+- [x] T026 Remove duplicate regex handling from `ExpandVariables` in `internal/runner/context.go` (removed dead `$key` branch)
+- [x] T027 Run `make test && make lint`
 
 **Checkpoint**: Variable expansion works, request chaining still functions
 
