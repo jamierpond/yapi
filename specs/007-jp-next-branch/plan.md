@@ -6,9 +6,8 @@
 
 Establish a `next` branch as an unstable/nightly integration point with automatic releases on every push. This includes:
 1. CI workflows running on `next` branch
-2. New nightly release workflow with GoReleaser
-3. Separate `yapi-nightly` Homebrew cask
-4. `nightly.yapi.run` subdomain for web app
+2. New nightly release workflow creating GitHub pre-releases
+3. `next.yapi.run` subdomain for web app
 
 ## Technical Context
 
@@ -26,9 +25,9 @@ Establish a `next` branch as an unstable/nightly integration point with automati
 | CLI-First | [x] | N/A - infrastructure only, no CLI changes |
 | Git-Friendly | [x] | All configs in plain-text YAML files |
 | Protocol Agnostic | [x] | N/A - infrastructure only |
-| Simplicity | [x] | Separate nightly workflow avoids modifying stable release path |
+| Simplicity | [x] | GitHub pre-releases only, no package manager updates |
 | Dogfooding | [x] | `next.yapi.run` serves as dogfooding environment |
-| Minimal Code | [x] | New workflow reuses existing GoReleaser patterns |
+| Minimal Code | [x] | Reuses existing GoReleaser build config |
 
 ## Affected Areas
 
@@ -55,13 +54,12 @@ Makefile                       # Add 'next' to release target
    - Trigger on push to `next` branch
    - Calculate version: `v<latest-tag>-nightly.<short-hash>`
    - Run GoReleaser with nightly config
-   - Create GitHub pre-release
+   - Create GitHub pre-release (binaries only, no Homebrew)
 
 2. **Create nightly GoReleaser config** (`.goreleaser.nightly.yaml`):
    - Same build configuration as stable
    - Pre-release mode enabled
-   - Publishes `yapi-nightly` Homebrew cask
-   - Skips AUR (nightly users can build from source)
+   - No Homebrew/AUR updates (users download directly from GitHub)
 
 3. **Update CI workflows** to run on `next` branch:
    - Add `next` to push/PR triggers in 5 workflow files
@@ -72,8 +70,8 @@ Makefile                       # Add 'next' to release target
    - `Makefile`: add `next` to release target
 
 5. **Manual configuration** (post-merge):
-   - Vercel: Configure `nightly.yapi.run` subdomain for `next` branch
-   - DNS: Add CNAME record for `nightly.yapi.run`
+   - Vercel: Configure `next.yapi.run` subdomain for `next` branch
+   - DNS: Add CNAME record for `next.yapi.run`
    - GitHub: Branch protection rules for `next`
 
 ## Detailed Changes
@@ -114,7 +112,7 @@ jobs:
           version: "~> v2"
           args: release --clean --config .goreleaser.nightly.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.version }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_HOST: https://us.i.posthog.com
@@ -159,25 +157,6 @@ release:
 
 changelog:
   disable: true
-
-homebrew_casks:
-  - name: yapi-nightly
-    description: "CLI-first, offline-first, git-friendly API client (nightly build)"
-    homepage: "https://github.com/jamierpond/yapi"
-    binaries:
-      - yapi
-    directory: Casks
-    hooks:
-      post:
-        install: |
-          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/yapi"]
-    caveats: |
-      This is a NIGHTLY build - unstable and may contain bugs.
-      For stable releases, use: brew install yapi/tap/yapi
-    repository:
-      owner: jamierpond
-      name: homebrew-yapi
-      branch: main
 ```
 
 ### 3. CI Workflow Updates (5 files)
@@ -211,12 +190,12 @@ if [ "$$BRANCH" != "main" ] && [ "$$BRANCH" != "develop" ] && [ "$$BRANCH" != "n
 
 ### Vercel Dashboard
 1. Go to Project Settings > Domains
-2. Add `nightly.yapi.run` as custom domain
+2. Add `next.yapi.run` as custom domain
 3. Go to Project Settings > Git
-4. Under "Branch Aliases", map `next` → `nightly.yapi.run`
+4. Under "Branch Aliases", map `next` → `next.yapi.run`
 
 ### DNS (wherever yapi.run is hosted)
-1. Add CNAME record: `nightly` → `cname.vercel-dns.com`
+1. Add CNAME record: `next` → `cname.vercel-dns.com`
 
 ### GitHub Repository Settings
 1. Go to Settings > Branches
@@ -229,8 +208,7 @@ After implementation:
 - [ ] Push to `next` triggers nightly release workflow
 - [ ] Nightly releases appear as pre-releases on GitHub
 - [ ] Version format is correct: `v0.X.Y-nightly.<hash>`
-- [ ] `brew install yapi/tap/yapi-nightly` installs nightly binary
-- [ ] `nightly.yapi.run` serves the latest `next` branch web app
+- [ ] `next.yapi.run` serves the latest `next` branch web app
 - [ ] PR to `next` triggers all CI workflows
 - [ ] `make release` works from `next` branch
 - [ ] `bump.sh` works from `next` branch
