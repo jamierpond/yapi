@@ -887,9 +887,11 @@ env_files:
 			yaml: `yapi: v1
 url: http://example.com`,
 			project: &config.ProjectConfigV1{
-				Environments: map[string]config.EnvConfig{
+				Environments: map[string]config.Environment{
 					"default": {
-						EnvFiles: []string{".env.exists"},
+						ConfigV1: config.ConfigV1{
+							EnvFiles: []string{".env.exists"},
+						},
 					},
 				},
 				DefaultEnvironment: "default",
@@ -901,9 +903,11 @@ url: http://example.com`,
 			yaml: `yapi: v1
 url: http://example.com`,
 			project: &config.ProjectConfigV1{
-				Environments: map[string]config.EnvConfig{
+				Environments: map[string]config.Environment{
 					"default": {
-						EnvFiles: []string{".env.missing"},
+						ConfigV1: config.ConfigV1{
+							EnvFiles: []string{".env.missing"},
+						},
 					},
 				},
 				DefaultEnvironment: "default",
@@ -917,9 +921,11 @@ url: http://example.com
 env_files:
   - .env.config-missing`,
 			project: &config.ProjectConfigV1{
-				Environments: map[string]config.EnvConfig{
+				Environments: map[string]config.Environment{
 					"default": {
-						EnvFiles: []string{".env.exists"},
+						ConfigV1: config.ConfigV1{
+							EnvFiles: []string{".env.exists"},
+						},
 					},
 				},
 				DefaultEnvironment: "default",
@@ -933,9 +939,11 @@ url: http://example.com
 env_files:
   - .env.config-missing`,
 			project: &config.ProjectConfigV1{
-				Environments: map[string]config.EnvConfig{
+				Environments: map[string]config.Environment{
 					"default": {
-						EnvFiles: []string{".env.project-missing"},
+						ConfigV1: config.ConfigV1{
+							EnvFiles: []string{".env.project-missing"},
+						},
 					},
 				},
 				DefaultEnvironment: "default",
