@@ -12,9 +12,9 @@
 
 Create the target directory structure before moving any content.
 
-- [ ] T001 Create `cli/` directory at repository root
-- [ ] T002 [P] Create `integrations/` directory at repository root
-- [ ] T003 [P] Create `assets/` directory at repository root
+- [x] T001 Create `cli/` directory at repository root
+- [x] T002 [P] Create `integrations/` directory at repository root
+- [x] T003 [P] Create `assets/` directory at repository root
 
 **Checkpoint**: Three new empty directories exist at root (`cli/`, `integrations/`, `assets/`)
 
@@ -24,13 +24,13 @@ Create the target directory structure before moving any content.
 
 Move all Go CLI code to the `cli/` subdirectory. This is blocking because the Makefile update depends on it.
 
-- [ ] T004 Move `cmd/` directory to `cli/cmd/`
-- [ ] T005 Move `internal/` directory to `cli/internal/`
-- [ ] T006 Move `scripts/` directory to `cli/scripts/`
-- [ ] T007 Move `bin/` directory to `cli/bin/`
-- [ ] T008 Move `go.mod` to `cli/go.mod`
-- [ ] T009 Move `go.sum` to `cli/go.sum`
-- [ ] T010 Update `Makefile` build target to use `cd cli &&` prefix for Go commands
+- [x] T004 Move `cmd/` directory to `cli/cmd/`
+- [x] T005 Move `internal/` directory to `cli/internal/`
+- [x] T006 Move `scripts/` directory to `cli/scripts/`
+- [x] T007 Move `bin/` directory to `cli/bin/`
+- [x] T008 Move `go.mod` to `cli/go.mod`
+- [x] T009 Move `go.sum` to `cli/go.sum`
+- [x] T010 Update `Makefile` build target to use `cd cli &&` prefix for Go commands
 
 **Checkpoint**: `cd cli && go build ./cmd/yapi` succeeds
 
@@ -42,7 +42,7 @@ Goal: Clear separation of concerns visible at root directory level.
 
 **Test Criteria**: Root directory has only organizational directories and config files.
 
-- [ ] T011 [US1] Verify root directory structure matches target (cli/, apps/, packages/, integrations/, assets/, examples/, specs/)
+- [x] T011 [US1] Verify root directory structure matches target (cli/, apps/, packages/, integrations/, assets/, examples/, specs/)
 
 **Checkpoint**: `ls -la` at root shows clean organizational structure
 

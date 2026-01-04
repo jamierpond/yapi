@@ -9,7 +9,7 @@ LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DA
 
 install: build
 	@echo "Installing yapi to $$(go env GOPATH)/bin..."
-	@cp ./bin/yapi $$(go env GOPATH)/bin/yapi
+	@cp ./cli/bin/yapi $$(go env GOPATH)/bin/yapi
 	@codesign --sign - --force $$(go env GOPATH)/bin/yapi 2>/dev/null || true
 	@echo "Done! Ensure $$(go env GOPATH)/bin is in your PATH."
 
@@ -18,8 +18,8 @@ kore:
 
 
 fuzz-cover:
-	@go test ./... -run=Fuzz -coverprofile=fuzz.cov
-	@go tool cover -func=fuzz.cov
+	@cd cli && go test ./... -run=Fuzz -coverprofile=fuzz.cov
+	@cd cli && go tool cover -func=fuzz.cov
 
 # Install linting tools
 lint-install:
@@ -30,56 +30,56 @@ lint-install:
 # Quick lint (go vet + fmt check)
 lint-quick:
 	@echo "Running go vet..."
-	@go vet ./...
+	@cd cli && go vet ./...
 	@echo "Checking gofmt..."
-	@test -z "$$(gofmt -s -l cmd internal)" || (echo "Files need formatting:"; gofmt -s -l cmd internal; exit 1)
+	@test -z "$$(gofmt -s -l cli/cmd cli/internal)" || (echo "Files need formatting:"; gofmt -s -l cli/cmd cli/internal; exit 1)
 
 # Standard lint (golangci-lint with all enabled linters)
 lint:
 	@echo "Running golangci-lint..."
-	@golangci-lint run ./...
+	@cd cli && golangci-lint run ./...
 
 # Full lint (includes vulnerability check)
 lint-full: lint
 	@echo "Running govulncheck..."
-	@govulncheck ./...
+	@cd cli && govulncheck ./...
 
 build:
 	@echo "Building yapi CLI..."
-	@go build -ldflags "$(LDFLAGS)" -o ./bin/yapi ./cmd/yapi
-	@codesign --sign - --force ./bin/yapi 2>/dev/null || true
+	@cd cli && go build -ldflags "$(LDFLAGS)" -o ./bin/yapi ./cmd/yapi
+	@codesign --sign - --force ./cli/bin/yapi 2>/dev/null || true
 
 run:
 	@echo "Running yapi CLI..."
-	@go run ./cmd/yapi
+	@cd cli && go run ./cmd/yapi
 
 run-print-analytics: build
 	@echo "Running yapi CLI with analytics printing..."
-	@YAPI_PRINT_ANALYTICS=1 ./bin/yapi $(RUN_ARGS)
+	@YAPI_PRINT_ANALYTICS=1 ./cli/bin/yapi $(RUN_ARGS)
 
 test:
 	@echo "Running all tests..."
-	@go test -cover -coverprofile=coverage.out ./...
+	@cd cli && go test -cover -coverprofile=coverage.out ./...
 	@echo ""
 	@echo "Coverage summary:"
-	@go tool cover -func=coverage.out | grep total | awk '{print "Total coverage: " $$3}'
-	@rm -f coverage.out
+	@cd cli && go tool cover -func=coverage.out | grep total | awk '{print "Total coverage: " $$3}'
+	@rm -f cli/coverage.out
 
 fuzz:
-	@go run ./scripts/fuzz.go
+	@cd cli && go run ./scripts/fuzz.go
 
 fmt:
 	@echo "Formatting code..."
-	@gofmt -w .
+	@gofmt -w ./cli
 
 fmt-check:
 	@echo "Checking formatting..."
-	@test -z "$$(gofmt -l cmd internal)" || (echo "Files not formatted:"; gofmt -l cmd internal; exit 1)
+	@test -z "$$(gofmt -l cli/cmd cli/internal)" || (echo "Files not formatted:"; gofmt -l cli/cmd cli/internal; exit 1)
 
 clean:
 	@echo "Cleaning up..."
-	@rm -f ./bin/yapi
-	@go clean
+	@rm -f ./cli/bin/yapi
+	@cd cli && go clean
 
 
 web:
@@ -92,13 +92,13 @@ web-run:
 	docker run --name yapi -p 3000:3000 ${NAME}:latest
 
 bump-patch:
-	@./scripts/bump.sh patch
+	@./cli/scripts/bump.sh patch
 
 bump-minor:
-	@./scripts/bump.sh minor
+	@./cli/scripts/bump.sh minor
 
 bump-major:
-	@./scripts/bump.sh major
+	@./cli/scripts/bump.sh major
 
 release:
 	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
@@ -116,7 +116,7 @@ release:
 
 gen-docs:
 	@echo "Generating CLI documentation..."
-	@go run scripts/gendocs.go
+	@cd cli && go run scripts/gendocs.go
 
 
 gh-action:

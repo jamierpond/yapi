@@ -1,0 +1,390 @@
+package validation
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"yapi.run/cli/internal/config"
+)
+
+func TestValidateRequest_MissingURL(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	if len(issues) == 0 {
+		t.Fatal("expected at least one issue for missing URL")
+	}
+
+	found := false
+	for _, issue := range issues {
+		if issue.Field == "url" && issue.Severity == SeverityError {
+			found = true
+			if !strings.Contains(issue.Message, "missing required field") {
+				t.Errorf("expected message about missing url, got: %s", issue.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected error for missing url field")
+	}
+}
+
+func TestValidateRequest_ValidHTTPMethods(t *testing.T) {
+	validMethods := []string{"", "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+
+	for _, method := range validMethods {
+		yaml := fmt.Sprintf(`yapi: v1
+url: http://example.com
+method: %s`, method)
+		res, err := config.LoadFromString(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error loading config for method %s: %v", method, err)
+		}
+		issues := ValidateRequest(res.Request)
+
+		for _, issue := range issues {
+			if issue.Field == "method" {
+				t.Errorf("unexpected method issue for %q: %s", method, issue.Message)
+			}
+		}
+	}
+}
+
+func TestValidateRequest_UnknownHTTPMethod(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com
+method: FOOBAR`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	found := false
+	for _, issue := range issues {
+		if issue.Field == "method" && issue.Severity == SeverityWarning {
+			found = true
+			if !strings.Contains(issue.Message, "unknown HTTP method") {
+				t.Errorf("expected unknown method message, got: %s", issue.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected warning for unknown HTTP method")
+	}
+}
+
+func TestValidateRequest_GRPCMissingService(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+method: grpc
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	found := false
+	for _, issue := range issues {
+		if issue.Field == "service" && issue.Severity == SeverityError {
+			found = true
+			if !strings.Contains(issue.Message, "gRPC config requires `service`") {
+				t.Errorf("expected service required message, got: %s", issue.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected error for missing service in gRPC config")
+	}
+}
+
+func TestValidateRequest_GRPCMissingRPC(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+method: grpc
+service: example.Service`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	found := false
+	for _, issue := range issues {
+		if issue.Field == "rpc" && issue.Severity == SeverityError {
+			found = true
+			if !strings.Contains(issue.Message, "gRPC config requires `rpc`") {
+				t.Errorf("expected rpc required message, got: %s", issue.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected error for missing rpc in gRPC config")
+	}
+}
+
+func TestValidateRequest_TCPValidEncodings(t *testing.T) {
+	validEncodings := []string{"text", "hex", "base64"}
+
+	for _, enc := range validEncodings {
+		yaml := fmt.Sprintf(`yapi: v1
+url: tcp://localhost:9000
+method: tcp
+data: hello
+encoding: %s`, enc)
+		res, err := config.LoadFromString(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error loading config for encoding %s: %v", enc, err)
+		}
+		issues := ValidateRequest(res.Request)
+
+		for _, issue := range issues {
+			if issue.Field == "encoding" {
+				t.Errorf("unexpected encoding issue for %q: %s", enc, issue.Message)
+			}
+		}
+	}
+}
+
+func TestValidateRequest_TCPInvalidEncoding(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: tcp://localhost:9000
+method: tcp
+data: hello
+encoding: invalid`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	found := false
+	for _, issue := range issues {
+		if issue.Field == "encoding" && issue.Severity == SeverityError {
+			found = true
+			if !strings.Contains(issue.Message, "unsupported TCP encoding") {
+				t.Errorf("expected unsupported encoding message, got: %s", issue.Message)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected error for invalid TCP encoding")
+	}
+}
+
+func TestValidateRequest_ValidConfig(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/api
+method: POST
+content_type: application/json
+body:
+  key: value`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	if len(issues) != 0 {
+		t.Errorf("expected no issues for valid config, got %d: %+v", len(issues), issues)
+	}
+}
+
+func TestValidateRequest_GRPCByURLSchemeValid(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+service: example.Service
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	for _, issue := range issues {
+		if issue.Field == "service" || issue.Field == "rpc" {
+			t.Errorf("unexpected issue for valid gRPC config: %s", issue.Message)
+		}
+	}
+}
+
+func TestValidateRequest_NoIssuesForMinimalValidHTTP(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com
+method: GET`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	if len(issues) != 0 {
+		t.Errorf("expected no issues for minimal valid HTTP config, got %d: %+v", len(issues), issues)
+	}
+}
+
+func TestValidateRequest_NoIssuesForMinimalValidGRPC(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: grpc://localhost:50051
+service: example.Service
+rpc: GetData`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	if len(issues) != 0 {
+		t.Errorf("expected no issues for minimal valid gRPC config, got %d: %+v", len(issues), issues)
+	}
+}
+
+func TestValidateRequest_GraphQLOnly(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: http://example.com/graphql
+graphql: 'query { foo }'`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	if len(issues) != 0 {
+		t.Errorf("expected no issues for graphql-only config, got %d: %+v", len(issues), issues)
+	}
+}
+
+func TestValidateRequest_NoIssuesForMinimalValidTCP(t *testing.T) {
+	res, err := config.LoadFromString(`yapi: v1
+url: tcp://localhost:9000
+data: hello`)
+	if err != nil {
+		t.Fatalf("unexpected error loading config: %v", err)
+	}
+	issues := ValidateRequest(res.Request)
+
+	if len(issues) != 0 {
+		t.Errorf("expected no issues for minimal valid TCP config, got %d: %+v", len(issues), issues)
+	}
+}
+
+func FuzzAnalyze(f *testing.F) {
+	// Seed with various YAML configs
+	f.Add(`yapi: v1
+url: https://example.com
+method: GET`)
+
+	f.Add(`yapi: v1
+url: https://api.example.com/users
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer $TOKEN
+body:
+  name: test
+  email: test@example.com`)
+
+	f.Add(`yapi: v1
+url: https://example.com/graphql
+graphql: |
+  query GetUsers($limit: Int!) {
+    users(limit: $limit) {
+      id
+      name
+    }
+  }
+variables:
+  limit: 10`)
+
+	f.Add(`yapi: v1
+url: grpc://localhost:50051
+service: example.UserService
+rpc: GetUser
+body:
+  user_id: 123`)
+
+	f.Add(`yapi: v1
+url: tcp://localhost:8080
+data: "PING\r\n"
+encoding: text
+read_timeout: 5000`)
+
+	// Chain config
+	f.Add(`yapi: v1
+chain:
+  - name: login
+    url: https://example.com/auth
+    method: POST
+    body:
+      username: admin
+      password: secret
+  - name: get_data
+    url: https://example.com/api/data
+    headers:
+      Authorization: "Bearer ${login.response.body.token}"
+    expect:
+      assert:
+        - .status == 200`)
+
+	// Edge cases
+	f.Add(``)
+	f.Add(`yapi: v1`)
+	f.Add(`url: no-version`)
+	f.Add(`yapi: v99
+url: unsupported`)
+	f.Add(`{invalid yaml`)
+	f.Add(`- list
+- of
+- items`)
+
+	// JQ filters
+	f.Add(`yapi: v1
+url: https://example.com
+jq: .data.items | map(.id)`)
+
+	f.Fuzz(func(t *testing.T, input string) {
+		// Analyze should not panic on any input
+		_, _ = Analyze(input, AnalyzeOptions{})
+	})
+}
+
+func FuzzFindEnvVarRefs(f *testing.F) {
+	f.Add(`url: https://example.com
+headers:
+  Authorization: Bearer $TOKEN`)
+
+	f.Add(`url: $BASE_URL/api
+headers:
+  X-API-Key: ${API_KEY}`)
+
+	f.Add(`graphql: |
+  query($id: ID!) {
+    user(id: $id) {
+      name
+    }
+  }`)
+
+	f.Add(`body:
+  key: ${NESTED_${VAR}}`)
+
+	f.Add(`$VAR1 $VAR2 ${VAR3} ${VAR4}`)
+	f.Add(`no variables here`)
+	f.Add(``)
+
+	f.Fuzz(func(t *testing.T, input string) {
+		// FindEnvVarRefs should not panic on any input
+		_ = FindEnvVarRefs(input)
+	})
+}
+
+func FuzzRedactValue(f *testing.F) {
+	f.Add("")
+	f.Add("a")
+	f.Add("ab")
+	f.Add("abc")
+	f.Add("abcd")
+	f.Add("abcde")
+	f.Add("secret_password_12345")
+	f.Add("sk-proj-1234567890abcdef")
+
+	f.Fuzz(func(t *testing.T, input string) {
+		// RedactValue should not panic on any input
+		_ = RedactValue(input)
+	})
+}
