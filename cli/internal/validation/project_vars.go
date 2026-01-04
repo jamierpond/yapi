@@ -21,7 +21,9 @@ type VarDiagnosis struct {
 
 // ValidateProjectVars performs matrix validation of variables across all environments.
 // This is the "smart validation" that enables diagnostics like "API_URL is missing in 'staging'".
-func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRoot string) []Diagnostic {
+// requestEnvFileVars is an optional set of variable names that will be loaded from the request's
+// own env_files - these are skipped from validation since they'll be resolved at runtime.
+func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRoot string, requestEnvFileVars map[string]bool) []Diagnostic {
 	if project == nil {
 		// Fallback to legacy OS env check
 		return validateEnvVars(text)
@@ -56,6 +58,12 @@ func ValidateProjectVars(text string, project *config.ProjectConfigV1, projectRo
 	}
 
 	for varName := range varNames {
+		// Skip variables that will be loaded from the request's own env_files
+		if requestEnvFileVars != nil && requestEnvFileVars[varName] {
+			varMatrix[varName].IsInDefaults = true // Treat as "will be defined"
+			continue
+		}
+
 		// Check defaults (from both vars and env_files)
 		if _, ok := defaultVars[varName]; ok {
 			varMatrix[varName].IsInDefaults = true

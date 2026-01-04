@@ -257,7 +257,7 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 
 		// Use project-aware validation if available
 		if project != nil {
-			diags = append(diags, ValidateProjectVars(text, project, projectRoot)...)
+			diags = append(diags, ValidateProjectVars(text, project, projectRoot, envFileVarNames)...)
 		} else {
 			diags = append(diags, validateEnvVarsWithEnvFiles(text, envFileVarNames)...)
 		}
@@ -289,7 +289,7 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 
 	// Use project-aware validation if available
 	if project != nil {
-		diags = append(diags, ValidateProjectVars(text, project, projectRoot)...)
+		diags = append(diags, ValidateProjectVars(text, project, projectRoot, envFileVarNames)...)
 	} else {
 		diags = append(diags, validateEnvVarsWithEnvFiles(text, envFileVarNames)...)
 	}

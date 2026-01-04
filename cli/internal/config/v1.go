@@ -233,6 +233,9 @@ func (c *ConfigV1) MergeWithDefaults(defaults ConfigV1) ConfigV1 {
 	// Preserve file-specific fields
 	m.Expect = c.Expect
 	m.Chain = c.Chain
+	if len(c.EnvFiles) > 0 {
+		m.EnvFiles = c.EnvFiles
+	}
 
 	return m
 }
