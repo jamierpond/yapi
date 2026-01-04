@@ -1,6 +1,6 @@
 # Feature Specification: API Consolidation Refactor
 
-**Branch**: `001-api-consolidation-refactor` | **Created**: 2026-01-03 | **Status**: Draft
+**Branch**: `002-api-consolidation-refactor` | **Created**: 2026-01-03 | **Status**: Draft
 
 ## Overview
 
