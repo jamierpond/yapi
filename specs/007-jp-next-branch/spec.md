@@ -12,8 +12,8 @@ Establish a staging branch named `next` that serves as an unstable/nightly integ
 
 - Q: When should nightly releases trigger? → A: Every push to `next`
 - Q: What version format for nightlies? → A: `v0.X.Y-nightly.<short-hash>` (semver compliant, 7-char hash)
-- Q: What subdomain for nightly web app? → A: Single `nightly.yapi.run` (always latest push)
-- Q: What artifacts for nightly releases? → A: Full GoReleaser with `yapi-nightly` Homebrew formula, marked as pre-release
+- Q: What subdomain for nightly web app? → A: Single `next.yapi.run` (always latest push)
+- Q: What artifacts for nightly releases? → A: GitHub pre-release only (no Homebrew for nightlies)
 - Q: How is nightly base version determined? → A: Latest stable tag (e.g., v0.5.2-nightly.abc1234)
 - Q: VS Code extension nightly releases? → A: Skipped - extension only releases with stable
 
@@ -55,8 +55,7 @@ Every push to the `next` branch automatically triggers a nightly release, produc
 
 **Acceptance**:
 - Given a push to `next`, when the workflow completes, then a GitHub pre-release is created with version `v<latest-tag>-nightly.<short-hash>`
-- Given a nightly release, when a user installs via Homebrew, then `brew install yapi/tap/yapi-nightly` provides the latest nightly binary
-- Given a push to `next`, when Vercel deploys, then `nightly.yapi.run` reflects the latest changes
+- Given a push to `next`, when Vercel deploys, then `next.yapi.run` reflects the latest changes
 
 ## Requirements
 
