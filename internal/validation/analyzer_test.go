@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"yapi.run/cli/internal/config"
 )
 
 func hasDiagnostic(diags []Diagnostic, substr string) bool {

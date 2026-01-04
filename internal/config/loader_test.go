@@ -538,6 +538,175 @@ env_files:
 	}
 }
 
+func TestBuildEnvFileResolverWithOptions(t *testing.T) {
+	// Set up test OS environment variable
+	t.Setenv("OS_VAR", "from-os")
+
+	tests := []struct {
+		name             string
+		envFileVars      map[string]string
+		existingResolver func(string) (string, error)
+		opts             ResolverOptions
+		key              string
+		expectedValue    string
+	}{
+		{
+			name:          "env file var takes priority",
+			envFileVars:   map[string]string{"VAR": "from-env-file"},
+			opts:          ResolverOptions{},
+			key:           "VAR",
+			expectedValue: "from-env-file",
+		},
+		{
+			name:        "existing resolver used when no env file var",
+			envFileVars: map[string]string{},
+			existingResolver: func(key string) (string, error) {
+				if key == "VAR" {
+					return "from-existing", nil
+				}
+				return "", nil
+			},
+			opts:          ResolverOptions{},
+			key:           "VAR",
+			expectedValue: "from-existing",
+		},
+		{
+			name:          "OS env fallback when not strict",
+			envFileVars:   map[string]string{},
+			opts:          ResolverOptions{StrictEnv: false},
+			key:           "OS_VAR",
+			expectedValue: "from-os",
+		},
+		{
+			name:          "no OS env fallback when strict",
+			envFileVars:   map[string]string{},
+			opts:          ResolverOptions{StrictEnv: true},
+			key:           "OS_VAR",
+			expectedValue: "",
+		},
+		{
+			name:          "undefined var returns empty string",
+			envFileVars:   map[string]string{},
+			opts:          ResolverOptions{StrictEnv: true},
+			key:           "UNDEFINED_VAR",
+			expectedValue: "",
+		},
+		{
+			name:          "env file var overrides existing resolver",
+			envFileVars:   map[string]string{"VAR": "from-env-file"},
+			existingResolver: func(key string) (string, error) {
+				if key == "VAR" {
+					return "from-existing", nil
+				}
+				return "", nil
+			},
+			opts:          ResolverOptions{},
+			key:           "VAR",
+			expectedValue: "from-env-file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolver := buildEnvFileResolverWithOptions(tt.envFileVars, tt.existingResolver, tt.opts)
+			value, err := resolver(tt.key)
+			if err != nil {
+				t.Fatalf("resolver error: %v", err)
+			}
+			if value != tt.expectedValue {
+				t.Errorf("resolver(%q) = %q, want %q", tt.key, value, tt.expectedValue)
+			}
+		})
+	}
+}
+
+func TestBuildEnvFileResolverWithTracking(t *testing.T) {
+	// Set up test OS environment variable
+	t.Setenv("OS_VAR", "from-os")
+
+	tests := []struct {
+		name             string
+		envFileVars      map[string]string
+		existingResolver func(string) (string, error)
+		opts             ResolverOptions
+		key              string
+		expectedValue    string
+		expectedSource   ResolutionSource
+	}{
+		{
+			name:           "tracks env file source",
+			envFileVars:    map[string]string{"VAR": "from-env-file"},
+			opts:           ResolverOptions{},
+			key:            "VAR",
+			expectedValue:  "from-env-file",
+			expectedSource: SourceEnvFile,
+		},
+		{
+			name:        "tracks project config source",
+			envFileVars: map[string]string{},
+			existingResolver: func(key string) (string, error) {
+				if key == "VAR" {
+					return "from-project", nil
+				}
+				return "", nil
+			},
+			opts:           ResolverOptions{},
+			key:            "VAR",
+			expectedValue:  "from-project",
+			expectedSource: SourceProjectConfig,
+		},
+		{
+			name:           "tracks OS env source",
+			envFileVars:    map[string]string{},
+			opts:           ResolverOptions{StrictEnv: false},
+			key:            "OS_VAR",
+			expectedValue:  "from-os",
+			expectedSource: SourceOSEnv,
+		},
+		{
+			name:           "tracks not found",
+			envFileVars:    map[string]string{},
+			opts:           ResolverOptions{StrictEnv: true},
+			key:            "UNDEFINED_VAR",
+			expectedValue:  "",
+			expectedSource: SourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracking := buildEnvFileResolverWithTracking(tt.envFileVars, tt.existingResolver, tt.opts)
+			value, err := tracking.Resolver(tt.key)
+			if err != nil {
+				t.Fatalf("resolver error: %v", err)
+			}
+			if value != tt.expectedValue {
+				t.Errorf("resolver(%q) = %q, want %q", tt.key, value, tt.expectedValue)
+			}
+			if tracking.ResolutionSource[tt.key] != tt.expectedSource {
+				t.Errorf("source = %v, want %v", tracking.ResolutionSource[tt.key], tt.expectedSource)
+			}
+		})
+	}
+}
+
+func TestBuildEnvFileResolverWithTracking_OSFallbackTracking(t *testing.T) {
+	t.Setenv("FALLBACK_VAR", "fallback-value")
+
+	tracking := buildEnvFileResolverWithTracking(map[string]string{}, nil, ResolverOptions{})
+
+	// Resolve a variable that falls back to OS env
+	_, _ = tracking.Resolver("FALLBACK_VAR")
+
+	// Check it's tracked in OSFallbackVars
+	if len(tracking.OSFallbackVars) != 1 {
+		t.Fatalf("expected 1 OS fallback var, got %d", len(tracking.OSFallbackVars))
+	}
+	if tracking.OSFallbackVars[0] != "FALLBACK_VAR" {
+		t.Errorf("OSFallbackVars[0] = %q, want %q", tracking.OSFallbackVars[0], "FALLBACK_VAR")
+	}
+}
+
 func FuzzLoadFromStringInternal(f *testing.F) {
 	// Seed with valid YAML configs
 	f.Add(`yapi: v1
