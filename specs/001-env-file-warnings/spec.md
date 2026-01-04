@@ -120,9 +120,16 @@ A developer sees a `${GITHUB_PAT}` variable reference in their YAPI file and wan
 
 ### Variable Resolution
 
-- **FR-013**: When `env_files` are specified, variables in env_files MUST take priority over OS environment variables
-- **FR-014**: When a variable is resolved from OS env (and env_files exist), `yapi` MUST display a warning: "variable 'X' resolved from OS environment, not env_files"
-- **FR-015**: `yapi` MUST error if a variable is undefined after checking all sources (env_files + OS env)
+- **FR-013**: Variables MUST be resolved in this priority order (highest to lowest):
+  1. `environments.[name].vars`
+  2. `environments.[name].env_files`
+  3. `defaults.vars`
+  4. `defaults.env_files`
+  5. Per-request `env_files` (in individual .yapi.yml)
+  6. OS environment (fallback only)
+- **FR-014**: When a variable is resolved from OS env (and any config-level vars/env_files exist), `yapi` MUST display a warning: "variable 'X' resolved from OS environment, not configuration"
+- **FR-015**: `yapi` MUST error if a variable is undefined after checking all sources
+- **FR-016**: Missing env files in `defaults.env_files` or `environments.[name].env_files` MUST generate warnings (or errors in strict mode)
 
 ### LSP Features
 
