@@ -269,9 +269,12 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		})
 	}
 
+	log.Verbose("Rendering output...")
 	if err := app.printResult(runRes.Result, runRes.ExpectRes, ctx.path); err != nil {
+		log.Verbose("Output rendered (saved to file)")
 		return err
 	}
+	log.Verbose("Output rendered")
 
 	if runRes.Error != nil {
 		if ctx.strict || ctx.returnErrors {
