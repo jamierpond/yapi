@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,10 +17,6 @@ import (
 	"yapi.run/cli/internal/utils"
 	"yapi.run/cli/internal/validation"
 )
-
-// maxOutputSize is the threshold above which output is auto-saved to a file instead of printed.
-// 1MB is a reasonable limit - terminals struggle with larger outputs.
-const maxOutputSize = 1024 * 1024
 
 // runContext holds options for executeRun
 type runContext struct {
@@ -132,8 +127,14 @@ func printWatchHeader(path string) {
 	fmt.Printf("%s\n\n", color.Dim("["+time.Now().Format("15:04:05")+"]"))
 }
 
+// ErrOutputTooLarge is returned when output is too large for terminal and was saved to file.
+var ErrOutputTooLarge = errors.New("output too large for terminal, saved to file")
+
 // printResult outputs a single result with optional expectation.
-func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult) {
+// configPath is used for generating auto-save filenames when output is too large.
+// Returns ErrOutputTooLarge if output was saved to file instead of printed.
+func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult, configPath string) error {
+	var outputResult OutputResult
 	if result != nil {
 		// Check if stdout is a TTY (terminal)
 		isTTY := isTerminal(os.Stdout)
@@ -149,8 +150,8 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 			}
 			// In non-TTY (CI/piped), silently skip binary output
 		} else {
-			body := strings.TrimRight(output.Highlight(result.Body, result.ContentType, app.noColor), "\n\r")
-			fmt.Println(body)
+			body := output.Highlight(result.Body, result.ContentType, app.noColor)
+			outputResult = renderOutput(body, configPath)
 		}
 
 		printResultMeta(result)
@@ -158,6 +159,10 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 	if expectRes != nil {
 		printExpectationResult(expectRes)
 	}
+	if outputResult != OutputPrinted {
+		return ErrOutputTooLarge
+	}
+	return nil
 }
 
 // executeRunE is the unified execution pipeline for both Run and Watch modes.
@@ -240,7 +245,9 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		})
 	}
 
-	app.printResult(runRes.Result, runRes.ExpectRes)
+	if err := app.printResult(runRes.Result, runRes.ExpectRes, ctx.path); err != nil {
+		return err
+	}
 
 	if runRes.Error != nil {
 		if ctx.strict || ctx.returnErrors {
@@ -265,6 +272,7 @@ func (app *rootCommand) executeChain(ctx runContext, runRes *core.RunConfigResul
 	}
 
 	// Print results from all completed steps (even if chain failed)
+	var outputSavedErr error
 	if chainResult != nil {
 		for i, stepResult := range chainResult.Results {
 			fmt.Fprintf(os.Stderr, "\n--- Step %d: %s ---\n", i+1, chainResult.StepNames[i])
@@ -272,7 +280,9 @@ func (app *rootCommand) executeChain(ctx runContext, runRes *core.RunConfigResul
 			if i < len(chainResult.ExpectationResults) {
 				expectRes = chainResult.ExpectationResults[i]
 			}
-			app.printResult(stepResult, expectRes)
+			if err := app.printResult(stepResult, expectRes, ctx.path); err != nil {
+				outputSavedErr = err
+			}
 		}
 	}
 
@@ -287,7 +297,7 @@ func (app *rootCommand) executeChain(ctx runContext, runRes *core.RunConfigResul
 	fmt.Fprintln(os.Stderr, "\nChain completed successfully.")
 	out, noColor := app.io(ctx.strict)
 	validation.PrintWarnings(runRes.Analysis, out, noColor)
-	return nil
+	return outputSavedErr
 }
 
 // runConfigPathE runs a config file in strict mode (returns error)

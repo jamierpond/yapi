@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"yapi.run/cli/internal/config"
 	"yapi.run/cli/internal/tui"
@@ -162,32 +163,44 @@ func isTerminal(f *os.File) bool {
 // 1MB is a reasonable limit - terminals struggle with larger outputs.
 const maxOutputSize = 1024 * 1024
 
-// printOutput prints body to stdout, or saves to a file if too large.
+// OutputResult represents what happened when rendering output.
+type OutputResult int
+
+// OutputResult values.
+const (
+	OutputPrinted     OutputResult = iota // Output was printed to terminal
+	OutputSavedToFile                     // Output was too large, saved to file
+	OutputSaveFailed                      // Output was too large but save failed
+)
+
+// renderOutput prints body to stdout, or saves to a file if too large.
 // configPath is used to generate a meaningful filename for auto-saved files.
-// Returns the path to the saved file if auto-saved, empty string otherwise.
-func printOutput(body string, configPath string) string {
+func renderOutput(body string, configPath string) OutputResult {
 	if len(body) <= maxOutputSize {
 		fmt.Println(strings.TrimRight(body, "\n\r"))
-		return ""
+		return OutputPrinted
 	}
 
 	// Output too large - save to file
 	outputPath := generateOutputPath(configPath)
 	if err := os.WriteFile(outputPath, []byte(body), 0600); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to save large output: %v\n", err)
-		return ""
+		return OutputSaveFailed
 	}
 
-	fmt.Fprintf(os.Stderr, "Output too large for terminal (%s). Saved to: %s\n",
-		formatBytes(len(body)), outputPath)
-	return outputPath
+	fmt.Fprintf(os.Stderr, "\nResponse body is %s (too large for terminal, would freeze your shell).\n", formatBytes(len(body)))
+	fmt.Fprintf(os.Stderr, "Saved to: %s\n", outputPath)
+	fmt.Fprintf(os.Stderr, "View with: cat %s | jq\n", outputPath)
+	return OutputSavedToFile
 }
 
 // generateOutputPath creates a filename like: config-name-output-20060102-150405.json
 func generateOutputPath(configPath string) string {
 	base := filepath.Base(configPath)
-	name := strings.TrimSuffix(base, filepath.Ext(base))
-	name = strings.TrimSuffix(name, ".yapi") // handle .yapi.yml
+	name := strings.TrimSuffix(base, ".yapi.yml")
+	if name == base {
+		name = strings.TrimSuffix(base, filepath.Ext(base))
+	}
 
 	timestamp := time.Now().Format("20060102-150405")
 	return fmt.Sprintf("%s-output-%s.json", name, timestamp)
