@@ -156,14 +156,15 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 		// Check if content is binary
 		isBinary := utils.IsBinaryContent(result.Body)
 
-		// Skip dumping binary output unless explicitly requested with --binary-output
-		if isBinary && !app.binaryOutput {
+		switch {
+		case isBinary && !app.binaryOutput:
+			// Skip dumping binary output unless explicitly requested with --binary-output
 			if isTTY {
 				fmt.Fprintf(os.Stderr, "\n%s\n", color.Yellow("Binary content detected. Output hidden to prevent terminal corruption."))
 				fmt.Fprintf(os.Stderr, "%s\n", color.Dim("To display binary output, use --binary-output flag or pipe to a file."))
 			}
 			// In non-TTY (CI/piped), silently skip binary output
-		} else if result.OutputFile != "" {
+		case result.OutputFile != "":
 			// Output was already saved via output_file config - don't write again
 			if len(result.Body) > maxOutputSize {
 				savedPath = result.OutputFile
@@ -172,7 +173,7 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 				body := output.Highlight(result.Body, result.ContentType, app.noColor)
 				fmt.Println(strings.TrimRight(body, "\n\r"))
 			}
-		} else {
+		default:
 			// No output_file specified - render normally (may auto-save if large)
 			body := result.Body
 			if len(body) <= maxOutputSize {
