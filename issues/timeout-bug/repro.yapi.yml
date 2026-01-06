@@ -1,0 +1,32 @@
+yapi: v1
+
+# REPRODUCER: timeout field is ignored
+#
+# Run with: yapi run repro.yapi.yml
+# Expected: waits up to 10m before timing out
+# Actual: fails after ~20s with "context canceled"
+#
+# Curl equivalent works:
+# curl -X POST http://localhost:3002/process/video \
+#   -H "Content-Type: application/json" \
+#   -d '{"url": "https://pond.audio/rick.mp4", "outputs": ["poster", "placeholder"]}' \
+#   --max-time 600
+
+url: http://localhost:3002/process/video
+method: POST
+timeout: 10m  # <-- THIS IS IGNORED, always times out at ~20s
+headers:
+  Content-Type: application/json
+
+body:
+  url: "https://pond.audio/rick.mp4"
+  outputs:
+    - poster
+    - placeholder
+
+expect:
+  status: 200
+  assert:
+    body:
+      - .poster != null
+      - .placeholder != null
