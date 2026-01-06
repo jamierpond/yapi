@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -147,7 +148,7 @@ type printResultOptions struct {
 // configPath is used for generating auto-save filenames when output is too large.
 // Returns OutputSavedError if output was saved to file instead of printed.
 func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult, configPath string, opts printResultOptions) error {
-	var outputResult OutputResult
+	var savedPath string
 	if result != nil {
 		// Check if stdout is a TTY (terminal)
 		isTTY := isTerminal(os.Stdout)
@@ -162,13 +163,23 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 				fmt.Fprintf(os.Stderr, "%s\n", color.Dim("To display binary output, use --binary-output flag or pipe to a file."))
 			}
 			// In non-TTY (CI/piped), silently skip binary output
+		} else if result.OutputFile != "" {
+			// Output was already saved via output_file config - don't write again
+			if len(result.Body) > maxOutputSize {
+				savedPath = result.OutputFile
+			} else {
+				// Small enough to print, but also saved to file
+				body := output.Highlight(result.Body, result.ContentType, app.noColor)
+				fmt.Println(strings.TrimRight(body, "\n\r"))
+			}
 		} else {
-			// Skip highlighting for large outputs - it's slow and we'll save to file anyway
+			// No output_file specified - render normally (may auto-save if large)
 			body := result.Body
 			if len(body) <= maxOutputSize {
 				body = output.Highlight(body, result.ContentType, app.noColor)
 			}
-			outputResult = renderOutput(body, configPath)
+			outputResult := renderOutput(body, configPath)
+			savedPath = outputResult.SavedPath
 		}
 
 		if !opts.skipMeta {
@@ -178,8 +189,8 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 	if expectRes != nil {
 		printExpectationResult(expectRes)
 	}
-	if outputResult.SavedPath != "" {
-		return &OutputSavedError{Path: outputResult.SavedPath}
+	if savedPath != "" {
+		return &OutputSavedError{Path: savedPath}
 	}
 	return nil
 }

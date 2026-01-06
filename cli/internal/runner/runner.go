@@ -29,6 +29,7 @@ type Result struct {
 	BodyChars   int
 	BodyBytes   int
 	Headers     map[string]string // Response headers
+	OutputFile  string            // Path where output was saved (if output_file was specified)
 }
 
 // Options for execution
@@ -81,6 +82,7 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 	}
 
 	// Write to output file if specified
+	var savedOutputFile string
 	if outputFile, ok := req.Metadata["output_file"]; ok && outputFile != "" {
 		// Resolve relative paths against the config file directory
 		if !filepath.IsAbs(outputFile) && opts.ConfigFilePath != "" {
@@ -95,6 +97,7 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 		if err := os.WriteFile(outputFile, []byte(body), 0600); err != nil {
 			return nil, fmt.Errorf("failed to write output file '%s': %w", outputFile, err)
 		}
+		savedOutputFile = outputFile
 	}
 
 	bodyLines := strings.Count(body, "\n") + 1
@@ -112,6 +115,7 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 		BodyChars:   bodyChars,
 		BodyBytes:   bodyBytesLen,
 		Headers:     resp.Headers,
+		OutputFile:  savedOutputFile,
 	}, nil
 }
 
