@@ -57,3 +57,4 @@ cli/bin/yapi
 specs
 .specify
 .claude/commands/specify.*
+.idea

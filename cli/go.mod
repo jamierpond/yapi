@@ -14,6 +14,7 @@ require (
 	github.com/graphql-go/graphql v0.8.1
 	github.com/itchyny/gojq v0.12.17
 	github.com/jhump/protoreflect v1.17.0
+	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/spf13/cobra v1.10.1
@@ -54,7 +55,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
