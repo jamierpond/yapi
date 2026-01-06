@@ -152,7 +152,11 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 			}
 			// In non-TTY (CI/piped), silently skip binary output
 		} else {
-			body := output.Highlight(result.Body, result.ContentType, app.noColor)
+			// Skip highlighting for large outputs - it's slow and we'll save to file anyway
+			body := result.Body
+			if len(body) <= maxOutputSize {
+				body = output.Highlight(body, result.ContentType, app.noColor)
+			}
 			outputResult = renderOutput(body, configPath)
 		}
 
