@@ -22,7 +22,7 @@ type FlagSpec struct {
 	Name      string
 	Shorthand string
 	Type      string // "bool", "string", etc.
-	Default   interface{}
+	Default   any
 	Usage     string
 }
 
