@@ -1,0 +1,42 @@
+yapi: v1
+
+# Bug: This timeout value is not being respected.
+# The request fails much earlier than 5 minutes with:
+# "context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
+
+path: /process/video
+method: POST
+timeout: 5m
+headers:
+  Content-Type: application/json
+
+body:
+  url: "https://pond.audio/rick.mp4"
+  outputs:
+    - webm
+    - poster
+    - placeholder
+  video:
+    max_width: 720
+    crf: 35
+    audio_bitrate_kbps: 96
+  poster:
+    timestamp: 1
+    max_width: 720
+    quality: 80
+  placeholder:
+    width: 16
+    quality: 20
+
+expect:
+  status: 200
+  assert:
+    headers:
+      - .["Content-Type"] == "application/json"
+    body:
+      - .durationSeconds > 0
+      - .width > 0
+      - .height > 0
+      - .webm != null
+      - .poster != null
+      - .placeholder != null
