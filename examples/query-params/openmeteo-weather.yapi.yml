@@ -1,0 +1,20 @@
+yapi: v1
+url: https://api.open-meteo.com/v1/forecast
+method: GET
+
+query:
+  latitude: 51.5074
+  longitude: -0.1278
+  current: temperature_2m,wind_speed_10m
+  hourly: temperature_2m
+  forecast_days: 1
+
+jq_filter: "{location: \"London\", current: .current, hourly_temps: .hourly.temperature_2m[:6]}"
+
+expect:
+  status: 200
+  assert:
+    - .current.temperature_2m != null
+    - .current.wind_speed_10m != null
+    - .hourly_temps | length > 0
+

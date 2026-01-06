@@ -1,0 +1,17 @@
+yapi: v1
+url: https://hn.algolia.com/api/v1/search
+method: GET
+
+query:
+  tags: front_page
+  hitsPerPage: 5
+
+jq_filter: "[.hits[] | {title, points, url}]"
+
+expect:
+  status: 200
+  assert:
+    - . | length == 5
+    - .[0].title != null
+    - .[0].points != null
+

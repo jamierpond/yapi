@@ -1,0 +1,21 @@
+yapi: v1
+url: https://api.github.com/search/repositories
+method: GET
+
+query:
+  q: "language:go stars:>1000"
+  sort: stars
+  order: desc
+  per_page: 3
+
+headers:
+  Accept: application/vnd.github+json
+
+jq_filter: "[.items[] | {name, stars: .stargazers_count, url: .html_url}]"
+
+expect:
+  status: 200
+  assert:
+    - . | length == 3
+    - .[0].name != null
+    - .[0].stars > 1000

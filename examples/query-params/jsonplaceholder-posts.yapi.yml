@@ -1,0 +1,17 @@
+yapi: v1
+url: https://jsonplaceholder.typicode.com/posts
+method: GET
+
+query:
+  userId: 1
+  _limit: 3
+
+jq_filter: "[.[] | {id, title}]"
+
+expect:
+  status: 200
+  assert:
+    - . | length == 3
+    - .[0].id != null
+    - .[0].title != null
+

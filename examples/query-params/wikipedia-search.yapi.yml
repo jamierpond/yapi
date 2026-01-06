@@ -1,0 +1,25 @@
+yapi: v1
+url: https://en.wikipedia.org/w/api.php
+method: GET
+
+query:
+  action: query
+  list: search
+  srsearch: "API design"
+  srlimit: 5
+  format: json
+  origin: "*"
+
+headers:
+  Accept: application/json
+  User-Agent: yapi-example/1.0
+
+jq_filter: "[.query.search[] | {title, snippet}]"
+
+expect:
+  status: 200
+  assert:
+    - . | length == 5
+    - .[0].title != null
+    - .[0].snippet != null
+
