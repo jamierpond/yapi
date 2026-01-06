@@ -19,7 +19,7 @@ import (
 	"yapi.run/cli/internal/validation"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var httpClient = &http.Client{}
 var engine = core.NewEngine(httpClient)
 
 type watchModel struct {

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
-	"time"
 
 	"github.com/spf13/cobra"
 	"yapi.run/cli/internal/briefing"
@@ -75,7 +74,7 @@ func main() {
 		observability.Track("request_executed", stats)
 	}
 
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{}
 	app := &rootCommand{
 		httpClient: httpClient,
 		engine:     core.NewEngine(httpClient, core.WithRequestHook(requestHook)),
