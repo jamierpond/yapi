@@ -194,6 +194,77 @@ func renderOutput(body string, configPath string) OutputResult {
 	return OutputSavedToFile
 }
 
+// Logger provides leveled logging for verbose output.
+type Logger struct {
+	verbose bool
+}
+
+// NewLogger creates a logger. If verbose is false, Debug calls are no-ops.
+func NewLogger(verbose bool) *Logger {
+	return &Logger{verbose: verbose}
+}
+
+// Verbose prints a message only if verbose mode is enabled.
+func (l *Logger) Verbose(format string, args ...any) {
+	if !l.verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "[VERBOSE] "+format+"\n", args...)
+}
+
+// Section prints a section header only if verbose mode is enabled.
+func (l *Logger) Section(name string) {
+	if !l.verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "\n=== %s ===\n", name)
+}
+
+// Request logs request details in verbose mode.
+func (l *Logger) Request(method, url string, headers map[string]string, body string) {
+	if !l.verbose {
+		return
+	}
+	l.Section("REQUEST")
+	fmt.Fprintf(os.Stderr, "%s %s\n", method, url)
+
+	if len(headers) > 0 {
+		fmt.Fprintln(os.Stderr, "\nHeaders:")
+		for k, v := range headers {
+			fmt.Fprintf(os.Stderr, "  %s: %s\n", k, v)
+		}
+	}
+
+	if body != "" {
+		fmt.Fprintln(os.Stderr, "\nBody:")
+		if len(body) > 1000 {
+			fmt.Fprintf(os.Stderr, "  %s... (%d bytes total)\n", body[:1000], len(body))
+		} else {
+			fmt.Fprintf(os.Stderr, "  %s\n", body)
+		}
+	}
+	fmt.Fprintln(os.Stderr, "")
+}
+
+// Response logs response details in verbose mode.
+func (l *Logger) Response(statusCode int, headers map[string]string, duration time.Duration, bodySize int) {
+	if !l.verbose {
+		return
+	}
+	l.Section("RESPONSE")
+	fmt.Fprintf(os.Stderr, "Status: %d\n", statusCode)
+	fmt.Fprintf(os.Stderr, "Time: %s\n", duration)
+	fmt.Fprintf(os.Stderr, "Size: %s\n", formatBytes(bodySize))
+
+	if len(headers) > 0 {
+		fmt.Fprintln(os.Stderr, "\nHeaders:")
+		for k, v := range headers {
+			fmt.Fprintf(os.Stderr, "  %s: %s\n", k, v)
+		}
+	}
+	fmt.Fprintln(os.Stderr, "")
+}
+
 // generateOutputPath creates a filename like: config-name-output-20060102-150405.json
 func generateOutputPath(configPath string) string {
 	base := filepath.Base(configPath)

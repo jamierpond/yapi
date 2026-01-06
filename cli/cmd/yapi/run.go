@@ -26,6 +26,7 @@ type runContext struct {
 	envName      string // Target environment from yapi.config.yml
 	jsonOutput   bool   // If true, output structured JSON instead of formatted output
 	strictEnv    bool   // If true, error on missing env files and disable OS env fallback
+	verbose      bool   // If true, show verbose output (request details, timing, headers)
 }
 
 func (app *rootCommand) runInteractiveE(cmd *cobra.Command, args []string) error {
@@ -46,7 +47,8 @@ func (app *rootCommand) runE(cmd *cobra.Command, args []string) error {
 	envName, _ := cmd.Flags().GetString("env")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	strictEnv, _ := cmd.Flags().GetBool("strict-env")
-	return app.runConfigPathWithOptionsE(path, envName, jsonOutput, strictEnv)
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	return app.runConfigPathWithOptionsE(path, envName, jsonOutput, strictEnv, verbose)
 }
 
 func (app *rootCommand) watchE(cmd *cobra.Command, args []string) error {
@@ -168,6 +170,8 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 // executeRunE is the unified execution pipeline for both Run and Watch modes.
 // Returns error for middleware to capture.
 func (app *rootCommand) executeRunE(ctx runContext) error {
+	log := NewLogger(ctx.verbose)
+
 	opts := runner.Options{
 		URLOverride:    app.urlOverride,
 		NoColor:        app.noColor,
@@ -177,7 +181,10 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		StrictEnv:      ctx.strictEnv,
 	}
 
+	log.Verbose("Loading config: %s", ctx.path)
+
 	// Load project and environment configuration
+	log.Verbose("Loading project environment...")
 	projEnv, err := loadProjectAndEnv(ctx.path, ctx.envName, true)
 	if err != nil {
 		if ctx.strict || ctx.returnErrors {
@@ -189,14 +196,31 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 	// Apply project settings if found
 	if projEnv != nil {
+		log.Verbose("Using project root: %s", projEnv.projectRoot)
 		opts.ProjectRoot = projEnv.projectRoot
 		if projEnv.envVars != nil {
+			log.Verbose("Loaded environment: %s (%d vars)", projEnv.envName, len(projEnv.envVars))
 			opts.EnvOverrides = projEnv.envVars
 			opts.ProjectEnv = projEnv.envName
 		}
 	}
 
+	log.Verbose("Parsing and validating config...")
 	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)
+
+	// Log request details if available
+	if runRes.Analysis != nil && runRes.Analysis.Request != nil {
+		req := runRes.Analysis.Request
+		log.Request(req.Method, req.URL, req.Headers, "")
+	}
+
+	// Log response details if available
+	if runRes.Result != nil {
+		log.Verbose("Request completed")
+		log.Response(runRes.Result.StatusCode, runRes.Result.Headers, runRes.Result.Duration, runRes.Result.BodyBytes)
+	} else if runRes.Error != nil {
+		log.Verbose("Request failed: %v", runRes.Error)
+	}
 
 	// Handle validation/parse errors first
 	if runRes.Error != nil && runRes.Analysis == nil {
@@ -313,8 +337,8 @@ func (app *rootCommand) runConfigPathWithEnvAndJSONE(path string, envName string
 }
 
 // runConfigPathWithOptionsE runs a config file with all options
-func (app *rootCommand) runConfigPathWithOptionsE(path string, envName string, jsonOutput bool, strictEnv bool) error {
-	return app.executeRunE(runContext{path: path, strict: true, envName: envName, jsonOutput: jsonOutput, strictEnv: strictEnv})
+func (app *rootCommand) runConfigPathWithOptionsE(path string, envName string, jsonOutput bool, strictEnv bool, verbose bool) error {
+	return app.executeRunE(runContext{path: path, strict: true, envName: envName, jsonOutput: jsonOutput, strictEnv: strictEnv, verbose: verbose})
 }
 
 // printExpectationResult prints expectation results to stderr

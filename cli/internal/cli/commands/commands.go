@@ -74,6 +74,7 @@ var cmdManifest = []CommandSpec{
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 			{Name: "json", Type: "bool", Default: false, Usage: "Output result as JSON with full metadata"},
 			{Name: "strict-env", Type: "bool", Default: false, Usage: "Strict env mode: error on missing env files, no OS env fallback"},
+			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output (request details, timing, headers)"},
 		},
 	},
 	{
