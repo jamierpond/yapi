@@ -209,18 +209,13 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		}
 	}
 
-	log.Verbose("Parsing and validating config...")
+	log.Verbose("Parsing config...")
+	log.Verbose("Sending request...")
 	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)
-
-	// Log request details if available
-	if runRes.Analysis != nil && runRes.Analysis.Request != nil {
-		req := runRes.Analysis.Request
-		log.Request(req.Method, req.URL, req.Headers, "")
-	}
 
 	// Log response details if available
 	if runRes.Result != nil {
-		log.Verbose("Request completed")
+		log.Verbose("Response received")
 		log.Response(runRes.Result.StatusCode, runRes.Result.Headers, runRes.Result.Duration, runRes.Result.BodyBytes)
 	} else if runRes.Error != nil {
 		log.Verbose("Request failed: %v", runRes.Error)
