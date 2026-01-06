@@ -129,13 +129,24 @@ func printWatchHeader(path string) {
 	fmt.Printf("%s\n\n", color.Dim("["+time.Now().Format("15:04:05")+"]"))
 }
 
-// ErrOutputTooLarge is returned when output is too large for terminal and was saved to file.
-var ErrOutputTooLarge = errors.New("output too large for terminal, saved to file")
+// OutputSavedError is returned when output is too large for terminal and was saved to file.
+type OutputSavedError struct {
+	Path string
+}
+
+func (e *OutputSavedError) Error() string {
+	return fmt.Sprintf("output saved to %s (too large for terminal)\nview with: cat %s | jq", e.Path, e.Path)
+}
+
+// printResultOptions configures printResult behavior.
+type printResultOptions struct {
+	skipMeta bool // Don't print URL/Time/Size (already shown in verbose mode)
+}
 
 // printResult outputs a single result with optional expectation.
 // configPath is used for generating auto-save filenames when output is too large.
-// Returns ErrOutputTooLarge if output was saved to file instead of printed.
-func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult, configPath string) error {
+// Returns OutputSavedError if output was saved to file instead of printed.
+func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.ExpectationResult, configPath string, opts printResultOptions) error {
 	var outputResult OutputResult
 	if result != nil {
 		// Check if stdout is a TTY (terminal)
@@ -160,13 +171,15 @@ func (app *rootCommand) printResult(result *runner.Result, expectRes *runner.Exp
 			outputResult = renderOutput(body, configPath)
 		}
 
-		printResultMeta(result)
+		if !opts.skipMeta {
+			printResultMeta(result)
+		}
 	}
 	if expectRes != nil {
 		printExpectationResult(expectRes)
 	}
-	if outputResult != OutputPrinted {
-		return ErrOutputTooLarge
+	if outputResult.SavedPath != "" {
+		return &OutputSavedError{Path: outputResult.SavedPath}
 	}
 	return nil
 }
@@ -188,7 +201,6 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 	log.Verbose("Loading config: %s", ctx.path)
 
 	// Load project and environment configuration
-	log.Verbose("Loading project environment...")
 	projEnv, err := loadProjectAndEnv(ctx.path, ctx.envName, true)
 	if err != nil {
 		if ctx.strict || ctx.returnErrors {
@@ -200,22 +212,20 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 
 	// Apply project settings if found
 	if projEnv != nil {
-		log.Verbose("Using project root: %s", projEnv.projectRoot)
+		log.Verbose("Project: %s", projEnv.projectRoot)
 		opts.ProjectRoot = projEnv.projectRoot
 		if projEnv.envVars != nil {
-			log.Verbose("Loaded environment: %s (%d vars)", projEnv.envName, len(projEnv.envVars))
+			log.Verbose("Environment: %s (%d vars)", projEnv.envName, len(projEnv.envVars))
 			opts.EnvOverrides = projEnv.envVars
 			opts.ProjectEnv = projEnv.envName
 		}
 	}
 
-	log.Verbose("Parsing config...")
 	log.Verbose("Sending request...")
 	runRes := app.engine.RunConfig(context.Background(), ctx.path, opts)
 
 	// Log response details if available
 	if runRes.Result != nil {
-		log.Verbose("Response received")
 		log.Response(runRes.Result.StatusCode, runRes.Result.Headers, runRes.Result.Duration, runRes.Result.BodyBytes)
 	} else if runRes.Error != nil {
 		log.Verbose("Request failed: %v", runRes.Error)
@@ -268,12 +278,9 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		})
 	}
 
-	log.Verbose("Rendering output...")
-	if err := app.printResult(runRes.Result, runRes.ExpectRes, ctx.path); err != nil {
-		log.Verbose("Output rendered (saved to file)")
+	if err := app.printResult(runRes.Result, runRes.ExpectRes, ctx.path, printResultOptions{skipMeta: ctx.verbose}); err != nil {
 		return err
 	}
-	log.Verbose("Output rendered")
 
 	if runRes.Error != nil {
 		if ctx.strict || ctx.returnErrors {
@@ -306,7 +313,7 @@ func (app *rootCommand) executeChain(ctx runContext, runRes *core.RunConfigResul
 			if i < len(chainResult.ExpectationResults) {
 				expectRes = chainResult.ExpectationResults[i]
 			}
-			if err := app.printResult(stepResult, expectRes, ctx.path); err != nil {
+			if err := app.printResult(stepResult, expectRes, ctx.path, printResultOptions{}); err != nil {
 				outputSavedErr = err
 			}
 		}

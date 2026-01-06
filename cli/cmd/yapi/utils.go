@@ -163,35 +163,30 @@ func isTerminal(f *os.File) bool {
 // 1MB is a reasonable limit - terminals struggle with larger outputs.
 const maxOutputSize = 1024 * 1024
 
-// OutputResult represents what happened when rendering output.
-type OutputResult int
-
-// OutputResult values.
-const (
-	OutputPrinted     OutputResult = iota // Output was printed to terminal
-	OutputSavedToFile                     // Output was too large, saved to file
-	OutputSaveFailed                      // Output was too large but save failed
-)
+// OutputResult holds the result of rendering output.
+type OutputResult struct {
+	Printed   bool   // Output was printed to terminal
+	SavedPath string // If not empty, output was saved to this file
+	SaveErr   error  // If not nil, save failed with this error
+}
 
 // renderOutput prints body to stdout, or saves to a file if too large.
 // configPath is used to generate a meaningful filename for auto-saved files.
+// When output is saved to file, no message is printed - caller handles that via OutputSavedError.
 func renderOutput(body string, configPath string) OutputResult {
 	if len(body) <= maxOutputSize {
 		fmt.Println(strings.TrimRight(body, "\n\r"))
-		return OutputPrinted
+		return OutputResult{Printed: true}
 	}
 
 	// Output too large - save to file
 	outputPath := generateOutputPath(configPath)
 	if err := os.WriteFile(outputPath, []byte(body), 0600); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to save large output: %v\n", err)
-		return OutputSaveFailed
+		return OutputResult{SaveErr: err}
 	}
 
-	fmt.Fprintf(os.Stderr, "\nResponse body is %s (too large for terminal, would freeze your shell).\n", formatBytes(len(body)))
-	fmt.Fprintf(os.Stderr, "Saved to: %s\n", outputPath)
-	fmt.Fprintf(os.Stderr, "View with: cat %s | jq\n", outputPath)
-	return OutputSavedToFile
+	return OutputResult{SavedPath: outputPath}
 }
 
 // Logger provides leveled logging for verbose output.
