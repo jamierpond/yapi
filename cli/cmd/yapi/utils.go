@@ -157,3 +157,38 @@ func isTerminal(f *os.File) bool {
 	}
 	return (stat.Mode() & os.ModeCharDevice) != 0
 }
+
+// maxOutputSize is the threshold above which output is auto-saved to a file instead of printed.
+// 1MB is a reasonable limit - terminals struggle with larger outputs.
+const maxOutputSize = 1024 * 1024
+
+// printOutput prints body to stdout, or saves to a file if too large.
+// configPath is used to generate a meaningful filename for auto-saved files.
+// Returns the path to the saved file if auto-saved, empty string otherwise.
+func printOutput(body string, configPath string) string {
+	if len(body) <= maxOutputSize {
+		fmt.Println(strings.TrimRight(body, "\n\r"))
+		return ""
+	}
+
+	// Output too large - save to file
+	outputPath := generateOutputPath(configPath)
+	if err := os.WriteFile(outputPath, []byte(body), 0600); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to save large output: %v\n", err)
+		return ""
+	}
+
+	fmt.Fprintf(os.Stderr, "Output too large for terminal (%s). Saved to: %s\n",
+		formatBytes(len(body)), outputPath)
+	return outputPath
+}
+
+// generateOutputPath creates a filename like: config-name-output-20060102-150405.json
+func generateOutputPath(configPath string) string {
+	base := filepath.Base(configPath)
+	name := strings.TrimSuffix(base, filepath.Ext(base))
+	name = strings.TrimSuffix(name, ".yapi") // handle .yapi.yml
+
+	timestamp := time.Now().Format("20060102-150405")
+	return fmt.Sprintf("%s-output-%s.json", name, timestamp)
+}

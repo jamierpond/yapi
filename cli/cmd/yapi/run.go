@@ -19,6 +19,10 @@ import (
 	"yapi.run/cli/internal/validation"
 )
 
+// maxOutputSize is the threshold above which output is auto-saved to a file instead of printed.
+// 1MB is a reasonable limit - terminals struggle with larger outputs.
+const maxOutputSize = 1024 * 1024
+
 // runContext holds options for executeRun
 type runContext struct {
 	path         string
