@@ -78,7 +78,7 @@ func HTTPTransport(client HTTPClient) TransportFunc {
 		}
 
 		// Wrap body so cancel is called when body is closed, not before
-		body := io.ReadCloser(res.Body)
+		body := res.Body
 		if cancel != nil {
 			body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
 		}
