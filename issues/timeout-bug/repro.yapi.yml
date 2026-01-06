@@ -23,6 +23,7 @@ body:
   outputs:
     - poster
     - placeholder
+    - mp4 # IFF this is set, then timeout bug happens. without it, works fine. the server ostesibly 200's
 
 expect:
   status: 200
