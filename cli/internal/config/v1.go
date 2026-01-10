@@ -49,6 +49,7 @@ var knownV1Keys = map[string]bool{
 	"output_file":      true,
 	"timeout":          true,
 	"env_files":        true,
+	"wait_for":         true,
 }
 
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
@@ -104,8 +105,25 @@ type ConfigV1 struct {
 	// Expect defines assertions to run after the request
 	Expect Expectation `yaml:"expect,omitempty"`
 
+	// WaitFor enables polling until conditions are met
+	WaitFor *WaitFor `yaml:"wait_for,omitempty"`
+
 	// Chain allows executing multiple dependent requests
 	Chain []ChainStep `yaml:"chain,omitempty"`
+}
+
+// WaitFor defines polling behavior for a request
+type WaitFor struct {
+	Until   []string `yaml:"until,omitempty"`   // JQ assertions that must all pass to stop polling
+	Period  string   `yaml:"period,omitempty"`  // Fixed time between retries (e.g. "1s", "2s")
+	Backoff *Backoff `yaml:"backoff,omitempty"` // Exponential backoff configuration
+	Timeout string   `yaml:"timeout,omitempty"` // Maximum time to wait (e.g. "30s", "1m")
+}
+
+// Backoff defines exponential backoff configuration
+type Backoff struct {
+	Seed       string  `yaml:"seed"`       // Initial wait time (e.g. "1s")
+	Multiplier float64 `yaml:"multiplier"` // Multiplier for each attempt (e.g. 2)
 }
 
 // ChainStep represents a single step in a request chain.
@@ -121,6 +139,7 @@ func (c *ConfigV1) Merge(step ChainStep) ConfigV1 {
 	m := *c
 	m.Chain = nil
 	m.Expect = step.Expect
+	m.WaitFor = step.WaitFor
 
 	// Scalar overrides using Coalesce
 	m.URL = utils.Coalesce(step.URL, c.URL)
@@ -232,6 +251,7 @@ func (c *ConfigV1) MergeWithDefaults(defaults ConfigV1) ConfigV1 {
 
 	// Preserve file-specific fields
 	m.Expect = c.Expect
+	m.WaitFor = c.WaitFor
 	m.Chain = c.Chain
 	if len(c.EnvFiles) > 0 {
 		m.EnvFiles = c.EnvFiles

@@ -48,6 +48,7 @@ type Analysis struct {
 	Chain       []config.ChainStep // Chain steps if this is a chain config
 	Base        *config.ConfigV1   // Base config for chain merging
 	Expect      config.Expectation // Expectations for single request validation
+	WaitFor     *config.WaitFor    // Polling configuration for single request
 }
 
 // AnalyzeOptions consolidates all analysis parameters.
@@ -298,11 +299,17 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 		diags = append(diags, ValidateChainAssertions(text, parseRes.Expect.Assert.Headers, "")...)
 	}
 
+	// Validate wait_for.until assertions
+	if parseRes.WaitFor != nil && len(parseRes.WaitFor.Until) > 0 {
+		diags = append(diags, ValidateChainAssertions(text, parseRes.WaitFor.Until, "wait_for")...)
+	}
+
 	return &Analysis{
 		Request:     req,
 		Diagnostics: diags,
 		Warnings:    parseRes.Warnings,
 		Expect:      parseRes.Expect,
+		WaitFor:     parseRes.WaitFor,
 		Base:        parseRes.Base,
 	}
 }

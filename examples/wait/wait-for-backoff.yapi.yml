@@ -1,0 +1,14 @@
+# Example: Polling with exponential backoff
+# Uses exponential backoff: 500ms, 1s, 2s, 4s...
+# Will timeout after 5s because condition will never be met
+yapi: v1
+url: https://httpbin.org/json
+method: GET
+
+wait_for:
+  until:
+    - .nonexistent_field == "will_never_match"
+  backoff:
+    seed: 500ms
+    multiplier: 2
+  timeout: 5s

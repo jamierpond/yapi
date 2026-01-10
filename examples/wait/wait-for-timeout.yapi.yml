@@ -1,0 +1,13 @@
+# Example: wait_for timeout behavior
+# This will timeout because the condition can never be met
+# Run with: yapi run wait-for-timeout.yapi.yml
+# Expected output: error after 3 seconds of polling
+yapi: v1
+url: https://httpbin.org/json
+method: GET
+
+wait_for:
+  until:
+    - .nonexistent_field == "will_never_match"
+  period: 1s
+  timeout: 3s

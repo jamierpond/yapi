@@ -1,0 +1,12 @@
+# Example: Polling with fixed period until a JSON condition is met
+# This polls httpbin's /json endpoint and checks the response body
+yapi: v1
+url: https://httpbin.org/json
+method: GET
+
+wait_for:
+  until:
+    - .slideshow.title != null
+    - .slideshow.author == "Yours Truly"
+  period: 500ms
+  timeout: 5s

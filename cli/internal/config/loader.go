@@ -42,6 +42,7 @@ type ParseResult struct {
 	Chain    []ChainStep // Chain steps if this is a chain config
 	Base     *ConfigV1   // Base config for chain merging
 	Expect   Expectation // Expectations for single request validation
+	WaitFor  *WaitFor    // Polling configuration for single request
 }
 
 // LoadFromString parses a yapi config from raw YAML data.
@@ -143,7 +144,7 @@ func parseV1WithOptions(data []byte, configPath string, resolver vars.Resolver, 
 		return nil, err
 	}
 
-	return &ParseResult{Request: domainReq, Expect: v1.Expect, Base: &baseCopy, Warnings: envFileWarnings}, nil
+	return &ParseResult{Request: domainReq, Expect: v1.Expect, WaitFor: v1.WaitFor, Base: &baseCopy, Warnings: envFileWarnings}, nil
 }
 
 // loadEnvFiles loads variables from the specified .env files.

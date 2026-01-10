@@ -67,101 +67,111 @@ func (e *Engine) RunConfig(
 	path string,
 	opts runner.Options,
 ) *RunConfigResult {
-	// Set config file path for relative output_file resolution
 	opts.ConfigFilePath = path
 
-	// Load project config if available for validation
-	var project *config.ProjectConfigV1
-	if opts.ProjectRoot != "" {
-		var err error
-		project, err = config.LoadProject(opts.ProjectRoot)
-		if err != nil {
-			// If user explicitly requested an environment via --env flag,
-			// they need to know if project loading failed
-			if opts.ProjectEnv != "" {
-				return &RunConfigResult{Error: fmt.Errorf("failed to load project config: %w", err)}
-			}
-			// Otherwise, ignore project load errors during validation - still run the config
-			project = nil
-		}
-	}
-
-	// Analyze with project context if available
-	var analysis *validation.Analysis
-	var err error
-	analyzeOpts := validation.AnalyzeOptions{StrictEnv: opts.StrictEnv}
-	if project != nil {
-		data, readErr := os.ReadFile(path) // #nosec G304 -- path is validated user-provided config file path
-		if readErr != nil {
-			return &RunConfigResult{Error: readErr}
-		}
-
-		// If a specific environment was requested, temporarily override the default
-		// This ensures the correct environment is used for URL resolution and defaults
-		if opts.ProjectEnv != "" {
-			originalDefault := project.DefaultEnvironment
-			project.DefaultEnvironment = opts.ProjectEnv
-			analyzeOpts.FilePath = path
-			analyzeOpts.Project = project
-			analyzeOpts.ProjectRoot = opts.ProjectRoot
-			analysis, err = validation.Analyze(string(data), analyzeOpts)
-			project.DefaultEnvironment = originalDefault
-		} else {
-			analyzeOpts.FilePath = path
-			analyzeOpts.Project = project
-			analyzeOpts.ProjectRoot = opts.ProjectRoot
-			analysis, err = validation.Analyze(string(data), analyzeOpts)
-		}
-	} else {
-		analysis, err = validation.AnalyzeConfigFileWithOptions(path, analyzeOpts)
-	}
-
+	// Load and analyze config
+	analysis, project, err := e.loadAndAnalyze(path, opts)
 	if err != nil {
 		return &RunConfigResult{Error: err}
 	}
+	_ = project // project used only for analysis
 
 	if analysis.HasErrors() {
 		return &RunConfigResult{Analysis: analysis}
 	}
 
-	// Check if this is a chain config
+	// Chain configs are returned for caller to handle
 	if len(analysis.Chain) > 0 {
-		// For chains, return analysis only - caller handles execution
 		return &RunConfigResult{Analysis: analysis}
 	}
 
 	// Re-expand variables if EnvOverrides is provided
-	if len(opts.EnvOverrides) > 0 && analysis.Base != nil {
-		// Create a custom resolver with correct precedence order:
-		// 1. OS environment (highest priority - matches runner/context.go)
-		// 2. Project EnvOverrides
-		// 3. Empty string fallback
-		resolver := func(key string) (string, error) {
-			// 1. Check OS environment first (highest priority)
-			if val, ok := os.LookupEnv(key); ok {
-				return val, nil
-			}
-			// 2. Check project EnvOverrides
-			if val, ok := opts.EnvOverrides[key]; ok {
-				return val, nil
-			}
-			// 3. Return empty string (os.ExpandEnv behavior)
-			return "", nil
-		}
-
-		// Re-convert to domain request using custom resolver
-		req, err := analysis.Base.ToDomainWithResolver(resolver)
-		if err != nil {
-			return &RunConfigResult{Analysis: analysis, Error: err}
-		}
-		analysis.Request = req
+	if err := e.reExpandVariables(analysis, opts); err != nil {
+		return &RunConfigResult{Analysis: analysis, Error: err}
 	}
 
 	if analysis.Request == nil {
 		return &RunConfigResult{Analysis: analysis}
 	}
 
-	// Extract config stats for hook
+	return e.executeRequest(ctx, analysis, opts)
+}
+
+// loadAndAnalyze loads project config and analyzes the config file
+func (e *Engine) loadAndAnalyze(path string, opts runner.Options) (*validation.Analysis, *config.ProjectConfigV1, error) {
+	var project *config.ProjectConfigV1
+	if opts.ProjectRoot != "" {
+		var err error
+		project, err = config.LoadProject(opts.ProjectRoot)
+		if err != nil {
+			if opts.ProjectEnv != "" {
+				return nil, nil, fmt.Errorf("failed to load project config: %w", err)
+			}
+			project = nil
+		}
+	}
+
+	analyzeOpts := validation.AnalyzeOptions{StrictEnv: opts.StrictEnv}
+	var analysis *validation.Analysis
+	var err error
+
+	if project != nil {
+		analysis, err = e.analyzeWithProject(path, project, opts, analyzeOpts)
+	} else {
+		analysis, err = validation.AnalyzeConfigFileWithOptions(path, analyzeOpts)
+	}
+
+	return analysis, project, err
+}
+
+// analyzeWithProject analyzes a config file with project context
+func (e *Engine) analyzeWithProject(path string, project *config.ProjectConfigV1, opts runner.Options, analyzeOpts validation.AnalyzeOptions) (*validation.Analysis, error) {
+	data, err := os.ReadFile(path) // #nosec G304 -- path is validated user-provided config file path
+	if err != nil {
+		return nil, err
+	}
+
+	analyzeOpts.FilePath = path
+	analyzeOpts.Project = project
+	analyzeOpts.ProjectRoot = opts.ProjectRoot
+
+	if opts.ProjectEnv != "" {
+		originalDefault := project.DefaultEnvironment
+		project.DefaultEnvironment = opts.ProjectEnv
+		analysis, err := validation.Analyze(string(data), analyzeOpts)
+		project.DefaultEnvironment = originalDefault
+		return analysis, err
+	}
+
+	return validation.Analyze(string(data), analyzeOpts)
+}
+
+// reExpandVariables re-expands variables with EnvOverrides
+func (e *Engine) reExpandVariables(analysis *validation.Analysis, opts runner.Options) error {
+	if len(opts.EnvOverrides) == 0 || analysis.Base == nil {
+		return nil
+	}
+
+	resolver := func(key string) (string, error) {
+		if val, ok := os.LookupEnv(key); ok {
+			return val, nil
+		}
+		if val, ok := opts.EnvOverrides[key]; ok {
+			return val, nil
+		}
+		return "", nil
+	}
+
+	req, err := analysis.Base.ToDomainWithResolver(resolver)
+	if err != nil {
+		return err
+	}
+	analysis.Request = req
+	return nil
+}
+
+// executeRequest runs the actual HTTP request with optional polling
+func (e *Engine) executeRequest(ctx context.Context, analysis *validation.Analysis, opts runner.Options) *RunConfigResult {
 	stats := ExtractConfigStats(analysis)
 	start := time.Now()
 
@@ -170,25 +180,25 @@ func (e *Engine) RunConfig(
 		return &RunConfigResult{Analysis: analysis, Error: err}
 	}
 
-	result, runErr := runner.Run(ctx, exec, analysis.Request, analysis.Warnings, opts)
+	var result *runner.Result
+	var runErr error
 
-	// Check expectations if present
+	if analysis.WaitFor != nil && len(analysis.WaitFor.Until) > 0 {
+		pollResult, pollErr := runner.RunWithPolling(ctx, exec, analysis.Request, analysis.WaitFor, analysis.Warnings, opts, opts.EnvOverrides)
+		if pollResult != nil {
+			result = pollResult.Result
+		}
+		runErr = pollErr
+	} else {
+		result, runErr = runner.Run(ctx, exec, analysis.Request, analysis.Warnings, opts)
+	}
+
 	var expectRes *runner.ExpectationResult
 	if result != nil && (analysis.Expect.Status != nil || len(analysis.Expect.Assert.Body) > 0 || len(analysis.Expect.Assert.Headers) > 0) {
 		expectRes = runner.CheckExpectationsWithEnv(analysis.Expect, result, opts.EnvOverrides)
 	}
 
-	// Call hook with request stats (if configured)
-	if e.onRequest != nil {
-		stats["duration_ms"] = time.Since(start).Milliseconds()
-		stats["success"] = runErr == nil && (expectRes == nil || expectRes.Error == nil)
-		if runErr != nil {
-			stats["error_type"] = "execution"
-		} else if expectRes != nil && expectRes.Error != nil {
-			stats["error_type"] = "assertion_failed"
-		}
-		e.onRequest(stats)
-	}
+	e.recordStats(stats, start, runErr, expectRes)
 
 	if runErr != nil {
 		return &RunConfigResult{Analysis: analysis, Result: result, Error: runErr}
@@ -199,6 +209,21 @@ func (e *Engine) RunConfig(
 	}
 
 	return &RunConfigResult{Analysis: analysis, Result: result, ExpectRes: expectRes}
+}
+
+// recordStats records request stats if a hook is configured
+func (e *Engine) recordStats(stats map[string]any, start time.Time, runErr error, expectRes *runner.ExpectationResult) {
+	if e.onRequest == nil {
+		return
+	}
+	stats["duration_ms"] = time.Since(start).Milliseconds()
+	stats["success"] = runErr == nil && (expectRes == nil || expectRes.Error == nil)
+	if runErr != nil {
+		stats["error_type"] = "execution"
+	} else if expectRes != nil && expectRes.Error != nil {
+		stats["error_type"] = "assertion_failed"
+	}
+	e.onRequest(stats)
 }
 
 // RunChain executes a chain configuration

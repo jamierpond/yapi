@@ -17,6 +17,11 @@ import (
 	"yapi.run/cli/internal/filter"
 )
 
+const (
+	defaultPollPeriod  = 1 * time.Second
+	defaultPollTimeout = 30 * time.Second
+)
+
 // Result holds the output of a yapi execution
 type Result struct {
 	Body        string
@@ -117,6 +122,162 @@ func Run(ctx context.Context, exec executor.TransportFunc, req *domain.Request, 
 		Headers:     resp.Headers,
 		OutputFile:  savedOutputFile,
 	}, nil
+}
+
+// PollResult extends Result with polling-specific information
+type PollResult struct {
+	*Result
+	Attempts int           // Number of attempts made
+	Elapsed  time.Duration // Total time spent polling
+}
+
+// RunWithPolling executes a request repeatedly until conditions are met or timeout expires.
+func RunWithPolling(ctx context.Context, exec executor.TransportFunc, req *domain.Request, waitFor *config.WaitFor, warnings []string, opts Options, envVars map[string]string) (*PollResult, error) {
+	pollCfg, err := parseWaitForConfig(waitFor)
+	if err != nil {
+		return nil, err
+	}
+
+	startTime := time.Now()
+	deadline := startTime.Add(pollCfg.timeout)
+	attempt := 0
+	jqVars := prepareJQVars(envVars)
+
+	for {
+		attempt++
+		elapsed := time.Since(startTime)
+
+		// Check if we've exceeded the timeout
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts)", elapsed.Round(time.Millisecond), attempt-1)
+		}
+
+		// Execute the request
+		result, err := Run(ctx, exec, req, warnings, opts)
+		if err != nil {
+			// Request failed - check if we should retry or fail
+			if time.Now().After(deadline) {
+				return nil, fmt.Errorf("wait_for timeout after %v (%d attempts): last error: %w", elapsed.Round(time.Millisecond), attempt, err)
+			}
+			waitDuration := pollCfg.getWaitDuration(attempt)
+			fmt.Fprintf(os.Stderr, "[wait_for] Attempt %d failed: %v, retrying in %v...\n", attempt, err, waitDuration)
+			if !waitForDuration(ctx, waitDuration, deadline) {
+				return nil, fmt.Errorf("wait_for timeout after %v (%d attempts)", time.Since(startTime).Round(time.Millisecond), attempt)
+			}
+			continue
+		}
+
+		// Check if all "until" assertions pass
+		allPassed := true
+		for _, assertion := range waitFor.Until {
+			outcome := evalAssertion(result.Body, assertion, jqVars)
+			if !outcome.passed {
+				allPassed = false
+				break
+			}
+		}
+
+		if allPassed {
+			return &PollResult{
+				Result:   result,
+				Attempts: attempt,
+				Elapsed:  time.Since(startTime),
+			}, nil
+		}
+
+		// Assertions didn't pass - wait and retry
+		waitDuration := pollCfg.getWaitDuration(attempt)
+		fmt.Fprintf(os.Stderr, "[wait_for] Attempt %d: conditions not met, retrying in %v...\n", attempt, waitDuration)
+		if !waitForDuration(ctx, waitDuration, deadline) {
+			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts): conditions never met", time.Since(startTime).Round(time.Millisecond), attempt)
+		}
+	}
+}
+
+// pollConfig holds parsed polling configuration
+type pollConfig struct {
+	timeout    time.Duration
+	period     time.Duration // Fixed period (if set)
+	backoff    *backoffConfig
+	useBackoff bool
+}
+
+// backoffConfig holds parsed backoff configuration
+type backoffConfig struct {
+	seed       time.Duration
+	multiplier float64
+}
+
+// getWaitDuration returns the wait duration for the given attempt number
+func (p *pollConfig) getWaitDuration(attempt int) time.Duration {
+	if !p.useBackoff {
+		return p.period
+	}
+	// Exponential backoff: seed * multiplier^(attempt-1)
+	// attempt 1 = seed, attempt 2 = seed*multiplier, attempt 3 = seed*multiplier^2, etc.
+	multiplied := float64(p.backoff.seed)
+	for i := 1; i < attempt; i++ {
+		multiplied *= p.backoff.multiplier
+	}
+	return time.Duration(multiplied)
+}
+
+// parseWaitForConfig extracts polling configuration from WaitFor config
+func parseWaitForConfig(waitFor *config.WaitFor) (*pollConfig, error) {
+	cfg := &pollConfig{
+		timeout: defaultPollTimeout,
+		period:  defaultPollPeriod,
+	}
+
+	// Parse timeout
+	if waitFor.Timeout != "" {
+		timeout, err := time.ParseDuration(waitFor.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid wait_for.timeout '%s': %w", waitFor.Timeout, err)
+		}
+		cfg.timeout = timeout
+	}
+
+	// Check for backoff vs period
+	if waitFor.Backoff != nil {
+		cfg.useBackoff = true
+		seed, err := time.ParseDuration(waitFor.Backoff.Seed)
+		if err != nil {
+			return nil, fmt.Errorf("invalid wait_for.backoff.seed '%s': %w", waitFor.Backoff.Seed, err)
+		}
+		multiplier := waitFor.Backoff.Multiplier
+		if multiplier <= 1 {
+			return nil, fmt.Errorf("wait_for.backoff.multiplier must be > 1, got %v", multiplier)
+		}
+		cfg.backoff = &backoffConfig{
+			seed:       seed,
+			multiplier: multiplier,
+		}
+	} else if waitFor.Period != "" {
+		period, err := time.ParseDuration(waitFor.Period)
+		if err != nil {
+			return nil, fmt.Errorf("invalid wait_for.period '%s': %w", waitFor.Period, err)
+		}
+		cfg.period = period
+	}
+
+	return cfg, nil
+}
+
+// waitForDuration waits for the duration or until deadline/context cancellation
+// Returns false if the deadline would be exceeded
+func waitForDuration(ctx context.Context, duration time.Duration, deadline time.Time) bool {
+	// Don't wait if we'd exceed the deadline
+	if time.Now().Add(duration).After(deadline) {
+		return false
+	}
+
+	select {
+	case <-time.After(duration):
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 // ChainResult holds the output of a chain execution
