@@ -145,11 +145,10 @@ func RunWithPolling(ctx context.Context, exec executor.TransportFunc, req *domai
 
 	for {
 		attempt++
-		elapsed := time.Since(startTime)
 
-		// Check if we've exceeded the timeout
+		// Check if we've exceeded the timeout before making another attempt
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts)", elapsed.Round(time.Millisecond), attempt-1)
+			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts made)", time.Since(startTime).Round(time.Millisecond), attempt-1)
 		}
 
 		// Execute the request
@@ -157,12 +156,12 @@ func RunWithPolling(ctx context.Context, exec executor.TransportFunc, req *domai
 		if err != nil {
 			// Request failed - check if we should retry or fail
 			if time.Now().After(deadline) {
-				return nil, fmt.Errorf("wait_for timeout after %v (%d attempts): last error: %w", elapsed.Round(time.Millisecond), attempt, err)
+				return nil, fmt.Errorf("wait_for timeout after %v (%d attempts made): last error: %w", time.Since(startTime).Round(time.Millisecond), attempt, err)
 			}
 			waitDuration := pollCfg.getWaitDuration(attempt)
 			fmt.Fprintf(os.Stderr, "[wait_for] Attempt %d failed: %v, retrying in %v...\n", attempt, err, waitDuration)
 			if !waitForDuration(ctx, waitDuration, deadline) {
-				return nil, fmt.Errorf("wait_for timeout after %v (%d attempts)", time.Since(startTime).Round(time.Millisecond), attempt)
+				return nil, fmt.Errorf("wait_for timeout after %v (%d attempts made)", time.Since(startTime).Round(time.Millisecond), attempt)
 			}
 			continue
 		}
@@ -189,7 +188,7 @@ func RunWithPolling(ctx context.Context, exec executor.TransportFunc, req *domai
 		waitDuration := pollCfg.getWaitDuration(attempt)
 		fmt.Fprintf(os.Stderr, "[wait_for] Attempt %d: conditions not met, retrying in %v...\n", attempt, waitDuration)
 		if !waitForDuration(ctx, waitDuration, deadline) {
-			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts): conditions never met", time.Since(startTime).Round(time.Millisecond), attempt)
+			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts made): conditions never met", time.Since(startTime).Round(time.Millisecond), attempt)
 		}
 	}
 }
@@ -213,20 +212,39 @@ func (p *pollConfig) getWaitDuration(attempt int) time.Duration {
 	if !p.useBackoff {
 		return p.period
 	}
-	// Exponential backoff: seed * multiplier^(attempt-1)
+	// Exponential backoff: seed * multiplier^(attempt-1), capped by the overall timeout.
 	// attempt 1 = seed, attempt 2 = seed*multiplier, attempt 3 = seed*multiplier^2, etc.
 	multiplied := float64(p.backoff.seed)
+	maxWait := float64(p.timeout)
+
 	for i := 1; i < attempt; i++ {
 		multiplied *= p.backoff.multiplier
+		if multiplied >= maxWait {
+			return p.timeout
+		}
 	}
 	return time.Duration(multiplied)
 }
 
 // parseWaitForConfig extracts polling configuration from WaitFor config
 func parseWaitForConfig(waitFor *config.WaitFor) (*pollConfig, error) {
+	// Validate until is non-empty
+	if len(waitFor.Until) == 0 {
+		return nil, fmt.Errorf("wait_for.until is required and must have at least one assertion")
+	}
+
+	// Validate period and backoff are mutually exclusive
+	hasPeriod := waitFor.Period != ""
+	hasBackoff := waitFor.Backoff != nil
+	if hasPeriod && hasBackoff {
+		return nil, fmt.Errorf("wait_for.period and wait_for.backoff are mutually exclusive")
+	}
+	if !hasPeriod && !hasBackoff {
+		return nil, fmt.Errorf("wait_for requires either period or backoff to be specified")
+	}
+
 	cfg := &pollConfig{
 		timeout: defaultPollTimeout,
-		period:  defaultPollPeriod,
 	}
 
 	// Parse timeout
@@ -238,8 +256,8 @@ func parseWaitForConfig(waitFor *config.WaitFor) (*pollConfig, error) {
 		cfg.timeout = timeout
 	}
 
-	// Check for backoff vs period
-	if waitFor.Backoff != nil {
+	// Parse period or backoff
+	if hasBackoff {
 		cfg.useBackoff = true
 		seed, err := time.ParseDuration(waitFor.Backoff.Seed)
 		if err != nil {
@@ -253,7 +271,7 @@ func parseWaitForConfig(waitFor *config.WaitFor) (*pollConfig, error) {
 			seed:       seed,
 			multiplier: multiplier,
 		}
-	} else if waitFor.Period != "" {
+	} else {
 		period, err := time.ParseDuration(waitFor.Period)
 		if err != nil {
 			return nil, fmt.Errorf("invalid wait_for.period '%s': %w", waitFor.Period, err)

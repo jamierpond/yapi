@@ -2,6 +2,12 @@
 
 When performing a code review, apply the following checks:
 
+## Team Values
+- Find ways to make code more information dense or DRY, without code golfing.
+- We are a team that values simplicity and clarity, but also generics to increase information density.
+- Look for opportunities to simplify logic and reduce complexity
+- You can't have bugs in code you don't have.
+
 ## Documentation Sync
 
 When reviewing changes to CLI features, config schema, or user-facing functionality:
