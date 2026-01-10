@@ -2,7 +2,11 @@
 
 package process
 
-import "os/exec"
+import (
+	"errors"
+	"os"
+	"os/exec"
+)
 
 // configurePlatform is a no-op on Windows.
 // Future enhancement: could use Job Objects for process tree management.
@@ -17,5 +21,12 @@ func (mp *ManagedProcess) Stop() error {
 	if mp.cmd == nil || mp.cmd.Process == nil {
 		return nil
 	}
-	return mp.cmd.Process.Kill()
+	err := mp.cmd.Process.Kill()
+	// Ignore "process already finished" errors
+	if err != nil && !errors.Is(err, os.ErrProcessDone) {
+		// On Windows, killing an already-dead process returns "Access is denied"
+		// which we should ignore
+		return nil
+	}
+	return nil
 }
