@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build blog content
+        run: pnpm --filter madea-blog-core build
+
       - name: Build web
         run: pnpm build:web
 
@@ -57,5 +60,5 @@ jobs:
         uses: ./integrations/github-action
         with:
           skip-install: true
-          command: yapi test ./apps/web/yapi
+          command: yapi test ./apps/web/yapi --start="pnpm --filter @yapi/web start --port 3000"
 
