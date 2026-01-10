@@ -2,6 +2,7 @@
 package runner
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -138,6 +139,17 @@ func RunWithPolling(ctx context.Context, exec executor.TransportFunc, req *domai
 		return nil, err
 	}
 
+	// Read body bytes once so we can recreate the reader for each attempt.
+	// io.Reader is consumed on first read, so without this, subsequent
+	// polling attempts would send empty bodies.
+	var bodyBytes []byte
+	if req.Body != nil {
+		bodyBytes, err = io.ReadAll(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read request body: %w", err)
+		}
+	}
+
 	startTime := time.Now()
 	deadline := startTime.Add(pollCfg.timeout)
 	attempt := 0
@@ -149,6 +161,11 @@ func RunWithPolling(ctx context.Context, exec executor.TransportFunc, req *domai
 		// Check if we've exceeded the timeout before making another attempt
 		if time.Now().After(deadline) {
 			return nil, fmt.Errorf("wait_for timeout after %v (%d attempts made)", time.Since(startTime).Round(time.Millisecond), attempt-1)
+		}
+
+		// Reset body reader for this attempt
+		if bodyBytes != nil {
+			req.Body = bytes.NewReader(bodyBytes)
 		}
 
 		// Execute the request
@@ -359,10 +376,20 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
-		// 6. Execute
-		result, err := Run(ctx, exec, req, []string{}, opts)
-		if err != nil {
-			return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
+		// 6. Execute (with polling if wait_for is configured)
+		var result *Result
+		if interpolatedConfig.WaitFor != nil {
+			pollResult, err := RunWithPolling(ctx, exec, req, interpolatedConfig.WaitFor, []string{}, opts, opts.EnvOverrides)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
+			}
+			result = pollResult.Result
+		} else {
+			var err error
+			result, err = Run(ctx, exec, req, []string{}, opts)
+			if err != nil {
+				return nil, fmt.Errorf("step '%s' failed: %w", step.Name, err)
+			}
 		}
 
 		// 7. Assert Expectations
