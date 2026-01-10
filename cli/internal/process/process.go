@@ -7,8 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"syscall"
-	"time"
 )
 
 // ManagedProcess wraps an exec.Cmd with lifecycle management.
@@ -22,16 +20,10 @@ type ManagedProcess struct {
 // The process runs in the background and can be stopped with Stop().
 // If verbose is true, stdout/stderr are piped to os.Stdout/os.Stderr.
 func Start(ctx context.Context, command string, verbose bool) (*ManagedProcess, error) {
-	var cmd *exec.Cmd
+	cmd := buildCommand(ctx, command)
 
-	if runtime.GOOS == "windows" {
-		cmd = exec.CommandContext(ctx, "cmd", "/C", command)
-	} else {
-		cmd = exec.CommandContext(ctx, "sh", "-c", command)
-	}
-
-	// Set process group so we can kill all children
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Platform-specific setup (process groups on Unix, no-op on Windows)
+	configurePlatform(cmd)
 
 	mp := &ManagedProcess{cmd: cmd}
 
@@ -39,7 +31,6 @@ func Start(ctx context.Context, command string, verbose bool) (*ManagedProcess, 
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	} else {
-		// Capture but discard output
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			return nil, err
@@ -64,39 +55,12 @@ func Start(ctx context.Context, command string, verbose bool) (*ManagedProcess, 
 	return mp, nil
 }
 
-// Stop gracefully terminates the process.
-// Sends SIGTERM first, waits up to 5 seconds, then SIGKILL.
-func (mp *ManagedProcess) Stop() error {
-	if mp.cmd == nil || mp.cmd.Process == nil {
-		return nil
+// buildCommand creates the appropriate shell command for the platform.
+func buildCommand(ctx context.Context, command string) *exec.Cmd {
+	if runtime.GOOS == "windows" {
+		return exec.CommandContext(ctx, "cmd", "/C", command)
 	}
-
-	// Get the process group ID
-	pgid, err := syscall.Getpgid(mp.cmd.Process.Pid)
-	if err != nil {
-		// Fall back to killing just the process
-		return mp.cmd.Process.Kill()
-	}
-
-	// Send SIGTERM to the process group
-	// Ignore error - process might already be dead (ESRCH)
-	_ = syscall.Kill(-pgid, syscall.SIGTERM)
-
-	// Wait for process to exit with timeout
-	done := make(chan error, 1)
-	go func() {
-		done <- mp.cmd.Wait()
-	}()
-
-	select {
-	case <-done:
-		return nil
-	case <-time.After(5 * time.Second):
-		// Force kill
-		_ = syscall.Kill(-pgid, syscall.SIGKILL)
-		<-done
-		return nil
-	}
+	return exec.CommandContext(ctx, "sh", "-c", command)
 }
 
 // Wait waits for the process to exit and returns any error.

@@ -7,43 +7,43 @@ import (
 	"time"
 )
 
-func TestStart_SimpleCommand(t *testing.T) {
+// sleepCommand returns a platform-appropriate sleep command.
+func sleepCommand(seconds int) string {
 	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows")
+		// PowerShell sleep
+		return "powershell -Command Start-Sleep -Seconds 10"
 	}
+	return "sleep 10"
+}
 
-	proc, err := Start(context.Background(), "sleep 10", false)
+// quickCommand returns a platform-appropriate command that exits quickly.
+func quickCommand() string {
+	if runtime.GOOS == "windows" {
+		return "cmd /C echo done"
+	}
+	return "true"
+}
+
+func TestStart_SimpleCommand(t *testing.T) {
+	proc, err := Start(context.Background(), sleepCommand(10), false)
 	if err != nil {
 		t.Fatalf("failed to start process: %v", err)
 	}
-	defer proc.Stop()
+	defer func() { _ = proc.Stop() }()
 
 	if proc.Pid() == 0 {
 		t.Error("expected non-zero PID")
 	}
 }
 
-func TestStart_InvalidCommand(t *testing.T) {
-	_, err := Start(context.Background(), "nonexistent_command_12345", false)
-	// Note: Start() doesn't fail for invalid commands - the command itself fails
-	// This is expected shell behavior
-	if err != nil {
-		t.Logf("start returned error (may be expected): %v", err)
-	}
-}
-
 func TestStop_GracefulTermination(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows")
-	}
-
-	proc, err := Start(context.Background(), "sleep 60", false)
+	proc, err := Start(context.Background(), sleepCommand(60), false)
 	if err != nil {
 		t.Fatalf("failed to start process: %v", err)
 	}
 
 	// Give it a moment to start
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	err = proc.Stop()
 	if err != nil {
@@ -52,18 +52,14 @@ func TestStop_GracefulTermination(t *testing.T) {
 }
 
 func TestStop_AlreadyStopped(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows")
-	}
-
 	// Start a quick command that exits immediately
-	proc, err := Start(context.Background(), "true", false)
+	proc, err := Start(context.Background(), quickCommand(), false)
 	if err != nil {
 		t.Fatalf("failed to start process: %v", err)
 	}
 
 	// Wait for it to finish
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	// Should not error when stopping already-stopped process
 	err = proc.Stop()
