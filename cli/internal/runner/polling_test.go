@@ -244,6 +244,65 @@ func TestRunWithPolling_ValidationErrors(t *testing.T) {
 	}
 }
 
+func TestRunWithPolling_BodyPreservedAcrossAttempts(t *testing.T) {
+	// This test verifies that request body is available on every polling attempt.
+	// Previously, the body io.Reader was exhausted after the first attempt,
+	// causing subsequent attempts to send empty bodies (breaking gRPC polling).
+	expectedBody := `{"query": "test"}`
+	attempts := 0
+
+	mockTransport := func(ctx context.Context, req *domain.Request) (*domain.Response, error) {
+		attempts++
+
+		// Read and verify body on each attempt
+		var bodyContent string
+		if req.Body != nil {
+			bodyBytes, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Fatalf("attempt %d: failed to read body: %v", attempts, err)
+			}
+			bodyContent = string(bodyBytes)
+		}
+
+		if bodyContent != expectedBody {
+			t.Errorf("attempt %d: expected body %q, got %q", attempts, expectedBody, bodyContent)
+		}
+
+		// Return "pending" for first 2 attempts, then "completed"
+		status := "pending"
+		if attempts >= 3 {
+			status = "completed"
+		}
+		return &domain.Response{
+			StatusCode: 200,
+			Headers:    map[string]string{"Content-Type": "application/json"},
+			Body:       io.NopCloser(strings.NewReader(`{"status": "` + status + `"}`)),
+			Duration:   10 * time.Millisecond,
+		}, nil
+	}
+
+	req := &domain.Request{
+		URL:    "http://example.com/api",
+		Method: "POST",
+		Body:   strings.NewReader(expectedBody),
+	}
+	waitFor := &config.WaitFor{
+		Until:   []string{`.status == "completed"`},
+		Period:  "10ms",
+		Timeout: "5s",
+	}
+
+	var execFn executor.TransportFunc = mockTransport
+	result, err := runner.RunWithPolling(context.Background(), execFn, req, waitFor, nil, runner.Options{}, nil)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Attempts != 3 {
+		t.Errorf("expected 3 attempts, got %d", result.Attempts)
+	}
+}
+
 func TestRunWithPolling_ContextCancellation(t *testing.T) {
 	mockTransport := func(ctx context.Context, req *domain.Request) (*domain.Response, error) {
 		return &domain.Response{
