@@ -282,6 +282,112 @@ yapi stress api-flow.yapi.yml -e prod -n 500 -p 10
 
 ---
 
+## D) Async Job Polling with `wait_for`
+
+For endpoints that process data asynchronously, use `wait_for` to poll until conditions are met.
+
+### Fixed Period Polling
+
+```yaml
+yapi: v1
+url: ${url}/jobs/${job_id}
+method: GET
+
+wait_for:
+  until:
+    - .status == "completed" or .status == "failed"
+  period: 2s
+  timeout: 60s
+
+expect:
+  assert:
+    - .status == "completed"
+```
+
+### Exponential Backoff
+
+Better for rate-limited APIs or long-running jobs:
+
+```yaml
+yapi: v1
+url: ${url}/jobs/${job_id}
+method: GET
+
+wait_for:
+  until:
+    - .status == "completed"
+  backoff:
+    seed: 1s       # Initial wait
+    multiplier: 2  # 1s -> 2s -> 4s -> 8s...
+  timeout: 300s
+```
+
+### Async Workflow Chain
+
+Complete example: create job, poll until done, download result:
+
+```yaml
+yapi: v1
+chain:
+  - name: create_job
+    url: ${url}/jobs
+    method: POST
+    body:
+      type: "data_export"
+      filters:
+        date_range: "last_30_days"
+    expect:
+      status: 202
+      assert:
+        - .job_id != null
+
+  - name: wait_for_job
+    url: ${url}/jobs/${create_job.job_id}
+    method: GET
+    wait_for:
+      until:
+        - .status == "completed" or .status == "failed"
+      period: 2s
+      timeout: 300s
+    expect:
+      assert:
+        - .status == "completed"
+        - .download_url != null
+
+  - name: download_result
+    url: ${wait_for_job.download_url}
+    method: GET
+    output_file: ./export.csv
+```
+
+### Webhook/Callback Waiting
+
+Wait for a webhook to be received:
+
+```yaml
+yapi: v1
+chain:
+  - name: trigger_action
+    url: ${url}/payments/initiate
+    method: POST
+    body:
+      amount: 100
+    expect:
+      status: 202
+
+  - name: wait_for_webhook
+    url: ${url}/webhooks/received
+    method: GET
+    wait_for:
+      until:
+        - . | length > 0
+        - .[0].event == "payment.completed"
+      period: 1s
+      timeout: 30s
+```
+
+---
+
 ## Commands Reference
 
 | Command | Description |
