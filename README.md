@@ -245,6 +245,73 @@ variables:
   code: "BR"
 ```
 
+### 8\. Polling with `wait_for`
+
+Poll an endpoint until conditions are met. Perfect for async jobs, webhooks, and eventual consistency.
+
+**Fixed Period Polling:**
+
+```yaml
+yapi: v1
+url: ${url}/jobs/${job_id}
+method: GET
+
+wait_for:
+  until:
+    - .status == "completed"
+  period: 2s
+  timeout: 60s
+```
+
+**Exponential Backoff:**
+
+```yaml
+yapi: v1
+url: ${url}/jobs/${job_id}
+method: GET
+
+wait_for:
+  until:
+    - .status == "completed"
+  backoff:
+    seed: 1s
+    multiplier: 2
+  timeout: 60s
+```
+
+Backoff waits: 1s -> 2s -> 4s -> 8s... until timeout.
+
+**In Chains - Async Job Workflow:**
+
+```yaml
+yapi: v1
+chain:
+  - name: create_job
+    url: ${url}/jobs
+    method: POST
+    body:
+      type: "data_export"
+    expect:
+      status: 202
+
+  - name: wait_for_job
+    url: ${url}/jobs/${create_job.job_id}
+    method: GET
+    wait_for:
+      until:
+        - .status == "completed" or .status == "failed"
+      period: 2s
+      timeout: 300s
+    expect:
+      assert:
+        - .status == "completed"
+
+  - name: download
+    url: ${wait_for_job.download_url}
+    method: GET
+    output_file: ./export.csv
+```
+
 -----
 
 ## 🎛️ Interactive Mode (TUI)
