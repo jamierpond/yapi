@@ -130,6 +130,10 @@ var cmdManifest = []CommandSpec{
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output for each test"},
 			{Name: "env", Shorthand: "e", Type: "string", Default: "", Usage: "Target environment from yapi.config.yml"},
 			{Name: "parallel", Shorthand: "p", Type: "int", Default: 1, Usage: "Number of parallel threads to run tests on"},
+			{Name: "no-start", Type: "bool", Default: false, Usage: "Skip starting the dev server (even if configured in yapi.config.yml)"},
+			{Name: "start", Type: "string", Default: "", Usage: "Command to start the dev server (overrides yapi.config.yml)"},
+			{Name: "wait-on", Type: "stringSlice", Default: nil, Usage: "URL(s) to wait for before running tests (http://, grpc://, tcp://)"},
+			{Name: "wait-timeout", Type: "duration", Default: "60s", Usage: "Health check timeout"},
 		},
 	},
 	{

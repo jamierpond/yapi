@@ -388,6 +388,71 @@ chain:
 
 ---
 
+## E) Integrated Test Server
+
+Automatically start your dev server, wait for health checks, run tests, and clean up. Configure in `yapi.config.yml`:
+
+```yaml
+yapi: v1
+
+test:
+  start: "npm run dev"
+  wait_on:
+    - "http://localhost:3000/healthz"
+    - "grpc://localhost:50051"
+  timeout: 60s
+  parallel: 8
+  directory: "./tests"
+
+environments:
+  local:
+    url: http://localhost:3000
+```
+
+### Running with Integrated Server
+
+```bash
+# Automatically starts server, waits for health, runs tests, kills server
+yapi test
+
+# Skip server startup (server already running)
+yapi test --no-start
+
+# Override config from CLI
+yapi test --start "npm start" --wait-on "http://localhost:4000/health"
+
+# See server stdout/stderr
+yapi test --verbose
+```
+
+### Health Check Protocols
+
+| Protocol | URL Format | Behavior |
+|----------|------------|----------|
+| HTTP/HTTPS | `http://localhost:3000/healthz` | Poll until 2xx response |
+| gRPC | `grpc://localhost:50051` | Uses `grpc.health.v1.Health/Check` |
+| TCP | `tcp://localhost:5432` | Poll until connection succeeds |
+
+### Local vs CI Parity
+
+The same workflow works locally and in CI:
+
+**Local development:**
+```bash
+yapi test  # starts server, runs tests, cleans up
+```
+
+**GitHub Actions:**
+```yaml
+- uses: jamierpond/yapi/action@main
+  with:
+    start: npm run dev
+    wait-on: http://localhost:3000/healthz
+    command: yapi test -a
+```
+
+---
+
 ## Commands Reference
 
 | Command | Description |

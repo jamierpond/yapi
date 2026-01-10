@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -75,6 +76,30 @@ func BuildCommand(spec CommandSpec) *cobra.Command {
 				cmd.Flags().IntP(flag.Name, flag.Shorthand, defaultVal, flag.Usage)
 			} else {
 				cmd.Flags().Int(flag.Name, defaultVal, flag.Usage)
+			}
+		case "stringSlice":
+			var defaultVal []string
+			if flag.Default != nil {
+				defaultVal = flag.Default.([]string)
+			}
+			if flag.Shorthand != "" {
+				cmd.Flags().StringSliceP(flag.Name, flag.Shorthand, defaultVal, flag.Usage)
+			} else {
+				cmd.Flags().StringSlice(flag.Name, defaultVal, flag.Usage)
+			}
+		case "duration":
+			defaultVal := time.Duration(0)
+			if flag.Default != nil {
+				if s, ok := flag.Default.(string); ok {
+					if d, err := time.ParseDuration(s); err == nil {
+						defaultVal = d
+					}
+				}
+			}
+			if flag.Shorthand != "" {
+				cmd.Flags().DurationP(flag.Name, flag.Shorthand, defaultVal, flag.Usage)
+			} else {
+				cmd.Flags().Duration(flag.Name, defaultVal, flag.Usage)
 			}
 		}
 	}

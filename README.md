@@ -434,6 +434,46 @@ See the [action documentation](https://github.com/jamierpond/yapi/tree/main/acti
 
 -----
 
+## 🚀 Integrated Test Server
+
+Run tests locally with automatic server lifecycle management. Configure in `yapi.config.yml`:
+
+```yaml
+yapi: v1
+
+test:
+  start: "npm run dev"
+  wait_on:
+    - "http://localhost:3000/healthz"
+  timeout: 60s
+  parallel: 8
+
+environments:
+  local:
+    url: http://localhost:3000
+```
+
+Now `yapi test` will automatically:
+1. Start your dev server
+2. Wait for health checks to pass
+3. Run all tests
+4. Kill the server when done
+
+**Supported health check protocols:**
+- `http://` / `https://` - HTTP health endpoints (expects 2xx)
+- `grpc://` / `grpcs://` - gRPC health check protocol
+- `tcp://` - TCP connection check (databases, etc.)
+
+**CLI flags:**
+```bash
+yapi test ./tests                    # Uses config from yapi.config.yml
+yapi test ./tests --no-start         # Skip server startup (already running)
+yapi test ./tests --start "npm start" --wait-on "http://localhost:4000/health"
+yapi test ./tests --verbose          # See server output
+```
+
+-----
+
 ## 🧠 Editor Integration (LSP)
 
 Unlike other API clients, **yapi** ships with a **full LSP implementation** out of the box. Your editor becomes an intelligent API development environment with real-time validation, autocompletion, and inline execution.

@@ -17,6 +17,7 @@ type ProjectConfigV1 struct {
 	DefaultEnvironment string                 `yaml:"default_environment"` // Default environment to use when --env not specified
 	Defaults           EnvironmentConfig      `yaml:"defaults"`            // Default vars applied to all environments
 	Environments       map[string]Environment `yaml:"environments"`        // Named environments (dev, staging, prod, etc.)
+	Test               *TestConfig            `yaml:"test,omitempty"`      // Test command configuration
 
 	// envCache caches resolved environment variables to avoid repeated file I/O
 	// Key is environment name (empty string for defaults)
@@ -38,6 +39,19 @@ type Environment struct {
 	Name     string            // Derived from map key
 	ConfigV1 `yaml:",inline"`  // Inline all ConfigV1 fields (url, headers, method, etc.) including env_files
 	Vars     map[string]string `yaml:"vars"` // Environment-specific variables
+}
+
+// TestConfig holds configuration for the `yapi test` command.
+// When start is specified, yapi will spawn the server, wait for health checks,
+// run tests, then kill the server.
+type TestConfig struct {
+	Start     string   `yaml:"start,omitempty"`     // Command to start the dev server
+	WaitOn    []string `yaml:"wait_on,omitempty"`   // URLs to wait for (http://, grpc://, tcp://)
+	Timeout   string   `yaml:"timeout,omitempty"`   // Health check timeout (default: 60s)
+	Parallel  int      `yaml:"parallel,omitempty"`  // Number of parallel test threads
+	Directory string   `yaml:"directory,omitempty"` // Test directory (default: current dir)
+	Verbose   bool     `yaml:"verbose,omitempty"`   // Show verbose output
+	All       bool     `yaml:"all,omitempty"`       // Run all .yapi.yml files, not just .test.yapi.yml
 }
 
 // FindProjectRoot walks up the directory tree from startDir looking for yapi.config.yml.
