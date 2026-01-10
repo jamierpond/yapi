@@ -8,3 +8,11 @@ environments:
 
   prod:
     url: https://yapi.run
+
+test:
+  start: pnpm start --port 3000
+  wait_on:
+    - http://localhost:3000/healthz
+  timeout: 60s
+  parallel: 16
+  all: true

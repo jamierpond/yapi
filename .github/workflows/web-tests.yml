@@ -57,7 +57,5 @@ jobs:
         uses: ./integrations/github-action
         with:
           skip-install: true
-          start: pnpm --filter @yapi/web start --port 3000
-          wait-on: http://localhost:3000/healthz
-          command: yapi test ./apps/web/yapi -a -p 16
+          command: yapi test ./apps/web/yapi
 

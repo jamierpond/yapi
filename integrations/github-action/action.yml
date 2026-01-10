@@ -1,5 +1,5 @@
 name: 'Yapi Action'
-description: 'Run Yapi integration tests with background services and health checks'
+description: 'Run Yapi integration tests with background services'
 author: 'jamierpond'
 
 branding:
@@ -12,20 +12,10 @@ inputs:
     required: false
     default: ''
 
-  wait-on:
-    description: 'Multiline string of URLs to poll before testing (e.g., http://localhost:3000)'
-    required: false
-    default: ''
-
-  wait-on-timeout:
-    description: 'Timeout in milliseconds for wait-on health checks'
-    required: false
-    default: '60000'
-
   command:
-    description: 'The main test command to execute'
+    description: 'The yapi test command to execute. Use --wait-on for health checks.'
     required: false
-    default: 'yapi run .'
+    default: 'yapi test .'
 
   skip-install:
     description: 'Skip yapi installation and use pre-installed version (useful when building from source)'

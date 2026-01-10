@@ -12,7 +12,8 @@
     "test:node": "vitest run --config vitest.config.node.mts",
     "test:browser": "vitest run --config vitest.config.browser.mts",
     "test:watch:node": "vitest --config vitest.config.node.mts",
-    "test:watch:browser": "vitest --config vitest.config.browser.mts"
+    "test:watch:browser": "vitest --config vitest.config.browser.mts",
+    "test:yapi": "yapi test ./yapi"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

@@ -1,7 +1,7 @@
 {
   "name": "yapi-action",
   "version": "0.6.9",
-  "description": "GitHub Action to run Yapi integration tests with background services and health checks",
+  "description": "GitHub Action to run Yapi integration tests with background services",
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/main.ts -o dist --license licenses.txt",
@@ -23,12 +23,10 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1",
-    "@actions/exec": "^1.1.1",
-    "wait-on": "^8.0.1"
+    "@actions/exec": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",
-    "@types/wait-on": "^5.3.4",
     "@vercel/ncc": "^0.38.3",
     "typescript": "^5.7.2"
   }

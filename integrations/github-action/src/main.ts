@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { spawn } from 'child_process';
-import waitOn from 'wait-on';
 
 async function run(): Promise<void> {
   try {
@@ -9,9 +8,7 @@ async function run(): Promise<void> {
     // 1. PARSE INPUTS
     // -------------------------------------------------------------------------
     const startCmds = core.getMultilineInput('start');
-    const waitUrls = core.getMultilineInput('wait-on');
-    const timeout = parseInt(core.getInput('wait-on-timeout') || '60000', 10);
-    const command = core.getInput('command') || 'yapi run .';
+    const command = core.getInput('command') || 'yapi test .';
     const skipInstall = core.getBooleanInput('skip-install');
 
     // Get version from the action ref (e.g., 'v0.5.0' or 'main')
@@ -99,35 +96,10 @@ async function run(): Promise<void> {
     }
 
     // -------------------------------------------------------------------------
-    // 4. WAIT FOR HEALTHCHECKS
+    // 4. RUN YAPI TESTS
     // -------------------------------------------------------------------------
-    if (waitUrls.length > 0) {
-      core.startGroup('Waiting for services to be ready');
-      core.info(`Target URLs: ${waitUrls.join(', ')}`);
-      core.info(`Timeout: ${timeout}ms`);
-
-      try {
-        await waitOn({
-          resources: waitUrls,
-          timeout: timeout,
-          interval: 1000, // Poll every 1 second
-          // Ensure we get a 2xx status code (not just a socket connection)
-          validateStatus: (status: number) => status >= 200 && status < 300,
-          // Verbose log so users see "Connection refused" errors while waiting
-          log: false,
-        });
-        core.info('All services are up and ready!');
-      } catch (error) {
-        // Provide a nice error message if it times out
-        core.error('Timeout reached. Services did not become ready in time.');
-        throw error;
-      }
-      core.endGroup();
-    }
-
-    // -------------------------------------------------------------------------
-    // 5. RUN YAPI TESTS
-    // -------------------------------------------------------------------------
+    // Note: Use yapi's native --wait-on flag for health checks, e.g.:
+    //   yapi test . --wait-on=http://localhost:3000/healthz --wait-timeout=60s
     core.startGroup('Running Yapi Tests');
     // We use @actions/exec here because we WANT to await this and fail if it fails
     const exitCode = await exec.exec(command);

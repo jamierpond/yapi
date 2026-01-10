@@ -1,6 +1,6 @@
 # Yapi GitHub Action
 
-Run [Yapi](https://yapi.run) integration tests in GitHub Actions with automatic service orchestration and health checks.
+Run [Yapi](https://yapi.run) integration tests in GitHub Actions with automatic service orchestration.
 
 ## Usage
 
@@ -39,14 +39,15 @@ jobs:
           command: yapi test ./tests
 ```
 
-### With Background Service
+### With Background Service and Health Checks
+
+Use yapi's native `--wait-on` flag for health checks:
 
 ```yaml
 - uses: jamierpond/yapi/action@v0.5.0
   with:
     start: npm run dev
-    wait-on: http://localhost:3000/health
-    command: yapi test ./tests
+    command: yapi test ./tests --wait-on=http://localhost:3000/health
 ```
 
 ### Multiple Services
@@ -57,26 +58,40 @@ jobs:
     start: |
       npm run api
       python worker.py
-    wait-on: |
-      http://localhost:8080/health
-      http://localhost:9000/ready
-    command: yapi test ./integration
+    command: yapi test ./integration --wait-on=http://localhost:8080/health --wait-on=http://localhost:9000/ready
+```
+
+### With Custom Timeout
+
+```yaml
+- uses: jamierpond/yapi/action@v0.5.0
+  with:
+    start: npm run dev
+    command: yapi test ./tests --wait-on=http://localhost:3000/health --wait-timeout=120s
 ```
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `command` | No | `yapi test .` | The yapi command to run |
+| `command` | No | `yapi test .` | The yapi command to run. Use `--wait-on` for health checks. |
 | `start` | No | `""` | Commands to run in background (one per line) |
-| `wait-on` | No | `""` | URLs to wait for before running tests (one per line) |
-| `wait-on-timeout` | No | `60000` | Health check timeout in milliseconds |
+| `skip-install` | No | `false` | Skip yapi installation (use pre-installed version) |
 
 ## How It Works
 
-1. Installs yapi CLI
+1. Installs yapi CLI (or uses pre-installed version)
 2. Starts background services
-3. Waits for health checks
-4. Runs your tests
-5. Fails if tests fail
+3. Runs your yapi command (which handles health checks via `--wait-on`)
+4. Fails if tests fail
 
+## Health Check Options
+
+Yapi's `test` command supports native health checks:
+
+- `--wait-on=URL` - Wait for URL(s) to be ready (http://, grpc://, tcp://)
+- `--wait-timeout=DURATION` - Health check timeout (default: 60s)
+
+```bash
+yapi test ./tests --wait-on=http://localhost:3000/healthz --wait-timeout=90s
+```
