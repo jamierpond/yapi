@@ -17,6 +17,18 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
+// newHTTPClient creates a reusable HTTP client for health checks.
+func newHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // #nosec G402 -- health checks often use self-signed certs
+			},
+		},
+	}
+}
+
 // WaitForHealth polls all URLs until they're healthy or timeout.
 // URLs can be http://, https://, grpc://, grpcs://, or tcp://.
 // Returns nil when all URLs are healthy, or an error on timeout/failure.
@@ -27,6 +39,9 @@ func WaitForHealth(ctx context.Context, urls []string, timeout time.Duration) er
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// Create reusable HTTP client
+	httpClient := newHTTPClient()
 
 	// Track health status for each URL
 	healthy := make(map[string]bool)
@@ -47,7 +62,7 @@ func WaitForHealth(ctx context.Context, urls []string, timeout time.Duration) er
 				continue
 			}
 
-			err := checkHealth(ctx, u)
+			err := checkHealth(ctx, u, httpClient)
 			if err == nil {
 				healthy[u] = true
 			} else {
@@ -89,7 +104,7 @@ func WaitForHealth(ctx context.Context, urls []string, timeout time.Duration) er
 }
 
 // checkHealth checks a single URL based on its scheme.
-func checkHealth(ctx context.Context, rawURL string) error {
+func checkHealth(ctx context.Context, rawURL string, httpClient *http.Client) error {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return fmt.Errorf("invalid URL %q: %w", rawURL, err)
@@ -97,7 +112,7 @@ func checkHealth(ctx context.Context, rawURL string) error {
 
 	switch strings.ToLower(parsed.Scheme) {
 	case "http", "https":
-		return checkHTTP(ctx, rawURL)
+		return checkHTTP(ctx, rawURL, httpClient)
 	case "grpc", "grpcs":
 		return checkGRPC(ctx, parsed)
 	case "tcp":
@@ -108,19 +123,10 @@ func checkHealth(ctx context.Context, rawURL string) error {
 }
 
 // checkHTTP performs an HTTP GET request and expects a 2xx response.
-func checkHTTP(ctx context.Context, rawURL string) error {
+func checkHTTP(ctx context.Context, rawURL string, client *http.Client) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return err
-	}
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // #nosec G402 -- health checks often use self-signed certs
-			},
-		},
 	}
 
 	resp, err := client.Do(req)

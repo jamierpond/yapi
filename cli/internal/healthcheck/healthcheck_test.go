@@ -115,7 +115,7 @@ func TestCheckHTTP_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	err := checkHTTP(context.Background(), server.URL)
+	err := checkHTTP(context.Background(), server.URL, newHTTPClient())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -136,6 +136,7 @@ func TestCheckHTTP_StatusCodes(t *testing.T) {
 		{503, true},
 	}
 
+	client := newHTTPClient()
 	for _, tt := range tests {
 		t.Run(http.StatusText(tt.status), func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +144,7 @@ func TestCheckHTTP_StatusCodes(t *testing.T) {
 			}))
 			defer server.Close()
 
-			err := checkHTTP(context.Background(), server.URL)
+			err := checkHTTP(context.Background(), server.URL, client)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("status %d: expected error=%v, got error=%v", tt.status, tt.wantErr, err)
 			}

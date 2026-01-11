@@ -2,6 +2,7 @@ package process
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"testing"
 	"time"
@@ -10,10 +11,9 @@ import (
 // sleepCommand returns a platform-appropriate sleep command.
 func sleepCommand(seconds int) string {
 	if runtime.GOOS == "windows" {
-		// PowerShell sleep
-		return "powershell -Command Start-Sleep -Seconds 10"
+		return fmt.Sprintf("powershell -Command Start-Sleep -Seconds %d", seconds)
 	}
-	return "sleep 10"
+	return fmt.Sprintf("sleep %d", seconds)
 }
 
 // quickCommand returns a platform-appropriate command that exits quickly.
@@ -25,7 +25,7 @@ func quickCommand() string {
 }
 
 func TestStart_SimpleCommand(t *testing.T) {
-	proc, err := Start(context.Background(), sleepCommand(10), false)
+	proc, err := Start(context.Background(), sleepCommand(2), false)
 	if err != nil {
 		t.Fatalf("failed to start process: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestStart_SimpleCommand(t *testing.T) {
 }
 
 func TestStop_GracefulTermination(t *testing.T) {
-	proc, err := Start(context.Background(), sleepCommand(60), false)
+	proc, err := Start(context.Background(), sleepCommand(2), false)
 	if err != nil {
 		t.Fatalf("failed to start process: %v", err)
 	}
