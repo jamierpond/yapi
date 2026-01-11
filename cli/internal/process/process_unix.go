@@ -15,7 +15,16 @@ func configurePlatform(cmd *exec.Cmd) {
 
 // Stop gracefully terminates the process and its children.
 // Sends SIGTERM to process group, waits up to 5 seconds, then SIGKILL.
+// Stop is idempotent and safe to call multiple times.
 func (mp *ManagedProcess) Stop() error {
+	var stopErr error
+	mp.stopOnce.Do(func() {
+		stopErr = mp.stop()
+	})
+	return stopErr
+}
+
+func (mp *ManagedProcess) stop() error {
 	if mp.cmd == nil || mp.cmd.Process == nil {
 		return nil
 	}

@@ -7,13 +7,15 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sync"
 )
 
 // ManagedProcess wraps an exec.Cmd with lifecycle management.
 type ManagedProcess struct {
-	cmd    *exec.Cmd
-	stdout io.ReadCloser
-	stderr io.ReadCloser
+	cmd      *exec.Cmd
+	stdout   io.ReadCloser
+	stderr   io.ReadCloser
+	stopOnce sync.Once
 }
 
 // Start spawns a new process using the shell.
