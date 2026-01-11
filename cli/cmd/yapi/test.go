@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -47,7 +49,18 @@ func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if proc != nil {
-		defer func() { _ = proc.Stop() }()
+		// Set up signal handler to clean up server on Ctrl+C
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-sigChan
+			_ = proc.Stop()
+			os.Exit(130) // 128 + SIGINT(2)
+		}()
+		defer func() {
+			signal.Stop(sigChan)
+			_ = proc.Stop()
+		}()
 	}
 
 	// Find and run tests
