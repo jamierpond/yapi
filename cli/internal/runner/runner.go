@@ -370,6 +370,12 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
 		}
 
+		// Add config file path for relative path resolution (e.g., proto files)
+		if req.Metadata == nil {
+			req.Metadata = make(map[string]string)
+		}
+		req.Metadata["config_file_path"] = opts.ConfigFilePath
+
 		// 5. Create executor for this step's transport
 		exec, err := factory.Create(req.Metadata["transport"])
 		if err != nil {
