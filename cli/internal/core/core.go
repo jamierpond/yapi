@@ -175,6 +175,12 @@ func (e *Engine) executeRequest(ctx context.Context, analysis *validation.Analys
 	stats := ExtractConfigStats(analysis)
 	start := time.Now()
 
+	// Add config file path to metadata for relative path resolution (e.g., proto files)
+	if analysis.Request.Metadata == nil {
+		analysis.Request.Metadata = make(map[string]string)
+	}
+	analysis.Request.Metadata["config_file_path"] = opts.ConfigFilePath
+
 	exec, err := executor.GetTransport(analysis.Request.Metadata["transport"], e.httpClient)
 	if err != nil {
 		return &RunConfigResult{Analysis: analysis, Error: err}

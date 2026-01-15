@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -46,14 +48,16 @@ func GRPCTransport(ctx context.Context, req *domain.Request) (*domain.Response, 
 	// Determine descriptor source
 	var descSource grpcurl.DescriptorSource
 	if protoFile != "" {
-		// TODO: Handle proto and proto_path. For now, we focus on reflection.
-		_ = protoPath // Avoid unused variable error
-		return nil, fmt.Errorf("proto file support not yet implemented")
+		configFilePath := req.Metadata["config_file_path"]
+		descSource, err = createDescriptorSourceFromProto(protoFile, protoPath, configFilePath)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Use server reflection
+		refClient := grpcreflect.NewClient(ctx, grpc_reflection_v1alpha.NewServerReflectionClient(cc))
+		descSource = grpcurl.DescriptorSourceFromServer(ctx, refClient)
 	}
-
-	// Use server reflection
-	refClient := grpcreflect.NewClient(ctx, grpc_reflection_v1alpha.NewServerReflectionClient(cc))
-	descSource = grpcurl.DescriptorSourceFromServer(ctx, refClient)
 
 	// Prepare request payload
 	var reqData []byte
@@ -93,4 +97,31 @@ func GRPCTransport(ctx context.Context, req *domain.Request) (*domain.Response, 
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       io.NopCloser(respBuf),
 	}, nil
+}
+
+// createDescriptorSourceFromProto creates a grpcurl.DescriptorSource from a proto file.
+func createDescriptorSourceFromProto(protoFile, protoPath, configFilePath string) (grpcurl.DescriptorSource, error) {
+	// Resolve proto file path relative to config file
+	if !filepath.IsAbs(protoFile) && configFilePath != "" {
+		protoFile = filepath.Join(filepath.Dir(configFilePath), protoFile)
+	}
+
+	// Check file exists
+	if _, err := os.Stat(protoFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf("proto file not found: %s", protoFile)
+	}
+
+	// Build import paths
+	var importPaths []string
+	if protoPath != "" {
+		importPath := protoPath
+		if !filepath.IsAbs(importPath) && configFilePath != "" {
+			importPath = filepath.Join(filepath.Dir(configFilePath), importPath)
+		}
+		importPaths = append(importPaths, importPath)
+	}
+	// Always add the proto file's directory as an import path
+	importPaths = append(importPaths, filepath.Dir(protoFile))
+
+	return grpcurl.DescriptorSourceFromProtoFiles(importPaths, protoFile)
 }
