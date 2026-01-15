@@ -2,6 +2,7 @@ package executor
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -65,7 +66,7 @@ func TestCreateDescriptorSourceFromProto(t *testing.T) {
 					t.Errorf("expected error but got none")
 					return
 				}
-				if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("error %q should contain %q", err.Error(), tt.errContains)
 				}
 				return
@@ -79,17 +80,4 @@ func TestCreateDescriptorSourceFromProto(t *testing.T) {
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsAt(s, substr))
-}
-
-func containsAt(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
