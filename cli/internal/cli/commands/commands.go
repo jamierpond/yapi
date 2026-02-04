@@ -29,6 +29,7 @@ type Handlers struct {
 	Stress         func(cmd *cobra.Command, args []string) error
 	About          func(cmd *cobra.Command, args []string) error
 	Import         func(cmd *cobra.Command, args []string) error
+	Send           func(cmd *cobra.Command, args []string) error
 }
 
 // BuildRoot builds the root command tree with optional handlers.
@@ -165,6 +166,19 @@ var cmdManifest = []CommandSpec{
 		Long:    "Display a comprehensive developer guide for working with yapi. Includes syntax, examples, best practices, and project organization patterns.",
 	},
 	{
+		Use:   "send <url> [body]",
+		Short: "Send a quick request without a config file",
+		Long:  "Send a one-off HTTP or TCP request directly from the command line.\nThe transport is auto-detected from the URL scheme (tcp://, grpc://, or HTTP by default).\n\nExamples:\n  yapi send https://httpbin.org/get\n  yapi send -X POST https://httpbin.org/post '{\"hello\":\"world\"}'\n  yapi send tcp://localhost:9877 '{\"type\":\"health\",\"params\":{}}'",
+		Args:  cobra.RangeArgs(1, 2),
+		Flags: []FlagSpec{
+			{Name: "method", Shorthand: "X", Type: "string", Default: "", Usage: "HTTP method (default: GET, or POST if body is provided)"},
+			{Name: "header", Shorthand: "H", Type: "stringSlice", Default: nil, Usage: "Custom headers (e.g. -H 'Content-Type: application/json')"},
+			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output (request details, timing, headers)"},
+			{Name: "json", Type: "bool", Default: false, Usage: "Output result as JSON with full metadata"},
+			{Name: "jq", Type: "string", Default: "", Usage: "JQ filter to apply to the response"},
+		},
+	},
+	{
 		Use:   "import [file]",
 		Short: "Import an external collection (Postman) to yapi format",
 		Long:  "Import a Postman collection JSON file and convert it to yapi YAML files. Creates a directory structure mirroring the collection's folder organization.",
@@ -215,6 +229,8 @@ func getHandler(h *Handlers, use string) func(*cobra.Command, []string) error {
 		return h.Stress
 	case "about":
 		return h.About
+	case "send":
+		return h.Send
 	case "import":
 		return h.Import
 	default:

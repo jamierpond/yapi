@@ -95,6 +95,7 @@ func main() {
 		Stress:         app.stressE,
 		About:          aboutE,
 		Import:         importE,
+		Send:           app.sendE,
 	}
 
 	rootCmd := commands.BuildRoot(cfg, handlers)
