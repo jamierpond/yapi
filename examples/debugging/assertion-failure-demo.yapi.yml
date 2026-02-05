@@ -1,0 +1,27 @@
+# Demonstrates detailed assertion failure messages.
+#
+# This request intentionally asserts wrong values so you can see
+# the error output format with expected vs actual values.
+#
+# Run with:
+#   yapi run assertion-failure-demo.yapi.yml
+#
+# Expected output:
+#   [PASS] .userId != null
+#   [FAIL] .id == 999
+#   [FAIL] .title == "wrong title"
+#
+#   assertion failed
+#     Expected: .id to equal 999
+#     Actual:   .id = 1
+#     Expression: .id == 999
+
+yapi: v1
+url: https://jsonplaceholder.typicode.com/todos/1
+method: GET
+expect:
+  status: 200
+  assert:
+    - .userId != null
+    - .id == 999
+    - .title == "wrong title"

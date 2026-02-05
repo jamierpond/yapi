@@ -1,262 +1,81 @@
-# Plan: `wait_for` Feature - DX Design
+# Plan: Better Error Messages & Debuggability
 
-## Overview
-
-A new `wait_for` block that repeatedly polls an endpoint until a condition is satisfied. Designed for async server operations that require time to complete (job processing, webhooks, eventual consistency, etc.).
-
-## DX Design
-
-### Basic Syntax
-
-```yaml
-yapi: v1
-url: ${url}/jobs/${job_id}
-method: GET
-
-wait_for:
-  until:
-    - .status == "completed"
-  period: 2s
-  timeout: 60s
-```
-
-### Fixed Period (Simple)
-
-```yaml
-wait_for:
-  until:
-    - .status == "completed"
-  period: 2s          # Fixed time between attempts
-  timeout: 60s        # Total time limit
-```
-
-### Exponential Backoff
-
-```yaml
-wait_for:
-  until:
-    - .status == "completed"
-  backoff:
-    seed: 1s          # Initial wait time
-    multiplier: 2     # Each attempt waits multiplier * previous
-  timeout: 60s        # Total time limit
-```
-
-Backoff example with `seed: 1s, multiplier: 2`:
-- Attempt 1 → wait 1s
-- Attempt 2 → wait 2s
-- Attempt 3 → wait 4s
-- Attempt 4 → wait 8s
-- ...continues until timeout
-
-### Behavior
-
-1. Execute the request
-2. If `until` conditions pass → success, stop polling
-3. If `until` conditions fail OR request errors (5xx, network) → wait (period or backoff), retry
-4. If `timeout` exceeded → fail with timeout error
-
-**Error handling**: Intermediate failures (5xx, network errors, 4xx) are treated as "not ready yet" and polling continues. Only timeout causes failure.
-
-**Timing**: Either `period` OR `backoff` must be specified (mutually exclusive).
+## Context
+Implementing WISHLIST.md items #1, #2, and #4 (removing #3 since `yapi send` already exists).
 
 ---
 
-## Use Cases
-
-### 1. Single Request - Job Completion
-
-```yaml
-yapi: v1
-url: ${url}/jobs/${job_id}
-method: GET
-
-wait_for:
-  until:
-    - .status == "completed" or .status == "failed"
-  period: 2s
-  timeout: 120s
-
-expect:
-  status: 200
-  assert:
-    - .status == "completed"  # Final assertion after wait_for succeeds
-```
-
-### 2. Chain Step - Async Workflow
-
-```yaml
-yapi: v1
-chain:
-  - name: create_job
-    url: ${url}/jobs
-    method: POST
-    body:
-      type: "data_export"
-    expect:
-      status: 202
-      assert:
-        - .job_id != null
-
-  - name: wait_for_job
-    url: ${url}/jobs/${create_job.job_id}
-    method: GET
-    wait_for:
-      until:
-        - .status == "completed"
-      backoff:
-        seed: 1s
-        multiplier: 2
-      timeout: 300s
-    expect:
-      status: 200
-      assert:
-        - .download_url != null
-
-  - name: download_result
-    url: ${wait_for_job.download_url}
-    method: GET
-    output_file: ./export.csv
-```
-
-### 3. Webhook/Callback Waiting
-
-```yaml
-yapi: v1
-chain:
-  - name: trigger_webhook
-    url: ${url}/webhooks/trigger
-    method: POST
-
-  - name: check_received
-    url: ${url}/webhooks/received
-    method: GET
-    wait_for:
-      until:
-        - . | length > 0
-        - .[0].payload.event == "user.created"
-      period: 1s
-      timeout: 30s
-```
-
-### 4. Database Eventual Consistency
-
-```yaml
-yapi: v1
-chain:
-  - name: create_user
-    url: ${url}/users
-    method: POST
-    body:
-      email: "test@example.com"
-    expect:
-      status: 201
-
-  - name: verify_searchable
-    url: ${url}/users/search?email=test@example.com
-    method: GET
-    wait_for:
-      until:
-        - . | length == 1
-      period: 500ms
-      timeout: 10s
-```
+## 1. WISHLIST.md cleanup
+Remove item #3 (yapi send) since it's already shipped.
 
 ---
 
-## Interaction with Existing Features
+## 2. Warn on bare `$word.word` variable syntax (WISHLIST #1)
 
-### With `expect`
+The problem: `$step.field` (no braces) silently passes as a literal string instead of being substituted. Only `${step.field}` works.
 
-`wait_for` runs first. Once `until` conditions pass, `expect` runs on the final response:
+**Changes:**
 
-```yaml
-wait_for:
-  until:
-    - .status != "pending"  # Wait until not pending
-  period: 1s
-  timeout: 30s
+- **`cli/internal/vars/vars.go`**: Add a `BareChainRef` regex that matches `$word.word` patterns that are NOT inside `${...}`.
+- **`cli/internal/vars/vars.go`**: Add `FindBareRefs(s string) []string` that returns the bare refs found.
+- **`cli/internal/validation/analyzer.go`**: In `analyzeParsed()`, call a new `warnBareChainRefs(text)` validation function that scans the raw YAML text for bare `$word.word` patterns and emits `SeverityWarning` diagnostics with line numbers and an actionable message like:
+  `"possible bare variable reference '$step.field' -- did you mean '${step.field}'? Only the ${...} form is substituted."`
 
-expect:
-  status: 200
-  assert:
-    - .status == "completed"  # Then verify it's completed (not failed)
-```
-
-### With `timeout`
-
-The existing `timeout` field is per-request. `wait_for.timeout` is total polling time:
-
-```yaml
-timeout: 5s  # Each poll attempt times out after 5s
-
-wait_for:
-  until:
-    - .ready == true
-  period: 2s
-  timeout: 60s  # Total polling time limit
-```
-
-### With `delay`
-
-`delay` happens before `wait_for` starts:
-
-```yaml
-delay: 5s  # Wait 5s before starting to poll
-
-wait_for:
-  until:
-    - .status == "done"
-  period: 2s
-  timeout: 30s
-```
+This catches the problem at config analysis time (before execution), so users see the warning immediately -- even in `yapi validate`.
 
 ---
 
-## Output During Polling
+## 3. Show resolved request details in verbose chain execution (WISHLIST #2)
 
-When running with verbose/default output:
+The problem: When a chain step fails, you can't see what values were actually sent because variable substitution is invisible.
 
-```
-[POLL] Attempt 1 - conditions not met, retrying in 2s...
-[POLL] Attempt 2 - conditions not met, retrying in 2s...
-[POLL] Attempt 3 - request failed (503), retrying in 2s...
-[POLL] Attempt 4 - conditions met!
-```
+**Changes:**
 
----
-
-## Config Schema
-
-```go
-type Backoff struct {
-    Seed       string  `yaml:"seed"`       // Initial wait, e.g., "1s"
-    Multiplier float64 `yaml:"multiplier"` // e.g., 2
-}
-
-type WaitFor struct {
-    Until   []string `yaml:"until"`             // Required: JQ assertions
-    Period  string   `yaml:"period,omitempty"`  // Fixed interval, e.g., "2s"
-    Backoff *Backoff `yaml:"backoff,omitempty"` // Exponential backoff
-    Timeout string   `yaml:"timeout"`           // Required: total time limit
-}
-```
-
-Added to `ConfigV1`:
-```go
-type ConfigV1 struct {
-    // ... existing fields ...
-    WaitFor *WaitFor `yaml:"wait_for,omitempty"`
-}
-```
+- **`cli/internal/runner/runner.go`**: Add `Verbose bool` field to `runner.Options`.
+- **`cli/internal/runner/runner.go`**: In `RunChain()`, after `interpolateConfig()` succeeds and before executing, if `opts.Verbose` is true, print the resolved config to stderr:
+  - Resolved URL (with method)
+  - Resolved headers
+  - Resolved body (JSON-serialized if map, or raw if string)
+  - Uses `fmt.Fprintf(os.Stderr, ...)` with `[VERBOSE]` prefix, consistent with the existing Logger pattern.
+- **`cli/cmd/yapi/run.go`**: Set `opts.Verbose = ctx.verbose` when building runner.Options in `executeRunE()`.
 
 ---
 
-## Validation Rules
+## 4. Print step responses in verbose chain mode (WISHLIST #4)
 
-1. `until` is required and must have at least one assertion
-2. `timeout` is required and must be valid Go duration
-3. Exactly one of `period` OR `backoff` must be specified (mutually exclusive)
-4. If `period`: must be valid Go duration
-5. If `backoff`: `seed` must be valid Go duration, `multiplier` must be > 1
-6. All `until` expressions must be valid JQ
+The problem: In chain execution, you only see the final failing step's output, not intermediate step responses.
+
+**Changes:**
+
+- **`cli/internal/runner/runner.go`**: In `RunChain()`, after each step executes, if `opts.Verbose` is true, print the step's response details to stderr:
+  - Status code
+  - Response body (truncated at 1000 chars for readability)
+  - Duration
+
+  This replaces the need for a per-step `debug: true` field -- verbose mode shows everything, which is simpler and avoids new config surface area.
+
+---
+
+## 5. Example files: `examples/debugging/`
+
+Create example `.yapi.yml` files that demonstrate the improved debugging experience:
+
+- **`bare-variable-warning.yapi.yml`**: A chain that uses `$step.field` (bare) to trigger the new warning.
+- **`chain-verbose-demo.yapi.yml`**: A multi-step chain against jsonplaceholder with variables that shows how `--verbose` reveals resolved values.
+- **`assertion-failure-demo.yapi.yml`**: A request with an `expect:` block that will fail, showing the detailed assertion error output.
+- **`missing-key-demo.yapi.yml`**: A chain that references a nonexistent JSON key, showing the precise error path.
+
+---
+
+## Files changed
+
+| File | Change |
+|------|--------|
+| `WISHLIST.md` | Remove item #3 |
+| `cli/internal/vars/vars.go` | Add `BareChainRef` regex + `FindBareRefs()` function |
+| `cli/internal/validation/analyzer.go` | Add `warnBareChainRefs()`, call from `analyzeParsed()` |
+| `cli/internal/runner/runner.go` | Add `Verbose` to `Options`, add verbose logging in `RunChain()` |
+| `cli/cmd/yapi/run.go` | Thread `verbose` into `runner.Options` |
+| `examples/debugging/*.yapi.yml` | 4 new example files |
+
+**No new dependencies. No config schema changes. No breaking changes.**

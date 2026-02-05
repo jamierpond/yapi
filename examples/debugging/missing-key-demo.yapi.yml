@@ -1,0 +1,23 @@
+# Demonstrates the error when referencing a nonexistent JSON key.
+#
+# The second step references ${get_todo.nonexistent_field}, which
+# doesn't exist in the response. yapi provides a precise error
+# showing exactly which key was missing and at what path.
+#
+# Run with:
+#   yapi run missing-key-demo.yapi.yml
+#
+# Expected output:
+#   step 'get_user': url: key 'nonexistent_field' not found at path 'nonexistent_field'
+
+yapi: v1
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+    expect:
+      status: 200
+
+  - name: get_user
+    url: https://jsonplaceholder.typicode.com/users/${get_todo.nonexistent_field}
+    method: GET

@@ -260,6 +260,8 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 			diags = append(diags, validateEnvVarsWithEnvFiles(text, envFileVarNames)...)
 		}
 
+		diags = append(diags, warnBareChainRefs(text)...)
+
 		return &Analysis{
 			Chain:       parseRes.Chain,
 			Base:        parseRes.Base,
@@ -303,6 +305,8 @@ func analyzeParsed(text string, parseRes *config.ParseResult, project *config.Pr
 	if parseRes.WaitFor != nil && len(parseRes.WaitFor.Until) > 0 {
 		diags = append(diags, ValidateChainAssertions(text, parseRes.WaitFor.Until, "wait_for")...)
 	}
+
+	diags = append(diags, warnBareChainRefs(text)...)
 
 	return &Analysis{
 		Request:     req,
@@ -516,6 +520,35 @@ func scanForUndefinedRefs(text, value string, definedSteps map[string]bool, curr
 					Col:      0,
 				})
 			}
+		}
+	}
+	return diags
+}
+
+// warnBareChainRefs scans YAML text for bare $word.word patterns that look like
+// chain variable references but aren't wrapped in ${...}, which means they won't
+// be substituted. Emits a warning diagnostic for each occurrence.
+func warnBareChainRefs(text string) []Diagnostic {
+	var diags []Diagnostic
+	lines := strings.Split(text, "\n")
+
+	for lineNum, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Skip comments and graphql blocks (which use $var syntax legitimately)
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		bareRefs := vars.FindBareRefs(line)
+		for _, ref := range bareRefs {
+			col := strings.Index(line, ref)
+			diags = append(diags, Diagnostic{
+				Severity: SeverityWarning,
+				Field:    "",
+				Message:  fmt.Sprintf("possible bare variable reference '%s' -- did you mean '${%s}'? Only the ${...} form is substituted", ref, ref[1:]),
+				Line:     lineNum,
+				Col:      col,
+			})
 		}
 	}
 	return diags

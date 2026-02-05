@@ -1,0 +1,37 @@
+# Demonstrates --verbose mode for chain debugging.
+#
+# This chain fetches a todo, then uses its userId to fetch the user.
+# With --verbose, you can see exactly what URL/body was sent after
+# variable substitution, plus each step's response body.
+#
+# Run with:
+#   yapi run chain-verbose-demo.yapi.yml --verbose
+#
+# Verbose output will show:
+#   [VERBOSE] Step 1 (get_todo) resolved request:
+#   [VERBOSE]   GET https://jsonplaceholder.typicode.com/todos/1
+#   [VERBOSE] Step 1 (get_todo) response:
+#   [VERBOSE]   Status: 200
+#   [VERBOSE]   Body: {"userId":1,"id":1,"title":"delectus aut autem",...}
+#   [VERBOSE] Step 2 (get_user) resolved request:
+#   [VERBOSE]   GET https://jsonplaceholder.typicode.com/users/1
+#   ...
+
+yapi: v1
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+    expect:
+      status: 200
+      assert:
+        - .userId != null
+
+  - name: get_user
+    url: https://jsonplaceholder.typicode.com/users/${get_todo.userId}
+    method: GET
+    expect:
+      status: 200
+      assert:
+        - .name != null
+        - .email != null

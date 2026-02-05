@@ -31,6 +31,26 @@ func HasEnvVars(s string) bool {
 	return EnvOnly.MatchString(s)
 }
 
+// BareChainRef matches bare $word.word patterns (without braces) that look like
+// chain variable references. Negative lookbehind for { ensures we don't match ${...}.
+// We use a two-step approach: find all $word.word patterns, then exclude those inside ${}.
+var BareChainRef = regexp.MustCompile(`\$([A-Za-z_][A-Za-z0-9_]*\.[A-Za-z0-9_.]+)`)
+
+// FindBareRefs returns bare chain-style references ($step.field) that are NOT
+// wrapped in ${...}. These are likely user mistakes since only ${...} is substituted.
+func FindBareRefs(s string) []string {
+	var results []string
+	for _, loc := range BareChainRef.FindAllStringIndex(s, -1) {
+		start := loc[0]
+		// Check that this is not inside ${...} by looking for a preceding {
+		if start > 0 && s[start-1] == '{' {
+			continue
+		}
+		results = append(results, s[start:loc[1]])
+	}
+	return results
+}
+
 // ExpandString replaces all ${VAR} occurrences in input using the resolver.
 func ExpandString(input string, resolver Resolver) (string, error) {
 	var capturedErr error

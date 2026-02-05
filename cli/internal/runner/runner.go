@@ -16,6 +16,7 @@ import (
 	"yapi.run/cli/internal/domain"
 	"yapi.run/cli/internal/executor"
 	"yapi.run/cli/internal/filter"
+	"yapi.run/cli/internal/vars"
 )
 
 const (
@@ -44,6 +45,7 @@ type Options struct {
 	NoColor        bool
 	BinaryOutput   bool
 	Insecure       bool
+	Verbose        bool              // Show resolved request/response details during execution
 	EnvOverrides   map[string]string // Environment variables from project config
 	ProjectRoot    string            // Path to project root (for validation)
 	ProjectEnv     string            // Selected environment name (for validation)
@@ -342,10 +344,18 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 		// 1. Merge step with base config to get full config
 		merged := base.Merge(step)
 
+		// 1b. Warn about bare $word.word patterns that won't be substituted
+		warnBareChainRefsInConfig(step.Name, &merged)
+
 		// 2. Interpolate variables in the merged config
 		interpolatedConfig, err := interpolateConfig(chainCtx, &merged)
 		if err != nil {
 			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
+		}
+
+		// 2b. Verbose: show resolved request details
+		if opts.Verbose {
+			logResolvedConfig(i+1, step.Name, interpolatedConfig)
 		}
 
 		// 3. Handle Delay (wait before executing step)
@@ -392,6 +402,11 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 			}
 		}
 
+		// 6b. Verbose: show response details
+		if opts.Verbose {
+			logStepResponse(i+1, step.Name, result)
+		}
+
 		// 7. Assert Expectations
 		expectRes := CheckExpectationsWithEnv(step.Expect, result, opts.EnvOverrides)
 
@@ -407,6 +422,81 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 	}
 
 	return chainResult, nil
+}
+
+// logResolvedConfig prints the resolved request config to stderr for debugging.
+func logResolvedConfig(stepNum int, stepName string, cfg *config.ConfigV1) {
+	fmt.Fprintf(os.Stderr, "[VERBOSE] Step %d (%s) resolved request:\n", stepNum, stepName)
+	if cfg.Method != "" || cfg.URL != "" {
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   %s %s\n", cfg.Method, cfg.URL)
+	}
+	if cfg.Path != "" {
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Path: %s\n", cfg.Path)
+	}
+	for k, v := range cfg.Headers {
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Header: %s: %s\n", k, v)
+	}
+	if cfg.Body != nil {
+		bodyJSON, err := json.Marshal(cfg.Body)
+		if err == nil {
+			body := string(bodyJSON)
+			if len(body) > 1000 {
+				body = body[:1000] + fmt.Sprintf("... (%d bytes total)", len(body))
+			}
+			fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", body)
+		}
+	}
+	if cfg.JSON != "" {
+		j := cfg.JSON
+		if len(j) > 1000 {
+			j = j[:1000] + fmt.Sprintf("... (%d bytes total)", len(j))
+		}
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   JSON: %s\n", j)
+	}
+	if cfg.Data != "" {
+		d := cfg.Data
+		if len(d) > 1000 {
+			d = d[:1000] + fmt.Sprintf("... (%d bytes total)", len(d))
+		}
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Data: %s\n", d)
+	}
+}
+
+// logStepResponse prints response details to stderr for debugging.
+func logStepResponse(stepNum int, stepName string, result *Result) {
+	fmt.Fprintf(os.Stderr, "[VERBOSE] Step %d (%s) response:\n", stepNum, stepName)
+	fmt.Fprintf(os.Stderr, "[VERBOSE]   Status: %d\n", result.StatusCode)
+	fmt.Fprintf(os.Stderr, "[VERBOSE]   Duration: %s\n", result.Duration)
+	body := result.Body
+	if len(body) > 1000 {
+		body = body[:1000] + fmt.Sprintf("... (%d bytes total)", len(body))
+	}
+	if body != "" {
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", body)
+	}
+}
+
+// warnBareChainRefsInConfig checks a config's string fields for bare $word.word patterns
+// and prints warnings to stderr during chain execution.
+func warnBareChainRefsInConfig(stepName string, cfg *config.ConfigV1) {
+	check := func(field, value string) {
+		refs := vars.FindBareRefs(value)
+		for _, ref := range refs {
+			fmt.Fprintf(os.Stderr, "[WARN] step '%s' %s: possible bare variable '%s' -- did you mean '${%s}'?\n",
+				stepName, field, ref, ref[1:])
+		}
+	}
+
+	check("url", cfg.URL)
+	check("path", cfg.Path)
+	check("json", cfg.JSON)
+	check("data", cfg.Data)
+	for k, v := range cfg.Headers {
+		check(fmt.Sprintf("header '%s'", k), v)
+	}
+	for k, v := range cfg.Query {
+		check(fmt.Sprintf("query '%s'", k), v)
+	}
 }
 
 // interpolateConfig expands chain variables in a config

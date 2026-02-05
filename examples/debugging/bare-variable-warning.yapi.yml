@@ -1,0 +1,26 @@
+# Demonstrates the bare variable warning.
+#
+# This chain uses $step.field (bare dollar sign) instead of ${step.field}.
+# The bare form is NOT substituted -- it's passed as the literal string
+# "$get_todo.userId". yapi now warns about this at validation time.
+#
+# Run with:
+#   yapi validate bare-variable-warning.yapi.yml
+#   yapi run bare-variable-warning.yapi.yml
+#
+# Expected output:
+#   [WARN] line 18: possible bare variable reference '$get_todo.userId'
+#          -- did you mean '${get_todo.userId}'? Only the ${...} form is substituted
+
+yapi: v1
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+    expect:
+      status: 200
+
+  - name: get_user
+    # BUG: This should be ${get_todo.userId} -- note the missing braces!
+    url: https://jsonplaceholder.typicode.com/users/$get_todo.userId
+    method: GET

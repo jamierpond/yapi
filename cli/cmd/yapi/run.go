@@ -206,6 +206,7 @@ func (app *rootCommand) executeRunE(ctx runContext) error {
 		NoColor:        app.noColor,
 		BinaryOutput:   app.binaryOutput,
 		Insecure:       app.insecure,
+		Verbose:        ctx.verbose,
 		ConfigFilePath: ctx.path,
 		StrictEnv:      ctx.strictEnv,
 	}
