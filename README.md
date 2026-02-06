@@ -232,6 +232,29 @@ expect:
     - .[] | .active == true # all items are active
 ```
 
+**Chain variable assertions** - compare values across steps:
+
+```yaml
+yapi: v1
+chain:
+  - name: create_item
+    url: https://api.example.com/items
+    method: POST
+    body:
+      name: "Test Item"
+    expect:
+      status: 201
+
+  - name: get_item
+    url: https://api.example.com/items/${create_item.id}
+    method: GET
+    expect:
+      status: 200
+      assert:
+        - .id == ${create_item.id}           # verify same ID
+        - .name == "Test Item"
+```
+
 ### 5\. JQ Filtering (Built-in\!)
 
 Don't grep output. Filter it right in the config.
