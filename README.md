@@ -161,6 +161,7 @@ chain:
 **Key features:**
 - Reference previous step data with `${step_name.field}` syntax
 - Access nested JSON properties: `${login.data.token}`
+- Use chain variables in assertions: `.id == ${previous_step.expected_id}`
 - Assertions use JQ expressions that must evaluate to true
 - Chains stop on first failure (fail-fast)
 
