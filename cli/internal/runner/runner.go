@@ -407,8 +407,12 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 			logStepResponse(i+1, step.Name, result)
 		}
 
-		// 7. Assert Expectations
-		expectRes := CheckExpectationsWithEnv(step.Expect, result, opts.EnvOverrides)
+		// 7. Assert Expectations (with chain variable interpolation)
+		interpolatedExpect, err := interpolateExpectations(chainCtx, step.Expect)
+		if err != nil {
+			return nil, fmt.Errorf("step '%s': %w", step.Name, err)
+		}
+		expectRes := CheckExpectationsWithEnv(interpolatedExpect, result, opts.EnvOverrides)
 
 		// 8. Store Result (including expectation result even if failed)
 		chainCtx.AddResult(step.Name, result)
@@ -497,6 +501,38 @@ func warnBareChainRefsInConfig(stepName string, cfg *config.ConfigV1) {
 	for k, v := range cfg.Query {
 		check(fmt.Sprintf("query '%s'", k), v)
 	}
+}
+
+// interpolateExpectations expands chain variables in assertion expressions.
+// This allows assertions like: .result.track_index == ${create_track.result.index}
+func interpolateExpectations(chainCtx *ChainContext, expect config.Expectation) (config.Expectation, error) {
+	result := expect
+
+	// Interpolate body assertions
+	if len(expect.Assert.Body) > 0 {
+		result.Assert.Body = make([]string, len(expect.Assert.Body))
+		for i, assertion := range expect.Assert.Body {
+			expanded, err := chainCtx.ExpandVariables(assertion)
+			if err != nil {
+				return result, fmt.Errorf("assertion '%s': %w", assertion, err)
+			}
+			result.Assert.Body[i] = expanded
+		}
+	}
+
+	// Interpolate header assertions
+	if len(expect.Assert.Headers) > 0 {
+		result.Assert.Headers = make([]string, len(expect.Assert.Headers))
+		for i, assertion := range expect.Assert.Headers {
+			expanded, err := chainCtx.ExpandVariables(assertion)
+			if err != nil {
+				return result, fmt.Errorf("header assertion '%s': %w", assertion, err)
+			}
+			result.Assert.Headers[i] = expanded
+		}
+	}
+
+	return result, nil
 }
 
 // interpolateConfig expands chain variables in a config

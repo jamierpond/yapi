@@ -9,6 +9,7 @@ import (
 	"github.com/itchyny/gojq"
 	"gopkg.in/yaml.v3"
 	"yapi.run/cli/internal/domain"
+	"yapi.run/cli/internal/vars"
 )
 
 // ValidateGraphQLSyntax validates the GraphQL query syntax if present.
@@ -130,11 +131,17 @@ func findFieldInNode(node *yaml.Node, field string) int {
 }
 
 // ValidateChainAssertions validates JQ syntax for all assertions in chain steps.
+// Chain variable references like ${step.field} are replaced with null before
+// parsing, since they'll be interpolated at runtime.
 func ValidateChainAssertions(text string, assertions []string, stepName string) []Diagnostic {
 	var diags []Diagnostic
 
 	for _, assertion := range assertions {
-		_, err := gojq.Parse(assertion)
+		// Replace ${...} chain variable refs with null for syntax validation
+		// These will be expanded at runtime before JQ evaluation
+		sanitized := vars.Expansion.ReplaceAllString(assertion, "null")
+
+		_, err := gojq.Parse(sanitized)
 		if err != nil {
 			// Find the line where this assertion appears
 			line := findValueInTextForAssertion(text, assertion)

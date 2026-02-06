@@ -1,0 +1,27 @@
+# Demonstrates using chain variables in assertions.
+#
+# The second step's assertion compares a response value against
+# a value from the first step using ${step.field} syntax.
+#
+# Run with:
+#   yapi run chain-var-in-assertion.yapi.yml
+#
+# The assertion `.userId == ${get_todo.userId}` expands to `.userId == 1`
+# before being evaluated by JQ.
+
+yapi: v1
+chain:
+  - name: get_todo
+    url: https://jsonplaceholder.typicode.com/todos/1
+    method: GET
+    expect:
+      status: 200
+
+  - name: get_another_todo
+    url: https://jsonplaceholder.typicode.com/todos/2
+    method: GET
+    expect:
+      status: 200
+      assert:
+        # This todo also belongs to userId 1, so this should pass
+        - .userId == ${get_todo.userId}
