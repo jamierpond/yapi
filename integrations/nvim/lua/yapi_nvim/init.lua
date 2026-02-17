@@ -175,12 +175,20 @@ function M.setup(opts)
 
   -- Setup LSP for yapi files
   if M._opts.lsp then
-    vim.lsp.config.yapi = {
-      cmd = { "yapi", "lsp" },
-      filetypes = { "yaml.yapi" },
-      root_markers = { "yapi.config.yml", "yapi.config.yaml", ".git" },
-    }
-    vim.lsp.enable("yapi")
+    local ok, lspconfig = pcall(require, "lspconfig")
+    if ok then
+      local configs = require("lspconfig.configs")
+      if not configs.yapi then
+        configs.yapi = {
+          default_config = {
+            cmd = { "yapi", "lsp" },
+            filetypes = { "yaml.yapi" },
+            root_dir = lspconfig.util.root_pattern("yapi.config.yml", "yapi.config.yaml", ".git"),
+          },
+        }
+      end
+      lspconfig.yapi.setup({})
+    end
 
     -- Set filetype to yaml.yapi for yapi config files
     vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
