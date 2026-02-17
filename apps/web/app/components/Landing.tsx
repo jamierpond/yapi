@@ -330,6 +330,7 @@ export default async function Landing() {
           <div className="flex gap-6">
             <a href="https://github.com/jamierpond/yapi" className="text-yapi-fg-subtle hover:text-yapi-accent transition-colors text-sm">Source Code</a>
             <a href="/docs" className="text-yapi-fg-subtle hover:text-yapi-accent transition-colors text-sm">Documentation</a>
+            <a href="https://pond.audio" target="_blank" rel="noopener noreferrer" className="text-yapi-fg-subtle hover:text-yapi-accent transition-colors text-sm">Created by Jamie Pond</a>
           </div>
         </div>
       </footer>
