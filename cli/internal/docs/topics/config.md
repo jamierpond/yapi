@@ -2,6 +2,49 @@
 
 Every yapi request file starts with `yapi: v1`. This page lists all available fields.
 
+## Project Layout
+
+Place a `yapi.config.yml` at your project root to define environments and base URLs. Request files (`.yapi.yml`) can live anywhere beneath it — yapi walks up the directory tree to find the nearest config.
+
+```
+my-project/
+├── yapi.config.yml          # project config (environments, base URLs)
+└── yapi/
+    ├── homepage.yapi.yml    # GET /
+    ├── sitemap.yapi.yml     # GET /sitemap.xml
+    └── health.yapi.yml      # GET /healthz
+```
+
+### Example: `yapi.config.yml`
+
+```yaml
+yapi: v1
+
+default_environment: local
+
+environments:
+  local:
+    url: http://localhost:3000
+  prod:
+    url: https://api.example.com
+```
+
+### Example: `yapi/homepage.yapi.yml`
+
+```yaml
+yapi: v1
+path: /
+method: GET
+
+headers:
+  User-Agent: yapi-cli
+
+expect:
+  status: 200
+```
+
+Because the request file uses `path: /` instead of a full `url`, yapi resolves it against the active environment's base URL. Running `yapi run yapi/homepage.yapi.yml` hits `http://localhost:3000/` by default, or `https://api.example.com/` with `-e prod`.
+
 ## Request Fields
 
 | Field | Type | Description |
