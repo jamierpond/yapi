@@ -9,6 +9,8 @@ import (
 	"yapi.run/cli/internal/docs"
 )
 
+// TODO: Consolidate cobra-generated command docs (--help) with manual topic docs
+// in internal/docs/topics/ so there's a single source of truth for all documentation.
 func docsE(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return printTopicIndex()
