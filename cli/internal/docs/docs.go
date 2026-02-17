@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/charmbracelet/glamour"
 )
 
 //go:embed topics
@@ -90,4 +92,9 @@ func TopicNames() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// Render renders markdown content for terminal display using glamour.
+func Render(markdown string) (string, error) {
+	return glamour.Render(markdown, "auto")
 }

@@ -39,6 +39,10 @@ func printTopic(name string) error {
 		fmt.Fprintf(os.Stderr, "Available topics: %s\n", strings.Join(docs.TopicNames(), ", "))
 		return fmt.Errorf("unknown topic %q", name)
 	}
-	fmt.Print(content)
+	rendered, err := docs.Render(content)
+	if err != nil {
+		return fmt.Errorf("rendering docs: %w", err)
+	}
+	fmt.Print(rendered)
 	return nil
 }
