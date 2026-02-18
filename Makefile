@@ -47,7 +47,8 @@ lint-full: lint
 
 sync-docs:
 	@mkdir -p cli/internal/docs/topics
-	@rsync -a --delete docs/topics/ cli/internal/docs/topics/
+	@rm -rf cli/internal/docs/topics/*
+	@cp docs/topics/*.md cli/internal/docs/topics/
 
 build: sync-docs
 	@echo "Building yapi CLI..."

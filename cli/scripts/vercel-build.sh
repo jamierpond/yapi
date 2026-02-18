@@ -39,7 +39,9 @@ LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE
 
 
 echo "Syncing topic docs into CLI embed dir..."
-make sync-docs
+mkdir -p cli/internal/docs/topics
+rm -rf cli/internal/docs/topics/*
+cp docs/topics/*.md cli/internal/docs/topics/
 
 echo "Building yapi CLI..."
 cd cli
