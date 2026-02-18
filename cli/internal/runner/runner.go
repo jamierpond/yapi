@@ -424,14 +424,15 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 	return chainResult, nil
 }
 
-// truncateStr truncates s to maxLen bytes (at a valid UTF-8 boundary) and appends
-// a size note if truncated.
-func truncateStr(s string, maxLen int) string {
-	if len(s) <= maxLen {
+const verboseMaxLen = 1000
+
+// truncateStr truncates s for verbose output at a valid UTF-8 boundary.
+func truncateStr(s string) string {
+	if len(s) <= verboseMaxLen {
 		return s
 	}
 	// Walk back to avoid splitting a multi-byte UTF-8 character
-	cut := maxLen
+	cut := verboseMaxLen
 	for cut > 0 && s[cut-1]&0xC0 == 0x80 {
 		cut--
 	}
@@ -456,14 +457,14 @@ func logResolvedConfig(stepNum int, stepName string, cfg *config.ConfigV1) {
 	if cfg.Body != nil {
 		bodyJSON, err := json.Marshal(cfg.Body)
 		if err == nil {
-			fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", truncateStr(string(bodyJSON), 1000))
+			fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", truncateStr(string(bodyJSON)))
 		}
 	}
 	if cfg.JSON != "" {
-		fmt.Fprintf(os.Stderr, "[VERBOSE]   JSON: %s\n", truncateStr(cfg.JSON, 1000))
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   JSON: %s\n", truncateStr(cfg.JSON))
 	}
 	if cfg.Data != "" {
-		fmt.Fprintf(os.Stderr, "[VERBOSE]   Data: %s\n", truncateStr(cfg.Data, 1000))
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Data: %s\n", truncateStr(cfg.Data))
 	}
 }
 
@@ -473,7 +474,7 @@ func logStepResponse(stepNum int, stepName string, result *Result) {
 	fmt.Fprintf(os.Stderr, "[VERBOSE]   Status: %d\n", result.StatusCode)
 	fmt.Fprintf(os.Stderr, "[VERBOSE]   Duration: %s\n", result.Duration)
 	if result.Body != "" {
-		fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", truncateStr(result.Body, 1000))
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", truncateStr(result.Body))
 	}
 }
 
