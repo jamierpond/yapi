@@ -537,6 +537,7 @@ func interpolateExpectations(chainCtx *ChainContext, expect config.Expectation) 
 	return result, nil
 }
 
+
 // interpolateConfig expands chain variables in a config
 func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.ConfigV1, error) {
 	result := *cfg // Copy
