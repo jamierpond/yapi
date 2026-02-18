@@ -12,15 +12,15 @@ import (
 )
 
 func main() {
-	outputDir := "../apps/web/app/_docs"
+	outputDir := "../docs/commands"
 	if len(os.Args) > 1 {
 		outputDir = os.Args[1]
 	}
 
-	// Verify the parent path exists (apps/web/app) - fail fast if structure is wrong
-	parentDir := strings.TrimSuffix(outputDir, "/_docs")
+	// Verify the parent path exists (docs/) - fail fast if structure is wrong
+	parentDir := strings.TrimSuffix(outputDir, "/commands")
 	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
-		log.Fatalf("web app not found at %s - did the directory structure change?", parentDir)
+		log.Fatalf("docs directory not found at %s - did the directory structure change?", parentDir)
 	}
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {

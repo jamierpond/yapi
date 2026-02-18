@@ -1,4 +1,4 @@
-.PHONY: build run run-print-analytics test fuzz fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all lint lint-install install-lint lint-quick lint-full gen-docs gh-action fuzz-cover local-release
+.PHONY: build run run-print-analytics test fuzz fmt fmt-check clean install docker web web-run bump-patch bump-minor bump-major release build-all lint lint-install install-lint lint-quick lint-full gen-docs gh-action fuzz-cover local-release sync-docs
 
 NAME := yapi
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -45,7 +45,11 @@ lint-full: lint
 	@echo "Running govulncheck..."
 	@cd cli && govulncheck ./...
 
-build:
+sync-docs:
+	@mkdir -p cli/internal/docs/topics
+	@rsync -a --delete docs/topics/ cli/internal/docs/topics/
+
+build: sync-docs
 	@echo "Building yapi CLI..."
 	@cd cli && go build -ldflags "$(LDFLAGS)" -o ./bin/yapi ./cmd/yapi
 	@codesign --sign - --force ./cli/bin/yapi 2>/dev/null || true

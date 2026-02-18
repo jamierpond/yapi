@@ -11,7 +11,6 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import path from "path";
-import fs from "fs";
 import { execSync } from "child_process";
 
 // Get version info at build time (uses Vercel env vars, falls back to git for local dev)
@@ -117,11 +116,11 @@ function ArticleView({ article }: ArticleViewProps) {
 }
 
 function extractDescription(content: string): string {
-  // Get the first non-empty line after the title (## heading)
+  // Get the first non-empty line after the title (# or ## heading)
   const lines = content.split('\n');
   let foundTitle = false;
   for (const line of lines) {
-    if (line.startsWith('## ')) {
+    if (/^#{1,2}\s/.test(line)) {
       foundTitle = true;
       continue;
     }
@@ -132,47 +131,69 @@ function extractDescription(content: string): string {
   return '';
 }
 
+function ArticleList({ articles }: { articles: FileInfo[] }) {
+  return (
+    <div className="space-y-4">
+      {articles.map((article: FileInfo) => {
+        const description = extractDescription(article.content);
+        return (
+          <Link
+            key={article.sha}
+            href={`/docs/${article.path.replace(/\.md$/, "")}`}
+            className="block group p-5 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all duration-300"
+          >
+            <h2 className="text-lg font-bold group-hover:text-yapi-accent transition-colors font-mono">
+              {article.title}
+            </h2>
+            {description && (
+              <p className="text-sm text-yapi-fg-muted mt-1">
+                {description}
+              </p>
+            )}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 function FileBrowserView({ articles }: FileBrowserViewProps) {
+  const topics = articles.filter((a) => a.path.startsWith("topics/"));
+  const commands = articles.filter((a) => a.path.startsWith("commands/"));
+
   return (
     <DocsLayout>
       <div className="max-w-4xl w-full">
         <header className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-4">
             <span className="bg-gradient-to-r from-yapi-accent via-orange-300 to-yapi-accent bg-clip-text text-transparent">
-              CLI Documentation
+              Documentation
             </span>
           </h1>
           <p className="text-xl text-yapi-fg-muted max-w-xl mx-auto mb-4">
-            Auto-generated documentation for yapi CLI commands
+            Guides and command reference for the yapi CLI
           </p>
           <VersionFooter />
         </header>
 
         {articles.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-yapi-fg-muted">No docs yet. Run <code className="text-yapi-accent">go run scripts/gendocs.go</code> to generate.</p>
+            <p className="text-yapi-fg-muted">No docs yet. Run <code className="text-yapi-accent">make gen-docs</code> to generate command reference.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {articles.map((article: FileInfo) => {
-              const description = extractDescription(article.content);
-              return (
-                <Link
-                  key={article.sha}
-                  href={`/docs/${article.path.replace(/\.md$/, "")}`}
-                  className="block group p-5 rounded-xl border border-yapi-border bg-yapi-bg-elevated/20 hover:bg-yapi-bg-elevated/40 hover:border-yapi-accent/50 transition-all duration-300"
-                >
-                  <h2 className="text-lg font-bold group-hover:text-yapi-accent transition-colors font-mono">
-                    {article.title}
-                  </h2>
-                  {description && (
-                    <p className="text-sm text-yapi-fg-muted mt-1">
-                      {description}
-                    </p>
-                  )}
-                </Link>
-              );
-            })}
+          <div className="space-y-12">
+            {topics.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold mb-4 text-yapi-fg">Topics</h2>
+                <ArticleList articles={topics} />
+              </section>
+            )}
+            {commands.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold mb-4 text-yapi-fg">Commands</h2>
+                <ArticleList articles={commands} />
+              </section>
+            )}
           </div>
         )}
       </div>
@@ -209,12 +230,8 @@ function LandingView() {
   );
 }
 
-const contentDir = path.join(process.cwd(), "app/_docs");
-
-// Ensure directory exists for LocalFsDataProvider (which uses simple-git)
-if (!fs.existsSync(contentDir)) {
-  fs.mkdirSync(contentDir, { recursive: true });
-}
+// docs/ lives at repo root; web app is at apps/web/
+const contentDir = path.join(process.cwd(), "..", "..", "docs");
 
 export const docsDataProvider = new LocalFsDataProvider({
   contentDir,
@@ -252,7 +269,7 @@ export async function generateDocsMetadata() {
   const config = createDocsConfig();
   const metadata = await generateMetadataForIndex(config, {
     title: "CLI Documentation | yapi",
-    description: "Auto-generated documentation for yapi CLI commands",
+    description: "Guides and command reference for the yapi CLI",
   });
   return {
     ...metadata,
