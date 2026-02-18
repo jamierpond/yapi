@@ -55,6 +55,7 @@ apps/web/icons
 coverage.out
 cli/bin/yapi
 cli/internal/docs/topics
+docs/commands
 specs
 .specify
 .claude/commands/specify.*
