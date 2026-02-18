@@ -424,6 +424,23 @@ func RunChain(ctx context.Context, factory ExecutorFactory, base *config.ConfigV
 	return chainResult, nil
 }
 
+// truncateStr truncates s to maxLen bytes (at a valid UTF-8 boundary) and appends
+// a size note if truncated.
+func truncateStr(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	// Walk back to avoid splitting a multi-byte UTF-8 character
+	cut := maxLen
+	for cut > 0 && s[cut-1]&0xC0 == 0x80 {
+		cut--
+	}
+	if cut > 0 && s[cut-1]&0x80 != 0 {
+		cut-- // skip the leading byte of the split character
+	}
+	return s[:cut] + fmt.Sprintf("... (%d bytes total)", len(s))
+}
+
 // logResolvedConfig prints the resolved request config to stderr for debugging.
 func logResolvedConfig(stepNum int, stepName string, cfg *config.ConfigV1) {
 	fmt.Fprintf(os.Stderr, "[VERBOSE] Step %d (%s) resolved request:\n", stepNum, stepName)
@@ -439,26 +456,14 @@ func logResolvedConfig(stepNum int, stepName string, cfg *config.ConfigV1) {
 	if cfg.Body != nil {
 		bodyJSON, err := json.Marshal(cfg.Body)
 		if err == nil {
-			body := string(bodyJSON)
-			if len(body) > 1000 {
-				body = body[:1000] + fmt.Sprintf("... (%d bytes total)", len(body))
-			}
-			fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", body)
+			fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", truncateStr(string(bodyJSON), 1000))
 		}
 	}
 	if cfg.JSON != "" {
-		j := cfg.JSON
-		if len(j) > 1000 {
-			j = j[:1000] + fmt.Sprintf("... (%d bytes total)", len(j))
-		}
-		fmt.Fprintf(os.Stderr, "[VERBOSE]   JSON: %s\n", j)
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   JSON: %s\n", truncateStr(cfg.JSON, 1000))
 	}
 	if cfg.Data != "" {
-		d := cfg.Data
-		if len(d) > 1000 {
-			d = d[:1000] + fmt.Sprintf("... (%d bytes total)", len(d))
-		}
-		fmt.Fprintf(os.Stderr, "[VERBOSE]   Data: %s\n", d)
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Data: %s\n", truncateStr(cfg.Data, 1000))
 	}
 }
 
@@ -467,12 +472,8 @@ func logStepResponse(stepNum int, stepName string, result *Result) {
 	fmt.Fprintf(os.Stderr, "[VERBOSE] Step %d (%s) response:\n", stepNum, stepName)
 	fmt.Fprintf(os.Stderr, "[VERBOSE]   Status: %d\n", result.StatusCode)
 	fmt.Fprintf(os.Stderr, "[VERBOSE]   Duration: %s\n", result.Duration)
-	body := result.Body
-	if len(body) > 1000 {
-		body = body[:1000] + fmt.Sprintf("... (%d bytes total)", len(body))
-	}
-	if body != "" {
-		fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", body)
+	if result.Body != "" {
+		fmt.Fprintf(os.Stderr, "[VERBOSE]   Body: %s\n", truncateStr(result.Body, 1000))
 	}
 }
 
