@@ -20,6 +20,9 @@ jobs:
         go-version: '1.24'
         cache-dependency-path: cli/go.sum
 
+    - name: Sync topic docs
+      run: make sync-docs
+
     - name: Generate coverage
       working-directory: cli
       run: go test -coverprofile=coverage.txt -covermode=atomic ./... || true
