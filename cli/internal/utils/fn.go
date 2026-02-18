@@ -1,5 +1,5 @@
 // Package utils provides generic utility functions.
-package utils
+package utils //nolint:revive // grab-bag utility package; no better name exists
 
 import (
 	"io"
