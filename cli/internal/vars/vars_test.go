@@ -59,6 +59,39 @@ func TestExpandString(t *testing.T) {
 	}
 }
 
+func TestFindBareRefs(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{"no refs", "hello world", nil},
+		{"bare ref", "$step.field", []string{"$step.field"}},
+		{"wrapped ref not matched", "${step.field}", nil},
+		{"bare among text", "url: http://example.com/$step.id/path", []string{"$step.id"}},
+		{"multiple bare refs", "$a.b and $c.d", []string{"$a.b", "$c.d"}},
+		{"mixed bare and wrapped", "$bare.ref and ${wrapped.ref}", []string{"$bare.ref"}},
+		{"no dot no match", "$FOO", nil},
+		{"deep ref", "$step.response.body", []string{"$step.response.body"}},
+		{"dollar amount", "$100", nil},
+		{"bcrypt hash", "$2a$12$hash", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FindBareRefs(tt.input)
+			if len(got) != len(tt.want) {
+				t.Fatalf("FindBareRefs(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("FindBareRefs(%q)[%d] = %q, want %q", tt.input, i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
 func FuzzExpandString(f *testing.F) {
 	// Seed with various variable patterns (only ${VAR} form supported)
 	f.Add("hello world")
