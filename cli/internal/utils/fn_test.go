@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive // matches package declaration in fn.go
 
 import "testing"
 
