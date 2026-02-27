@@ -27,6 +27,9 @@ jobs:
             exit 1
           fi
 
+      - name: Sync docs for embed
+        run: make sync-docs
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"

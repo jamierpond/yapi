@@ -40,6 +40,9 @@ jobs:
           git tag -f "$VERSION"
           git push origin "$VERSION"
 
+      - name: Sync docs for embed
+        run: make sync-docs
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
