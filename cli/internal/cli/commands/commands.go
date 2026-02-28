@@ -139,6 +139,7 @@ var cmdManifest = []CommandSpec{
 			{Name: "start", Type: "string", Default: "", Usage: "Command to start the dev server (overrides yapi.config.yml)"},
 			{Name: "wait-on", Type: "stringSlice", Default: nil, Usage: "URL(s) to wait for before running tests (http://, grpc://, tcp://)"},
 			{Name: "wait-timeout", Type: "duration", Default: "60s", Usage: "Health check timeout"},
+			{Name: "pattern", Type: "string", Default: "", Usage: "Filter test files by regex pattern on filename (e.g. 'login', 'auth.*create')"},
 		},
 	},
 	{

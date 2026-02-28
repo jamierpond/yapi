@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -30,6 +31,7 @@ type testOptions struct {
 	waitOnOverride []string
 	waitTimeout    time.Duration
 	searchDir      string
+	pattern        string
 }
 
 func (app *rootCommand) testE(cmd *cobra.Command, args []string) error {
@@ -76,6 +78,7 @@ func parseTestFlags(cmd *cobra.Command, args []string) testOptions {
 	startOverride, _ := cmd.Flags().GetString("start")
 	waitOnOverride, _ := cmd.Flags().GetStringSlice("wait-on")
 	waitTimeout, _ := cmd.Flags().GetDuration("wait-timeout")
+	pattern, _ := cmd.Flags().GetString("pattern")
 
 	searchDir := "."
 	if len(args) > 0 {
@@ -92,6 +95,7 @@ func parseTestFlags(cmd *cobra.Command, args []string) testOptions {
 		waitOnOverride: waitOnOverride,
 		waitTimeout:    waitTimeout,
 		searchDir:      searchDir,
+		pattern:        pattern,
 	}
 }
 
@@ -179,7 +183,7 @@ func resolveServerConfig(opts testOptions, testConfig *config.TestConfig) (strin
 }
 
 func (app *rootCommand) runTestFiles(opts testOptions) error {
-	testFiles, err := findTestFiles(opts.searchDir, opts.all)
+	testFiles, err := findTestFiles(opts.searchDir, opts.all, opts.pattern)
 	if err != nil {
 		return fmt.Errorf("failed to find test files: %w", err)
 	}
@@ -304,7 +308,19 @@ func printTestResults(results []testResult, verbose bool) error {
 }
 
 // findTestFiles recursively finds test files in the given directory.
-func findTestFiles(dir string, all bool) ([]string, error) {
+// If pattern is non-empty, it is compiled as a regex and matched against
+// the file's base name. Since any literal string is a valid regex, simple
+// substring patterns like "login" work as expected.
+func findTestFiles(dir string, all bool, pattern string) ([]string, error) {
+	var patternRe *regexp.Regexp
+	if pattern != "" {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --pattern regex %q: %w", pattern, err)
+		}
+		patternRe = re
+	}
+
 	var testFiles []string
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -317,21 +333,29 @@ func findTestFiles(dir string, all bool) ([]string, error) {
 		base := filepath.Base(path)
 		ext := filepath.Ext(path)
 
+		isTestFile := false
 		if all {
 			if base != "yapi.config.yml" && base != "yapi.config.yaml" {
 				if strings.HasSuffix(base, ".yapi.yml") || strings.HasSuffix(base, ".yapi.yaml") || ext == ".yapi" {
-					testFiles = append(testFiles, path)
+					isTestFile = true
 				}
 			}
 		} else {
 			if strings.HasSuffix(base, ".test.yapi.yml") || strings.HasSuffix(base, ".test.yapi.yaml") {
-				testFiles = append(testFiles, path)
+				isTestFile = true
 			} else if strings.HasSuffix(base, ".test.yapi") && ext == ".yapi" {
-				testFiles = append(testFiles, path)
+				isTestFile = true
 			}
+		}
+
+		if isTestFile && (patternRe == nil || patternRe.MatchString(base)) {
+			testFiles = append(testFiles, path)
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return testFiles, err
+	return testFiles, nil
 }
