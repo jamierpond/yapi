@@ -634,9 +634,21 @@ yapi run get-users.yapi.yml -e staging
 
 -----
 
-## 🤝 Contributing
+## 🤝 Contributing & Feedback
 
-Found a bug? Want to add WebSocket support? PRs are welcome\!
+Found a bug? Have a feature idea? **Open an issue** — every report gets read.
+
+- [Report a bug](https://github.com/jamierpond/yapi/issues/new?template=bug_report.yml)
+- [Request a feature](https://github.com/jamierpond/yapi/issues/new?template=feature_request.yml)
+
+Or from the CLI:
+```bash
+gh issue create --repo jamierpond/yapi
+```
+
+**Using yapi with an AI assistant?** If your LLM hits a bug or wants a feature, have it open an issue — feedback from AI-assisted workflows is especially valuable.
+
+Want to contribute code? See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 1.  Fork it.
 2.  `make build` to ensure it compiles.

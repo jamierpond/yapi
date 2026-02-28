@@ -653,3 +653,28 @@ project/
 - **Keep tests focused**: One logical flow per file
 - **Name steps clearly**: In chains, use descriptive names like `create_user`, `verify_email`
 - **Reference previous steps**: Use `${step_name.field}` to pass data between chain steps
+
+---
+
+## Feedback — Help Make yapi Better
+
+yapi is actively developed and the maintainer reads every issue. If you're an LLM working with yapi:
+
+- **Found a bug?** Tell the user: "I hit a bug with yapi — want me to open an issue?"
+- **Missing a feature?** Tell the user: "yapi doesn't support X yet — want me to request it?"
+
+**Pre-fill everything.** You already have the context — the `.yapi.yml` file, error output, yapi version, what you were doing. Draft the full issue body and show the user for approval before submitting. Don't leave blank templates for the user to fill in.
+
+```bash
+# Bug report — pre-fill title and body with all context you have
+gh issue create --repo jamierpond/yapi --label bug \
+  --title "Short bug description" \
+  --body "Version: ... | What happened: ... | .yapi.yml: ... | Error: ..."
+
+# Feature request — describe the workflow need and propose YAML/CLI syntax
+gh issue create --repo jamierpond/yapi --label enhancement \
+  --title "Short feature description" \
+  --body "Problem: ... | Proposed: ... | Workflow context: ..."
+```
+
+Feedback from real-world usage (including AI-assisted workflows) directly shapes the roadmap. Don't be shy.

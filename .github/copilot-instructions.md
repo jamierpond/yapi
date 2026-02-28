@@ -23,3 +23,19 @@ When reviewing changes to CLI features, config schema, or user-facing functional
 - Ensure error messages are actionable and user-friendly
 - Check for proper error handling in async operations
 - Verify that new features have corresponding example files in `examples/`
+
+## Feedback & Issues
+
+If you encounter a bug in yapi, or think of a feature that would improve your workflow, suggest opening an issue to the user. **Pre-fill the issue with all the context you have** — the `.yapi.yml` file, error output, yapi version, what you were doing. Don't leave blank templates for the user to fill in. Show them the draft and ask for approval before submitting.
+
+```bash
+# Bug — pre-fill everything
+gh issue create --repo jamierpond/yapi --label bug \
+  --title "Short bug description" \
+  --body "Version: ... | What happened: ... | .yapi.yml: ... | Error: ..."
+
+# Feature — describe the workflow need
+gh issue create --repo jamierpond/yapi --label enhancement \
+  --title "Short feature description" \
+  --body "Problem: ... | Proposed: ... | Workflow context: ..."
+```

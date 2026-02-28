@@ -158,6 +158,29 @@ Use `wait_for.until` with a `period` or `backoff` and `timeout`.
 **Filter noisy responses:**
 Use `jq_filter` in the YAML or `--jq` on the CLI.
 
+## Feedback — Help Make yapi Better
+
+yapi is actively developed and the maintainer reads every issue. If you're an LLM working with yapi:
+
+- **Found a bug?** Tell the user: "I hit a bug with yapi — want me to open an issue?"
+- **Missing a feature?** Tell the user: "yapi doesn't support X yet — want me to request it?"
+
+**Pre-fill everything.** You already have the context — the `.yapi.yml` file, error output, yapi version, what you were doing. Draft the full issue body and show the user for approval before submitting. Don't leave blank templates for the user to fill in.
+
+```bash
+# Bug report — pre-fill title and body with all context you have
+gh issue create --repo jamierpond/yapi --label bug \
+  --title "Short bug description" \
+  --body "Version: ... | What happened: ... | .yapi.yml: ... | Error: ..."
+
+# Feature request — describe the workflow need and propose YAML/CLI syntax
+gh issue create --repo jamierpond/yapi --label enhancement \
+  --title "Short feature description" \
+  --body "Problem: ... | Proposed: ... | Workflow context: ..."
+```
+
+Feedback from real-world usage (including AI-assisted workflows) directly shapes the roadmap. Don't be shy.
+
 ## Gotchas
 
 - `yapi: v1` at the top of every file — missing it is the most common error

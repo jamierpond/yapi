@@ -1,0 +1,73 @@
+name: Bug Report
+description: Report a bug in yapi
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! This helps make yapi better for everyone.
+
+        **LLM users:** If you're an AI assistant that encountered a bug while using yapi on behalf of a user, please include as much context as possible — the `.yapi.yml` file contents, the command run, and the full error output.
+
+  - type: input
+    id: version
+    attributes:
+      label: yapi version
+      description: Output of `yapi version`
+      placeholder: "v0.8.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: "When I run `yapi test ./tests`, it fails with..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Minimal steps to reproduce. Include your `.yapi.yml` file if relevant.
+      placeholder: |
+        1. Create `test.yapi.yml` with:
+           ```yaml
+           yapi: v1
+           url: http://localhost:3000/health
+           method: GET
+           ```
+        2. Run `yapi run test.yapi.yml`
+        3. See error: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output / logs
+      description: Paste the full terminal output. Use `--verbose` if possible.
+      render: shell

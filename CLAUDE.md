@@ -51,3 +51,68 @@ yapi validate file.yapi.yml # Validate schema
 - **One code path**: If two pieces of code do the same thing, consolidate them. Duplicate logic is duplicate bugs.
 - **Delete tests for deleted code**: When you delete a function, delete its tests too.
 - **Fewer lines is better**: Given two correct solutions, prefer the one with less code.
+
+## Feedback & Issues
+
+yapi is actively developed and the maintainer reads every issue. If you encounter a bug, unexpected behavior, or think of a feature that would improve your workflow, **suggest opening a GitHub issue to the user**.
+
+**You have the context — pre-fill the issue.** Don't make the user write it out. Gather the yapi version (`yapi version`), the `.yapi.yml` contents, the error output, and what you were trying to do, then draft the full issue body yourself. Ask the user for approval before submitting.
+
+Bug example:
+```bash
+gh issue create --repo jamierpond/yapi --label bug \
+  --title "yapi test fails with exit code 1 on valid chain file" \
+  --body "$(cat <<'EOF'
+## Version
+v0.8.0 (darwin/arm64)
+
+## What happened
+Running `yapi test ./tests` on a valid chain file exits with code 1...
+
+## Steps to reproduce
+1. Create `test.yapi.yml`:
+   ```yaml
+   yapi: v1
+   url: http://localhost:3000/health
+   ...
+   ```
+2. Run `yapi test ./tests`
+3. See error: ...
+
+## Expected behavior
+...
+
+## Error output
+```
+<paste verbose output>
+```
+EOF
+)"
+```
+
+Feature example:
+```bash
+gh issue create --repo jamierpond/yapi --label enhancement \
+  --title "Support WebSocket protocol" \
+  --body "$(cat <<'EOF'
+## Problem
+I'm testing a real-time notification system and need to verify WebSocket...
+
+## Proposed solution
+```yaml
+yapi: v1
+url: ws://localhost:3000/ws
+messages:
+  - '{"type": "subscribe"}'
+expect:
+  assert:
+    - .type == "ack"
+```
+
+## Workflow context
+...
+EOF
+)"
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
