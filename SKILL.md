@@ -1,6 +1,29 @@
+---
+name: yapi
+description: >
+  CLI-first API testing tool for HTTP, GraphQL, gRPC, and TCP protocols.
+  Use when the user wants to write API tests, create .yapi.yml test files,
+  set up integration test chains, configure environment-based testing,
+  implement uptime monitoring, or do load/stress testing. Trigger on
+  mentions of "yapi", "API test", "test-driven API", ".yapi.yml",
+  or requests to test HTTP/GraphQL/gRPC/TCP endpoints.
+---
+
 # yapi
 
 CLI-first API testing for HTTP, GraphQL, gRPC, and TCP.
+
+## Intent
+
+Use this skill when the user wants to:
+
+- Write or modify `.yapi.yml` test files for any supported protocol (HTTP, GraphQL, gRPC, TCP)
+- Set up test-driven API development workflows
+- Configure multi-environment testing with `yapi.config.yml`
+- Create integration test chains with data passing between steps
+- Set up uptime monitoring or load testing
+- Poll async jobs with `wait_for` directives
+- Configure an integrated test server that auto-starts, waits for health, runs tests, and cleans up
 
 ## The Workflow
 
@@ -11,13 +34,9 @@ yapi enables test-driven API development. Write the test first, then implement u
 3. **Implement/fix** - Build the API endpoint
 4. **Iterate** - Refine assertions, add edge cases
 
-This loop is the core of agentic API development with yapi.
+## Environment Setup
 
----
-
-## Environment Setup (Do This First)
-
-Before writing any tests, set up your environments. Create `yapi.config.yml` in your project root:
+Before writing tests, set up environments. Create `yapi.config.yml` in the project root:
 
 ```yaml
 yapi: v1
@@ -42,7 +61,7 @@ environments:
       - .env.prod  # load secrets from file
 ```
 
-Now your tests use `${url}` and `${API_KEY}` - same test, any environment:
+Run tests against any environment:
 
 ```bash
 yapi run get-users.yapi.yml              # uses local (default)
@@ -57,9 +76,7 @@ yapi run get-users.yapi.yml --env prod
 4. Default `vars`
 5. Default `env_files`
 
----
-
-## A) Smoke Testing
+## Smoke Testing
 
 Quick health checks to verify endpoints are alive.
 
@@ -111,9 +128,7 @@ expect:
   status: 200
 ```
 
----
-
-## B) Integration Testing
+## Integration Testing
 
 Multi-step workflows with data passing between requests. Use chains when steps depend on each other.
 
@@ -186,14 +201,7 @@ chain:
 ### Running Integration Tests
 
 Name test files with `.test.yapi.yml` suffix:
-```
-tests/
-  auth.test.yapi.yml
-  posts.test.yapi.yml
-  users.test.yapi.yml
-```
 
-Run all tests:
 ```bash
 yapi test ./tests                    # sequential
 yapi test ./tests --parallel 4       # concurrent
@@ -201,21 +209,7 @@ yapi test ./tests --env staging      # against staging
 yapi test ./tests --verbose          # detailed output
 ```
 
----
-
-## C) Uptime Monitoring
-
-Create test suites for monitoring your services in production.
-
-### Monitor Suite Structure
-
-```
-monitors/
-  api-health.test.yapi.yml
-  auth-service.test.yapi.yml
-  database-check.test.yapi.yml
-  graphql-schema.test.yapi.yml
-```
+## Uptime Monitoring
 
 ### Health Check with Timeout
 
@@ -223,7 +217,7 @@ monitors/
 yapi: v1
 url: ${url}/health
 method: GET
-timeout: 5s  # fail if response takes longer
+timeout: 5s
 expect:
   status: 200
   assert:
@@ -234,10 +228,7 @@ expect:
 ### Run Monitoring Suite
 
 ```bash
-# Check all monitors in parallel
 yapi test ./monitors --parallel 10 --env prod
-
-# With verbose output for debugging
 yapi test ./monitors --parallel 10 --env prod --verbose
 ```
 
@@ -247,7 +238,7 @@ yapi test ./monitors --parallel 10 --env prod --verbose
 name: API Health Check
 on:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 minutes
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -255,10 +246,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install yapi
         run: curl -fsSL https://yapi.run/install/linux.sh | bash
-
       - name: Run health checks
         env:
           PROD_API_KEY: ${{ secrets.PROD_API_KEY }}
@@ -267,22 +256,13 @@ jobs:
 
 ### Load Testing
 
-Stress test endpoints or entire workflows:
-
 ```bash
-# 1000 requests, 50 concurrent
-yapi stress api-flow.yapi.yml -n 1000 -p 50
-
-# Run for 30 seconds
-yapi stress api-flow.yapi.yml -d 30s -p 25
-
-# Against production (with confirmation)
-yapi stress api-flow.yapi.yml -e prod -n 500 -p 10
+yapi stress api-flow.yapi.yml -n 1000 -p 50      # 1000 requests, 50 concurrent
+yapi stress api-flow.yapi.yml -d 30s -p 25        # run for 30 seconds
+yapi stress api-flow.yapi.yml -e prod -n 500 -p 10  # against production
 ```
 
----
-
-## D) Async Job Polling with `wait_for`
+## Async Job Polling with `wait_for`
 
 For endpoints that process data asynchronously, use `wait_for` to poll until conditions are met.
 
@@ -292,13 +272,11 @@ For endpoints that process data asynchronously, use `wait_for` to poll until con
 yapi: v1
 url: ${url}/jobs/${job_id}
 method: GET
-
 wait_for:
   until:
     - .status == "completed" or .status == "failed"
   period: 2s
   timeout: 60s
-
 expect:
   assert:
     - .status == "completed"
@@ -306,25 +284,22 @@ expect:
 
 ### Exponential Backoff
 
-Better for rate-limited APIs or long-running jobs:
-
 ```yaml
 yapi: v1
 url: ${url}/jobs/${job_id}
 method: GET
-
 wait_for:
   until:
     - .status == "completed"
   backoff:
-    seed: 1s       # Initial wait
-    multiplier: 2  # 1s -> 2s -> 4s -> 8s...
+    seed: 1s
+    multiplier: 2
   timeout: 300s
 ```
 
 ### Async Workflow Chain
 
-Complete example: create job, poll until done, download result:
+Create job, poll until done, download result:
 
 ```yaml
 yapi: v1
@@ -360,35 +335,7 @@ chain:
     output_file: ./export.csv
 ```
 
-### Webhook/Callback Waiting
-
-Wait for a webhook to be received:
-
-```yaml
-yapi: v1
-chain:
-  - name: trigger_action
-    url: ${url}/payments/initiate
-    method: POST
-    body:
-      amount: 100
-    expect:
-      status: 202
-
-  - name: wait_for_webhook
-    url: ${url}/webhooks/received
-    method: GET
-    wait_for:
-      until:
-        - . | length > 0
-        - .[0].event == "payment.completed"
-      period: 1s
-      timeout: 30s
-```
-
----
-
-## E) Integrated Test Server
+## Integrated Test Server
 
 Automatically start your dev server, wait for health checks, run tests, and clean up. Configure in `yapi.config.yml`:
 
@@ -412,17 +359,10 @@ environments:
 ### Running with Integrated Server
 
 ```bash
-# Automatically starts server, waits for health, runs tests, kills server
-yapi test
-
-# Skip server startup (server already running)
-yapi test --no-start
-
-# Override config from CLI
+yapi test                                  # auto starts server, runs tests, cleans up
+yapi test --no-start                       # skip server startup
 yapi test --start "npm start" --wait-on "http://localhost:4000/health"
-
-# See server stdout/stderr
-yapi test --verbose
+yapi test --verbose                        # see server stdout/stderr
 ```
 
 ### Health Check Protocols
@@ -433,26 +373,6 @@ yapi test --verbose
 | gRPC | `grpc://localhost:50051` | Uses `grpc.health.v1.Health/Check` |
 | TCP | `tcp://localhost:5432` | Poll until connection succeeds |
 
-### Local vs CI Parity
-
-The same workflow works locally and in CI:
-
-**Local development:**
-```bash
-yapi test  # starts server, runs tests, cleans up
-```
-
-**GitHub Actions:**
-```yaml
-- uses: jamierpond/yapi/action@main
-  with:
-    start: npm run dev
-    wait-on: http://localhost:3000/healthz
-    command: yapi test -a
-```
-
----
-
 ## Commands Reference
 
 | Command | Description |
@@ -460,14 +380,12 @@ yapi test  # starts server, runs tests, cleans up
 | `yapi run file.yapi.yml` | Execute a request |
 | `yapi run file.yapi.yml --env prod` | Execute against specific environment |
 | `yapi test ./dir` | Run all `*.test.yapi.yml` files |
-| `yapi test ./dir --all` | Run all `*.yapi.yml` files (not just tests) |
+| `yapi test ./dir --all` | Run all `*.yapi.yml` files |
 | `yapi test ./dir --parallel 4` | Run tests concurrently |
 | `yapi validate file.yapi.yml` | Check syntax without executing |
 | `yapi watch file.yapi.yml` | Re-run on every file save |
 | `yapi stress file.yapi.yml` | Load test with concurrency |
 | `yapi list` | List all yapi files in directory |
-
----
 
 ## Assertion Syntax
 
@@ -511,9 +429,7 @@ expect:
   status: [200, 201]    # any of these
 ```
 
----
-
-## Protocol Examples
+## Protocol-Specific Examples
 
 ### HTTP with Query Params and Headers
 
@@ -618,8 +534,6 @@ expect:
   status: 200
 ```
 
----
-
 ## File Organization
 
 Recommended project structure:
@@ -629,7 +543,6 @@ project/
   yapi.config.yml          # environments
   .env                     # local secrets (gitignored)
   .env.example             # template for secrets
-
   tests/
     auth/
       login.test.yapi.yml
@@ -637,13 +550,10 @@ project/
     users/
       create-user.test.yapi.yml
       get-user.test.yapi.yml
-
   monitors/
     health.test.yapi.yml
     critical-endpoints.test.yapi.yml
 ```
-
----
 
 ## Tips
 
