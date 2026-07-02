@@ -21,38 +21,38 @@ import (
 // knownV1Keys is the set of valid keys for v1 config files.
 // Must be kept in sync with ConfigV1 struct yaml tags.
 var knownV1Keys = map[string]bool{
-	"yapi":             true,
-	"url":              true,
-	"path":             true,
-	"method":           true,
-	"content_type":     true,
-	"headers":          true,
-	"body":             true,
-	"body_file":        true,
-	"json":             true,
-	"form":             true,
-	"query":            true,
-	"graphql":          true,
-	"variables":        true,
-	"service":          true,
-	"rpc":              true,
-	"proto":            true,
-	"proto_path":       true,
-	"data":             true,
-	"encoding":         true,
-	"jq_filter":        true,
-	"insecure":         true,
-	"plaintext":        true,
-	"read_timeout":     true,
-	"idle_timeout":     true,
-	"close_after_send": true,
-	"chain":            true,
-	"expect":           true,
-	"delay":            true,
-	"output_file":      true,
-	"timeout":          true,
-	"env_files":        true,
-	"wait_for":         true,
+	"yapi":                      true,
+	"url":                       true,
+	"path":                      true,
+	"method":                    true,
+	"content_type":              true,
+	"headers":                   true,
+	"body":                      true,
+	"request_body_fixture_file": true,
+	"json":                      true,
+	"form":                      true,
+	"query":                     true,
+	"graphql":                   true,
+	"variables":                 true,
+	"service":                   true,
+	"rpc":                       true,
+	"proto":                     true,
+	"proto_path":                true,
+	"data":                      true,
+	"encoding":                  true,
+	"jq_filter":                 true,
+	"insecure":                  true,
+	"plaintext":                 true,
+	"read_timeout":              true,
+	"idle_timeout":              true,
+	"close_after_send":          true,
+	"chain":                     true,
+	"expect":                    true,
+	"delay":                     true,
+	"output_file":               true,
+	"timeout":                   true,
+	"env_files":                 true,
+	"wait_for":                  true,
 }
 
 // FindUnknownKeys checks a raw map for keys not in knownV1Keys.
@@ -77,9 +77,9 @@ type ConfigV1 struct {
 	ContentType    string            `yaml:"content_type,omitempty"`
 	Headers        map[string]string `yaml:"headers,omitempty"`
 	Body           map[string]any    `yaml:"body,omitempty"`
-	BodyFile       string            `yaml:"body_file,omitempty"` // Path to raw request body file
-	JSON           string            `yaml:"json,omitempty"`      // Raw JSON override
-	Form           map[string]string `yaml:"form,omitempty"`      // Form data (application/x-www-form-urlencoded or multipart/form-data)
+	BodyFile       string            `yaml:"request_body_fixture_file,omitempty"` // Path to raw request body file
+	JSON           string            `yaml:"json,omitempty"`                      // Raw JSON override
+	Form           map[string]string `yaml:"form,omitempty"`                      // Form data (application/x-www-form-urlencoded or multipart/form-data)
 	Query          map[string]string `yaml:"query,omitempty"`
 	Graphql        string            `yaml:"graphql,omitempty"`   // GraphQL query/mutation
 	Variables      map[string]any    `yaml:"variables,omitempty"` // GraphQL variables
@@ -116,7 +116,7 @@ type ConfigV1 struct {
 	Chain []ChainStep `yaml:"chain,omitempty"`
 
 	configPath string        `yaml:"-"` // Path to this config file for resolving relative files
-	resolver   vars.Resolver `yaml:"-"` // Resolver for variable expansion (used by prepareBody for body_file contents)
+	resolver   vars.Resolver `yaml:"-"` // Resolver for variable expansion (used by prepareBody for request_body_fixture_file contents)
 }
 
 // WaitFor defines polling behavior for a request
@@ -358,7 +358,7 @@ func (c *ConfigV1) expandEnvVars() {
 	vars.ExpandAll(c, vars.EnvResolver)
 }
 
-// SetResolver sets the variable resolver for body_file content expansion.
+// SetResolver sets the variable resolver for request_body_fixture_file content expansion.
 func (c *ConfigV1) SetResolver(resolver vars.Resolver) {
 	c.resolver = resolver
 }
@@ -393,7 +393,7 @@ func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
 		bodyFieldCount++
 	}
 	if bodyFieldCount > 1 {
-		return nil, "", fmt.Errorf("`body`, `body_file`, `json`, and `form` are mutually exclusive")
+		return nil, "", fmt.Errorf("`body`, `request_body_fixture_file`, `json`, and `form` are mutually exclusive")
 	}
 
 	// Handle JSON string
@@ -407,19 +407,19 @@ func (c *ConfigV1) prepareBody() (io.Reader, string, error) {
 	// Handle raw body file
 	if c.BodyFile != "" {
 		bodyPath := c.resolveConfigRelativePath(c.BodyFile)
-		bodyBytes, err := os.ReadFile(bodyPath) // #nosec G304 -- body_file is an explicit user-provided request payload path
+		bodyBytes, err := os.ReadFile(bodyPath) // #nosec G304 -- request_body_fixture_file is an explicit user-provided request payload path
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to read body_file %q: %w", c.BodyFile, err)
+			return nil, "", fmt.Errorf("failed to read request_body_fixture_file %q: %w", c.BodyFile, err)
 		}
 		// Expand variables in body file contents
 		if c.resolver != nil {
 			expanded, err := vars.ExpandString(string(bodyBytes), c.resolver)
 			if err != nil {
-				return nil, "", fmt.Errorf("body_file %q: %w", c.BodyFile, err)
+				return nil, "", fmt.Errorf("request_body_fixture_file %q: %w", c.BodyFile, err)
 			}
 			bodyBytes = []byte(expanded)
 		}
-		return bytes.NewReader(bodyBytes), "body_file", nil
+		return bytes.NewReader(bodyBytes), "request_body_fixture_file", nil
 	}
 
 	// Handle JSON object

@@ -29,9 +29,9 @@ func (app *rootCommand) sendE(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	jqFilter, _ := cmd.Flags().GetString("jq")
-	bodyFile, _ := cmd.Flags().GetString("body-file")
-	if body != "" && bodyFile != "" {
-		return fmt.Errorf("positional body and --body-file are mutually exclusive")
+	requestBodyFixtureFile, _ := cmd.Flags().GetString("request-body-fixture-file")
+	if body != "" && requestBodyFixtureFile != "" {
+		return fmt.Errorf("positional body and --request-body-fixture-file are mutually exclusive")
 	}
 
 	log := NewLogger(verbose)
@@ -40,7 +40,7 @@ func (app *rootCommand) sendE(cmd *cobra.Command, args []string) error {
 	transport := domain.DetectTransport(url, false)
 
 	// Default method: POST if body provided, GET otherwise (HTTP only)
-	bodyProvided := body != "" || bodyFile != ""
+	bodyProvided := body != "" || requestBodyFixtureFile != ""
 	if method == "" {
 		if transport == constants.TransportHTTP {
 			if bodyProvided {
@@ -86,20 +86,20 @@ func (app *rootCommand) sendE(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	if bodyFile != "" {
-		bodyBytes, err := os.ReadFile(bodyFile) // #nosec G304 -- body-file is an explicit user-provided request payload path
+	if requestBodyFixtureFile != "" {
+		bodyBytes, err := os.ReadFile(requestBodyFixtureFile) // #nosec G304 -- request-body-fixture-file is an explicit user-provided request payload path
 		if err != nil {
-			return fmt.Errorf("failed to read body-file %q: %w", bodyFile, err)
+			return fmt.Errorf("failed to read request-body-fixture-file %q: %w", requestBodyFixtureFile, err)
 		}
 		// Expand environment variables in body file contents
 		expanded, err := vars.ExpandString(string(bodyBytes), vars.EnvResolver)
 		if err != nil {
-			return fmt.Errorf("body-file %q: %w", bodyFile, err)
+			return fmt.Errorf("request-body-fixture-file %q: %w", requestBodyFixtureFile, err)
 		}
 		bodyBytes = []byte(expanded)
 		req.Body = bytes.NewReader(bodyBytes)
-		req.Metadata["body_source"] = "body_file"
-		bodyLog = fmt.Sprintf("<body_file: %s (%d bytes)>", bodyFile, len(bodyBytes))
+		req.Metadata["body_source"] = "request-body-fixture-file"
+		bodyLog = fmt.Sprintf("<request-body-fixture-file: %s (%d bytes)>", requestBodyFixtureFile, len(bodyBytes))
 	}
 
 	// Set transport metadata
@@ -110,7 +110,7 @@ func (app *rootCommand) sendE(cmd *cobra.Command, args []string) error {
 
 	// TCP-specific metadata defaults
 	if transport == constants.TransportTCP {
-		if bodyFile == "" {
+		if requestBodyFixtureFile == "" {
 			req.Metadata["data"] = body
 		}
 		req.Metadata["encoding"] = "text"

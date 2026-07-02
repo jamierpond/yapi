@@ -500,7 +500,7 @@ func warnBareChainRefsInConfig(stepName string, cfg *config.ConfigV1) {
 	check("url", cfg.URL)
 	check("path", cfg.Path)
 	check("json", cfg.JSON)
-	check("body_file", cfg.BodyFile)
+	check("request_body_fixture_file", cfg.BodyFile)
 	check("data", cfg.Data)
 	for k, v := range cfg.Headers {
 		check(fmt.Sprintf("header '%s'", k), v)
@@ -603,7 +603,7 @@ func interpolateConfig(chainCtx *ChainContext, cfg *config.ConfigV1) (*config.Co
 	if result.BodyFile != "" {
 		expanded, err := chainCtx.ExpandVariables(result.BodyFile)
 		if err != nil {
-			return nil, fmt.Errorf("body_file: %w", err)
+			return nil, fmt.Errorf("request_body_fixture_file: %w", err)
 		}
 		result.BodyFile = expanded
 	}

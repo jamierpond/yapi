@@ -177,7 +177,7 @@ var cmdManifest = []CommandSpec{
 		Flags: []FlagSpec{
 			{Name: "method", Shorthand: "X", Type: "string", Default: "", Usage: "HTTP method (default: GET, or POST if body is provided)"},
 			{Name: "header", Shorthand: "H", Type: "stringSlice", Default: nil, Usage: "Custom headers (e.g. -H 'Content-Type: application/json')"},
-			{Name: "body-file", Type: "string", Default: "", Usage: "Read request body from a file"},
+			{Name: "request-body-fixture-file", Type: "string", Default: "", Usage: "Read request body from a file"},
 			{Name: "verbose", Shorthand: "v", Type: "bool", Default: false, Usage: "Show verbose output (request details, timing, headers)"},
 			{Name: "json", Type: "bool", Default: false, Usage: "Output result as JSON with full metadata"},
 			{Name: "jq", Type: "string", Default: "", Usage: "JQ filter to apply to the response"},

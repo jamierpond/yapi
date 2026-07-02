@@ -98,7 +98,7 @@ func TestBuildRoot(t *testing.T) {
 	}
 }
 
-func TestSendCommandHasBodyFileFlag(t *testing.T) {
+func TestSendCommandHasRequestBodyFixtureFileFlag(t *testing.T) {
 	var sendSpec *CommandSpec
 	for i, spec := range cmdManifest {
 		if spec.Use == "send <url> [body]" {
@@ -111,8 +111,8 @@ func TestSendCommandHasBodyFileFlag(t *testing.T) {
 	}
 
 	cmd := BuildCommand(*sendSpec)
-	if cmd.Flags().Lookup("body-file") == nil {
-		t.Fatal("send command missing body-file flag")
+	if cmd.Flags().Lookup("request-body-fixture-file") == nil {
+		t.Fatal("send command missing request-body-fixture-file flag")
 	}
 }
 

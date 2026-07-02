@@ -186,7 +186,7 @@ func TestLoadFromStringWithPath_BodyFile(t *testing.T) {
 url: https://example.com/create
 method: POST
 content_type: application/json
-body_file: fixtures/payload.json`
+request_body_fixture_file: fixtures/payload.json`
 	yapiPath := tmpDir + "/request.yapi.yml"
 
 	result, err := LoadFromStringWithPath(yapiContent, yapiPath, nil, nil)
@@ -207,8 +207,8 @@ body_file: fixtures/payload.json`
 	if result.Request.Headers["Content-Type"] != "application/json" {
 		t.Errorf("Content-Type = %q, want application/json", result.Request.Headers["Content-Type"])
 	}
-	if result.Request.Metadata["body_source"] != "body_file" {
-		t.Errorf("body_source = %q, want body_file", result.Request.Metadata["body_source"])
+	if result.Request.Metadata["body_source"] != "request_body_fixture_file" {
+		t.Errorf("body_source = %q, want request_body_fixture_file", result.Request.Metadata["body_source"])
 	}
 }
 
@@ -217,7 +217,7 @@ func TestLoadFromStringWithPath_BodyFileMutuallyExclusive(t *testing.T) {
 	yapiContent := `yapi: v1
 url: https://example.com/create
 method: POST
-body_file: payload.json
+request_body_fixture_file: payload.json
 json: '{"name":"inline"}'`
 
 	_, err := LoadFromStringWithPath(yapiContent, tmpDir+"/request.yapi.yml", nil, nil)

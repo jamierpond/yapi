@@ -68,18 +68,18 @@ These are mutually exclusive — use only one:
 | Field | Type | Description |
 |---|---|---|
 | `body` | map | JSON object body |
-| `body_file` | string | Path to a raw request body file, resolved relative to the request file |
+| `request_body_fixture_file` | string | Path to a raw request body file, resolved relative to the request file |
 | `json` | string | Raw JSON string body |
 | `form` | map | Form-encoded body |
 
-Use `body_file` for large payloads, exact text payloads, generated fixtures, or gRPC JSON request messages that should live outside YAML:
+Use `request_body_fixture_file` for large payloads, exact text payloads, generated fixtures, or gRPC JSON request messages that should live outside YAML:
 
 ```yaml
 yapi: v1
 url: https://api.example.com/import
 method: POST
 content_type: application/json
-body_file: ./fixtures/import.json
+request_body_fixture_file: ./fixtures/import.json
 ```
 
 ## Response Processing
